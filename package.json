@@ -1,6 +1,6 @@
 {
   "name": "openaps-js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "openaps js plugins",
   "main": "iob.js",
   "scripts": {
@@ -19,10 +19,10 @@
     "url": "https://github.com/openaps/openaps-js/issues"
   },
   "bin" : {
-    "calculate-iob" : "./iob.js",
-    "determine-basal" : "./determine-basal.js"
-    "send-tempbasal-Azure" : "./sendtempbasal-Azure.js"
-    "get-profile" : "./getprofile.js"
+    "calculate-iob" : "./bin/iob.js",
+    "determine-basal" : "./bin/determine-basal.js"
+    "send-tempbasal-Azure" : "./bin/sendtempbasal-Azure.js"
+    "get-profile" : "./bin/getprofile.js"
   },
   "homepage": "https://github.com/openaps/openaps-js"
 }
