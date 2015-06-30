@@ -20,8 +20,8 @@
   },
   "bin" : {
     "calculate-iob" : "./bin/iob.js",
-    "determine-basal" : "./bin/determine-basal.js"
-    "send-tempbasal-Azure" : "./bin/sendtempbasal-Azure.js"
+    "determine-basal" : "./bin/determine-basal.js",
+    "send-tempbasal-Azure" : "./bin/sendtempbasal-Azure.js",
     "get-profile" : "./bin/getprofile.js"
   },
   "homepage": "https://github.com/openaps/openaps-js"
