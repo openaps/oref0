@@ -1,14 +1,13 @@
 
+function iobCalc(treatment, time) {
 
-    function iobCalc(treatment, time) {
-
-        var dia=profile.dia;
+        var dia=profile_data.dia;
         if (dia == 3) {
             var peak=75;
         } else {
             console.warn('DIA of ' + dia + 'not supported');
         }
-        var sens=profile.sens;
+        var sens= profile_data.sens;
         if (typeof time === 'undefined') {
             var time = new Date();
         }
@@ -109,7 +108,7 @@
         var tempBolusSize;
         for (var i=0; i < tempHistory.length; i++) {
             if (tempHistory[i].duration > 0) {
-                var netBasalRate = tempHistory[i].rate-profile.basal;
+                var netBasalRate = tempHistory[i].rate-profile_data.current_basal;
                 if (netBasalRate < 0) { tempBolusSize = -0.1; }
                 else { tempBolusSize = 0.1; }
                 var netBasalAmount = Math.round(netBasalRate*tempHistory[i].duration*10/6)/100
@@ -133,33 +132,24 @@
     }
 
 if (!module.parent) {
-  var input = process.argv.slice(2,3).pop( )
-  if (!input) {
-    console.log('usage: ', process.argv.slice(0, 2), '<filename>');
+    var iob_input = process.argv.slice(2, 3).pop()
+    var profile_input = process.argv.slice(3, 4).pop()
+  if (!iob_input || !profile_input) {
+    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory> <profile.json>');
     process.exit(1);
   }
-  var all_data = require('./' + input);
-  var pumpHistory = all_data;
+    var all_data = require('./' + iob_input);
+    var profile_data = require('./' + profile_input);
+    var pumpHistory = all_data;
   pumpHistory.reverse( );
-  var profile = {
-    basal: 0.9333333333333334
-    ,carbratio: 13
-    ,carbs_hr: 30
-    ,dia: 3
-    ,max_bg: 140
-    ,max_iob: 4
-    ,min_bg: 120
-    ,sens: 45
-    ,target_bg: 120
-    ,type: "current"
-  };
+ 
+
   var all_treatments =  calcTempTreatments( );
   var treatments = all_treatments; // .tempBoluses.concat(all_treatments.tempHistory);
   treatments.sort(function (a, b) { return a.date > b.date });
-  //var lastTimestamp = new Date(treatments[treatments.length -1].date + 1000 * 60);
-  var now = new Date();
-  var iobs = iobTotal(treatments, now);
-  //var iobs = iobTotal(treatments, lastTimestamp);
+  var lastTimestamp = new Date(treatments[treatments.length -1].date + 1000 * 60);
+  var iobs = iobTotal(treatments, lastTimestamp);
+  // var iobs = iobTotal(pumpHistory.concat(treatments.tempBoluses), new Date(Date.parse(pumpHistory[0].timestamp) + 1000 * 60));
   // console.log(iobs);
   console.log(JSON.stringify(iobs));
 }
