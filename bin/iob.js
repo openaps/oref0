@@ -19,7 +19,7 @@ function iobCalc(treatment, time) {
                 var activityContrib=0;
             }
             if (minAgo < peak) {
-                var x = minAgo/5+1 / diaratio;
+                var x = (minAgo/5 + 1) / diaratio;
                 var iobContrib=treatment.insulin*(1-0.001852*x*x+0.001852*x);
                 var activityContrib=sens*treatment.insulin*(2/dia/60/peak)*minAgo;
 
