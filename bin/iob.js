@@ -2,10 +2,10 @@
 
 function iobCalc(treatment, time) {
 
-        var dia=profile_data.dia;
-        var peak=75;
+        var dia = profile_data.dia;
         var diaratio = dia / 3;
-        var sens= profile_data.sens;
+        var peak = 75 * diaratio;
+        var sens = profile_data.sens;
         if (typeof time === 'undefined') {
             var time = new Date();
         }
@@ -25,7 +25,7 @@ function iobCalc(treatment, time) {
 
             }
             else if (minAgo < 180) {
-                var x = (minAgo-75)/5 / diaratio;
+                var x = (minAgo-peak)/5 / diaratio;
                 var iobContrib=treatment.insulin*(0.001323*x*x - .054233*x + .55556);
                 var activityContrib=sens*treatment.insulin*(2/dia/60-(minAgo-peak)*2/dia/60/(60*dia-peak));
             }
