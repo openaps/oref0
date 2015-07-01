@@ -1,4 +1,6 @@
-﻿function getTime(minutes) {
+﻿#!/usr/bin/env node
+
+function getTime(minutes) {
     var baseTime = new Date();
     baseTime.setHours('00');
     baseTime.setMinutes('00');
