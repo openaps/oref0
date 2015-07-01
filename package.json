@@ -23,5 +23,6 @@
     "send-tempbasal-Azure" : "./bin/sendtempbasal-Azure.js",
     "get-profile" : "./bin/getprofile.js"
   },
+  "directories" : { "bin": "bin" }
   "homepage": "https://github.com/openaps/openaps-js"
 }
