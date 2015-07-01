@@ -94,11 +94,12 @@ if (!module.parent) {
         process.exit(1);
     }
     
-    var pumpsettings_data = require('./' + pumpsettings_input);
-    var bgtargets_data = require('./' + bgtargets_input);
-    var isf_data = require('./' + isf_input);
-    var basalprofile_data = require('./' + basalprofile_input);
-    var carbratio_data = require('./' + carbratio_input);;
+    var cwd = process.cwd()
+    var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
+    var bgtargets_data = require(cwd + '/' + bgtargets_input);
+    var isf_data = require(cwd + '/' + isf_input);
+    var basalprofile_data = require(cwd + '/' + basalprofile_input);
+    var carbratio_data = require(cwd + '/' + carbratio_input);;
 
     var profile = {        
           carbs_hr: 28
