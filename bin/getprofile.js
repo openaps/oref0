@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 
 function getTime(minutes) {
     var baseTime = new Date();
