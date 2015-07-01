@@ -3,11 +3,8 @@
 function iobCalc(treatment, time) {
 
         var dia=profile_data.dia;
-        if (dia == 3) {
-            var peak=75;
-        } else {
-            console.warn('DIA of ' + dia + 'not supported');
-        }
+        var peak=75;
+        var diaratio = dia / 3;
         var sens= profile_data.sens;
         if (typeof time === 'undefined') {
             var time = new Date();
@@ -22,13 +19,13 @@ function iobCalc(treatment, time) {
                 var activityContrib=0;
             }
             if (minAgo < peak) {
-                var x = minAgo/5+1;
+                var x = minAgo/5+1 / diaratio;
                 var iobContrib=treatment.insulin*(1-0.001852*x*x+0.001852*x);
                 var activityContrib=sens*treatment.insulin*(2/dia/60/peak)*minAgo;
 
             }
             else if (minAgo < 180) {
-                var x = (minAgo-75)/5;
+                var x = (minAgo-75)/5 / diaratio;
                 var iobContrib=treatment.insulin*(0.001323*x*x - .054233*x + .55556);
                 var activityContrib=sens*treatment.insulin*(2/dia/60-(minAgo-peak)*2/dia/60/(60*dia-peak));
             }
