@@ -38,10 +38,11 @@ if (!module.parent) {
         process.exit(1);
     }
     
-    var glucose_data = require('./' + glucose_input);
-    var temps_data = require('./' + temps_input);
-    var iob_data = require('./' + iob_input);
-    var profile_data = require('./' + profile_input);
+    var cwd = process.cwd()
+    var glucose_data = require(cwd + '/' + glucose_input);
+    var temps_data = require(cwd + '/' + temps_input);
+    var iob_data = require(cwd + '/' + iob_input);
+    var profile_data = require(cwd + '/' + profile_input);
     
     var glucose_status = getLastGlucose(glucose_data);
     var eventualBG = glucose_status.glucose - (iob_data.iob * profile_data.sens);
