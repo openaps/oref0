@@ -45,7 +45,8 @@ if (!module.parent) {
     var profile_data = require(cwd + '/' + profile_input);
     
     var glucose_status = getLastGlucose(glucose_data);
-    var eventualBG = glucose_status.glucose - (iob_data.iob * profile_data.sens);
+    var bg = glucose_status.glucose
+    var eventualBG = bg - (iob_data.iob * profile_data.sens);
     var requestedTemp = {
         'temp': 'absolute'
     };
@@ -58,24 +59,17 @@ if (!module.parent) {
     var displayTime = new Date(glucose_data[0].display_time.replace('T', ' '));
     var minAgo = (systemTime - displayTime) / 60 / 1000
     
-    if (minAgo < 10) {
-        
-        if (eventualBG < profile_data.min_bg - 30) {
-            
-            if (glucose_status.delta > 0) {
-                
-                if (temps_data.rate > profile_data.current_basal) {
-                    
-                    setTempBasal(0, 0);
-                
+    if (minAgo < 10 && minAgo > -5 ) { // Dexcom data is recent, but not far in the future
+
+        if (bg < profile_data.min_bg - 30) { // low glucose suspend mode: BG is < ~80
+            if (glucose_status.delta > 0) { // if BG is rising
+                if (temps_data.rate > profile_data.current_basal) { // if a high-temp is running
+                    setTempBasal(0, 0); // cancel it
                 }
             }
-        
-            else if (glucose_status.delta <= 0) {
+            else { // if (glucose_status.delta <= 0) { // BG is not yet rising
                 setTempBasal(0, 30);
-                
             }
-            
             
 
         } else {
@@ -94,11 +88,16 @@ if (!module.parent) {
             } else if (eventualBG > profile_data.max_bg) {
                 var insulinReq = (profile_data.target_bg - eventualBG) / profile_data.sens;
                 var rate = temps_data.rate - (2 * insulinReq);
-		if (rate > temps_data.rate){
-                setTempBasal(rate, 30);}
+                if (rate > temps_data.rate){
+                    setTempBasal(rate, 30);
+                }
         
+            } else {
+                console.log("No action required")
             }
         }
+    } else {
+        console.log("BG data is too old")
     }
     
     console.log(JSON.stringify(requestedTemp));
