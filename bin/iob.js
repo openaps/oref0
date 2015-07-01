@@ -139,8 +139,9 @@ if (!module.parent) {
     console.log('usage: ', process.argv.slice(0, 2), '<pumphistory> <profile.json>');
     process.exit(1);
   }
-    var all_data = require('./' + iob_input);
-    var profile_data = require('./' + profile_input);
+    var cwd = process.cwd()
+    var all_data = require(cwd + '/' + iob_input);
+    var profile_data = require(cwd + '/' + profile_input);
     var pumpHistory = all_data;
   pumpHistory.reverse( );
  
