@@ -116,8 +116,8 @@ function iobCalc(treatment, time) {
         for (var i=0; i < tempHistory.length; i++) {
             if (tempHistory[i].duration > 0) {
                 var netBasalRate = tempHistory[i].rate-profile_data.current_basal;
-                if (netBasalRate < 0) { tempBolusSize = -0.1; }
-                else { tempBolusSize = 0.1; }
+                if (netBasalRate < 0) { tempBolusSize = -0.05; }
+                else { tempBolusSize = 0.05; }
                 var netBasalAmount = Math.round(netBasalRate*tempHistory[i].duration*10/6)/100
                 var tempBolusCount = Math.round(netBasalAmount / tempBolusSize);
                 var tempBolusSpacing = tempHistory[i].duration / tempBolusCount;
