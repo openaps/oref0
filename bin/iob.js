@@ -46,9 +46,9 @@ function iobCalc(treatment, time) {
         var iob= 0;
         var activity = 0;
         if (!treatments) return {};
-        if (typeof time === 'undefined') {
-            var time = new Date();
-        }
+        //if (typeof time === 'undefined') {
+            //var time = new Date();
+        //}
 
         treatments.forEach(function(treatment) {
             if(treatment.date < time.getTime( )) {
@@ -67,14 +67,19 @@ function iobCalc(treatment, time) {
     function calcTempTreatments() {
         var tempHistory = [];
         var tempBoluses = [];
+        var now = new Date();
+        var timeZone = now.toString().match(/([-\+][0-9]+)\s/)[1]
         for (var i=0; i < pumpHistory.length; i++) {
             var current = pumpHistory[i];
             //if(pumpHistory[i].date < time) {
                 if (pumpHistory[i]._type == "Bolus") {
+                    console.log(pumpHistory[i]);
                     var temp = {};
                     temp.timestamp = current.timestamp;
-                    temp.started_at = new Date(current.date);
-                    temp.date = current.date
+                    //temp.started_at = new Date(current.date);
+                    temp.started_at = new Date(current.timestamp + timeZone);
+                    //temp.date = current.date
+                    temp.date = temp.started_at.getTime();
                     temp.insulin = current.amount
                     tempBoluses.push(temp);
                 } else if (pumpHistory[i]._type == "TempBasal") {
@@ -90,9 +95,11 @@ function iobCalc(treatment, time) {
                     } else { console.log("No duration found for "+rate+" U/hr basal"+date); }
                     var temp = {};
                     temp.rate = rate;
-                    temp.date = date;
+                    //temp.date = date;
                     temp.timestamp = current.timestamp;
-                    temp.started_at = new Date(temp.date);
+                    //temp.started_at = new Date(temp.date);
+                    temp.started_at = new Date(temp.timestamp + timeZone);
+                    temp.date = temp.started_at.getTime();
                     temp.duration = duration;
                     tempHistory.push(temp);
                 }
@@ -104,6 +111,8 @@ function iobCalc(treatment, time) {
             }
         }
         var tempBolusSize;
+        var now = new Date();
+        var timeZone = now.toString().match(/([-\+][0-9]+)\s/)[1]
         for (var i=0; i < tempHistory.length; i++) {
             if (tempHistory[i].duration > 0) {
                 var netBasalRate = tempHistory[i].rate-profile_data.current_basal;
@@ -132,23 +141,31 @@ function iobCalc(treatment, time) {
 if (!module.parent) {
     var iob_input = process.argv.slice(2, 3).pop()
     var profile_input = process.argv.slice(3, 4).pop()
+    var clock_input = process.argv.slice(4, 5).pop()
   if (!iob_input || !profile_input) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory> <profile.json>');
+    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory> <profile.json> <clock.json>');
     process.exit(1);
   }
     var cwd = process.cwd()
     var all_data = require(cwd + '/' + iob_input);
     var profile_data = require(cwd + '/' + profile_input);
+    var clock_data = require(cwd + '/' + clock_input);
     var pumpHistory = all_data;
   pumpHistory.reverse( );
  
 
   var all_treatments =  calcTempTreatments( );
+  console.log(all_treatments);
   var treatments = all_treatments; // .tempBoluses.concat(all_treatments.tempHistory);
   treatments.sort(function (a, b) { return a.date > b.date });
   //var lastTimestamp = new Date(treatments[treatments.length -1].date + 1000 * 60);
+  console.log(clock_data);
   var now = new Date();
-  var iobs = iobTotal(treatments, now);
+  var timeZone = now.toString().match(/([-\+][0-9]+)\s/)[1]
+  var clock_iso = clock_data + timeZone;
+  var clock = new Date(clock_iso);
+  console.log(clock);
+  var iobs = iobTotal(treatments, clock);
   //var iobs = iobTotal(treatments, lastTimestamp);
   // console.log(iobs);
   console.log(JSON.stringify(iobs));
