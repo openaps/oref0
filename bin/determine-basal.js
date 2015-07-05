@@ -108,10 +108,10 @@ if (!module.parent) {
                 // rate required to deliver insulinReq less insulin over 30m:
                 var rate = profile_data.current_basal - (2 * insulinReq);
 
-                if (typeof temps_data.rate === 'undefined' || ( temps_data.duration > 0 && rate < temps_data.rate )) { // if required temp < existing temp basal
-                    setTempBasal(rate, 30);
-                } else {
+                if (typeof temps_data.rate !== 'undefined' && ( temps_data.duration > 0 && rate <= temps_data.rate )) { // if required temp < existing temp basal
                     console.error("No action required (existing basal " + temps_data.rate + " <= required temp " + rate + " )")
+                } else {
+                    setTempBasal(rate, 30);
                 }
 
             } else if (eventualBG > profile_data.max_bg) { // if eventual BG is above target:
