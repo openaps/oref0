@@ -54,7 +54,7 @@ if (!module.parent) {
         target_bg = profile_data.target_bg;
     } else {
         if (typeof profile_data.max_bg !== 'undefined' && typeof profile_data.max_bg !== 'undefined') {
-            target_bg = (profile_data.max_bg + profile_data.max_bg) / 2;
+            target_bg = (profile_data.min_bg + profile_data.max_bg) / 2;
         } else {
             console.error('Error: could not determine target_bg');
             process.exit(1);
