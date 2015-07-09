@@ -122,7 +122,7 @@ if (!module.parent) {
                 var rate = profile_data.current_basal - (2 * insulinReq);
                 maxSafeBasal = Math.min(profile_data.max_basal, 2 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
                 if (rate > maxSafeBasal) { rate = maxSafeBasal; }
-                if (typeof temps_data.rate !== 'undefined' && rate < temps_data.rate + 0.1 ){ // if required temp > existing temp basal
+                if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate < temps_data.rate + 0.1 )){ // if required temp > existing temp basal
                     console.error("No action required (existing basal " + temps_data.rate + " >~ required temp " + rate + " )")
                 } else {
                     setTempBasal(rate, 30);
