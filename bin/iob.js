@@ -73,7 +73,7 @@ function iobCalc(treatment, time) {
             var current = pumpHistory[i];
             //if(pumpHistory[i].date < time) {
                 if (pumpHistory[i]._type == "Bolus") {
-                    console.log(pumpHistory[i]);
+                    //console.log(pumpHistory[i]);
                     var temp = {};
                     temp.timestamp = current.timestamp;
                     //temp.started_at = new Date(current.date);
