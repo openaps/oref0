@@ -64,6 +64,7 @@ if (!module.parent) {
     var glucose_status = getLastGlucose(glucose_data);
     var bg = glucose_status.glucose
     var eventualBG = bg - (iob_data.iob * profile_data.sens);
+    if (typeof eventualBG === 'undefined') { console.error('Error: could not calculate eventualBG'); }
     var requestedTemp = {
         'temp': 'absolute'
     };
@@ -110,7 +111,7 @@ if (!module.parent) {
                     // rate required to deliver insulinReq less insulin over 30m:
                     var rate = profile_data.current_basal - (2 * insulinReq);
                     
-                    if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate <= temps_data.rate - 0.1)) { // if required temp < existing temp basal
+                    if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate > temps_data.rate - 0.1)) { // if required temp < existing temp basal
                         console.error("No action required (existing basal " + temps_data.rate + " <~ required temp " + rate + " )")
                     } else {
                         setTempBasal(rate, 30);
