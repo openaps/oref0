@@ -155,16 +155,16 @@ if (!module.parent) {
  
 
   var all_treatments =  calcTempTreatments( );
-  console.log(all_treatments);
+  //console.log(all_treatments);
   var treatments = all_treatments; // .tempBoluses.concat(all_treatments.tempHistory);
   treatments.sort(function (a, b) { return a.date > b.date });
   //var lastTimestamp = new Date(treatments[treatments.length -1].date + 1000 * 60);
-  console.log(clock_data);
+  //console.log(clock_data);
   var now = new Date();
   var timeZone = now.toString().match(/([-\+][0-9]+)\s/)[1]
   var clock_iso = clock_data + timeZone;
   var clock = new Date(clock_iso);
-  console.log(clock);
+  //console.log(clock);
   var iobs = iobTotal(treatments, clock);
   //var iobs = iobTotal(treatments, lastTimestamp);
   // console.log(iobs);
