@@ -41,25 +41,33 @@ if (!module.parent) {
     
     var cwd = process.cwd()
     var glucose_data = require(cwd + '/' + glucose_input);
+    var cgmtime = glucose_data[0].display_time.split("T")[1];
     var bgnow = glucose_data[0].glucose;
     var delta = bgnow - glucose_data[1].glucose;
     var tick;
     if (delta < 0) { tick = delta; } else { tick = "+" + delta; }
     var clock_data = require(cwd + '/' + clock_input);
-    time = clock_data.split("T")[1];
+    var pumptime = clock_data.split("T")[1];
     var iob_data = require(cwd + '/' + iob_input);
     iob = iob_data.iob.toFixed(2);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
     var basalRate;
     basalLookup();
     var temp = require(cwd + '/' + currenttemp_input);
+    var tempstring;
+    if (temp.duration < 1) {
+        tempstring = "No temp basal\n";
+    } else {
+        tempstring = "Temp: " + temp.rate + "U/hr for " + temp.duration + "m ";
+    }
 
 
     var pebble = {        
-        "content" : bgnow + tick + " " + time + "\n"
+        "content" : "" + bgnow + tick + " " + cgmtime + "\n"
         + "IOB: " + iob + "U\n"
         + "Sched: " + basalRate + "U/hr\n"
-        + temp.rate + "U/hr for " + temp.duration + "m",
+        + tempstring
+        + "as of " + pumptime,
         "refresh_frequency": 1
     };
 
