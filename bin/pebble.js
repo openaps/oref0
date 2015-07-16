@@ -65,7 +65,7 @@ if (!module.parent) {
     var clock_data = require(cwd + '/' + clock_input);
     var pumptime = clock_data.split("T")[1];
     var iob_data = require(cwd + '/' + iob_input);
-    iob = iob_data.iob.toFixed(2);
+    iob = iob_data.iob.toFixed(1);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
     var basalRate;
     basalLookup();
@@ -74,7 +74,7 @@ if (!module.parent) {
     if (temp.duration < 1) {
         tempstring = "No temp basal\n";
     } else {
-        tempstring = "Temp: " + temp.rate + "U/hr for " + temp.duration + "m ";
+        tempstring = "Temp: " + temp.duration + "m@" + temp.rate + "U ";
     }
     var isf_data = require(cwd + '/' + isf_input);
     var isf;
@@ -89,7 +89,7 @@ if (!module.parent) {
         + "Sched: " + basalRate + "U/hr\n"
         + tempstring
         + "as of " + pumptime + "\n"
-        + "Req: " + requestedtemp.rate,
+        + "Req: " + requestedtemp.duration + "m @ " + requestedtemp.rate + "U",
         "refresh_frequency": 1
     };
 
