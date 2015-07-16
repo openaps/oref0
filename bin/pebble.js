@@ -94,7 +94,7 @@ if (!module.parent) {
 
     var pebble = {        
         "content" : "" + bgnow + tick + " " + cgmtime + "\n"
-        + "IOB: " + iob + "U -> " + eventualBG + "\n"
+        + "IOB: " + iob + "U->" + eventualBG + "\n"
         + "Sched: " + basalRate + "U/hr\n"
         + tempstring
         + "as of " + pumptime + "\n"
