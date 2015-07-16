@@ -55,18 +55,18 @@ function carbRatioLookup() {
     profile.carbratio = carbRatio.ratio;    
 }
 
-function carbSensitivityLookup() {
+function isfLookup() {
     var now = new Date();
     //isf_data.sensitivities.sort(function (a, b) { return a.offset > b.offset });
-    var carbSensitivity = isf_data.sensitivities[isf_data.sensitivities.length - 1]
+    var isfSchedule = isf_data.sensitivities[isf_data.sensitivities.length - 1]
     
     for (var i = 0; i < isf_data.sensitivities.length - 1; i++) {
         if ((now >= getTime(isf_data.sensitivities[i].offset)) && (now < getTime(isf_data.sensitivities[i + 1].offset))) {
-            carbSensitivity = isf_data.sensitivities[i];
+            isfSchedule = isf_data.sensitivities[i];
             break;
         }
     }
-    profile.sens = carbSensitivity.sensitivity;
+    profile.sens = isfSchedule.sensitivity;
 }
 
 function maxDailyBasal(){
@@ -113,7 +113,7 @@ if (!module.parent) {
     maxBasalLookup()
     bgTargetsLookup();
     carbRatioLookup();
-    carbSensitivityLookup();
+    isfLookup();
 
     console.log(JSON.stringify(profile));
 }
