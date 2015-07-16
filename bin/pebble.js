@@ -74,7 +74,7 @@ if (!module.parent) {
     if (temp.duration < 1) {
         tempstring = "No temp basal\n";
     } else {
-        tempstring = "Temp: " + temp.duration + "m@" + temp.rate + "U ";
+        tempstring = "Tmp: " + temp.duration + "m@" + temp.rate.toFixed(1);
     }
     var isf_data = require(cwd + '/' + isf_input);
     var isf;
@@ -97,7 +97,7 @@ if (!module.parent) {
         + "IOB: " + iob + "U->" + eventualBG + "\n"
         + "Sched: " + basalRate + "U/hr\n"
         + tempstring
-        + "as of " + pumptime + "\n"
+        + " at " + pumptime + "\n"
         + "Req: " + reqtempstring,
         "refresh_frequency": 1
     };
