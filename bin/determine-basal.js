@@ -83,17 +83,20 @@ if (!module.parent) {
     var systemTime = new Date();
     var displayTime = new Date(glucose_data[0].display_time.replace('T', ' '));
     var minAgo = (systemTime - displayTime) / 60 / 1000
+    var threshold = profile_data.min_bg - 30;
     
     if (minAgo < 10 && minAgo > -5) { // Dexcom data is recent, but not far in the future
         
         if (bg > 10) {  //Dexcom is in ??? mode or calibrating, do nothing. Asked @benwest for raw data in iter_glucose
             
-            if (bg < profile_data.min_bg - 30) { // low glucose suspend mode: BG is < ~80
+            if (bg < threshold) { // low glucose suspend mode: BG is < ~80
                 if (glucose_status.delta > 0) { // if BG is rising
                     if (temps_data.rate > profile_data.current_basal) { // if a high-temp is running
-                        setTempBasal(0, 0); // cancel it
-                    } else { // no high-temp
-                        console.error("No action required (no high-temp to cancel)")
+                        setTempBasal(0, 0); // cancel high temp
+                    } else if (temps_data.duration && eventualBG > profile_data.max_bg) { // if low-temped and predicted to go high from negative IOB
+                        setTempBasal(0, 0); // cancel low temp
+                    } else {
+                        console.error("No action required (" + bg + "<" + threshold + ", and no high-temp to cancel)")
                     }
                 }
                 else { // if (glucose_status.delta <= 0) { // BG is not yet rising
