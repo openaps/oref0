@@ -18,7 +18,7 @@ function basalLookup() {
     
     for (var i = 0; i < basalprofile_data.length - 1; i++) {
         if ((now >= getTime(basalprofile_data[i].minutes)) && (now < getTime(basalprofile_data[i + 1].minutes))) {
-            basalRate = basalprofile_data[i].rate;
+            basalRate = basalprofile_data[i].rate.toFixed(2);
             break;
         }
     }
@@ -81,6 +81,16 @@ if (!module.parent) {
     isfLookup();
     var eventualBG = Math.round( bgnow - ( iob * isf ) );
     var requestedtemp = require(cwd + '/' + requestedtemp_input);
+    console.log(JSON.stringify(requestedtemp));
+    var reqtempstring;
+    if (typeof requestedtemp.duration === 'undefined') {
+        reqtempstring = "None";
+    }
+    else if (requestedtemp.duration < 1) {
+        reqtempstring = "Cancel";
+    } else { 
+        reqtempstring = requestedtemp.duration + "m @ " + requestedtemp.rate + "U";
+    }
 
 
     var pebble = {        
@@ -89,7 +99,7 @@ if (!module.parent) {
         + "Sched: " + basalRate + "U/hr\n"
         + tempstring
         + "as of " + pumptime + "\n"
-        + "Req: " + requestedtemp.duration + "m @ " + requestedtemp.rate + "U",
+        + "Req: " + reqtempstring,
         "refresh_frequency": 1
     };
 
