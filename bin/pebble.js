@@ -81,7 +81,6 @@ if (!module.parent) {
     isfLookup();
     var eventualBG = Math.round( bgnow - ( iob * isf ) );
     var requestedtemp = require(cwd + '/' + requestedtemp_input);
-    console.log(JSON.stringify(requestedtemp));
     var reqtempstring;
     if (typeof requestedtemp.duration === 'undefined') {
         reqtempstring = "None";
@@ -89,7 +88,7 @@ if (!module.parent) {
     else if (requestedtemp.duration < 1) {
         reqtempstring = "Cancel";
     } else { 
-        reqtempstring = requestedtemp.duration + "m @ " + requestedtemp.rate + "U";
+        reqtempstring = requestedtemp.duration + "m @ " + requestedtemp.rate.toFixed(1) + "U";
     }
 
 
