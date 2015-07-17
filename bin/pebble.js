@@ -72,7 +72,7 @@ if (!module.parent) {
     var temp = require(cwd + '/' + currenttemp_input);
     var tempstring;
     if (temp.duration < 1) {
-        tempstring = "No temp basal\n";
+        tempstring = "No temp basal";
     } else {
         tempstring = "Tmp: " + temp.duration + "m@" + temp.rate.toFixed(1);
     }
@@ -88,7 +88,7 @@ if (!module.parent) {
     else if (requestedtemp.duration < 1) {
         reqtempstring = "Cancel";
     } else { 
-        reqtempstring = requestedtemp.duration + "m @ " + requestedtemp.rate.toFixed(1) + "U";
+        reqtempstring = requestedtemp.duration + "m@" + requestedtemp.rate.toFixed(1) + "U";
     }
 
 
