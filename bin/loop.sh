@@ -2,6 +2,8 @@
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 cd /home/pi/openaps-dev
+git fetch --all
+git reset --hard origin/master
 git pull
 
 #die() { echo "$@" 1>&2 ; exit 1; }
