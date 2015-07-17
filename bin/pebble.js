@@ -18,12 +18,26 @@ function basalLookup() {
     
     for (var i = 0; i < basalprofile_data.length - 1; i++) {
         if ((now >= getTime(basalprofile_data[i].minutes)) && (now < getTime(basalprofile_data[i + 1].minutes))) {
-            basalRate = basalprofile_data[i].rate;
+            basalRate = basalprofile_data[i].rate.toFixed(2);
             break;
         }
     }
 }
 
+
+function isfLookup() {
+    var now = new Date();
+    //isf_data.sensitivities.sort(function (a, b) { return a.offset > b.offset });
+    var isfSchedule = isf_data.sensitivities[isf_data.sensitivities.length - 1]
+    
+    for (var i = 0; i < isf_data.sensitivities.length - 1; i++) {
+        if ((now >= getTime(isf_data.sensitivities[i].offset)) && (now < getTime(isf_data.sensitivities[i + 1].offset))) {
+            isfSchedule = isf_data.sensitivities[i];
+            break;
+        }
+    }
+    isf = isfSchedule.sensitivity;
+}
 
 
 if (!module.parent) {
@@ -33,9 +47,11 @@ if (!module.parent) {
     var iob_input = process.argv.slice(4, 5).pop()
     var basalprofile_input = process.argv.slice(5, 6).pop()
     var currenttemp_input = process.argv.slice(6, 7).pop()
+    var isf_input = process.argv.slice(7, 8).pop()
+    var requestedtemp_input = process.argv.slice(8, 9).pop()
     
-    if (!glucose_input || !clock_input || !iob_input || !basalprofile_input || !currenttemp_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <clock.json> <iob.json> <current_basal_profile.json> <currenttemp.json>');
+    if (!glucose_input || !clock_input || !iob_input || !basalprofile_input || !currenttemp_input || !isf_input || !requestedtemp_input) {
+        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <clock.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <isf.json> <requestedtemp.json>');
         process.exit(1);
     }
     
@@ -60,14 +76,30 @@ if (!module.parent) {
     } else {
         tempstring = "Temp: " + temp.rate + "U/hr for " + temp.duration + "m ";
     }
+    var isf_data = require(cwd + '/' + isf_input);
+    var isf;
+    isfLookup();
+    var eventualBG = Math.round( bgnow - ( iob * isf ) );
+    var requestedtemp = require(cwd + '/' + requestedtemp_input);
+    console.log(JSON.stringify(requestedtemp));
+    var reqtempstring;
+    if (typeof requestedtemp.duration === 'undefined') {
+        reqtempstring = "None";
+    }
+    else if (requestedtemp.duration < 1) {
+        reqtempstring = "Cancel";
+    } else { 
+        reqtempstring = requestedtemp.rate + "U/hr";
+    }
 
 
     var pebble = {        
         "content" : "" + bgnow + tick + " " + cgmtime + "\n"
-        + "IOB: " + iob + "U\n"
+        + "IOB: " + iob + "U -> " + eventualBG + "\n"
         + "Sched: " + basalRate + "U/hr\n"
         + tempstring
-        + "as of " + pumptime,
+        + "as of " + pumptime + "\n"
+        + "Req: " + reqtempstring,
         "refresh_frequency": 1
     };
 
