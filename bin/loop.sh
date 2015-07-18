@@ -37,7 +37,12 @@ fi
 echo "Checking pump status"
 openaps status || openaps status || die "Can't get pump status"
 echo "Querying pump"
-openaps pumpquery || openaps pumpquery || die "Can't query pump" && git pull && git push
+#openaps pumpquery || openaps pumpquery || die "Can't query pump" && git pull && git push
+openaps pumpquery || openaps pumpquery
+grep T clock.json.new && mv clock.json.new clock.json
+grep temp currenttemp.json.new && mv currenttemp.json.new currenttemp.json
+grep timestamp pumphistory.json.new && mv pumphistory.json.new pumphistory.json
+git pull && git push
 
 openaps suggest
 
