@@ -1,6 +1,18 @@
 #!/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+# only one process can talk to the pump at a time
+ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exiting" && exit
+
+echo "No lockfile: continuing"
+touch /tmp/openaps.lock
+/home/pi/decocare/insert.sh 2>/dev/null >/dev/null
+
+function finish {
+    rm /tmp/openaps.lock
+}
+trap finish EXIT
+
 cd /home/pi/openaps-dev
 git fetch --all
 git reset --hard origin/master && git pull
@@ -16,21 +28,6 @@ find glucose.json -mmin 3 && grep glucose glucose.json || die "Can't read from C
 head -15 glucose.json
 
 find *.json -mmin 15 -exec mv {} {}.old \;
-
-# if it's been more than 3 minutes, unlock the CarelinkUSB
-find /tmp/carelink.lock -mmin +3 -exec rm -f {} \; 2>/dev/null >/dev/null
-
-# only one process can talk to the pump at a time
-ls /tmp/carelink.lock >/dev/null 2>/dev/null && die "Carelink locked: exiting" && exit
-
-echo "No lockfile: continuing"
-touch /tmp/carelink.lock
-/home/pi/decocare/insert.sh 2>/dev/null >/dev/null
-
-function finish {
-    rm /tmp/carelink.lock
-}
-trap finish EXIT
 
 numprocs=$(fuser -n file $(python -m decocare.scan) 2>&1 | wc -l)
 if [[ $numprocs -gt 0 ]] ; then
@@ -71,4 +68,3 @@ grep rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enact
 #fi
         
 
-rm /tmp/carelink.lock
