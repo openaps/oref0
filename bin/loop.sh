@@ -27,7 +27,7 @@ git pull && git push
 find glucose.json -mmin 3 && grep glucose glucose.json || die "Can't read from CGM"
 head -15 glucose.json
 
-find *.json -mmin 15 -exec mv {} {}.old \;
+#find *.json -mmin 15 -exec mv {} {}.old \;
 
 numprocs=$(fuser -n file $(python -m decocare.scan) 2>&1 | wc -l)
 if [[ $numprocs -gt 0 ]] ; then
