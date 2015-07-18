@@ -21,7 +21,7 @@ git fetch --all && git reset --hard origin/master && git pull
 
 echo "Querying CGM"
 openaps report invoke glucose.json.new || openaps report invoke glucose.json.new 
-grep glucose glucose.json.new && mv glucose.json.new glucose.json
+grep glucose glucose.json.new && mv glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
 git pull && git push
 #grep glucose glucose.json || git reset --hard origin/master
 find glucose.json -mmin 3 && grep glucose glucose.json || die "Can't read from CGM"
