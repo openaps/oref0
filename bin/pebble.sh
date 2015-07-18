@@ -2,7 +2,7 @@
 cd ~/openaps-dev
 #eval `ssh-agent -s`
 #ssh-add /home/sleibrand/.ssh/id_rsa.sleibrand-git
-git pull
+git fetch --all && git reset --hard origin/master && git pull
 stat -c %y clock.json | cut -c 1-19
 cat clock.json | sed 's/"//g' | sed 's/T/ /'
 echo

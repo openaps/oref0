@@ -16,8 +16,7 @@ function finish {
 trap finish EXIT
 
 cd /home/pi/openaps-dev
-git fetch --all
-git reset --hard origin/master && git pull
+git fetch --all && git reset --hard origin/master && git pull
 
 
 echo "Querying CGM"
