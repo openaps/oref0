@@ -1,6 +1,8 @@
 #!/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+die() { echo "$@" ; exit 1; }
+
 # only one process can talk to the pump at a time
 ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exiting" && exit
 
@@ -17,8 +19,6 @@ cd /home/pi/openaps-dev
 git fetch --all
 git reset --hard origin/master && git pull
 
-#die() { echo "$@" 1>&2 ; exit 1; }
-die() { echo "$@" ; exit 1; }
 
 echo "Querying CGM"
 openaps report invoke glucose.json || openaps report invoke glucose.json 
