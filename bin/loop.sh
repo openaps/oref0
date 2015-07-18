@@ -2,15 +2,16 @@
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 cd /home/pi/openaps-dev
-git fetch --all && git reset --hard origin/master && git pull
+git fetch --all
+git reset --hard origin/master && git pull
 
 #die() { echo "$@" 1>&2 ; exit 1; }
 die() { echo "$@" ; exit 1; }
 
 echo "Querying CGM"
 openaps report invoke glucose.json || openaps report invoke glucose.json 
-git pull
-grep glucose glucose.json && git push
+git pull && grep glucose glucose.json && git push
+grep glucose glucose.json || git reset --hard origin/master
 find glucose.json -mmin 3 && grep glucose glucose.json || die "Can't read from CGM"
 head -15 glucose.json
 
