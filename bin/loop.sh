@@ -8,7 +8,7 @@ git fetch --all && git reset --hard origin/master && git pull
 die() { echo "$@" ; exit 1; }
 
 echo "Querying CGM"
-openaps report invoke glucose.json || find glucose.json -mmin 10 && grep glucose glucose.json || openaps report invoke glucose.json || die "Can't read from CGM"
+find glucose.json -mmin 3 && grep glucose glucose.json || openaps report invoke glucose.json || openaps report invoke glucose.json || die "Can't read from CGM"
 git pull && git push
 head -15 glucose.json
 
