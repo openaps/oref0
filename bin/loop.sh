@@ -47,6 +47,10 @@ grep timestamp pumphistory.json.new && mv pumphistory.json.new pumphistory.json
 git pull && git push
 
 openaps suggest
+grep sens profile.json.new && mv profile.json.new profile.json
+grep iob iob.json.new && mv iob.json.new iob.json
+grep temp requestedtemp.json.new && mv requestedtemp.json.new requestedtemp.json
+git pull && git push
 
 tail clock.json
 tail currenttemp.json
