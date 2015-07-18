@@ -36,6 +36,8 @@ fi
 
 echo "Checking pump status"
 openaps status || openaps status || die "Can't get pump status"
+grep status status.json.new && mv status.json.new status.json
+git pull && git push
 echo "Querying pump"
 #openaps pumpquery || openaps pumpquery || die "Can't query pump" && git pull && git push
 openaps pumpquery || openaps pumpquery
