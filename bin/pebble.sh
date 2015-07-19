@@ -8,7 +8,7 @@ stat -c %y clock.json | cut -c 1-19
 cat clock.json | sed 's/"//g' | sed 's/T/ /'
 echo
 #calculate-iob pumphistory.json profile.json clock.json > iob.json.new && grep iob iob.json.new && mv iob.json.new iob.json
-openaps invoke iob.json.new && grep iob iob.json.new && cp iob.json.new iob.json && commit -m"iob found: committing" iob.json
+openaps invoke iob.json.new && grep iob iob.json.new && cp iob.json.new iob.json && git commit -m"iob found: committing" iob.json
 #determine-basal iob.json currenttemp.json glucose.json profile.json > requestedtemp.json.new && grep temp requestedtemp.json.new && mv requestedtemp.json.new requestedtemp.json
 openaps invoke requestedtemp.json.new && grep temp requestedtemp.json.new && cp requestedtemp.json.new requestedtemp.json && git commit -m"temp found: committing" requestedtemp.json
 git pull && git push
