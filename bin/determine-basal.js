@@ -154,11 +154,10 @@ if (!module.parent) {
             }
         }  else {
             console.error("CGM is calibrating or in ??? state")
-
         }
-        } else {
-            console.error("BG data is too old")
-        }
+    } else {
+        console.error("BG data is too old")
+    }
     
 console.log(JSON.stringify(requestedTemp));
 }
