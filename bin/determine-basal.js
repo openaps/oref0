@@ -99,7 +99,7 @@ if (!module.parent) {
                         console.error("No action required (" + bg + "<" + threshold + ", and no high-temp to cancel)")
                     }
                 }
-                else { // if (glucose_status.delta <= 0) { // BG is not yet rising
+                else { // BG is not yet rising
                     setTempBasal(0, 30);
                 }
             
@@ -148,7 +148,7 @@ if (!module.parent) {
                         setTempBasal(rate, 30);
                     }
         
-                } else { // if (profile_data.min_bg < eventualBG < profile_data.max_bg) {
+                } else { 
                     console.error(eventualBG + " is in range. No action required.")
                 }
             }
