@@ -46,6 +46,11 @@ grep temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
 git pull && git push
 
+echo "Querying CGM"
+openaps report invoke glucose.json.new || openaps report invoke glucose.json.new 
+grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
+git pull && git push
+
 openaps suggest
 grep sens profile.json.new && cp profile.json.new profile.json
 grep iob iob.json.new && cp iob.json.new iob.json
