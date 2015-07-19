@@ -64,10 +64,10 @@ head -20 pumphistory.json
 echo "Querying pump settings"
 openaps pumpsettings || openaps pumpsettings || die "Can't query pump settings" && git pull && git push
 grep insulin_action_curve pump_settings.json.new && cp pump_settings.json.new pump_settings.json
-grep units bg_targets.json.new && cp bg_targets.json.new bg_targets.json
+grep "mg/dL" bg_targets.json.new && cp bg_targets.json.new bg_targets.json
 grep sensitivity isf.json.new && cp isf.json.new isf.json
 grep rate current_basal_profile.json.new && cp current_basal_profile.json.new current_basal_profile.json
-grep ratio carb_ratio.json.new && cp carb_ratio.json.new carb_ratio.json
+grep grams carb_ratio.json.new && cp carb_ratio.json.new carb_ratio.json
 
 openaps suggest || die "Can't calculate IOB or basal" && git pull && git push
 tail profile.json
