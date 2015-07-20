@@ -26,7 +26,7 @@ grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit 
 git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 #grep glucose glucose.json || git reset --hard origin/master
-find glucose.json -mmin 3 && grep glucose glucose.json || die "Can't read from CGM"
+find glucose.json -mmin -10 | egrep '.*' && grep glucose glucose.json || die "Can't read from CGM"
 head -15 glucose.json
 
 #find *.json -mmin 15 -exec mv {} {}.old \;
