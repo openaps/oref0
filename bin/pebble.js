@@ -65,23 +65,22 @@ if (!module.parent) {
     var clock_data = require(cwd + '/' + clock_input);
     var pumptime = clock_data.split("T")[1];
     var iob_data = require(cwd + '/' + iob_input);
-    iob = iob_data.iob.toFixed(2);
+    iob = iob_data.iob.toFixed(1);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
     var basalRate;
     basalLookup();
     var temp = require(cwd + '/' + currenttemp_input);
     var tempstring;
     if (temp.duration < 1) {
-        tempstring = "No temp basal\n";
+        tempstring = "No temp basal";
     } else {
-        tempstring = "Temp: " + temp.rate + "U/hr for " + temp.duration + "m ";
+        tempstring = "Tmp: " + temp.duration + "m@" + temp.rate.toFixed(1);
     }
     var isf_data = require(cwd + '/' + isf_input);
     var isf;
     isfLookup();
     var eventualBG = Math.round( bgnow - ( iob * isf ) );
     var requestedtemp = require(cwd + '/' + requestedtemp_input);
-    console.log(JSON.stringify(requestedtemp));
     var reqtempstring;
     if (typeof requestedtemp.duration === 'undefined') {
         reqtempstring = "None";
@@ -89,16 +88,16 @@ if (!module.parent) {
     else if (requestedtemp.duration < 1) {
         reqtempstring = "Cancel";
     } else { 
-        reqtempstring = requestedtemp.rate + "U/hr";
+        reqtempstring = requestedtemp.duration + "m@" + requestedtemp.rate.toFixed(1) + "U";
     }
 
 
     var pebble = {        
         "content" : "" + bgnow + tick + " " + cgmtime + "\n"
-        + "IOB: " + iob + "U -> " + eventualBG + "\n"
+        + "IOB: " + iob + "U->" + eventualBG + "\n"
         + "Sched: " + basalRate + "U/hr\n"
         + tempstring
-        + "as of " + pumptime + "\n"
+        + " at " + pumptime + "\n"
         + "Req: " + reqtempstring,
         "refresh_frequency": 1
     };

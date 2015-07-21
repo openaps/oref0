@@ -21,7 +21,7 @@ function setTempBasal(rate, duration) {
     else if (rate > maxSafeBasal) { rate = maxSafeBasal; }
     
     requestedTemp.duration = duration;
-    requestedTemp.rate = rate;
+    requestedTemp.rate = Math.round( rate * 1000 ) / 1000;
     
 };
 
@@ -62,8 +62,15 @@ if (!module.parent) {
     }
     
     var glucose_status = getLastGlucose(glucose_data);
-    var bg = glucose_status.glucose
-    var eventualBG = bg - (iob_data.iob * profile_data.sens);
+    var bg = glucose_status.glucose;
+    var tick;
+    if (glucose_status.delta >= 0) { tick = "+" + glucose_status.delta; }
+    else { tick = glucose_status.delta; }
+    var eventualBG = Math.round( bg - (iob_data.iob * profile_data.sens) );
+    console.error("IOB: " + iob_data.iob.toFixed(2) + ", Bolus IOB: " + iob_data.bolusiob.toFixed(2));
+    var bolusContrib = iob_data.bolusiob * profile_data.sens;
+    var snoozeBG = Math.round( eventualBG + bolusContrib );
+    console.error("BG: " + bg + tick + " -> " + eventualBG + "-" + snoozeBG);
     if (typeof eventualBG === 'undefined') { console.error('Error: could not calculate eventualBG'); }
     var requestedTemp = {
         'temp': 'absolute'
@@ -76,20 +83,23 @@ if (!module.parent) {
     var systemTime = new Date();
     var displayTime = new Date(glucose_data[0].display_time.replace('T', ' '));
     var minAgo = (systemTime - displayTime) / 60 / 1000
+    var threshold = profile_data.min_bg - 30;
     
     if (minAgo < 10 && minAgo > -5) { // Dexcom data is recent, but not far in the future
         
         if (bg > 10) {  //Dexcom is in ??? mode or calibrating, do nothing. Asked @benwest for raw data in iter_glucose
             
-            if (bg < profile_data.min_bg - 30) { // low glucose suspend mode: BG is < ~80
+            if (bg < threshold) { // low glucose suspend mode: BG is < ~80
                 if (glucose_status.delta > 0) { // if BG is rising
                     if (temps_data.rate > profile_data.current_basal) { // if a high-temp is running
-                        setTempBasal(0, 0); // cancel it
-                    } else { // no high-temp
-                        console.error("No action required (no high-temp to cancel)")
+                        setTempBasal(0, 0); // cancel high temp
+                    } else if (temps_data.duration && eventualBG > profile_data.max_bg) { // if low-temped and predicted to go high from negative IOB
+                        setTempBasal(0, 0); // cancel low temp
+                    } else {
+                        console.error("No action required (" + bg + "<" + threshold + ", and no high-temp to cancel)")
                     }
                 }
-                else { // if (glucose_status.delta <= 0) { // BG is not yet rising
+                else { // BG is not yet rising
                     setTempBasal(0, 30);
                 }
             
@@ -105,16 +115,23 @@ if (!module.parent) {
                     }
         
                 } else if (eventualBG < profile_data.min_bg) { // if eventual BG is below target:
-                    // calculate 30m low-temp required to get projected BG up to target
-                    // negative insulin required to get up to min:
-                    var insulinReq = Math.max(0, (target_bg - eventualBG) / profile_data.sens);
-                    // rate required to deliver insulinReq less insulin over 30m:
-                    var rate = profile_data.current_basal - (2 * insulinReq);
-                    
-                    if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate > temps_data.rate - 0.1)) { // if required temp < existing temp basal
-                        console.error("No action required (existing basal " + temps_data.rate + " <~ required temp " + rate + " )")
+                    // if this is just due to boluses, we can snooze until the bolus IOB decays (at double speed)
+                    if (snoozeBG > profile_data.min_bg) { // if adding back in the bolus contribution BG would be above min
+                        console.error("No action required (snoozing for boluses: eventual BG range " + eventualBG + "-" + snoozeBG + ")")
                     } else {
-                        setTempBasal(rate, 30);
+                        // calculate 30m low-temp required to get projected BG up to target
+                        // negative insulin required to get up to min:
+                        //var insulinReq = Math.max(0, (target_bg - eventualBG) / profile_data.sens);
+                        // use snoozeBG instead of eventualBG to more gradually ramp in any counteraction of the user's boluses
+                        var insulinReq = Math.max(0, (target_bg - snoozeBG) / profile_data.sens);
+                        // rate required to deliver insulinReq less insulin over 30m:
+                        var rate = profile_data.current_basal - (2 * insulinReq);
+                        
+                        if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate > temps_data.rate - 0.1)) { // if required temp < existing temp basal
+                            console.error("No action required (existing basal " + temps_data.rate + " <~ required temp " + rate + " )")
+                        } else {
+                            setTempBasal(rate, 30);
+                        }
                     }
 
                 } else if (eventualBG > profile_data.max_bg) { // if eventual BG is above target:
@@ -131,17 +148,16 @@ if (!module.parent) {
                         setTempBasal(rate, 30);
                     }
         
-                } else { // if (profile_data.min_bg < eventualBG < profile_data.max_bg) {
+                } else { 
                     console.error(eventualBG + " is in range. No action required.")
                 }
             }
         }  else {
             console.error("CGM is calibrating or in ??? state")
-
         }
-        } else {
-            console.error("BG data is too old")
-        }
+    } else {
+        console.error("BG data is too old")
+    }
     
 console.log(JSON.stringify(requestedTemp));
 }
