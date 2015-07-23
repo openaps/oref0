@@ -17,7 +17,7 @@ trap finish EXIT
 
 cd /home/pi/openaps-dev
 #git fetch --all && git reset --hard origin/master && git pull
-git fetch origin master && git merge -X theirs origin/master
+git fetch origin master && ( git merge -X theirs origin/master || git reset --hard origin/master )
 
 
 echo "Querying CGM"
