@@ -16,15 +16,15 @@ function finish {
 trap finish EXIT
 
 cd /home/pi/openaps-dev
-#git fetch --all && git reset --hard origin/master && git pull
-git fetch origin master && ( git merge -X theirs origin/master || git reset --hard origin/master )
+git fetch --all && ( git merge || git reset --hard origin/master ) && git pull
+#git fetch origin master && ( git merge -X theirs origin/master || git reset --hard origin/master )
 
 
 echo "Querying CGM"
 openaps report invoke glucose.json.new || openaps report invoke glucose.json.new 
 grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
-git fetch origin master && git merge -X ours origin/master && git push
-#git pull && git push
+#git fetch origin master && git merge -X ours origin/master && git push
+git pull && git push
 #grep glucose glucose.json || git reset --hard origin/master
 find glucose.json -mmin -10 | egrep '.*' && grep glucose glucose.json || die "Can't read from CGM"
 head -15 glucose.json
@@ -39,29 +39,29 @@ fi
 echo "Checking pump status"
 openaps status || openaps status || die "Can't get pump status"
 grep status status.json.new && cp status.json.new status.json
-git fetch origin master && git merge -X ours origin/master && git push
-#git pull && git push
+#git fetch origin master && git merge -X ours origin/master && git push
+git pull && git push
 echo "Querying pump"
 #openaps pumpquery || openaps pumpquery || die "Can't query pump" && git pull && git push
 openaps pumpquery || openaps pumpquery
 grep T clock.json.new && cp clock.json.new clock.json
 grep temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
-git fetch origin master && git merge -X ours origin/master && git push
-#git pull && git push
+#git fetch origin master && git merge -X ours origin/master && git push
+git pull && git push
 
 echo "Querying CGM"
 openaps report invoke glucose.json.new || openaps report invoke glucose.json.new 
 grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
-git fetch origin master && git merge -X ours origin/master && git push
-#git pull && git push
+#git fetch origin master && git merge -X ours origin/master && git push
+git pull && git push
 
 openaps suggest
 grep sens profile.json.new && cp profile.json.new profile.json
 grep iob iob.json.new && cp iob.json.new iob.json
 grep temp requestedtemp.json.new && cp requestedtemp.json.new requestedtemp.json
-git fetch origin master && git merge -X ours origin/master && git push
-#git pull && git push
+#git fetch origin master && git merge -X ours origin/master && git push
+git pull && git push
 
 tail clock.json
 tail currenttemp.json
@@ -79,15 +79,16 @@ openaps suggest || die "Can't calculate IOB or basal"
 grep sens profile.json.new && cp profile.json.new profile.json
 grep iob iob.json.new && cp iob.json.new iob.json
 grep temp requestedtemp.json.new && cp requestedtemp.json.new requestedtemp.json
-git fetch origin master && git merge -X ours origin/master && git push
-#git pull && git push
+#git fetch origin master && git merge -X ours origin/master && git push
+git pull && git push
 tail profile.json
 tail iob.json
 tail requestedtemp.json
 
-grep rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enactedtemp.json
-git fetch origin master && git merge -X ours origin/master && git push
 #openaps report invoke enactedtemp.json
+grep rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enactedtemp.json
+#git fetch origin master && git merge -X ours origin/master && git push
+git pull && git push
 
 #if /usr/bin/curl -sk https://diyps.net/closedloop.txt | /bin/grep set; then
     #echo "No lockfile: continuing"
