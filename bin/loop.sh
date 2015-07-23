@@ -47,6 +47,7 @@ openaps pumpquery || openaps pumpquery
 grep T clock.json.new && cp clock.json.new clock.json
 grep temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
+~/bin/openaps-mongo.sh
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 
