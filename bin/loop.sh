@@ -16,7 +16,7 @@ function finish {
 trap finish EXIT
 
 cd /home/pi/openaps-dev
-git fetch --all && ( git merge || git reset --hard origin/master ) && git pull
+git fetch --all && ( git pull --ff-only || git reset --hard origin/master )
 #git fetch origin master && ( git merge -X theirs origin/master || git reset --hard origin/master )
 
 
