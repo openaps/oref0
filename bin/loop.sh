@@ -10,6 +10,8 @@ echo "No lockfile: continuing"
 touch /tmp/openaps.lock
 /home/pi/decocare/insert.sh 2>/dev/null >/dev/null
 
+find /home/pi/openaps-dev/.git/index.lock -mmin +5 -exec rm {} \;
+
 function finish {
     rm /tmp/openaps.lock
 }
@@ -29,7 +31,6 @@ grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit 
 find glucose.json -mmin -10 | egrep '.*' && grep glucose glucose.json || die "Can't read from CGM"
 head -15 glucose.json
 
-#find *.json -mmin 15 -exec mv {} {}.old \;
 
 numprocs=$(fuser -n file $(python -m decocare.scan) 2>&1 | wc -l)
 if [[ $numprocs -gt 0 ]] ; then
