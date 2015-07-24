@@ -59,9 +59,6 @@ grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit 
 #git pull && git push
 
 openaps suggest
-grep sens profile.json.new && cp profile.json.new profile.json
-grep iob iob.json.new && cp iob.json.new iob.json
-grep temp requestedtemp.json.new && cp requestedtemp.json.new requestedtemp.json
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 
