@@ -75,9 +75,6 @@ grep rate current_basal_profile.json.new && cp current_basal_profile.json.new cu
 grep grams carb_ratio.json.new && cp carb_ratio.json.new carb_ratio.json
 
 openaps suggest || die "Can't calculate IOB or basal"
-grep sens profile.json.new && cp profile.json.new profile.json
-grep iob iob.json.new && cp iob.json.new iob.json
-grep temp requestedtemp.json.new && cp requestedtemp.json.new requestedtemp.json
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 tail profile.json
@@ -101,3 +98,10 @@ grep rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enact
 #fi
         
 
+echo "Re-querying pump"
+#openaps pumpquery || openaps pumpquery || die "Can't query pump" && git pull && git push
+openaps pumpquery || openaps pumpquery
+grep T clock.json.new && cp clock.json.new clock.json
+grep temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
+grep timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
+~/bin/openaps-mongo.sh
