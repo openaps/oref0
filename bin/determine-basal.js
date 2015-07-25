@@ -85,7 +85,7 @@ if (!module.parent) {
     var eventualBG = naive_eventualBG + deviation;
     var naive_snoozeBG = Math.round( naive_eventualBG + bolusContrib );
     var snoozeBG = naive_snoozeBG + deviation;
-    console.error("BG: " + bg + tick + " -> " + eventualBG + "-" + snoozeBG + " (" + naive_eventualBG + "-" + naive_snoozeBG + ")");
+    console.error("BG: " + bg + tick + " -> " + eventualBG + "-" + snoozeBG + " (Unadjusted: " + naive_eventualBG + "-" + naive_snoozeBG + ")");
     if (typeof eventualBG === 'undefined') { console.error('Error: could not calculate eventualBG'); }
     var requestedTemp = {
         'temp': 'absolute'
