@@ -35,8 +35,9 @@ if [[ $clients -eq 0 ]]; then
         echo "Checking connectivity of $Interface"
         NetworkUp=`/sbin/ifconfig $Interface`
         IP=`echo "$NetworkUp" | grep inet | wc -l`
-        if [[ $IP -eq 0 ]]; then
-            echo "Connection is down"
+        if [[ $IP -eq 0 || $NetworkUp =~ $HostAPDIP ]]; then
+        #if [[ $IP -eq 0 ]]; then
+            #echo "Connection is down"
 
             hostapd=`pidof hostapd`
             if [[ -z $hostapd ]]; then
@@ -58,8 +59,8 @@ if [[ $clients -eq 0 ]]; then
                 echo "Setting IP Address for wlan0"
                 /sbin/ifconfig wlan0 $HostAPDIP netmask 255.255.255.0 up
             fi
-        elif [[ $IP -eq 1 && $NetworkUp =~ $HostAPDIP ]]; then
-            echo "IP is $HostAPDIP - hostapd is running"
+        #elif [[ $IP -eq 1 && $NetworkUp =~ $HostAPDIP ]]; then
+            #echo "IP is $HostAPDIP - hostapd is running"
         else
             echo "Connection is up"
         fi
