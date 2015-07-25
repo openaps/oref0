@@ -21,8 +21,7 @@ function setTempBasal(rate, duration) {
     else if (rate > maxSafeBasal) { rate = maxSafeBasal; }
     
     requestedTemp.duration = duration;
-    requestedTemp.rate = Math.round( rate * 1000 ) / 1000;
-    
+    requestedTemp.rate = Math.round((Math.round(rate / 0.05) * 0.05)*100)/100;
 };
 
 
