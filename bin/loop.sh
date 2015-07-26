@@ -10,6 +10,7 @@ echo "No lockfile: continuing"
 touch /tmp/openaps.lock
 /home/pi/decocare/insert.sh 2>/dev/null >/dev/null
 
+find /tmp/openaps.lock -mmin +5 -exec rm {} \;
 find /home/pi/openaps-dev/.git/index.lock -mmin +5 -exec rm {} \;
 
 function finish {
@@ -64,7 +65,7 @@ openaps suggest
 
 tail clock.json
 tail currenttemp.json
-head -20 pumphistory.json
+#head -20 pumphistory.json
 
 echo "Querying pump settings"
 openaps pumpsettings || openaps pumpsettings || die "Can't query pump settings" # && git pull && git push
@@ -104,4 +105,5 @@ openaps pumpquery || openaps pumpquery
 grep T clock.json.new && cp clock.json.new clock.json
 grep temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
+rm /tmp/openaps.lock
 ~/bin/openaps-mongo.sh
