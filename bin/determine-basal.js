@@ -77,9 +77,9 @@ if (!module.parent) {
     console.error("IOB: " + iob_data.iob.toFixed(2) + ", Bolus IOB: " + iob_data.bolusiob.toFixed(2));
     var bgi = -iob_data.activity * profile_data.sens * 5;
     console.error("Avg. Delta: " + glucose_status.avgdelta.toFixed(1) + ", BGI: " + bgi.toFixed(1));
-    // project deviation over next 30 minutes
-    var deviation = Math.round( 30 / 5 * ( glucose_status.avgdelta - bgi ) );
-    console.error("30m deviation: " + deviation.toFixed(0));
+    // project deviation over next 15 minutes
+    var deviation = Math.round( 15 / 5 * ( glucose_status.avgdelta - bgi ) );
+    console.error("15m deviation: " + deviation.toFixed(0));
     var bolusContrib = iob_data.bolusiob * profile_data.sens;
     var naive_eventualBG = Math.round( bg - (iob_data.iob * profile_data.sens) );
     var eventualBG = naive_eventualBG + deviation;
