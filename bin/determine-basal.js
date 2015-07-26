@@ -2,11 +2,19 @@
 
 function getLastGlucose(data) {
     
-    var one = data[0];
-    var two = data[1];
+    var now = data[0];
+    var last = data[1];
+    var avg;
+    //TODO: calculate average using system_time instead of assuming 1 data point every 5m
+    if (typeof data[3] !== 'undefined') {
+        avg = ( now.glucose - data[3].glucose) / 3;
+    } else if (typeof data[2] !== 'undefined') {
+        avg = ( now.glucose - data[2].glucose) / 3;
+    } else { avg = now.glucose - data[1].glucose; }
     var o = {
-        delta: one.glucose - two.glucose
-        , glucose: one.glucose
+        delta: now.glucose - last.glucose
+        , glucose: now.glucose
+        , avgdelta: avg
     };
     
     return o;
@@ -66,11 +74,18 @@ if (!module.parent) {
     var tick;
     if (glucose_status.delta >= 0) { tick = "+" + glucose_status.delta; }
     else { tick = glucose_status.delta; }
-    var eventualBG = Math.round( bg - (iob_data.iob * profile_data.sens) );
     console.error("IOB: " + iob_data.iob.toFixed(2) + ", Bolus IOB: " + iob_data.bolusiob.toFixed(2));
+    var bgi = -iob_data.activity * profile_data.sens * 5;
+    console.error("Avg. Delta: " + glucose_status.avgdelta.toFixed(1) + ", BGI: " + bgi.toFixed(1));
+    // project deviation over next 15 minutes
+    var deviation = Math.round( 15 / 5 * ( glucose_status.avgdelta - bgi ) );
+    console.error("15m deviation: " + deviation.toFixed(0));
     var bolusContrib = iob_data.bolusiob * profile_data.sens;
-    var snoozeBG = Math.round( eventualBG + bolusContrib );
-    console.error("BG: " + bg + tick + " -> " + eventualBG + "-" + snoozeBG);
+    var naive_eventualBG = Math.round( bg - (iob_data.iob * profile_data.sens) );
+    var eventualBG = naive_eventualBG + deviation;
+    var naive_snoozeBG = Math.round( naive_eventualBG + bolusContrib );
+    var snoozeBG = naive_snoozeBG + deviation;
+    console.error("BG: " + bg + tick + " -> " + eventualBG + "-" + snoozeBG + " (Unadjusted: " + naive_eventualBG + "-" + naive_snoozeBG + ")");
     if (typeof eventualBG === 'undefined') { console.error('Error: could not calculate eventualBG'); }
     var requestedTemp = {
         'temp': 'absolute'
@@ -111,7 +126,7 @@ if (!module.parent) {
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
                         setTempBasal(0, 0); // cancel temp
                     } else {
-                        console.error("No action required (no temp to cancel)")
+                        console.error("No action required (" + tick + " and no temp to cancel)")
                     }
         
                 } else if (eventualBG < profile_data.min_bg) { // if eventual BG is below target:
