@@ -107,6 +107,7 @@ if (!module.parent) {
         if (bg > 10) {  //Dexcom is in ??? mode or calibrating, do nothing. Asked @benwest for raw data in iter_glucose
             
             if (bg < threshold) { // low glucose suspend mode: BG is < ~80
+		console.error("BG " + bg + "<" + threshold);
                 if (glucose_status.delta > 0) { // if BG is rising
                     if (temps_data.rate > profile_data.current_basal) { // if a high-temp is running
                         setTempBasal(0, 0); // cancel high temp
@@ -147,6 +148,7 @@ if (!module.parent) {
                         if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate > temps_data.rate - 0.1)) { // if required temp < existing temp basal
                             console.error("No action required (existing basal " + temps_data.rate + " <~ required temp " + rate + " )")
                         } else {
+                            console.error("Eventual BG " + eventualBG + "<" + profile_data.min_bg);
                             setTempBasal(rate, 30);
                         }
                     }
