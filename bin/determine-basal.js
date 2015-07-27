@@ -6,11 +6,13 @@ function getLastGlucose(data) {
     var last = data[1];
     var avg;
     //TODO: calculate average using system_time instead of assuming 1 data point every 5m
-    if (typeof data[3] !== 'undefined') {
+    if (typeof data[3] !== 'undefined' && data[3].glucose > 30) {
         avg = ( now.glucose - data[3].glucose) / 3;
-    } else if (typeof data[2] !== 'undefined') {
+    } else if (typeof data[2] !== 'undefined' && data[2].glucose > 30) {
         avg = ( now.glucose - data[2].glucose) / 3;
-    } else { avg = now.glucose - data[1].glucose; }
+    } else if (typeof data[1] !== 'undefined' && data[1].glucose > 30) {
+        avg = now.glucose - data[1].glucose;
+    } else { avg = 0; }
     var o = {
         delta: now.glucose - last.glucose
         , glucose: now.glucose
@@ -56,6 +58,8 @@ if (!module.parent) {
         process.exit(1);
     }
     
+    var max_iob = profile_data.max_iob; // maximum amount of non-bolus IOB OpenAPS will ever deliver
+
     // if target_bg is set, great. otherwise, if min and max are set, then set target to their average
     var target_bg;
     if (typeof profile_data.target_bg !== 'undefined') {
@@ -105,6 +109,7 @@ if (!module.parent) {
         if (bg > 10) {  //Dexcom is in ??? mode or calibrating, do nothing. Asked @benwest for raw data in iter_glucose
             
             if (bg < threshold) { // low glucose suspend mode: BG is < ~80
+		console.error("BG " + bg + "<" + threshold);
                 if (glucose_status.delta > 0) { // if BG is rising
                     if (temps_data.rate > profile_data.current_basal) { // if a high-temp is running
                         setTempBasal(0, 0); // cancel high temp
@@ -145,14 +150,21 @@ if (!module.parent) {
                         if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate > temps_data.rate - 0.1)) { // if required temp < existing temp basal
                             console.error("No action required (existing basal " + temps_data.rate + " <~ required temp " + rate + " )")
                         } else {
+                            console.error("Eventual BG " + eventualBG + "<" + profile_data.min_bg);
                             setTempBasal(rate, 30);
                         }
                     }
 
                 } else if (eventualBG > profile_data.max_bg) { // if eventual BG is above target:
+                    // if iob is over max, just cancel any temps
+                    var basal_iob = iob_data.iob - iob_data.bolusiob;
+                    if (basal_iob > max_iob) { setTempBasal(0, 0); }
                     // calculate 30m high-temp required to get projected BG down to target
-                    // additional insulin required to get down to max:
+                    // additional insulin required to get down to max bg:
                     var insulinReq = (target_bg - eventualBG) / profile_data.sens;
+                    // if that would put us over max_iob, then reduce accordingly
+                    insulinReq = Math.min(insulinReq, max_iob-basal_iob);
+
                     // rate required to deliver insulinReq more insulin over 30m:
                     var rate = profile_data.current_basal - (2 * insulinReq);
                     maxSafeBasal = Math.min(profile_data.max_basal, 2 * profile_data.max_daily_basal, 4 * profile_data.current_basal);

@@ -29,7 +29,6 @@ grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit 
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 #grep glucose glucose.json || git reset --hard origin/master
-find glucose.json -mmin -10 | egrep '.*' && grep glucose glucose.json || die "Can't read from CGM"
 head -15 glucose.json
 
 
@@ -39,17 +38,18 @@ if [[ $numprocs -gt 0 ]] ; then
 fi
 
 echo "Checking pump status"
-openaps status || openaps status || die "Can't get pump status"
+openaps status
+#openaps status || openaps status || die "Can't get pump status"
 grep status status.json.new && cp status.json.new status.json
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 echo "Querying pump"
 #openaps pumpquery || openaps pumpquery || die "Can't query pump" && git pull && git push
 openaps pumpquery || openaps pumpquery
-grep T clock.json.new && cp clock.json.new clock.json
+find clock.json.new -mmin -10 | egrep '.*' && grep T clock.json.new && cp clock.json.new clock.json
 grep temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
-~/bin/openaps-mongo.sh
+find clock.json -mmin -5 | egrep '.*' && ~/bin/openaps-mongo.sh
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 
@@ -68,13 +68,14 @@ tail currenttemp.json
 #head -20 pumphistory.json
 
 echo "Querying pump settings"
-openaps pumpsettings || openaps pumpsettings || die "Can't query pump settings" # && git pull && git push
+openaps pumpsettings || openaps pumpsettings # || die "Can't query pump settings" # && git pull && git push
 grep insulin_action_curve pump_settings.json.new && cp pump_settings.json.new pump_settings.json
 grep "mg/dL" bg_targets.json.new && cp bg_targets.json.new bg_targets.json
 grep sensitivity isf.json.new && cp isf.json.new isf.json
 grep rate current_basal_profile.json.new && cp current_basal_profile.json.new current_basal_profile.json
 grep grams carb_ratio.json.new && cp carb_ratio.json.new carb_ratio.json
 
+rm requestedtemp.json*
 openaps suggest || die "Can't calculate IOB or basal"
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
@@ -83,6 +84,7 @@ tail iob.json
 tail requestedtemp.json
 
 #openaps report invoke enactedtemp.json
+find glucose.json -mmin -10 | egrep '.*' && grep glucose glucose.json || die "No recent glucose data"
 grep rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enactedtemp.json
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
@@ -102,8 +104,8 @@ grep rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enact
 echo "Re-querying pump"
 #openaps pumpquery || openaps pumpquery || die "Can't query pump" && git pull && git push
 openaps pumpquery || openaps pumpquery
-grep T clock.json.new && cp clock.json.new clock.json
+find clock.json.new -mmin -10 | egrep '.*' && grep T clock.json.new && cp clock.json.new clock.json
 grep temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
 rm /tmp/openaps.lock
-~/bin/openaps-mongo.sh
+find clock.json -mmin -5 | egrep '.*' && ~/bin/openaps-mongo.sh
