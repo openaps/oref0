@@ -27,6 +27,8 @@ function setTempBasal(rate, duration) {
 
 
 if (!module.parent) {
+    var max_iob = 1; // maximum amount of non-bolus IOB OpenAPS will ever deliver
+
     var iob_input = process.argv.slice(2, 3).pop()
     var temps_input = process.argv.slice(3, 4).pop()
     var glucose_input = process.argv.slice(4, 5).pop()
@@ -135,9 +137,15 @@ if (!module.parent) {
                     }
 
                 } else if (eventualBG > profile_data.max_bg) { // if eventual BG is above target:
+                    // if iob is over max, just cancel any temps
+                    var basal_iob = iob_data.iob - iob_data.bolusiob;
+                    if (basal_iob > max_iob) { setTempBasal(0, 0); }
                     // calculate 30m high-temp required to get projected BG down to target
-                    // additional insulin required to get down to max:
+                    // additional insulin required to get down to max bg:
                     var insulinReq = (target_bg - eventualBG) / profile_data.sens;
+                    // if that would put us over max_iob, then reduce accordingly
+                    insulinReq = Math.min(insulinReq, max_iob-basal_iob);
+
                     // rate required to deliver insulinReq more insulin over 30m:
                     var rate = profile_data.current_basal - (2 * insulinReq);
                     maxSafeBasal = Math.min(profile_data.max_basal, 2 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
