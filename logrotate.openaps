@@ -1,0 +1,7 @@
+/var/log/openaps {
+  rotate 30
+  daily
+  compress
+  missingok
+  notifempty
+}
