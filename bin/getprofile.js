@@ -102,8 +102,8 @@ if (!module.parent) {
     var carbratio_data = require(cwd + '/' + carbratio_input);;
 
     var profile = {        
-          carbs_hr: 28
-        , max_iob: 3
+          carbs_hr: 28 // TODO: verify this is completely unused and consider removing it if so
+        , max_iob: 1 // maximum amount of non-bolus IOB OpenAPS will ever deliver
         , dia: pumpsettings_data.insulin_action_curve        
         , type: "current"
     };

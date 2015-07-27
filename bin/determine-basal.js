@@ -27,7 +27,7 @@ function setTempBasal(rate, duration) {
 
 
 if (!module.parent) {
-    var max_iob = 1; // maximum amount of non-bolus IOB OpenAPS will ever deliver
+    var max_iob = profile.max_iob; // maximum amount of non-bolus IOB OpenAPS will ever deliver
 
     var iob_input = process.argv.slice(2, 3).pop()
     var temps_input = process.argv.slice(3, 4).pop()
