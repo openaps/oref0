@@ -37,8 +37,6 @@ function setTempBasal(rate, duration) {
 
 
 if (!module.parent) {
-    var max_iob = profile.max_iob; // maximum amount of non-bolus IOB OpenAPS will ever deliver
-
     var iob_input = process.argv.slice(2, 3).pop()
     var temps_input = process.argv.slice(3, 4).pop()
     var glucose_input = process.argv.slice(4, 5).pop()
@@ -60,6 +58,8 @@ if (!module.parent) {
         process.exit(1);
     }
     
+    var max_iob = profile_data.max_iob; // maximum amount of non-bolus IOB OpenAPS will ever deliver
+
     // if target_bg is set, great. otherwise, if min and max are set, then set target to their average
     var target_bg;
     if (typeof profile_data.target_bg !== 'undefined') {
