@@ -46,10 +46,10 @@ grep status status.json.new && cp status.json.new status.json
 echo "Querying pump"
 #openaps pumpquery || openaps pumpquery || die "Can't query pump" && git pull && git push
 openaps pumpquery || openaps pumpquery
-grep T clock.json.new && cp clock.json.new clock.json
+find clock.json.new -mmin -10 | egrep '.*' && grep T clock.json.new && cp clock.json.new clock.json
 grep temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
-~/bin/openaps-mongo.sh
+find clock.json -mmin -5 | egrep '.*' && ~/bin/openaps-mongo.sh
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 
@@ -104,8 +104,8 @@ grep rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enact
 echo "Re-querying pump"
 #openaps pumpquery || openaps pumpquery || die "Can't query pump" && git pull && git push
 openaps pumpquery || openaps pumpquery
-grep T clock.json.new && cp clock.json.new clock.json
+find clock.json.new -mmin -10 | egrep '.*' && grep T clock.json.new && cp clock.json.new clock.json
 grep temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
 rm /tmp/openaps.lock
-~/bin/openaps-mongo.sh
+find clock.json -mmin -5 | egrep '.*' && ~/bin/openaps-mongo.sh
