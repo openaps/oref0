@@ -6,11 +6,13 @@ function getLastGlucose(data) {
     var last = data[1];
     var avg;
     //TODO: calculate average using system_time instead of assuming 1 data point every 5m
-    if (typeof data[3] !== 'undefined') {
+    if (typeof data[3] !== 'undefined' && data[3].glucose > 30) {
         avg = ( now.glucose - data[3].glucose) / 3;
-    } else if (typeof data[2] !== 'undefined') {
+    } else if (typeof data[2] !== 'undefined' && data[2].glucose > 30) {
         avg = ( now.glucose - data[2].glucose) / 3;
-    } else { avg = now.glucose - data[1].glucose; }
+    } else if (typeof data[1] !== 'undefined' && data[1].glucose > 30) {
+        avg = now.glucose - data[1].glucose;
+    } else { avg = 0; }
     var o = {
         delta: now.glucose - last.glucose
         , glucose: now.glucose
