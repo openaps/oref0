@@ -75,6 +75,7 @@ grep sensitivity isf.json.new && cp isf.json.new isf.json
 grep rate current_basal_profile.json.new && cp current_basal_profile.json.new current_basal_profile.json
 grep grams carb_ratio.json.new && cp carb_ratio.json.new carb_ratio.json
 
+rm requestedtemp.json*
 openaps suggest || die "Can't calculate IOB or basal"
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
