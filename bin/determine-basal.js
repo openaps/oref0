@@ -9,7 +9,7 @@ function getLastGlucose(data) {
     if (typeof data[3] !== 'undefined' && data[3].glucose > 30) {
         avg = ( now.glucose - data[3].glucose) / 3;
     } else if (typeof data[2] !== 'undefined' && data[2].glucose > 30) {
-        avg = ( now.glucose - data[2].glucose) / 3;
+        avg = ( now.glucose - data[2].glucose) / 2;
     } else if (typeof data[1] !== 'undefined' && data[1].glucose > 30) {
         avg = now.glucose - data[1].glucose;
     } else { avg = 0; }
