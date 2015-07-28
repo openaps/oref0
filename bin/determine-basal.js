@@ -127,7 +127,7 @@ if (!module.parent) {
                 
                 // if BG is rising but eventual BG is below target, or BG is falling but eventual BG is above target,
                 // then cancel any temp basals.
-                if ((glucose_status.delta > 0 && eventualBG < profile_data.min_bg) || (glucose_status.delta < 0 && eventualBG >= profile_data.max_bg)) {
+                if ((glucose_status.delta > 0 && eventualBG < profile_data.min_bg) || (glucose_status.delta < 0 && eventualBG >= profile_data.min_bg)) {
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
                         setTempBasal(0, 0); // cancel temp
                     } else {
