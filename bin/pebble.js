@@ -105,7 +105,7 @@ if (!module.parent) {
         + "Sched: " + basalRate + "U/hr\n"
         + tempstring
         + " at " + pumptime + "\n"
-        + "Req: " + reqtempstring
+        + "Req: " + reqtempstring + "\n"
         + requestedtemp.reason,
         "refresh_frequency": 1
     };
