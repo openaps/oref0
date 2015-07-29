@@ -24,7 +24,7 @@ cd /home/pi/openaps-dev
 
 
 echo "Querying CGM"
-openaps report invoke glucose.json.new || openaps report invoke glucose.json.new 
+openaps report invoke glucose.json.new || openaps report invoke glucose.json.new || share2-bridge file glucose.json.new
 grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
