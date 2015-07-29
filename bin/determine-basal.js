@@ -127,7 +127,7 @@ if (!module.parent) {
                     } else if (temps_data.duration && eventualBG > profile_data.max_bg) { // if low-temped and predicted to go high from negative IOB
                         setTempBasal(0, 0); // cancel low temp
                     } else {
-                        reason = "No action required (" + bg + "<" + threshold + ", and no high-temp to cancel)";
+                        reason = bg + "<" + threshold + "; no high-temp to cancel";
                         console.error(reason);
                                     }
                                 }
@@ -143,14 +143,14 @@ if (!module.parent) {
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
                         setTempBasal(0, 0); // cancel temp
                     } else {
-                        reason = "No action required (" + tick + " and no temp to cancel)";
+                        reason = tick + "; no temp to cancel";
                         console.error(reason);
                     }
         
                 } else if (eventualBG < profile_data.min_bg) { // if eventual BG is below target:
                     // if this is just due to boluses, we can snooze until the bolus IOB decays (at double speed)
                     if (snoozeBG > profile_data.min_bg) { // if adding back in the bolus contribution BG would be above min
-                        reason = "No action required (snoozing for boluses: eventual BG range " + eventualBG + "-" + snoozeBG + ")";
+                        reason = "bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
                         console.error(reason);
                     } else {
                         // calculate 30m low-temp required to get projected BG up to target
@@ -162,7 +162,7 @@ if (!module.parent) {
                         var rate = profile_data.current_basal - (2 * insulinReq);
                         
                         if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate > temps_data.rate - 0.1)) { // if required temp < existing temp basal
-                            reason = "No action required (existing basal " + temps_data.rate + " <~ required temp " + rate.toFixed(3) + " )";
+                            reason = temps_data.rate + "<~" + rate.toFixed(3);
                             console.error(reason);
                         } else {
                             reason = "Eventual BG " + eventualBG + "<" + profile_data.min_bg;
@@ -186,7 +186,7 @@ if (!module.parent) {
                     maxSafeBasal = Math.min(profile_data.max_basal, 2 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
                     if (rate > maxSafeBasal) { rate = maxSafeBasal; }
                     if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate < temps_data.rate + 0.1)) { // if required temp > existing temp basal
-                        reason = "No action required (existing basal " + temps_data.rate + " >~ required temp " + rate.toFixed(3) + " )";
+                        reason = temps_data.rate + ">~" + rate.toFixed(3);
                         console.error(reason);
                     } else {
                         setTempBasal(rate, 30);
