@@ -9,7 +9,7 @@ function getLastGlucose(data) {
     if (typeof data[3] !== 'undefined' && data[3].glucose > 30) {
         avg = ( now.glucose - data[3].glucose) / 3;
     } else if (typeof data[2] !== 'undefined' && data[2].glucose > 30) {
-        avg = ( now.glucose - data[2].glucose) / 3;
+        avg = ( now.glucose - data[2].glucose) / 2;
     } else if (typeof data[1] !== 'undefined' && data[1].glucose > 30) {
         avg = now.glucose - data[1].glucose;
     } else { avg = 0; }
@@ -127,7 +127,7 @@ if (!module.parent) {
                 
                 // if BG is rising but eventual BG is below target, or BG is falling but eventual BG is above target,
                 // then cancel any temp basals.
-                if ((glucose_status.delta > 0 && eventualBG < profile_data.min_bg) || (glucose_status.delta < 0 && eventualBG >= profile_data.max_bg)) {
+                if ((glucose_status.delta > 0 && eventualBG < profile_data.min_bg) || (glucose_status.delta < 0 && eventualBG >= profile_data.min_bg)) {
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
                         setTempBasal(0, 0); // cancel temp
                     } else {
