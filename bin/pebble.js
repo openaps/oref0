@@ -101,11 +101,12 @@ if (!module.parent) {
 
     var pebble = {        
         "content" : "" + bgnow + tick + " " + bgTime + "\n"
-        + "IOB: " + iob + "U->" + eventualBG + "\n"
+        + iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + "\n"
         + "Sched: " + basalRate + "U/hr\n"
         + tempstring
         + " at " + pumptime + "\n"
-        + "Req: " + reqtempstring,
+        + "Req: " + reqtempstring
+        + requestedtemp.reason,
         "refresh_frequency": 1
     };
 
