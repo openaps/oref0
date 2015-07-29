@@ -110,3 +110,4 @@ grep -q temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep -q timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
 rm /tmp/openaps.lock
 find clock.json -mmin -5 | egrep -q '.*' && ~/bin/openaps-mongo.sh
+~/openaps-js/bin/pebble.sh

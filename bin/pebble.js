@@ -57,7 +57,14 @@ if (!module.parent) {
     
     var cwd = process.cwd()
     var glucose_data = require(cwd + '/' + glucose_input);
-    var cgmtime = glucose_data[0].display_time.split("T")[1];
+    var bgTime;
+    if (glucose_data[0].display_time) {
+        bgTime = glucose_data[0].display_time.split("T")[1];
+        //bgTime = new Date(glucose_data[0].display_time.replace('T', ' '));
+    } else if (glucose_data[0].dateString) {
+        bgDate = new Date(glucose_data[0].dateString);
+        bgTime = bgDate.toTimeString().split(' ')[0]
+    } else { console.error("Could not determine last BG time"); }
     var bgnow = glucose_data[0].glucose;
     var delta = bgnow - glucose_data[1].glucose;
     var tick;
@@ -93,7 +100,7 @@ if (!module.parent) {
 
 
     var pebble = {        
-        "content" : "" + bgnow + tick + " " + cgmtime + "\n"
+        "content" : "" + bgnow + tick + " " + bgTime + "\n"
         + "IOB: " + iob + "U->" + eventualBG + "\n"
         + "Sched: " + basalRate + "U/hr\n"
         + tempstring
