@@ -162,7 +162,7 @@ if (!module.parent) {
                         var rate = profile_data.current_basal - (2 * insulinReq);
                         
                         if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate > temps_data.rate - 0.1)) { // if required temp < existing temp basal
-                            reason = "No action required (existing basal " + temps_data.rate + " <~ required temp " + rate + " )";
+                            reason = "No action required (existing basal " + temps_data.rate + " <~ required temp " + rate.toFixed(3) + " )";
                             console.error(reason);
                         } else {
                             reason = "Eventual BG " + eventualBG + "<" + profile_data.min_bg;
@@ -186,7 +186,7 @@ if (!module.parent) {
                     maxSafeBasal = Math.min(profile_data.max_basal, 2 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
                     if (rate > maxSafeBasal) { rate = maxSafeBasal; }
                     if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate < temps_data.rate + 0.1)) { // if required temp > existing temp basal
-                        reason = "No action required (existing basal " + temps_data.rate + " >~ required temp " + rate + " )";
+                        reason = "No action required (existing basal " + temps_data.rate + " >~ required temp " + rate.toFixed(3) + " )";
                         console.error(reason);
                     } else {
                         setTempBasal(rate, 30);
