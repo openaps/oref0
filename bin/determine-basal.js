@@ -100,8 +100,13 @@ if (!module.parent) {
     //if old reading from Dexcom do nothing
     
     var systemTime = new Date();
-    var displayTime = new Date(glucose_data[0].display_time.replace('T', ' '));
-    var minAgo = (systemTime - displayTime) / 60 / 1000
+    var bgTime;
+    if (glucose_data[0].display_time) {
+        bgTime = new Date(glucose_data[0].display_time.replace('T', ' '));
+    } else if (glucose_data[0].dateString) {
+        bgTime = new Date(glucose_data[0].dateString);
+    } else { console.error("Could not determine last BG time"); }
+    var minAgo = (systemTime - bgTime) / 60 / 1000
     var threshold = profile_data.min_bg - 30;
     
     if (minAgo < 10 && minAgo > -5) { // Dexcom data is recent, but not far in the future
