@@ -129,17 +129,17 @@ if (!module.parent) {
                     } else {
                         reason = bg + "<" + threshold + "; no high-temp to cancel";
                         console.error(reason);
-                                    }
-                                }
-                                else { // BG is not yet rising
-                                    setTempBasal(0, 30);
-                                }
-                            
-                            } else {
-                                
-                                // if BG is rising but eventual BG is below target, or BG is falling but eventual BG is above target,
-                                // then cancel any temp basals.
-                                if ((glucose_status.delta > 0 && eventualBG < profile_data.min_bg) || (glucose_status.delta < 0 && eventualBG >= profile_data.min_bg)) {
+                    }
+                }
+                else { // BG is not yet rising
+                    setTempBasal(0, 30);
+                }
+            
+            } else {
+                
+                // if BG is rising but eventual BG is below target, or BG is falling but eventual BG is above target,
+                // then cancel any temp basals.
+                if ((glucose_status.delta > 0 && eventualBG < profile_data.min_bg) || (glucose_status.delta < 0 && eventualBG >= profile_data.min_bg)) {
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
                         setTempBasal(0, 0); // cancel temp
                     } else {
