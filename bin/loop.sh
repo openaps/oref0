@@ -3,6 +3,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 die() { echo "$@" ; exit 1; }
 
+find /tmp/openaps.lock -mmin +5 -exec rm {} \;
+
 # only one process can talk to the pump at a time
 ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exiting" && exit
 
@@ -11,7 +13,6 @@ touch /tmp/openaps.lock
 /home/pi/decocare/insert.sh 2>/dev/null >/dev/null
 python -m decocare.stick $(python -m decocare.scan) >/dev/null && echo "decocare.scan OK" || sudo ~/openaps-js/bin/fix-dead-carelink.sh
 
-find /tmp/openaps.lock -mmin +5 -exec rm {} \;
 find /home/pi/openaps-dev/.git/index.lock -mmin +5 -exec rm {} \;
 
 function finish {
