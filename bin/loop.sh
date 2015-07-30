@@ -9,7 +9,7 @@ ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exi
 echo "No lockfile: continuing"
 touch /tmp/openaps.lock
 /home/pi/decocare/insert.sh 2>/dev/null >/dev/null
-python -m decocare.stick $(python -m decocare.scan) >/dev/null && echo "decocare.scan OK" || ~/openaps-js/bin/fix-dead-carelink.sh
+python -m decocare.stick $(python -m decocare.scan) >/dev/null && echo "decocare.scan OK" || sudo ~/openaps-js/bin/fix-dead-carelink.sh
 
 find /tmp/openaps.lock -mmin +5 -exec rm {} \;
 find /home/pi/openaps-dev/.git/index.lock -mmin +5 -exec rm {} \;
