@@ -57,13 +57,26 @@ if (!module.parent) {
     
     var cwd = process.cwd()
     var glucose_data = require(cwd + '/' + glucose_input);
-    var cgmtime = glucose_data[0].display_time.split("T")[1];
+    var bgTime;
+    if (glucose_data[0].display_time) {
+        bgHHMMSS = glucose_data[0].display_time.split("T")[1];
+        //bgTime = new Date(glucose_data[0].display_time.replace('T', ' '));
+    } else if (glucose_data[0].dateString) {
+        bgDate = new Date(glucose_data[0].dateString);
+        bgHHMMSS = bgDate.toTimeString().split(' ')[0];
+    } else { console.error("Could not determine last BG time"); }
+    bgHH = bgHHMMSS.split(':')[0];
+    bgMM = bgHHMMSS.split(':')[1];
+    bgTime = bgHH + ":" + bgMM;
     var bgnow = glucose_data[0].glucose;
     var delta = bgnow - glucose_data[1].glucose;
     var tick;
     if (delta < 0) { tick = delta; } else { tick = "+" + delta; }
     var clock_data = require(cwd + '/' + clock_input);
-    var pumptime = clock_data.split("T")[1];
+    var pumpHHMMSS = clock_data.split("T")[1];
+    pumpHH = pumpHHMMSS.split(':')[0];
+    pumpMM = pumpHHMMSS.split(':')[1];
+    pumptime = pumpHH + ":" + pumpMM;
     var iob_data = require(cwd + '/' + iob_input);
     iob = iob_data.iob.toFixed(1);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
@@ -93,12 +106,13 @@ if (!module.parent) {
 
 
     var pebble = {        
-        "content" : "" + bgnow + tick + " " + cgmtime + "\n"
-        + "IOB: " + iob + "U->" + eventualBG + "\n"
+        "content" : "" + bgnow + tick + " " + bgTime + "\n"
+        + iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + "\n"
         + "Sched: " + basalRate + "U/hr\n"
         + tempstring
         + " at " + pumptime + "\n"
-        + "Req: " + reqtempstring,
+        + "Req: " + reqtempstring + "\n"
+        + requestedtemp.reason,
         "refresh_frequency": 1
     };
 
