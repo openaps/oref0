@@ -51,7 +51,7 @@ openaps pumpquery || openaps pumpquery
 find clock.json.new -mmin -10 | egrep -q '.*' && grep T clock.json.new && cp clock.json.new clock.json
 grep -q temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep -q timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
-find clock.json -mmin -5 | egrep -q '.*' && ~/bin/openaps-mongo.sh
+find clock.json -mmin -10 | egrep -q '.*' && ~/bin/openaps-mongo.sh
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 
@@ -62,7 +62,7 @@ grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit 
 #git pull && git push
 
 openaps suggest
-find clock.json -mmin -5 | egrep -q '.*' && find glucose.json -mmin -5 | egrep -q '.*' && find pumphistory.json -mmin -5 | egrep -q '.*' && find requestedtemp.json -mmin -5 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
+find clock.json -mmin -10 | egrep -q '.*' && find glucose.json -mmin -10 | egrep -q '.*' && find pumphistory.json -mmin -10 | egrep -q '.*' && find requestedtemp.json -mmin -10 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 
@@ -80,7 +80,7 @@ grep -q grams carb_ratio.json.new && cp carb_ratio.json.new carb_ratio.json
 
 rm requestedtemp.json*
 openaps suggest || die "Can't calculate IOB or basal"
-find clock.json -mmin -5 | egrep -q '.*' && find glucose.json -mmin -5 | egrep -q '.*' && find pumphistory.json -mmin -5 | egrep -q '.*' && find requestedtemp.json -mmin -5 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
+find clock.json -mmin -10 | egrep -q '.*' && find glucose.json -mmin -10 | egrep -q '.*' && find pumphistory.json -mmin -10 | egrep -q '.*' && find requestedtemp.json -mmin -10 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
 #git fetch origin master && git merge -X ours origin/master && git push
 #git pull && git push
 tail profile.json
@@ -112,5 +112,5 @@ find clock.json.new -mmin -10 | egrep -q '.*' && grep T clock.json.new && cp clo
 grep -q temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep -q timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
 rm /tmp/openaps.lock
-find clock.json -mmin -5 | egrep -q '.*' && find glucose.json -mmin -5 | egrep -q '.*' && find pumphistory.json -mmin -5 | egrep -q '.*' && find requestedtemp.json -mmin -5 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
-find clock.json -mmin -5 | egrep -q '.*' && ~/bin/openaps-mongo.sh
+find clock.json -mmin -10 | egrep -q '.*' && find glucose.json -mmin -10 | egrep -q '.*' && find pumphistory.json -mmin -10 | egrep -q '.*' && find requestedtemp.json -mmin -10 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
+find clock.json -mmin -10 | egrep -q '.*' && ~/bin/openaps-mongo.sh
