@@ -15,6 +15,8 @@ python -m decocare.stick $(python -m decocare.scan) >/dev/null && echo "decocare
 
 find /home/pi/openaps-dev/.git/index.lock -mmin +5 -exec rm {} \;
 
+openaps report show || cp ../openaps.ini.bak ./openaps.ini
+
 function finish {
     rm /tmp/openaps.lock
 }
