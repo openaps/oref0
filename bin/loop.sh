@@ -13,7 +13,7 @@ touch /tmp/openaps.lock
 ~/decocare/insert.sh 2>/dev/null >/dev/null
 python -m decocare.stick $(python -m decocare.scan) >/dev/null && echo "decocare.scan OK" || sudo ~/openaps-js/bin/fix-dead-carelink.sh
 
-find ~/openaps-dev/.git/index.lock -mmin +5 -exec rm {} \;
+find ~/openaps-dev/.git/index.lock -mmin +5 -exec rm {} \; > /dev/null
 
 function finish {
     rm /tmp/openaps.lock
