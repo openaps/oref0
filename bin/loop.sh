@@ -24,8 +24,8 @@ trap finish EXIT
 #git fetch --all && ( git pull --ff-only || ( echo "Can't pull ff: resetting" && git reset --hard origin/master ) )
 #git fetch origin master && ( git merge -X theirs origin/master || git reset --hard origin/master )
 
-cd ~/openaps-dev && ( git status || ( mv ~/openaps-dev/.git /tmp/.git-`date +%s`; cd && openaps init openaps-dev && cd openaps-dev ) )
-openaps report show || cp openaps.ini.bak openaps.ini
+cd ~/openaps-dev && ( git status > /dev/null || ( mv ~/openaps-dev/.git /tmp/.git-`date +%s`; cd && openaps init openaps-dev && cd openaps-dev ) )
+openaps report show > /dev/null || cp openaps.ini.bak openaps.ini
 
 
 echo "Querying CGM"
