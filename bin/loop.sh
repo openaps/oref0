@@ -10,21 +10,22 @@ ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exi
 
 echo "No lockfile: continuing"
 touch /tmp/openaps.lock
-/home/pi/decocare/insert.sh 2>/dev/null >/dev/null
+~/decocare/insert.sh 2>/dev/null >/dev/null
 python -m decocare.stick $(python -m decocare.scan) >/dev/null && echo "decocare.scan OK" || sudo ~/openaps-js/bin/fix-dead-carelink.sh
 
-find /home/pi/openaps-dev/.git/index.lock -mmin +5 -exec rm {} \;
-
-openaps report show || cp ../openaps.ini.bak ./openaps.ini
+find ~/openaps-dev/.git/index.lock -mmin +5 -exec rm {} \;
 
 function finish {
     rm /tmp/openaps.lock
 }
 trap finish EXIT
 
-cd /home/pi/openaps-dev
+#cd /home/pi/openaps-dev
 #git fetch --all && ( git pull --ff-only || ( echo "Can't pull ff: resetting" && git reset --hard origin/master ) )
 #git fetch origin master && ( git merge -X theirs origin/master || git reset --hard origin/master )
+
+cd ~/openaps-dev && ( git status || ( mv ~/openaps-dev/.git /tmp/.git-`date +%s`; cd && openaps init openaps-dev && cd openaps-dev ) )
+openaps report show || cp openaps.ini.bak openaps.ini
 
 
 echo "Querying CGM"
