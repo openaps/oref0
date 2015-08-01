@@ -142,7 +142,7 @@ if (!module.parent) {
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
                         // if it's a low-temp and eventualBG < profile_data.max_bg, let it run a bit longer
                         if (temps_data.rate < profile_data.current_basal && eventualBG < profile_data.max_bg) {
-                            reason = temps_data.rate + "<" + profile_data.current_basal + "&" + eventualBG + "<" + profile_data.max_bg;
+                            reason = tick + " but " + eventualBG + "<" + profile_data.max_bg;
                             console.error(reason);
                         } else {
                             setTempBasal(0, 0); // cancel temp
