@@ -14,7 +14,7 @@ function getTime(minutes) {
 
 function basalLookup() {
     var now = new Date();
-    basalRate = basalprofile_data[basalprofile_data.length-1].rate
+    basalRate = Math.round(basalprofile_data[basalprofile_data.length-1].rate*100)/100
     
     for (var i = 0; i < basalprofile_data.length - 1; i++) {
         if ((now >= getTime(basalprofile_data[i].minutes)) && (now < getTime(basalprofile_data[i + 1].minutes))) {
@@ -108,7 +108,7 @@ if (!module.parent) {
     var pebble = {        
         "content" : "" + bgnow + tick + " " + bgTime + "\n"
         + iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + "\n"
-        + "Sched: " + basalRate.toFixed(2) + "U/hr\n"
+        + "Sched: " + basalRate + "U/hr\n"
         + tempstring
         + " at " + pumptime + "\n"
         + "Req: " + reqtempstring + "\n"
