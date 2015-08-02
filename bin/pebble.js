@@ -108,7 +108,7 @@ if (!module.parent) {
     var pebble = {        
         "content" : "" + bgnow + tick + " " + bgTime + "\n"
         + iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + "\n"
-        + "Sched: " + basalRate + "U/hr\n"
+        + "Sched: " + basalRate.toFixed(2) + "U/hr\n"
         + tempstring
         + " at " + pumptime + "\n"
         + "Req: " + reqtempstring + "\n"
