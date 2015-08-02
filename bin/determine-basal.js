@@ -25,7 +25,7 @@ function getLastGlucose(data) {
 
 function setTempBasal(rate, duration) {
     
-    maxSafeBasal = Math.min(profile_data.max_basal, 2 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
+    maxSafeBasal = Math.min(profile_data.max_basal, 3 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
     
     if (rate < 0) { rate = 0; } // if >30m @ 0 required, zero temp will be extended to 30m instead
     else if (rate > maxSafeBasal) { rate = maxSafeBasal; }
