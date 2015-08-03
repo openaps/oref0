@@ -57,6 +57,8 @@ if (!module.parent) {
         console.error('Error: could not get current basal rate');
         process.exit(1);
     }
+
+    profile_data.current_basal = Math.round(profile_data.current_basal*1000)/1000;
     
     var max_iob = profile_data.max_iob; // maximum amount of non-bolus IOB OpenAPS will ever deliver
 
