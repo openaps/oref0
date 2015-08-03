@@ -155,8 +155,17 @@ if (!module.parent) {
                 } else if (eventualBG < profile_data.min_bg) { // if eventual BG is below target:
                     // if this is just due to boluses, we can snooze until the bolus IOB decays (at double speed)
                     if (snoozeBG > profile_data.min_bg) { // if adding back in the bolus contribution BG would be above min
-                        reason = "bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
-                        console.error(reason);
+                        // if BG is falling and high-temped, or rising and low-temped, cancel
+                        if (glucose_status.delta < 0 && temps_data.rate > profile_data.current_basal) {
+                            reason = tick + " and " + temps_data.rate + ">" + profile_data.current_basal;
+                            setTempBasal(0, 0); // cancel temp
+                        } else if (glucose_status.delta > 0 && temps_data.rate < profile_data.current_basal) {
+                            reason = tick + " and " + temps_data.rate + "<" + profile_data.current_basal;
+                            setTempBasal(0, 0); // cancel temp
+                        } else {
+                            reason = "bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
+                            console.error(reason);
+                        }
                     } else {
                         // calculate 30m low-temp required to get projected BG up to target
                         // negative insulin required to get up to min:
