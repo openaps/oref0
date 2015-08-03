@@ -142,9 +142,10 @@ if (!module.parent) {
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
                         // if it's a low-temp and eventualBG < profile_data.max_bg, let it run a bit longer
                         if (temps_data.rate < profile_data.current_basal && eventualBG < profile_data.max_bg) {
-                            reason = tick + " but " + eventualBG + "<" + profile_data.max_bg;
+                            reason = "BG" + tick + " but " + eventualBG + "<" + profile_data.max_bg;
                             console.error(reason);
                         } else {
+                            reason = glucose_status.delta + " and " + eventualBG;
                             setTempBasal(0, 0); // cancel temp
                         }
                     } else {
@@ -188,7 +189,10 @@ if (!module.parent) {
                 } else if (eventualBG > profile_data.max_bg) { // if eventual BG is above target:
                     // if iob is over max, just cancel any temps
                     var basal_iob = iob_data.iob - iob_data.bolusiob;
-                    if (basal_iob > max_iob) { setTempBasal(0, 0); }
+                    if (basal_iob > max_iob) {
+                        reason = basal_iob + ">" + max_iob;
+                        setTempBasal(0, 0);
+                    }
                     // calculate 30m high-temp required to get projected BG down to target
                     // additional insulin required to get down to max bg:
                     var insulinReq = (target_bg - eventualBG) / profile_data.sens;
