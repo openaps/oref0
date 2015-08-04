@@ -25,7 +25,7 @@ function getLastGlucose(data) {
 
 function setTempBasal(rate, duration) {
     
-    maxSafeBasal = Math.min(profile_data.max_basal, 2 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
+    maxSafeBasal = Math.min(profile_data.max_basal, 3 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
     
     if (rate < 0) { rate = 0; } // if >30m @ 0 required, zero temp will be extended to 30m instead
     else if (rate > maxSafeBasal) { rate = maxSafeBasal; }
@@ -57,7 +57,7 @@ if (!module.parent) {
         console.error('Error: could not get current basal rate');
         process.exit(1);
     }
-    
+
     var max_iob = profile_data.max_iob; // maximum amount of non-bolus IOB OpenAPS will ever deliver
 
     // if target_bg is set, great. otherwise, if min and max are set, then set target to their average
@@ -142,9 +142,10 @@ if (!module.parent) {
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
                         // if it's a low-temp and eventualBG < profile_data.max_bg, let it run a bit longer
                         if (temps_data.rate < profile_data.current_basal && eventualBG < profile_data.max_bg) {
-                            reason = temps_data.rate + "<" + profile_data.current_basal + "&" + eventualBG + "<" + profile_data.max_bg;
+                            reason = "BG" + tick + " but " + eventualBG + "<" + profile_data.max_bg;
                             console.error(reason);
                         } else {
+                            reason = glucose_status.delta + " and " + eventualBG;
                             setTempBasal(0, 0); // cancel temp
                         }
                     } else {
@@ -155,8 +156,17 @@ if (!module.parent) {
                 } else if (eventualBG < profile_data.min_bg) { // if eventual BG is below target:
                     // if this is just due to boluses, we can snooze until the bolus IOB decays (at double speed)
                     if (snoozeBG > profile_data.min_bg) { // if adding back in the bolus contribution BG would be above min
-                        reason = "bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
-                        console.error(reason);
+                        // if BG is falling and high-temped, or rising and low-temped, cancel
+                        if (glucose_status.delta < 0 && temps_data.rate > profile_data.current_basal) {
+                            reason = tick + " and " + temps_data.rate + ">" + profile_data.current_basal;
+                            setTempBasal(0, 0); // cancel temp
+                        } else if (glucose_status.delta > 0 && temps_data.rate < profile_data.current_basal) {
+                            reason = tick + " and " + temps_data.rate + "<" + profile_data.current_basal;
+                            setTempBasal(0, 0); // cancel temp
+                        } else {
+                            reason = "bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
+                            console.error(reason);
+                        }
                     } else {
                         // calculate 30m low-temp required to get projected BG up to target
                         // negative insulin required to get up to min:
@@ -165,8 +175,8 @@ if (!module.parent) {
                         var insulinReq = Math.max(0, (target_bg - snoozeBG) / profile_data.sens);
                         // rate required to deliver insulinReq less insulin over 30m:
                         var rate = profile_data.current_basal - (2 * insulinReq);
-                        
-                        if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate > temps_data.rate - 0.1)) { // if required temp < existing temp basal
+                        // if required temp < existing temp basal
+                        if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate > temps_data.rate - 0.1)) {
                             reason = temps_data.rate + "<~" + rate.toFixed(3);
                             console.error(reason);
                         } else {
@@ -179,7 +189,10 @@ if (!module.parent) {
                 } else if (eventualBG > profile_data.max_bg) { // if eventual BG is above target:
                     // if iob is over max, just cancel any temps
                     var basal_iob = iob_data.iob - iob_data.bolusiob;
-                    if (basal_iob > max_iob) { setTempBasal(0, 0); }
+                    if (basal_iob > max_iob) {
+                        reason = basal_iob + ">" + max_iob;
+                        setTempBasal(0, 0);
+                    }
                     // calculate 30m high-temp required to get projected BG down to target
                     // additional insulin required to get down to max bg:
                     var insulinReq = (target_bg - eventualBG) / profile_data.sens;

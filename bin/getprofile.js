@@ -22,7 +22,7 @@ function basalLookup() {
             break;
         }
     }
-    profile.current_basal= basalRate;
+    profile.current_basal= Math.round(basalRate*1000)/1000;
 }
 
 function bgTargetsLookup(){
