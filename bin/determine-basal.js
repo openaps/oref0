@@ -212,7 +212,7 @@ if (!module.parent) {
     }
 
 // if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
-if (!temps_data.rate && !temps_data.duration && !requestedTemp.rate) {
+if ((!temps_data.rate || !temps_data.duration) && !requestedTemp.rate) {
     setTempBasal(profile_data.current_basal, 30);
     reason = reason + "; setting current basal of " + profile_data.current_basal + " as temp";
 }
