@@ -221,8 +221,12 @@ if (!module.parent) {
                     }
         
                 } else { 
-                    reason = eventualBG + " is in range. No action required.";
-                    console.error(reason);
+                    reason = eventualBG + " is in range. No temp required.";
+                    if (temps_data.duration > 0) { // if there is currently any temp basal running
+                        setTempBasal(0, 0); // cancel temp
+                    } else {
+                        console.error(reason);
+                    }
                 }
             }
             // if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
