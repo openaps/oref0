@@ -141,7 +141,7 @@ if (!module.parent) {
                 if ((glucose_status.delta > 0 && eventualBG < profile_data.min_bg) || (glucose_status.delta < 0 && eventualBG >= profile_data.min_bg)) {
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
                         // if it's a low-temp and eventualBG < profile_data.max_bg, let it run a bit longer
-                        if (temps_data.rate < profile_data.current_basal && eventualBG < profile_data.max_bg) {
+                        if (temps_data.rate <= profile_data.current_basal && eventualBG < profile_data.max_bg) {
                             reason = "BG" + tick + " but " + eventualBG + "<" + profile_data.max_bg;
                             console.error(reason);
                         } else {
@@ -223,6 +223,12 @@ if (!module.parent) {
         reason = "BG data is too old";
         console.error(reason);
     }
+
+// if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
+if ((!temps_data.rate || !temps_data.duration) && !requestedTemp.rate) {
+    setTempBasal(profile_data.current_basal, 30);
+    reason = reason + "; setting current basal of " + profile_data.current_basal + " as temp";
+}
 
 requestedTemp.reason = reason;    
 console.log(JSON.stringify(requestedTemp));
