@@ -203,8 +203,11 @@ if (!module.parent) {
                     // rate required to deliver insulinReq more insulin over 30m:
                     var rate = profile_data.current_basal + (2 * insulinReq);
                     maxSafeBasal = Math.min(profile_data.max_basal, 3 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
-                    if (rate > maxSafeBasal) { rate = maxSafeBasal; }
-                    var insulinScheduled = temps_data.duration * temps_data.rate / 60;
+                    if (rate > maxSafeBasal) {
+                        rate = maxSafeBasal;
+                        //console.error(maxSafeBasal);
+                    }
+                    var insulinScheduled = temps_data.duration * (profile_data.current_basal-temps_data.rate) / 60;
                     if (insulinScheduled > insulinReq) { // if current temp would deliver more than the required insulin, lower the rate
                         reason = temps_data.duration + "@" + temps_data.rate + ">" + insulinReq + "U";
                         setTempBasal(rate, 30);
@@ -213,6 +216,7 @@ if (!module.parent) {
                         reason = temps_data.rate + ">~" + rate;
                         console.error(reason);
                     } else { // required temp > existing temp basal
+                        reason = temps_data.rate + "<" + rate;
                         setTempBasal(rate, 30);
                     }
         
