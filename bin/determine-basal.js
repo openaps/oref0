@@ -181,7 +181,7 @@ if (!module.parent) {
                             console.error(reason);
                         } else {
                             reason = "Eventual BG " + eventualBG + "<" + profile_data.min_bg;
-                            console.error(reason);
+                            //console.error(reason);
                             setTempBasal(rate, 30);
                         }
                     }
@@ -231,8 +231,8 @@ if (!module.parent) {
             }
             // if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
             if ((!temps_data.duration || (temps_data.rate == profile_data.current_basal)) && !requestedTemp.duration) {
-                setTempBasal(profile_data.current_basal, 30);
                 reason = reason + "; setting current basal of " + profile_data.current_basal + " as temp";
+                setTempBasal(profile_data.current_basal, 30);
             }
         }  else {
             reason = "CGM is calibrating or in ??? state";
