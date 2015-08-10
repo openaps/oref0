@@ -211,6 +211,11 @@ if (!module.parent) {
         console.error(reason);
     }
 
+// if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
+if (!temps_data.rate && !requestedTemp.rate) {
+    setTempBasal(profile_data.current_basal, 30);
+}
+
 requestedTemp.reason = reason;    
 console.log(JSON.stringify(requestedTemp));
 }
