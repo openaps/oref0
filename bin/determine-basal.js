@@ -209,9 +209,9 @@ if (!module.parent) {
                         rate = maxSafeBasal;
                         //console.error(maxSafeBasal);
                     }
-                    var insulinScheduled = temps_data.duration * (profile_data.current_basal-temps_data.rate) / 60;
+                    var insulinScheduled = temps_data.duration * (temps_data.rate - profile_data.current_basal) / 60;
                     if (insulinScheduled > insulinReq) { // if current temp would deliver more than the required insulin, lower the rate
-                        reason = temps_data.duration + "@" + temps_data.rate + ">" + insulinReq + "U";
+                        reason = temps_data.duration + "@" + temps_data.rate + " > " + insulinReq + "U";
                         setTempBasal(rate, 30);
                     }
                     else if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate < temps_data.rate + 0.1)) { // if required temp < existing temp basal
