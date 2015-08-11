@@ -82,6 +82,7 @@ grep -q '"start": "00:00:00",' bg_targets.json.new || die "Couldn't find first B
 grep -q '"sensitivity": 0,' isf.json.new && die "Sensitivity of 0 makes no sense: bailing"
 grep -q '"units": null,' carb_ratio.json.new && die "null units for carb ratio: bailing"
 grep -q '"rate": 0.0' current_basal_profile.json.new && die "basal rates < 0.1U/hr not supported: bailing"
+grep -q '"insulin_action_curve": 0' pump_settings.json.new && die "DIA of 0 makes no sense: bailing"
 grep -q insulin_action_curve pump_settings.json.new && cp pump_settings.json.new pump_settings.json
 grep -q "mg/dL" bg_targets.json.new && cp bg_targets.json.new bg_targets.json
 grep -q sensitivity isf.json.new && cp isf.json.new isf.json
