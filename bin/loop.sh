@@ -70,10 +70,12 @@ openaps pumpquery || openaps pumpquery
 find clock.json.new -mmin -10 | egrep -q '.*' && grep T clock.json.new && cp clock.json.new clock.json
 grep -q temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep -q timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
-#rm /tmp/openaps.lock
+rm /tmp/openaps.lock
 find clock.json -mmin -10 | egrep -q '.*' && find glucose.json -mmin -10 | egrep -q '.*' && find pumphistory.json -mmin -10 | egrep -q '.*' && find requestedtemp.json -mmin -10 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
 find clock.json -mmin -10 | egrep -q '.*' && ~/bin/openaps-mongo.sh
 
+ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exiting" && exit
+touch /tmp/openaps.lock
 echo "Querying pump settings"
 openaps pumpsettings || openaps pumpsettings # || die "Can't query pump settings" # && git pull && git push
 grep -q '"start": "00:00:00",' carb_ratio.json.new || die "Couldn't find first carb ratio schedule entry: bailing"
