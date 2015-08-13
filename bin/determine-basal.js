@@ -121,7 +121,7 @@ if (!module.parent) {
     var threshold = profile_data.min_bg - 30;
     var reason="";
     
-    if (minAgo < 10 && minAgo > -5) { // Dexcom data is recent, but not far in the future
+    //if (minAgo < 10 && minAgo > -5) { // Dexcom data is recent, but not far in the future
         
         if (bg > 10) {  //Dexcom is in ??? mode or calibrating, do nothing. Asked @benwest for raw data in iter_glucose
             
@@ -247,10 +247,10 @@ if (!module.parent) {
             reason = "CGM is calibrating or in ??? state";
             console.error(reason);
         }
-    } else {
-        reason = "BG data is too old";
-        console.error(reason);
-    }
+    //} else {
+        //reason = "BG data is too old";
+        //console.error(reason);
+    //}
 
 
 requestedTemp.reason = reason;    
