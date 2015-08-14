@@ -49,6 +49,7 @@ echo "Querying CGM"
 openaps report invoke glucose.json.new || openaps report invoke glucose.json.new || share2-bridge file glucose.json.new
 grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
 
+~/openaps-js/bin/clockset.sh
 openaps suggest
 find clock.json -mmin -10 | egrep -q '.*' && find glucose.json -mmin -10 | egrep -q '.*' && find pumphistory.json -mmin -10 | egrep -q '.*' && find requestedtemp.json -mmin -10 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
 
