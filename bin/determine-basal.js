@@ -30,6 +30,13 @@ function setTempBasal(rate, duration) {
     if (rate < 0) { rate = 0; } // if >30m @ 0 required, zero temp will be extended to 30m instead
     else if (rate > maxSafeBasal) { rate = maxSafeBasal; }
     
+    // rather than canceling temps, always set the current basal as a 30m temp
+    // so we can see on the pump that openaps is working
+    if (duration == 0) {
+        rate = profile_data.current_basal;
+        duration  = 30;
+    }
+
     requestedTemp.duration = duration;
     requestedTemp.rate = Math.round( rate * 1000 ) / 1000;
     
@@ -141,7 +148,7 @@ if (!module.parent) {
                 if ((glucose_status.delta > 0 && eventualBG < profile_data.min_bg) || (glucose_status.delta < 0 && eventualBG >= profile_data.min_bg)) {
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
                         // if it's a low-temp and eventualBG < profile_data.max_bg, let it run a bit longer
-                        if (temps_data.rate < profile_data.current_basal && eventualBG < profile_data.max_bg) {
+                        if (temps_data.rate <= profile_data.current_basal && eventualBG < profile_data.max_bg) {
                             reason = "BG" + tick + " but " + eventualBG + "<" + profile_data.max_bg;
                             console.error(reason);
                         } else {
@@ -172,16 +179,17 @@ if (!module.parent) {
                         // negative insulin required to get up to min:
                         //var insulinReq = Math.max(0, (target_bg - eventualBG) / profile_data.sens);
                         // use snoozeBG instead of eventualBG to more gradually ramp in any counteraction of the user's boluses
-                        var insulinReq = Math.max(0, (target_bg - snoozeBG) / profile_data.sens);
+                        var insulinReq = Math.min(0, (snoozeBG - target_bg) / profile_data.sens);
                         // rate required to deliver insulinReq less insulin over 30m:
-                        var rate = profile_data.current_basal - (2 * insulinReq);
+                        var rate = profile_data.current_basal + (2 * insulinReq);
+                        rate = Math.round( rate * 1000 ) / 1000;
                         // if required temp < existing temp basal
                         if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate > temps_data.rate - 0.1)) {
-                            reason = temps_data.rate + "<~" + rate.toFixed(3);
+                            reason = temps_data.rate + "<~" + rate;
                             console.error(reason);
                         } else {
                             reason = "Eventual BG " + eventualBG + "<" + profile_data.min_bg;
-                            console.error(reason);
+                            //console.error(reason);
                             setTempBasal(rate, 30);
                         }
                     }
@@ -195,25 +203,45 @@ if (!module.parent) {
                     }
                     // calculate 30m high-temp required to get projected BG down to target
                     // additional insulin required to get down to max bg:
-                    var insulinReq = (target_bg - eventualBG) / profile_data.sens;
+                    var insulinReq = (eventualBG - target_bg) / profile_data.sens;
+                    //TODO: verify this is working
                     // if that would put us over max_iob, then reduce accordingly
                     insulinReq = Math.min(insulinReq, max_iob-basal_iob);
 
                     // rate required to deliver insulinReq more insulin over 30m:
-                    var rate = profile_data.current_basal - (2 * insulinReq);
-                    maxSafeBasal = Math.min(profile_data.max_basal, 2 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
-                    if (rate > maxSafeBasal) { rate = maxSafeBasal; }
-                    if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate < temps_data.rate + 0.1)) { // if required temp > existing temp basal
-                        reason = temps_data.rate + ">~" + rate.toFixed(3);
+                    var rate = profile_data.current_basal + (2 * insulinReq);
+                    rate = Math.round( rate * 1000 ) / 1000;
+                    maxSafeBasal = Math.min(profile_data.max_basal, 3 * profile_data.max_daily_basal, 4 * profile_data.current_basal);
+                    if (rate > maxSafeBasal) {
+                        rate = maxSafeBasal;
+                        //console.error(maxSafeBasal);
+                    }
+                    var insulinScheduled = temps_data.duration * (temps_data.rate - profile_data.current_basal) / 60;
+                    if (insulinScheduled > insulinReq) { // if current temp would deliver more than the required insulin, lower the rate
+                        reason = temps_data.duration + "@" + temps_data.rate + " > " + insulinReq + "U";
+                        setTempBasal(rate, 30);
+                    }
+                    else if (typeof temps_data.rate !== 'undefined' && (temps_data.duration > 0 && rate < temps_data.rate + 0.1)) { // if required temp < existing temp basal
+                        reason = temps_data.rate + ">~" + rate;
                         console.error(reason);
-                    } else {
+                    } else { // required temp > existing temp basal
+                        reason = temps_data.rate + "<" + rate;
                         setTempBasal(rate, 30);
                     }
         
                 } else { 
-                    reason = eventualBG + " is in range. No action required.";
-                    console.error(reason);
+                    reason = eventualBG + " is in range. No temp required.";
+                    if (temps_data.duration > 0) { // if there is currently any temp basal running
+                        setTempBasal(0, 0); // cancel temp
+                    } else {
+                        console.error(reason);
+                    }
                 }
+            }
+            // if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
+            if ((!temps_data.duration || (temps_data.rate == profile_data.current_basal)) && !requestedTemp.duration) {
+                reason = reason + "; setting current basal of " + profile_data.current_basal + " as temp";
+                setTempBasal(profile_data.current_basal, 30);
             }
         }  else {
             reason = "CGM is calibrating or in ??? state";
@@ -223,6 +251,7 @@ if (!module.parent) {
         reason = "BG data is too old";
         console.error(reason);
     }
+
 
 requestedTemp.reason = reason;    
 console.log(JSON.stringify(requestedTemp));

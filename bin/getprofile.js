@@ -71,7 +71,7 @@ function isfLookup() {
 
 function maxDailyBasal(){
     basalprofile_data.sort(function (a, b) { return a.rate < b.rate });
-    profile.max_daily_basal = basalprofile_data[0].rate;
+    profile.max_daily_basal = Math.round( basalprofile_data[0].rate *1000)/1000;
 }
 
 /*Return maximum daily basal rate(U / hr) from profile.basals */
