@@ -52,7 +52,10 @@ querypump() {
 # try to upload pumphistory data
 upload() { findclock && ~/bin/openaps-mongo.sh && touch /tmp/openaps.online; }
 # if we haven't uploaded successfully in 10m, use offline mode (if no temp running, set current basal as temp to show the loop is working)
-suggest() { find /tmp/openaps.online -mmin -10 | egrep -q '.*' && openaps suggest || openaps suggest-offline; }
+suggest() {
+    openaps suggest
+    find /tmp/openaps.online -mmin -10 | egrep -q '.*' && cp requestedtemp.online.json requestedtemp.json || cp requestedtemp.offline.json requestedtemp.json
+}
 # get updated pump settings (basal schedules, targets, ISF, etc.)
 getpumpsettings() { ~/openaps-js/bin/pumpsettings.sh; }
 
