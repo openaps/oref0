@@ -20,6 +20,14 @@ function finish {
 }
 trap finish EXIT
 
+suggest() { find /tmp/openaps.online -mmin -10 | egrep -q '.*' && openaps suggest || openaps suggest-offline; }
+
+findclock() { find clock.json -mmin -10 | egrep -q '.*'; }
+findclocknew() { find clock.json.new -mmin -10 | egrep -q '.*'; }
+findglucose() { find glucose.json -mmin -10 | egrep -q '.*'; }
+findpumphistory() { find pumphistory.json -mmin -10 | egrep -q '.*'; }
+findrequestedtemp() { find requestedtemp.json -mmin -10 | egrep -q '.*'; }
+
 cd ~/openaps-dev && ( git status > /dev/null || ( mv ~/openaps-dev/.git /tmp/.git-`date +%s`; cd && openaps init openaps-dev && cd openaps-dev ) )
 openaps report show > /dev/null || cp openaps.ini.bak openaps.ini
 
@@ -40,40 +48,40 @@ openaps status
 grep -q status status.json.new && cp status.json.new status.json
 echo "Querying pump"
 openaps pumpquery || openaps pumpquery
-find clock.json.new -mmin -10 | egrep -q '.*' && grep T clock.json.new && cp clock.json.new clock.json
+findclocknew && grep T clock.json.new && cp clock.json.new clock.json
 grep -q temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep -q timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
-find clock.json -mmin -10 | egrep -q '.*' && ~/bin/openaps-mongo.sh
+findclock && ~/bin/openaps-mongo.sh
 
 echo "Querying CGM"
 openaps report invoke glucose.json.new || openaps report invoke glucose.json.new || share2-bridge file glucose.json.new
 grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
 
 ~/openaps-js/bin/clockset.sh
-openaps suggest
-find clock.json -mmin -10 | egrep -q '.*' && find glucose.json -mmin -10 | egrep -q '.*' && find pumphistory.json -mmin -10 | egrep -q '.*' && find requestedtemp.json -mmin -10 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
+suggest
+findclock && findglucose && findpumphistory && findrequestedtemp && ~/openaps-js/bin/pebble.sh
 
 tail clock.json
 tail currenttemp.json
 
 rm requestedtemp.json*
-openaps suggest || ( ~/openaps-js/bin/pumpsettings.sh && openaps suggest ) || die "Can't calculate IOB or basal"
-find clock.json -mmin -10 | egrep -q '.*' && find glucose.json -mmin -10 | egrep -q '.*' && find pumphistory.json -mmin -10 | egrep -q '.*' && find requestedtemp.json -mmin -10 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
+suggest || ( ~/openaps-js/bin/pumpsettings.sh && suggest ) || die "Can't calculate IOB or basal"
+findclock && findglucose && findpumphistory && findrequestedtemp && ~/openaps-js/bin/pebble.sh
 tail profile.json
 tail iob.json
 tail requestedtemp.json
 
-find glucose.json -mmin -10 | egrep -q '.*' && grep -q glucose glucose.json || die "No recent glucose data"
+findglucose && grep -q glucose glucose.json || die "No recent glucose data"
 grep -q rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enactedtemp.json
 
 echo "Re-querying pump"
 openaps pumpquery || openaps pumpquery
-find clock.json.new -mmin -10 | egrep -q '.*' && grep T clock.json.new && cp clock.json.new clock.json
+findclockq '.*' && grep T clock.json.new && cp clock.json.new clock.json
 grep -q temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep -q timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
 rm /tmp/openaps.lock
-find clock.json -mmin -10 | egrep -q '.*' && find glucose.json -mmin -10 | egrep -q '.*' && find pumphistory.json -mmin -10 | egrep -q '.*' && find requestedtemp.json -mmin -10 | egrep -q '.*' && ~/openaps-js/bin/pebble.sh
-find clock.json -mmin -10 | egrep -q '.*' && ~/bin/openaps-mongo.sh
+findclock && findglucose && findpumphistory && findrequestedtemp && ~/openaps-js/bin/pebble.sh
+findclock && ~/bin/openaps-mongo.sh && touch /tmp/openaps.online
 
 ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exiting" && exit
 touch /tmp/openaps.lock
