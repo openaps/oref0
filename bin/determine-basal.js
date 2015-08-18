@@ -47,9 +47,10 @@ if (!module.parent) {
     var temps_input = process.argv.slice(3, 4).pop()
     var glucose_input = process.argv.slice(4, 5).pop()
     var profile_input = process.argv.slice(5, 6).pop()
-    
+    var offline_input = process.argv.slice(6, 7).pop()
+
     if (!iob_input || !temps_input || !glucose_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <current-temps.json> <glucose.json> <profile.json>');
+        console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <current-temps.json> <glucose.json> <profile.json> [Offline]');
         process.exit(1);
     }
     
@@ -237,10 +238,13 @@ if (!module.parent) {
                     }
                 }
             }
-            // if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
-            if ((!temps_data.duration || (temps_data.rate == profile_data.current_basal)) && !requestedTemp.duration) {
-                reason = reason + "; setting current basal of " + profile_data.current_basal + " as temp";
-                setTempBasal(profile_data.current_basal, 30);
+            
+            if (offline_input == 'Offline') {
+                // if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
+                if ((!temps_data.duration || (temps_data.rate == profile_data.current_basal)) && !requestedTemp.duration) {
+                    reason = reason + "; setting current basal of " + profile_data.current_basal + " as temp";
+                    setTempBasal(profile_data.current_basal, 30);
+                }
             }
         }  else {
             reason = "CGM is calibrating or in ??? state";
@@ -255,6 +259,3 @@ if (!module.parent) {
 requestedTemp.reason = reason;    
 console.log(JSON.stringify(requestedTemp));
 }
-
-
-
