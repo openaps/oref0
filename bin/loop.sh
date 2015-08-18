@@ -21,6 +21,11 @@ function finish {
 trap finish EXIT
 
 suggest() { find /tmp/openaps.online -mmin -10 | egrep -q '.*' && openaps suggest || openaps suggest-offline; }
+getglucose() {
+    echo "Querying CGM"
+    openaps report invoke glucose.json.new || openaps report invoke glucose.json.new || share2-bridge file glucose.json.new
+    grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
+}
 
 findclock() { find clock.json -mmin -10 | egrep -q '.*'; }
 findclocknew() { find clock.json.new -mmin -10 | egrep -q '.*'; }
@@ -32,15 +37,13 @@ cd ~/openaps-dev && ( git status > /dev/null || ( mv ~/openaps-dev/.git /tmp/.gi
 openaps report show > /dev/null || cp openaps.ini.bak openaps.ini
 
 
-echo "Querying CGM"
-openaps report invoke glucose.json.new || openaps report invoke glucose.json.new || share2-bridge file glucose.json.new
-grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
+getglucose
 head -15 glucose.json
 
 
 numprocs=$(fuser -n file $(python -m decocare.scan) 2>&1 | wc -l)
 if [[ $numprocs -gt 0 ]] ; then
-  die "Carelink USB already in use."
+  die "Carelink USB already in use or not available."
 fi
 
 echo "Checking pump status"
@@ -53,9 +56,7 @@ grep -q temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep -q timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
 findclock && ~/bin/openaps-mongo.sh && touch /tmp/openaps.online
 
-echo "Querying CGM"
-openaps report invoke glucose.json.new || openaps report invoke glucose.json.new || share2-bridge file glucose.json.new
-grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
+getglucose
 
 ~/openaps-js/bin/clockset.sh
 suggest
@@ -76,7 +77,7 @@ grep -q rate requestedtemp.json && ( openaps enact || openaps enact ) && tail en
 
 echo "Re-querying pump"
 openaps pumpquery || openaps pumpquery
-findclockq '.*' && grep T clock.json.new && cp clock.json.new clock.json
+findclock '.*' && grep T clock.json.new && cp clock.json.new clock.json
 grep -q temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep -q timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
 rm /tmp/openaps.lock
