@@ -1,7 +1,7 @@
 #!/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# die() { echo "$@" ; exit 1; }
+die() { echo "$@" ; exit 1; }
 
 # find /tmp/openaps.lock -mmin +10 -exec rm {} \; 2>/dev/null > /dev/null
 
