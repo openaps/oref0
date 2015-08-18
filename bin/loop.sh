@@ -51,7 +51,7 @@ openaps pumpquery || openaps pumpquery
 findclocknew && grep T clock.json.new && cp clock.json.new clock.json
 grep -q temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
 grep -q timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
-findclock && ~/bin/openaps-mongo.sh
+findclock && ~/bin/openaps-mongo.sh && touch /tmp/openaps.online
 
 echo "Querying CGM"
 openaps report invoke glucose.json.new || openaps report invoke glucose.json.new || share2-bridge file glucose.json.new
