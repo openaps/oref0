@@ -32,7 +32,7 @@ trap finish EXIT
 # get glucose data, either from attached CGM or from Share
 getglucose() {
     echo "Querying CGM"
-    openaps report invoke glucose.json.new || openaps report invoke glucose.json.new || share2-bridge file glucose.json.new
+    ( ( openaps report invoke glucose.json.new || openaps report invoke glucose.json.new ) && grep -v '"glucose": 5' glucose.json.new | grep glucose ) || share2-bridge file glucose.json.new
     grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
 }
 # get pump status (suspended, etc.)
