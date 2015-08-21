@@ -50,7 +50,7 @@ querypump() {
     upload
 }
 # try to upload pumphistory data
-upload() { findclock && ~/bin/openaps-mongo.sh && touch /tmp/openaps.online; }
+upload() { findpumphistory && ~/bin/openaps-mongo.sh && touch /tmp/openaps.online; }
 # if we haven't uploaded successfully in 10m, use offline mode (if no temp running, set current basal as temp to show the loop is working)
 suggest() {
     openaps suggest
