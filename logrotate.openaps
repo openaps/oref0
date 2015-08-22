@@ -1,7 +1,9 @@
-/var/log/openaps {
+/var/log/openaps/loop.log {
   rotate 30
   daily
+  size 10M
   compress
+  delaycompress
   missingok
   notifempty
 }
