@@ -33,20 +33,20 @@ trap finish EXIT
 getglucose() {
     echo "Querying CGM"
     ( ( openaps report invoke glucose.json.new || openaps report invoke glucose.json.new ) && grep -v '"glucose": 5' glucose.json.new | grep glucose ) || share2-bridge file glucose.json.new
-    grep glucose glucose.json.new && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
+    grep glucose glucose.json.new && rsync -tu glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
 }
 # get pump status (suspended, etc.)
 getpumpstatus() {
     echo "Checking pump status"
     openaps status
-    grep -q status status.json.new && cp status.json.new status.json
+    grep -q status status.json.new && rsync -tu status.json.new status.json
 }
 # query pump, and update pump data files if successful
 querypump() {
     openaps pumpquery || openaps pumpquery
-    findclocknew && grep T clock.json.new && cp clock.json.new clock.json
-    grep -q temp currenttemp.json.new && cp currenttemp.json.new currenttemp.json
-    grep -q timestamp pumphistory.json.new && cp pumphistory.json.new pumphistory.json
+    findclocknew && grep T clock.json.new && rsync -tu clock.json.new clock.json
+    grep -q temp currenttemp.json.new && rsync -tu currenttemp.json.new currenttemp.json
+    grep -q timestamp pumphistory.json.new && rsync -tu pumphistory.json.new pumphistory.json
     upload
 }
 # try to upload pumphistory data
@@ -54,7 +54,7 @@ upload() { findpumphistory && ~/bin/openaps-mongo.sh && touch /tmp/openaps.onlin
 # if we haven't uploaded successfully in 10m, use offline mode (if no temp running, set current basal as temp to show the loop is working)
 suggest() {
     openaps suggest
-    find /tmp/openaps.online -mmin -10 | egrep -q '.*' && cp requestedtemp.online.json requestedtemp.json || cp requestedtemp.offline.json requestedtemp.json
+    find /tmp/openaps.online -mmin -10 | egrep -q '.*' && rsync -tu requestedtemp.online.json requestedtemp.json || rsync -tu requestedtemp.offline.json requestedtemp.json
 }
 # get updated pump settings (basal schedules, targets, ISF, etc.)
 getpumpsettings() { ~/openaps-js/bin/pumpsettings.sh; }
