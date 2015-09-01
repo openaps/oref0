@@ -70,7 +70,7 @@ function isfLookup() {
 }
 
 function maxDailyBasal(){
-    basalprofile_data.sort(function (a, b) { return a.rate < b.rate });
+    basalprofile_data.sort(function (a, b) { if (a.rate < b.rate) { return 1 } if (a.rate > b.rate) { return -1; } return 0; });
     profile.max_daily_basal = Math.round( basalprofile_data[0].rate *1000)/1000;
 }
 
