@@ -12,5 +12,5 @@ node ~/openaps-js/bin/iob.js pumphistory.json profile.json clock.json > iob.json
 #git pull && git push
 node ~/openaps-js/bin/pebble.js  glucose.json clock.json iob.json current_basal_profile.json currenttemp.json isf.json requestedtemp.json > /tmp/pebble-openaps.json
 cat /tmp/pebble-openaps.json
-grep "refresh_frequency" /tmp/pebble-openaps.json && cp /tmp/pebble-openaps.json www/openaps.json 
+grep "refresh_frequency" /tmp/pebble-openaps.json && rsync -tuv /tmp/pebble-openaps.json www/openaps.json 
 cat www/openaps.json

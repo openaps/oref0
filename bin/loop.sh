@@ -36,20 +36,20 @@ trap finish EXIT
 getglucose() {
     echo "Querying CGM"
     ( ( openaps report invoke glucose.json.new || openaps report invoke glucose.json.new ) && grep -v '"glucose": 5' glucose.json.new | grep glucose ) || share2-bridge file glucose.json.new
-    grep glucose glucose.json.new | head -1 | awk '{print $2}' | while read line; do echo -n " $line "; done >> /var/log/openaps/easy.log && cp glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
+    grep glucose glucose.json.new | head -1 | awk '{print $2}' | while read line; do echo -n " $line "; done >> /var/log/openaps/easy.log && rsync -tu glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
 }
 # get pump status (suspended, etc.)
 getpumpstatus() {
     echo "Checking pump status"
     openaps status || echo -n "!" >> /var/log/openaps/easy.log
-    grep -q status status.json.new && ( cp status.json.new status.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
+    grep -q status status.json.new && ( rsync -tu status.json.new status.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
 }
 # query pump, and update pump data files if successful
 querypump() {
     openaps pumpquery || openaps pumpquery || echo -n "!" >> /var/log/openaps/easy.log
-    findclocknew && grep T clock.json.new && ( cp clock.json.new clock.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
-    grep -q temp currenttemp.json.new && ( cp currenttemp.json.new currenttemp.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
-    grep -q timestamp pumphistory.json.new && ( cp pumphistory.json.new pumphistory.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
+    findclocknew && grep T clock.json.new && ( rsync -tu clock.json.new clock.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
+    grep -q temp currenttemp.json.new && ( rsync -tu currenttemp.json.new currenttemp.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
+    grep -q timestamp pumphistory.json.new && ( rsync -tu pumphistory.json.new pumphistory.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
     upload
 }
 # try to upload pumphistory data
@@ -57,7 +57,7 @@ upload() { findpumphistory && ~/bin/openaps-mongo.sh && touch /tmp/openaps.onlin
 # if we haven't uploaded successfully in 10m, use offline mode (if no temp running, set current basal as temp to show the loop is working)
 suggest() {
     openaps suggest || echo -n "!" >> /var/log/openaps/easy.log
-    find /tmp/openaps.online -mmin -10 | egrep -q '.*' && cp requestedtemp.online.json requestedtemp.json || cp requestedtemp.offline.json requestedtemp.json
+    find /tmp/openaps.online -mmin -10 | egrep -q '.*' && rsync -tu requestedtemp.online.json requestedtemp.json || cp requestedtemp.offline.json requestedtemp.json
 }
 # get updated pump settings (basal schedules, targets, ISF, etc.)
 getpumpsettings() { ~/openaps-js/bin/pumpsettings.sh; }
@@ -69,7 +69,8 @@ findglucose() { find glucose.json -mmin -10 | egrep -q '.*'; }
 findpumphistory() { find pumphistory.json -mmin -10 | egrep -q '.*'; }
 findrequestedtemp() { find requestedtemp.json -mmin -10 | egrep -q '.*'; }
 # write out current status to pebble.json
-pebble() { findclock && findglucose && findpumphistory && findrequestedtemp && ~/openaps-js/bin/pebble.sh; }
+#pebble() { findclock && findglucose && findpumphistory && findrequestedtemp && ~/openaps-js/bin/pebble.sh; }
+pebble() { ~/openaps-js/bin/pebble.sh; }
 
 
 # main event loop
