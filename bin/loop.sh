@@ -36,7 +36,7 @@ trap finish EXIT
 getglucose() {
     echo "Querying CGM"
     ( ( openaps report invoke glucose.json.new || openaps report invoke glucose.json.new ) && grep -v '"glucose": 5' glucose.json.new | grep glucose ) || share2-bridge file glucose.json.new
-    diff -u glucose.json glucose.json.new && echo No new glucose data || grep glucose glucose.json.new | head -1 | awk '{print $2}' | while read line; do echo -n " $line "; done >> /var/log/openaps/easy.log && rsync -tu glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json
+    diff -u glucose.json glucose.json.new && echo No new glucose data || ( grep glucose glucose.json.new | head -1 | awk '{print $2}' | while read line; do echo -n " $line "; done >> /var/log/openaps/easy.log && rsync -tu glucose.json.new glucose.json && git commit -m"glucose.json has glucose data: committing" glucose.json )
 }
 # get pump status (suspended, etc.)
 getpumpstatus() {
