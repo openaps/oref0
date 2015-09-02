@@ -57,7 +57,7 @@ upload() { findpumphistory && ~/bin/openaps-mongo.sh && touch /tmp/openaps.onlin
 # if we haven't uploaded successfully in 10m, use offline mode (if no temp running, set current basal as temp to show the loop is working)
 suggest() {
     openaps suggest || echo -n "!" >> /var/log/openaps/easy.log
-    grep -q "too old" requestedtemp.online.json || find /tmp/openaps.online -mmin -10 | egrep -q '.*' && rsync -tu requestedtemp.online.json requestedtemp.json || rsync -tu requestedtemp.offline.json requestedtemp.json
+    grep -q "too old" requestedtemp.online.json || ( find /tmp/openaps.online -mmin -10 | egrep -q '.*' && rsync -tu requestedtemp.online.json requestedtemp.json || rsync -tu requestedtemp.offline.json requestedtemp.json )
 }
 # get updated pump settings (basal schedules, targets, ISF, etc.)
 getpumpsettings() { ~/openaps-js/bin/pumpsettings.sh; }
