@@ -29,7 +29,7 @@ var data = JSON.stringify({
 );
 
 var options = {
-    host: 'openapsdata.azurewebsites.net',
+    host: '[your_webapi].azurewebsites.net',
     port: '443',
     path: '/api/openapstempbasals',
     method: 'POST',
