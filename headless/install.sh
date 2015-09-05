@@ -3,7 +3,7 @@
 # Configure the system to be a headless server, copying in hostapd and other
 # configs into the right place
 #
-# Copyright (c) 2015 Scott Leibrand
+# Copyright (c) 2015 OpenAPS Contributors
 #
 # Released under MIT license. See LICENSE.txt in the base directory of this
 # repository

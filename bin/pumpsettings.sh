@@ -3,7 +3,7 @@
 # Fetch pump settings, and update .json files from the .new.json files if all
 # was successful
 #
-# Copyright (c) 2015 Scott Leibrand
+# Copyright (c) 2015 OpenAPS Contributors
 #
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions

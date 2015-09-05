@@ -7,7 +7,7 @@
 # Original Author : SirLagz
 # Extensive modifications by scottleibrand
 #
-# Copyright (c) 2015 Scott Leibrand and SirLagz
+# Copyright (c) 2015 OpenAPS Contributors
 #
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
