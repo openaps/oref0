@@ -1,10 +1,26 @@
 #!/bin/bash
-#
+
 # Interface checker
-# Checks to see whether interface has an IP address, if it doesn't assume it's down and start hostapd
+# Checks to see whether interface has an IP address, if it doesn't assume it's
+# down and start hostapd
+#
 # Original Author : SirLagz
 # Extensive modifications by scottleibrand
 #
+# Copyright (c) 2015 OpenAPS Contributors
+#
+# Released under MIT license. See the accompanying LICENSE.txt file for
+# full terms and conditions
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+
 Interface='wlan0'
 HostAPDIP='10.29.29.1'
 echo "-----------------------------------"

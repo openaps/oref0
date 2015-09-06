@@ -1,4 +1,21 @@
 #!/bin/bash
+
+# Fetch pump settings, and update .json files from the .new.json files if all
+# was successful
+#
+# Copyright (c) 2015 OpenAPS Contributors
+#
+# Released under MIT license. See the accompanying LICENSE.txt file for
+# full terms and conditions
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 die() { echo "$@" ; exit 1; }
@@ -39,4 +56,3 @@ grep -q "mg/dL" bg_targets.json.new && cp bg_targets.json.new bg_targets.json
 grep -q sensitivity isf.json.new && cp isf.json.new isf.json
 grep -q rate current_basal_profile.json.new && cp current_basal_profile.json.new current_basal_profile.json
 grep -q grams carb_ratio.json.new && cp carb_ratio.json.new carb_ratio.json
-
