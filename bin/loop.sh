@@ -78,13 +78,11 @@ suggest() {
 getpumpsettings() { ~/openaps-js/bin/pumpsettings.sh; }
 
 # functions for making sure we have up-to-date data before proceeding
-findclock() { find clock.json -mmin -10 | egrep -q '.*'; }
 findclocknew() { find clock.json.new -mmin -10 | egrep -q '.*'; }
 findglucose() { find glucose.json -mmin -10 | egrep -q '.*'; }
 findpumphistory() { find pumphistory.json -mmin -10 | egrep -q '.*'; }
 findrequestedtemp() { find requestedtemp.json -mmin -10 | egrep -q '.*'; }
 # write out current status to pebble.json
-#pebble() { findclock && findglucose && findpumphistory && findrequestedtemp && ~/openaps-js/bin/pebble.sh; }
 pebble() { ~/openaps-js/bin/pebble.sh; }
 
 
