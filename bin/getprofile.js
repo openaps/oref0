@@ -104,9 +104,10 @@ if (!module.parent) {
     var isf_input = process.argv.slice(4, 5).pop()
     var basalprofile_input = process.argv.slice(5, 6).pop()
     var carbratio_input = process.argv.slice(6, 7).pop()
+    var maxiob_input = process.argv.slice(7, 8).pop()
     
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input || !carbratio_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <isf.json> <current_basal_profile.json> <carb_ratio.json>');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <isf.json> <current_basal_profile.json> <carb_ratio.json> [<max_iob.json>]');
         process.exit(1);
     }
     
@@ -119,7 +120,7 @@ if (!module.parent) {
 
     var profile = {        
           carbs_hr: 28 // TODO: verify this is completely unused and consider removing it if so
-        , max_iob: 1.5 // maximum amount of non-bolus IOB OpenAPS will ever deliver
+        , max_iob: 0 // if max_iob.json is not profided, never give more insulin than the pump would have
         , dia: pumpsettings_data.insulin_action_curve        
         , type: "current"
     };
@@ -130,6 +131,10 @@ if (!module.parent) {
     bgTargetsLookup();
     carbRatioLookup();
     isfLookup();
+    if (typeof maxiob_input != 'undefined') {
+        var maxiob_data = require(cwd + '/' + maxiob_input);
+        profile.max_iob = maxiob_data.max_iob;
+    }
 
     console.log(JSON.stringify(profile));
 }
