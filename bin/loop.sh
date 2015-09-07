@@ -33,6 +33,8 @@ fi
 
 echo "No lockfile: continuing"
 touch /tmp/openaps.lock
+# if there are any old loops still running without proper lockfiles, kill them off
+killall loop.sh
 
 # make sure decocare can talk to the Carelink USB stick
 ~/decocare/insert.sh 2>/dev/null >/dev/null
