@@ -223,7 +223,7 @@ while(true); do
     done
     requery
     # set a new reservoir baseline and watch for changes (boluses)
-    rsync -tu reservoir.json.new reservoir.json
+    openaps invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log && rsync -tu reservoir.json.new reservoir.json
     until actionrequired; do 
         getglucose && openaps invoke requestedtemp.online.json && cat requestedtemp.online.json | json_pp | grep reason >> /var/log/openaps/easy.log
         openaps invoke currenttemp.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
