@@ -47,10 +47,8 @@ function setTempBasal(rate, duration) {
     
     // rather than canceling temps, if Offline mode is set, always set the current basal as a 30m temp
     // so we can see on the pump that openaps is working
-    if (duration == 0) {
-        if (offline_input == 'Offline') {
-            rate = profile_data.current_basal;
-        }
+    if (duration == 0 && offline_input == 'Offline') {
+        rate = profile_data.current_basal;
         duration  = 30;
     }
 
