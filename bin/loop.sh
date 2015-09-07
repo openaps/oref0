@@ -169,7 +169,8 @@ execute() {
         until openaps enact; do
             retry=`expr $retry + 1`
             echo "enact failed; retry $retry"
-            if [ $retry -ge $retries ]; then bail "Failed to enact temp"; return $?; fi
+            if [ $retry -ge $retries ]; then bail "Failed to enact temp after $retry of $retries retries"; return $?; fi
+            sleep 10;
         done
         tail enactedtemp.json && ( echo && cat enactedtemp.json | egrep -i "bg|dur|rate|re|tic|tim" | sort -r ) >> /var/log/openaps/easy.log && return 0
     fi
