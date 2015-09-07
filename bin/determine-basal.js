@@ -219,7 +219,6 @@ if (!module.parent) {
                     // calculate 30m high-temp required to get projected BG down to target
                     // additional insulin required to get down to max bg:
                     var insulinReq = (eventualBG - target_bg) / profile_data.sens;
-                    //TODO: verify this is working
                     // if that would put us over max_iob, then reduce accordingly
                     insulinReq = Math.min(insulinReq, max_iob-basal_iob);
 
@@ -232,7 +231,7 @@ if (!module.parent) {
                         //console.error(maxSafeBasal);
                     }
                     var insulinScheduled = temps_data.duration * (temps_data.rate - profile_data.current_basal) / 60;
-                    if (insulinScheduled > insulinReq + 0.1) { // if current temp would deliver more than the required insulin (plus a 0.1U fudge factor), lower the rate
+                    if (insulinScheduled > insulinReq + 0.3) { // if current temp would deliver >0.3U more than the required insulin, lower the rate
                         reason = temps_data.duration + "@" + temps_data.rate + " > " + insulinReq + "U";
                         setTempBasal(rate, 30);
                     }
