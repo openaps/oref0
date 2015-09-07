@@ -115,7 +115,7 @@ actionrequired() {
     else
         rsync -tu reservoir.json.new reservoir.json
         # if a temp is needed based on current BG and temp
-        openaps invoke requestedtemp.online.json
+        openaps invoke requestedtemp.online.json || return 0
         grep rate requestedtemp.online.json
         return $?
     fi
