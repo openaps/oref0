@@ -213,6 +213,7 @@ requery() {
 
 while(true); do 
 
+    touch /tmp/openaps.lock
     # execute on startup, and then whenever actionrequired()
     until execute; do
         echo "Failed; retrying"
