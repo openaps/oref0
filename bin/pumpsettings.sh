@@ -42,7 +42,7 @@ die() { echo "$@" ; exit 1; }
 
 
 echo "Querying pump settings"
-openaps pumpsettings || openaps pumpsettings # || die "Can't query pump settings" # && git pull && git push
+( openaps pumpsettings || openaps pumpsettings ) 2>/dev/null
 grep -q '"start": "00:00:00",' carb_ratio.json.new || die "Couldn't find first carb ratio schedule entry: bailing"
 grep -q '"start": "00:00:00",' current_basal_profile.json.new || die "Couldn't find first basal profile schedule entry: bailing"
 grep -q '"start": "00:00:00",' isf.json.new || die "Couldn't find first ISF schedule entry: bailing"
