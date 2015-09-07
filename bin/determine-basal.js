@@ -265,7 +265,7 @@ if (!module.parent) {
             console.error(reason);
         }
     } else {
-        reason = "BG data is too old";
+        reason = "BG data is too old, or clock set incorrectly";
         console.error(reason);
     }
 
