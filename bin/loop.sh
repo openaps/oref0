@@ -25,7 +25,10 @@ die() {
 find /tmp/openaps.lock -mmin +10 -exec rm {} \; 2>/dev/null > /dev/null
 
 # only one process can talk to the pump at a time
-ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exiting" && exit
+if ls /tmp/openaps.lock >/dev/null 2>/dev/null; then
+    ls -la /tmp/openaps.lock
+    die "/tmp/openaps.lock exists"
+fi
 
 echo "No lockfile: continuing"
 touch /tmp/openaps.lock
@@ -41,7 +44,7 @@ cd ~/openaps-dev && ( git status > /dev/null || ( mv ~/openaps-dev/.git /tmp/.gi
 openaps report show > /dev/null || cp openaps.ini.bak openaps.ini
 
 function finish {
-    rm /tmp/openaps.lock
+    rm /tmp/openaps.lock 2>/dev/null
 }
 trap finish EXIT
 
@@ -50,28 +53,31 @@ trap finish EXIT
 # get glucose data, either from attached CGM or from Share
 getglucose() {
     echo "Querying CGM"
-    ( ( openaps report invoke glucose.json.new || openaps report invoke glucose.json.new ) && grep -v '"glucose": 5' glucose.json.new | grep glucose ) || share2-bridge file glucose.json.new
-    if diff -u glucose.json glucose.json.new; then
+    ( ( openaps report invoke glucose.json.new || openaps report invoke glucose.json.new ) 2>/dev/null && grep -v '"glucose": 5' glucose.json.new | grep -q glucose ) || share2-bridge file glucose.json.new 2>/dev/null >/dev/null
+    if diff -q glucose.json glucose.json.new; then
         echo No new glucose data
+        return 1;
     else
         grep glucose glucose.json.new | head -1 | awk '{print $2}' | while read line; do echo -n " $line "; done >> /var/log/openaps/easy.log \
             && rsync -tu glucose.json.new glucose.json \
-            && git commit -m"glucose.json has glucose data: committing" glucose.json 
+            #&& git commit -m"glucose.json has glucose data: committing" glucose.json 
+        return 0;
     fi
 }
 # get pump status (suspended, etc.)
 getpumpstatus() {
     echo "Checking pump status"
-    openaps status || echo -n "!" >> /var/log/openaps/easy.log
+    openaps status 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
     grep -q status status.json.new && ( rsync -tu status.json.new status.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
 }
 # query pump, and update pump data files if successful
 querypump() {
-    openaps pumpquery || openaps pumpquery || echo -n "!" >> /var/log/openaps/easy.log
+    ( openaps pumpquery || openaps pumpquery ) 2>/dev/null || ( echo -n "!" >> /var/log/openaps/easy.log && return 1 )
     findclocknew && grep T clock.json.new && ( rsync -tu clock.json.new clock.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
     grep -q temp currenttemp.json.new && ( rsync -tu currenttemp.json.new currenttemp.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
     grep -q timestamp pumphistory.json.new && ( rsync -tu pumphistory.json.new pumphistory.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
     upload
+    return 0
 }
 # try to upload pumphistory data
 upload() { findpumphistory && ~/bin/openaps-mongo.sh && touch /tmp/openaps.online; }
@@ -91,58 +97,134 @@ findrequestedtemp() { find requestedtemp.json -mmin -10 | egrep -q '.*'; }
 # write out current status to pebble.json
 pebble() { ~/openaps-js/bin/pebble.sh; }
 
+bail() {
+  echo "$@" | tee -a /var/log/openaps/easy.log
+  return 1
+}
+
+actionrequired() {
+    #if diff -u reservoir.json reservoir.json.new; then 
+    # if reservoir insulin remaining changes by more than 0.2U between runs, that probably indicates a bolus
+    if awk '{getline t<"reservoir.json.new"; if (($0-t) > 0.2 || ($0-t < -0.2)) print "Reservoir changed from " $0 " to " t}' reservoir.json | grep changed; then
+        echo "Reservoir status changed"
+        rsync -tu reservoir.json.new reservoir.json
+        return 0;
+    else
+        rsync -tu reservoir.json.new reservoir.json
+        # if a temp is needed based on current BG and temp
+        openaps invoke requestedtemp.online.json
+        grep rate requestedtemp.online.json
+        return $?
+    fi
+}
+
+execute() {
+    getglucose
+    head -15 glucose.json | grep -B1 glucose
+
+    numprocs=$(fuser -n file $(python -m decocare.scan) 2>&1 | wc -l)
+    if [[ $numprocs -gt 0 ]] ; then
+        bail "Carelink USB already in use or not available."; return $?
+    fi
+
+    #getpumpstatus
+    echo "Querying pump" && querypump 2>/dev/null
+
+    upload
+
+    # get glucose again in case the pump queries took awhile
+    getglucose
+
+    # if we're offline, set the clock to the pump/CGM time
+    ~/openaps-js/bin/clockset.sh
+
+    # dump out a "what we're about to try to do" report
+    suggest && pebble
+
+    tail clock.json
+    tail currenttemp.json
+
+    # make sure we're not using an old suggestion
+    rm requestedtemp.json* 2>/dev/null
+    echo "Removing requestedtemp.json and recreating it"
+    # if we can't run suggest, it might be because our pumpsettings are missing or screwed up"
+    suggest || ( getpumpsettings && suggest ) || ( bail "Can't calculate IOB or basal"; return $? )
+    pebble
+    tail profile.json
+    tail iob.json
+    tail requestedtemp.json
+
+
+    # don't act on stale glucose data
+    findglucose && grep -q glucose glucose.json || ( bail "No recent glucose data"; return $? )
+    # execute/enact the requested temp
+    cat requestedtemp.json | json_pp | grep reason >> /var/log/openaps/easy.log
+    if grep -q rate requestedtemp.json; then
+        echo "Enacting temp"
+        retries=3
+        retry=0
+        until openaps enact; do
+            retry=`expr $retry + 1`
+            echo "enact failed; retry $retry"
+            if [ $retry -ge $retries ]; then bail "Failed to enact temp"; return $?; fi
+        done
+        tail enactedtemp.json && ( echo && cat enactedtemp.json | egrep -i "bg|dur|rate|re|tic|tim" | sort -r ) >> /var/log/openaps/easy.log && return 0
+    fi
+}
+
+requery() {
+    numprocs=$(fuser -n file $(python -m decocare.scan) 2>&1 | wc -l)
+    if [[ $numprocs -gt 0 ]] ; then
+        bail "Carelink USB already in use or not available."; return $?
+    fi
+
+    echo "Re-querying pump"
+    retries=5
+    retry=0
+    until querypump; do
+        retry=`expr $retry + 1`
+        echo "Re-query failed; retry $retry"
+        if [ $retry -ge $retries ]; then bail "Failed to re-query pump"; return $?; fi
+    done
+
+    # unlock in case upload is really slow
+    rm /tmp/openaps.lock 2>/dev/null
+    pebble
+    upload
+
+    # if another instance didn't start while we were uploading, refresh pump settings
+    ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exiting" && exit
+    touch /tmp/openaps.lock
+    numprocs=$(fuser -n file $(python -m decocare.scan) 2>&1 | wc -l)
+    if [[ $numprocs -gt 0 ]] ; then
+        bail "Carelink USB already in use or not available."; return $?
+    fi
+    retries=2
+    retry=0
+    until getpumpsettings; do
+        retry=`expr $retry + 1`
+        echo "getpumpsettings failed; retry $retry"
+        if [ $retry -ge $retries ]; then bail "getpumpsettings failed"; return $?; fi
+    done
+}
 
 # main event loop
 
-getglucose
-head -15 glucose.json
+while(true); do 
 
-numprocs=$(fuser -n file $(python -m decocare.scan) 2>&1 | wc -l)
-if [[ $numprocs -gt 0 ]] ; then
-  die "Carelink USB already in use or not available."
-fi
-
-getpumpstatus
-echo "Querying pump" && querypump
-
-upload
-
-# get glucose again in case the pump queries took awhile
-getglucose
-
-# if we're offline, set the clock to the pump/CGM time
-~/openaps-js/bin/clockset.sh
-
-# dump out a "what we're about to try to do" report
-suggest && pebble
-
-tail clock.json
-tail currenttemp.json
-
-# make sure we're not using an old suggestion
-rm requestedtemp.json*
-# if we can't run suggest, it might be because our pumpsettings are missing or screwed up"
-suggest || ( getpumpsettings && suggest ) || die "Can't calculate IOB or basal"
-pebble
-tail profile.json
-tail iob.json
-tail requestedtemp.json
-
-# don't act on stale glucose data
-findglucose && grep -q glucose glucose.json || die "No recent glucose data"
-# execute/enact the requested temp
-cat requestedtemp.json | json_pp | grep reason >> /var/log/openaps/easy.log
-grep -q rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enactedtemp.json && ( echo && cat enactedtemp.json | egrep -i "bg|rate|re|tic|tim" | sort -r ) >> /var/log/openaps/easy.log
-
-echo "Re-querying pump"
-query pump
-
-# unlock in case upload is really slow
-rm /tmp/openaps.lock
-pebble
-upload
-
-# if another instance didn't start while we were uploading, refresh pump settings
-ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exiting" && exit
-touch /tmp/openaps.lock
-getpumpsettings
+    # execute on startup, and then whenever actionrequired()
+    until execute; do
+        echo "Failed; retrying"
+        sleep 5
+    done
+    requery
+    # set a new reservoir baseline and watch for changes (boluses)
+    rsync -tu reservoir.json.new reservoir.json
+    until actionrequired; do 
+        getglucose && cat requestedtemp.json | json_pp | grep reason >> /var/log/openaps/easy.log
+        openaps invoke currenttemp.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
+        openaps invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
+        echo -n "-" >> /var/log/openaps/easy.log
+        sleep 5
+    done
+done
