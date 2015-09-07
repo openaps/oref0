@@ -164,7 +164,7 @@ execute() {
     cat requestedtemp.json | json_pp | grep reason >> /var/log/openaps/easy.log
     if grep -q rate requestedtemp.json; then
         echo "Enacting temp"
-        retries=3
+        retries=5
         retry=0
         until openaps enact; do
             retry=`expr $retry + 1`
