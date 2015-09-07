@@ -191,12 +191,12 @@ requery() {
     done
 
     # unlock in case upload is really slow
-    rm /tmp/openaps.lock 2>/dev/null
+    #rm /tmp/openaps.lock 2>/dev/null
     pebble
     upload
 
     # if another instance didn't start while we were uploading, refresh pump settings
-    ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exiting" && exit
+    #ls /tmp/openaps.lock >/dev/null 2>/dev/null && die "OpenAPS already running: exiting" && exit
     touch /tmp/openaps.lock
     numprocs=$(fuser -n file $(python -m decocare.scan) 2>&1 | wc -l)
     if [[ $numprocs -gt 0 ]] ; then
