@@ -27,7 +27,8 @@ find /tmp/openaps.lock -mmin +10 -exec rm {} \; 2>/dev/null > /dev/null
 # only one process can talk to the pump at a time
 if ls /tmp/openaps.lock >/dev/null 2>/dev/null; then
     ls -la /tmp/openaps.lock
-    die "/tmp/openaps.lock exists"
+    echo "/tmp/openaps.lock exists"
+    exit 1
 fi
 
 echo "No lockfile: continuing"
