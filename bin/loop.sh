@@ -122,7 +122,7 @@ actionrequired() {
     else
         rsync -tu reservoir.json.new reservoir.json
         # if a temp is needed based on current BG and temp
-        openaps invoke requestedtemp.online.json || return 0
+        openaps report invoke requestedtemp.online.json || return 0
         grep rate requestedtemp.online.json
         return $?
     fi
@@ -235,16 +235,16 @@ while(true); do
         sleep 5
     done
     requery
-    getglucose && openaps invoke requestedtemp.online.json && cat requestedtemp.online.json | json_pp | grep reason >> /var/log/openaps/easy.log
+    getglucose && openaps report invoke requestedtemp.online.json && cat requestedtemp.online.json | json_pp | grep reason >> /var/log/openaps/easy.log
     # set a new reservoir baseline and watch for changes (boluses)
-    openaps invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log && rsync -tu reservoir.json.new reservoir.json
-    openaps invoke currenttemp.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
+    openaps report invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log && rsync -tu reservoir.json.new reservoir.json
+    openaps report invoke currenttemp.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
     until actionrequired; do 
         touch /tmp/openaps.lock
-        getglucose && openaps invoke requestedtemp.online.json && cat requestedtemp.online.json | json_pp | grep reason >> /var/log/openaps/easy.log
-        openaps invoke currenttemp.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
-        openaps invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
-        openaps invoke clock.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
+        getglucose && openaps report invoke requestedtemp.online.json && cat requestedtemp.online.json | json_pp | grep reason >> /var/log/openaps/easy.log
+        openaps report invoke currenttemp.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
+        openaps report invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
+        openaps report invoke clock.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
         findclocknew && grep T clock.json.new && rsync -tu clock.json.new clock.json || echo -n "!" >> /var/log/openaps/easy.log
         echo -n "-" >> /var/log/openaps/easy.log
         sleep 30
