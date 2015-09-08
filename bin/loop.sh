@@ -130,10 +130,15 @@ execute() {
         bail "Carelink USB already in use or not available."; return $?
     fi
 
-    #getpumpstatus
-    echo "Querying pump" && querypump 2>/dev/null
-
-    upload
+    retries=5
+    retry=0
+    until findpumphistory; do
+        echo "Querying pump" && querypump 2>/dev/null
+        retry=`expr $retry + 1`
+        echo "querypump failed; retry $retry"
+        if [ $retry -ge $retries ]; then bail "Failed to query pump historyafter $retries retries"; return $?; fi
+        sleep 10;
+    done
 
     # get glucose again in case the pump queries took awhile
     getglucose
@@ -230,6 +235,6 @@ while(true); do
         openaps invoke currenttemp.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
         openaps invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
         echo -n "-" >> /var/log/openaps/easy.log
-        sleep 5
+        sleep 30
     done
 done
