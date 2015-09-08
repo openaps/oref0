@@ -75,7 +75,7 @@ getpumpstatus() {
 }
 # query pump, and update pump data files if successful
 querypump() {
-    ( openaps pumpquery || openaps pumpquery ) 2>/dev/null || ( echo -n "!" >> /var/log/openaps/easy.log && return 1 )
+    openaps pumpquery 2>/dev/null || ( echo -n "!" >> /var/log/openaps/easy.log && return 1 )
     findclocknew && grep T clock.json.new && ( rsync -tu clock.json.new clock.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
     grep -q temp currenttemp.json.new && ( rsync -tu currenttemp.json.new currenttemp.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
     grep -q timestamp pumphistory.json.new && ( rsync -tu pumphistory.json.new pumphistory.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
@@ -136,7 +136,7 @@ execute() {
         echo "Querying pump" && querypump 2>/dev/null
         retry=`expr $retry + 1`
         echo "querypump failed; retry $retry"
-        if [ $retry -ge $retries ]; then bail "Failed to query pump historyafter $retries retries"; return $?; fi
+        if [ $retry -ge $retries ]; then bail "Failed to query pump history after $retries retries"; return $?; fi
         sleep 10;
     done
 
