@@ -244,6 +244,8 @@ while(true); do
         getglucose && openaps invoke requestedtemp.online.json && cat requestedtemp.online.json | json_pp | grep reason >> /var/log/openaps/easy.log
         openaps invoke currenttemp.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
         openaps invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
+        openaps invoke clock.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
+        findclocknew && grep T clock.json.new && rsync -tu clock.json.new clock.json || echo -n "!" >> /var/log/openaps/easy.log
         echo -n "-" >> /var/log/openaps/easy.log
         sleep 30
     done
