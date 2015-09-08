@@ -137,7 +137,7 @@ execute() {
         retry=`expr $retry + 1`
         echo "querypump failed; retry $retry"
         if [ $retry -ge $retries ]; then bail "Failed to query pump history after $retries retries"; return $?; fi
-        sleep 10;
+        sleep 30;
     done
 
     # get glucose again in case the pump queries took awhile
