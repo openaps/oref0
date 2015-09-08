@@ -141,9 +141,8 @@ execute() {
     retry=0
     echo "Querying pump" && querypump 2>/dev/null
     until findpumphistory && findclock; do
-        echo "Querying pump" && querypump 2>/dev/null
+        echo "Querying pump (try $retry)" && querypump 2>/dev/null
         retry=`expr $retry + 1`
-        echo "querypump failed; retry $retry"
         if [ $retry -ge $retries ]; then bail "Failed to query pump history after $retries retries"; return $?; fi
         sleep 30;
     done
