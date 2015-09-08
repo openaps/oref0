@@ -70,6 +70,11 @@ if (!module.parent) {
     var file = cwd + '/' + glucose_input;
     var glucose_data = require(file);
     var bgTime = fileHM(file);
+    if (glucose_data[0].dateString) {
+        var bgDate = new Date(glucose_data[0].dateString);
+        var HMS = bgDate.toLocaleTimeString().split(":")
+        bgTime = HMS[0].concat(":", HMS[1]);
+    }
 
     var bgnow = glucose_data[0].glucose;
     var iob_data = require(cwd + '/' + iob_input);

@@ -20,6 +20,8 @@ cd ~/openaps-dev
 stat -c %y clock.json | cut -c 1-19
 cat clock.json | sed 's/"//g' | sed 's/T/ /'
 echo
+share2-bridge file glucose.json.new | grep glucose
+diff -q glucose.json glucose.json.new && grep -q glucose glucose.json.new && rsync -tu glucose.json.new glucose.json 
 node ~/openaps-js/bin/iob.js pumphistory.json profile.json clock.json > iob.json.new && grep iob iob.json.new && rsync -tu iob.json.new iob.json
 node ~/openaps-js/bin/determine-basal.js iob.json currenttemp.json glucose.json profile.json > requestedtemp.json.new && grep reason requestedtemp.json.new && rsync -tu requestedtemp.json.new requestedtemp.json
 node ~/openaps-js/bin/pebble.js glucose.json iob.json current_basal_profile.json currenttemp.json requestedtemp.json enactedtemp.json > /tmp/pebble-openaps.json
