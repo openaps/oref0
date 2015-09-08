@@ -132,7 +132,7 @@ tail requestedtemp.json
 findglucose && grep -q glucose glucose.json || die "No recent glucose data"
 # execute/enact the requested temp
 cat requestedtemp.json | json_pp | grep reason >> /var/log/openaps/easy.log
-grep -q rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enactedtemp.json && ( echo && cat enactedtemp.json | egrep -i "bg|rate|re|tic|tim" | sort -r ) >> /var/log/openaps/easy.log
+grep -q rate requestedtemp.json && ( openaps enact || openaps enact ) && tail enactedtemp.json && ( echo && cat enactedtemp.json | egrep -i "bg|rate|dur|re|tic|tim" | sort -r ) >> /var/log/openaps/easy.log
 
 echo "Re-querying pump"
 query pump
