@@ -96,6 +96,7 @@ suggest() {
 getpumpsettings() { ~/openaps-js/bin/pumpsettings.sh; }
 
 # functions for making sure we have up-to-date data before proceeding
+findclock() { find clock.json -mmin -10 | egrep -q '.*'; }
 findclocknew() { find clock.json.new -mmin -10 | egrep -q '.*'; }
 findglucose() { find glucose.json -mmin -10 | egrep -q '.*'; }
 findpumphistory() { find pumphistory.json -mmin -10 | egrep -q '.*'; }
@@ -135,7 +136,8 @@ execute() {
 
     retries=5
     retry=0
-    until findpumphistory && findclocknew; do
+    echo "Querying pump" && querypump 2>/dev/null
+    until findpumphistory && findclock; do
         echo "Querying pump" && querypump 2>/dev/null
         retry=`expr $retry + 1`
         echo "querypump failed; retry $retry"
