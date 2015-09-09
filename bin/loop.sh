@@ -184,7 +184,7 @@ execute() {
             if [ $retry -ge $retries ]; then bail "Failed to enact temp after $retries retries"; return $?; fi
             sleep 10;
         done
-        tail enactedtemp.json && ( echo && cat enactedtemp.json | egrep -i "bg|dur|rate|re|tic|tim" | sort -r ) >> /var/log/openaps/easy.log && return 0
+        tail enactedtemp.json && ( echo && cat enactedtemp.json | egrep -i "bg|dur|rate|re|tic|tim" | sort -r ) >> /var/log/openaps/easy.log && cat iob.json | json_pp | grep '"iob' >> /var/log/openaps/easy.log && return 0
     fi
 }
 
