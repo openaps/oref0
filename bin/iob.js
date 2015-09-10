@@ -75,9 +75,9 @@ function iobTotal(treatments, time) {
             var tIOB = iobCalc(treatment, time, dia);
             if (tIOB && tIOB.iobContrib) iob += tIOB.iobContrib;
             if (tIOB && tIOB.activityContrib) activity += tIOB.activityContrib;
-            // keep track of bolus IOB separately for snoozes, but decay it twice as fast`
+            // keep track of bolus IOB separately for snoozes, but decay it three times as fast
             if (treatment.insulin >= 0.2 && treatment.started_at) {
-                var bIOB = iobCalc(treatment, time, dia/2)
+                var bIOB = iobCalc(treatment, time, dia/3)
                 //console.log(treatment);
                 //console.log(bIOB);
                 if (bIOB && bIOB.iobContrib) bolusiob += bIOB.iobContrib;
