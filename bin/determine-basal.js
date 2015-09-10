@@ -101,15 +101,21 @@ if (!module.parent) {
     if (glucose_status.delta >= 0) { tick = "+" + glucose_status.delta; }
     else { tick = glucose_status.delta; }
     console.error("IOB: " + iob_data.iob.toFixed(2) + ", Bolus IOB: " + iob_data.bolusiob.toFixed(2));
+    //calculate BG impact: the amount BG "should" be rising or falling based on insulin activity alone
     var bgi = -iob_data.activity * profile_data.sens * 5;
     console.error("Avg. Delta: " + glucose_status.avgdelta.toFixed(1) + ", BGI: " + bgi.toFixed(1));
     // project deviation over next 15 minutes
     var deviation = Math.round( 15 / 5 * ( glucose_status.avgdelta - bgi ) );
     console.error("15m deviation: " + deviation.toFixed(0));
-    var bolusContrib = iob_data.bolusiob * profile_data.sens;
+    // calculate the naive (bolus calculator math) eventual BG based on net IOB and sensitivity
     var naive_eventualBG = Math.round( bg - (iob_data.iob * profile_data.sens) );
+    // and adjust it for the deviation above
     var eventualBG = naive_eventualBG + deviation;
-    var naive_snoozeBG = Math.round( naive_eventualBG + bolusContrib );
+    // calculate what portion of that is due to bolusiob
+    var bolusContrib = iob_data.bolusiob * profile_data.sens;
+    // and add it back in to get snoozeBG, plus another 50% to avoid low-temping at mealtime
+    var naive_snoozeBG = Math.round( naive_eventualBG + 1.5 * bolusContrib );
+    // adjust that for deviation like we did eventualBG
     var snoozeBG = naive_snoozeBG + deviation;
     console.error("BG: " + bg + tick + " -> " + eventualBG + "-" + snoozeBG + " (Unadjusted: " + naive_eventualBG + "-" + naive_snoozeBG + ")");
     if (typeof eventualBG === 'undefined') { console.error('Error: could not calculate eventualBG'); }
