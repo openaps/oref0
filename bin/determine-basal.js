@@ -54,6 +54,9 @@ function setTempBasal(rate, duration) {
 
     requestedTemp.duration = duration;
     requestedTemp.rate = Math.round((Math.round(rate / 0.05) * 0.05)*100)/100;
+    requestedTemp.reason = reason;    
+    console.log(JSON.stringify(requestedTemp));
+    return requestedTemp;
 };
 
 
@@ -151,16 +154,16 @@ if (!module.parent) {
                 console.error(reason);
                 if (glucose_status.delta > 0) { // if BG is rising
                     if (temps_data.rate > profile_data.current_basal) { // if a high-temp is running
-                        setTempBasal(0, 0); // cancel high temp
+                        return setTempBasal(0, 0); // cancel high temp
                     } else if (temps_data.duration && eventualBG > profile_data.max_bg) { // if low-temped and predicted to go high from negative IOB
-                        setTempBasal(0, 0); // cancel low temp
+                        return setTempBasal(0, 0); // cancel low temp
                     } else {
                         reason = bg + "<" + threshold + "; no high-temp to cancel";
                         console.error(reason);
                     }
                 }
                 else { // BG is not yet rising
-                    setTempBasal(0, 30);
+                    return setTempBasal(0, 30);
                 }
             
             } else {
@@ -174,7 +177,7 @@ if (!module.parent) {
                             console.error(reason);
                         } else {
                             reason = tick + " and eventualBG " + eventualBG;
-                            setTempBasal(0, 0); // cancel temp
+                            return setTempBasal(0, 0); // cancel temp
                         }
                     } else {
                         reason = tick + "; no temp to cancel";
@@ -187,10 +190,10 @@ if (!module.parent) {
                         // if BG is falling and high-temped, or rising and low-temped, cancel
                         if (glucose_status.delta < 0 && temps_data.rate > profile_data.current_basal) {
                             reason = tick + " and temp " + temps_data.rate + " > basal " + profile_data.current_basal;
-                            setTempBasal(0, 0); // cancel temp
+                            return setTempBasal(0, 0); // cancel temp
                         } else if (glucose_status.delta > 0 && temps_data.rate < profile_data.current_basal) {
                             reason = tick + " and temp " + temps_data.rate + " < basal " + profile_data.current_basal;
-                            setTempBasal(0, 0); // cancel temp
+                            return setTempBasal(0, 0); // cancel temp
                         } else {
                             reason = "bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
                             console.error(reason);
@@ -210,8 +213,7 @@ if (!module.parent) {
                             console.error(reason);
                         } else {
                             reason = "Eventual BG " + eventualBG + "<" + profile_data.min_bg;
-                            //console.error(reason);
-                            setTempBasal(rate, 30);
+                            return setTempBasal(rate, 30);
                         }
                     }
 
@@ -220,7 +222,7 @@ if (!module.parent) {
                     var basal_iob = Math.round(( iob_data.iob - iob_data.bolusiob )*1000)/1000;
                     if (basal_iob > max_iob) {
                         reason = "basal_iob " + basal_iob + " > max_iob " + max_iob;
-                        setTempBasal(0, 0);
+                        return setTempBasal(0, 0);
                     } else {
                         // calculate 30m high-temp required to get projected BG down to target
                         // additional insulin required to get down to max bg:
@@ -243,25 +245,25 @@ if (!module.parent) {
                         var insulinScheduled = temps_data.duration * (temps_data.rate - profile_data.current_basal) / 60;
                         if (insulinScheduled > insulinReq + 0.3) { // if current temp would deliver >0.3U more than the required insulin, lower the rate
                             reason = temps_data.duration + "@" + temps_data.rate + " > req " + insulinReq + "U";
-                            setTempBasal(rate, 30);
+                            return setTempBasal(rate, 30);
                         }
                         else if (typeof temps_data.rate == 'undefined' || temps_data.rate == 0) { // no temp is set
                             reason += "no temp, setting " + rate + "U/hr";
-                            setTempBasal(rate, 30);
+                            return setTempBasal(rate, 30);
                         }
                         else if (temps_data.duration > 0 && rate < temps_data.rate + 0.1) { // if required temp <~ existing temp basal
                             reason += "temp " + temps_data.rate + " >~ req " + rate + "U/hr";
                             console.error(reason);
                         } else { // required temp > existing temp basal
                             reason += "temp " + temps_data.rate + "<" + rate + "U/hr";
-                            setTempBasal(rate, 30);
+                            return setTempBasal(rate, 30);
                         }
                     }
         
                 } else { 
                     reason = eventualBG + " is in range. No temp required.";
                     if (temps_data.duration > 0) { // if there is currently any temp basal running
-                        setTempBasal(0, 0); // cancel temp
+                        return setTempBasal(0, 0); // cancel temp
                     } else {
                         console.error(reason);
                     }
@@ -272,7 +274,7 @@ if (!module.parent) {
                 // if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
                 if ((!temps_data.duration || (temps_data.rate == profile_data.current_basal)) && !requestedTemp.duration) {
                     reason = reason + "; setting current basal of " + profile_data.current_basal + " as temp";
-                    setTempBasal(profile_data.current_basal, 30);
+                    return setTempBasal(profile_data.current_basal, 30);
                 }
             }
         }  else {
@@ -285,6 +287,6 @@ if (!module.parent) {
     }
 
 
-requestedTemp.reason = reason;    
-console.log(JSON.stringify(requestedTemp));
+    requestedTemp.reason = reason;    
+    console.log(JSON.stringify(requestedTemp));
 }
