@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Author: Ben West, Maintainer: Scott Leibrand
+
 HISTORY=${1-pumphistory.json}
 OUTPUT=${2-pumphistory.ns.json}
 #TZ=${3}
