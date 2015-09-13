@@ -10,7 +10,8 @@ cat $HISTORY | \
   json -e "this.medtronic = this._type;" | \
   json -e "this.dateString = this.timestamp + '$(TZ=TZ date +%z)'" | \
   json -e "this.type = 'medtronic'" | \
-  json -e "this.date = this.date ? this.date : new Date(Date.parse(this.dateString)).getTime( )" \
+  #json -e "this.date = this.date ? this.date : new Date(Date.parse(this.dateString)).getTime( )" \
+  json -e "this.date = new Date(Date.parse(this.dateString)).getTime( )" \
   > $OUTPUT
 
 
