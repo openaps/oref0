@@ -77,7 +77,12 @@ if (!module.parent) {
     var temps_data = require(cwd + '/' + temps_input);
     var iob_data = require(cwd + '/' + iob_input);
     var profile_data = require(cwd + '/' + profile_input);
+    var glucose_status = getLastGlucose(glucose_data);
+    requestedTemp = determine_basal(glucose_status, temps_data, iob_data, profile_data);
+    console.log(JSON.stringify(requestedTemp));
+}
     
+function determine_basal(glucose_status, temps_data, iob_data, profile_data) {
     if (typeof profile_data === 'undefined' || typeof profile_data.current_basal === 'undefined') {
         console.error('Error: could not get current basal rate');
         process.exit(1);
@@ -98,7 +103,6 @@ if (!module.parent) {
         }
     }
     
-    var glucose_status = getLastGlucose(glucose_data);
     var bg = glucose_status.glucose;
     var tick;
     if (glucose_status.delta >= 0) { tick = "+" + glucose_status.delta; }
@@ -288,5 +292,5 @@ if (!module.parent) {
 
 
     requestedTemp.reason = reason;    
-    console.log(JSON.stringify(requestedTemp));
+    return requestedTemp;
 }
