@@ -14,4 +14,4 @@ cat $HISTORY | \
 
 
 # requires API_SECRET and site to be set in calling environment (i.e. in crontab)
-curl -X POST --data-binary @$OUTPUT -H "API-SECRET: $API_SECRET" -H "content-type: application/json" $site/api/v1/entries.json && touch /tmp/openaps.online || echo "Unable to upload to $site."
+curl -s -X POST --data-binary @$OUTPUT -H "API-SECRET: $API_SECRET" -H "content-type: application/json" $site/api/v1/entries.json >/dev/null && ( touch /tmp/openaps.online && echo "Uploaded $OUTPUT to $site." ) || echo "Unable to upload to $site."
