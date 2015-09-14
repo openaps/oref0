@@ -148,7 +148,7 @@ function init() {
         };
         
         
-        if (bg > 10) {  //Dexcom is in ??? mode or calibrating, do nothing. Asked @benwest for raw data in iter_glucose
+        if (bg > 30) {  //Dexcom is in ??? mode or calibrating, do nothing. Asked @benwest for raw data in iter_glucose
             var threshold = profile.min_bg - 30;
             
             if (bg < threshold) { // low glucose suspend mode: BG is < ~80
