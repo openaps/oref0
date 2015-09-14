@@ -15,51 +15,6 @@
   THE SOFTWARE.
 */
 
-function getLastGlucose(data) {
-    
-    var now = data[0];
-    var last = data[1];
-    var avg;
-    //TODO: calculate average using system_time instead of assuming 1 data point every 5m
-    if (typeof data[3] !== 'undefined' && data[3].glucose > 30) {
-        avg = ( now.glucose - data[3].glucose) / 3;
-    } else if (typeof data[2] !== 'undefined' && data[2].glucose > 30) {
-        avg = ( now.glucose - data[2].glucose) / 2;
-    } else if (typeof data[1] !== 'undefined' && data[1].glucose > 30) {
-        avg = now.glucose - data[1].glucose;
-    } else { avg = 0; }
-    var o = {
-        delta: now.glucose - last.glucose
-        , glucose: now.glucose
-        , avgdelta: avg
-    };
-    
-    return o;
-    
-}
-
-function setTempBasal(rate, duration) {
-    
-    maxSafeBasal = Math.min(profile.max_basal, 3 * profile.max_daily_basal, 4 * profile.current_basal);
-    
-    if (rate < 0) { rate = 0; } // if >30m @ 0 required, zero temp will be extended to 30m instead
-    else if (rate > maxSafeBasal) { rate = maxSafeBasal; }
-    
-    // rather than canceling temps, if Offline mode is set, always set the current basal as a 30m temp
-    // so we can see on the pump that openaps is working
-    if (duration == 0 && offline_input == 'Offline') {
-        rate = profile.current_basal;
-        duration  = 30;
-    }
-
-    requestedTemp.duration = duration;
-    requestedTemp.rate = Math.round((Math.round(rate / 0.05) * 0.05)*100)/100;
-    requestedTemp.reason = reason;    
-    console.log(JSON.stringify(requestedTemp));
-    return requestedTemp;
-};
-
-
 if (!module.parent) {
     var iob_input = process.argv.slice(2, 3).pop()
     var currenttemp_input = process.argv.slice(3, 4).pop()
@@ -106,6 +61,30 @@ if (!module.parent) {
     console.log(JSON.stringify(requestedTemp));
 }
     
+function getLastGlucose(data) {
+    
+    var now = data[0];
+    var last = data[1];
+    var avg;
+    //TODO: calculate average using system_time instead of assuming 1 data point every 5m
+    if (typeof data[3] !== 'undefined' && data[3].glucose > 30) {
+        avg = ( now.glucose - data[3].glucose) / 3;
+    } else if (typeof data[2] !== 'undefined' && data[2].glucose > 30) {
+        avg = ( now.glucose - data[2].glucose) / 2;
+    } else if (typeof data[1] !== 'undefined' && data[1].glucose > 30) {
+        avg = now.glucose - data[1].glucose;
+    } else { avg = 0; }
+    var o = {
+        delta: now.glucose - last.glucose
+        , glucose: now.glucose
+        , avgdelta: avg
+    };
+    
+    return o;
+    
+}
+
+
 function determine_basal(glucose_status, currenttemp, iob_data, profile) {
     if (typeof profile === 'undefined' || typeof profile.current_basal === 'undefined') {
         console.error('Error: could not get current basal rate');
@@ -300,3 +279,25 @@ function determine_basal(glucose_status, currenttemp, iob_data, profile) {
     requestedTemp.reason = reason;    
     return requestedTemp;
 }
+
+function setTempBasal(rate, duration) {
+    
+    maxSafeBasal = Math.min(profile.max_basal, 3 * profile.max_daily_basal, 4 * profile.current_basal);
+    
+    if (rate < 0) { rate = 0; } // if >30m @ 0 required, zero temp will be extended to 30m instead
+    else if (rate > maxSafeBasal) { rate = maxSafeBasal; }
+    
+    // rather than canceling temps, if Offline mode is set, always set the current basal as a 30m temp
+    // so we can see on the pump that openaps is working
+    if (duration == 0 && offline_input == 'Offline') {
+        rate = profile.current_basal;
+        duration  = 30;
+    }
+
+    requestedTemp.duration = duration;
+    requestedTemp.rate = Math.round((Math.round(rate / 0.05) * 0.05)*100)/100;
+    requestedTemp.reason = reason;    
+    console.log(JSON.stringify(requestedTemp));
+    return requestedTemp;
+};
+
