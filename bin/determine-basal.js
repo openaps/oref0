@@ -60,7 +60,6 @@ if (!module.parent) {
         console.error(reason);
         return 1;
     }
-    console.log(JSON.stringify(rT)); //requestedTemp
 }
     
 function init() {
