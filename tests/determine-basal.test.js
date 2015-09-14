@@ -70,12 +70,14 @@ describe('determine-basal', function ( ) {
         console.error(JSON.stringify(output));
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
+        output.reason.should.match(/in range/);
     });
 
     it('should set current temp when in range w/o IOB with Offline set', function () {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, 'Offline');
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
+        output.reason.should.match(/in range.*setting current basal/);
     });
 
     // low glucose suspend test cases
@@ -84,6 +86,7 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.equal(0);
         output.duration.should.equal(30);
+        output.reason.should.match(/BG 75<80/);
     });
 
     it('should do nothing when low and rising w/o IOB', function () {
@@ -91,6 +94,7 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
+        output.reason.should.match(/75<80; no high-temp/);
     });
 
     it('should do nothing when low and rising w/ negative IOB', function () {
@@ -99,6 +103,7 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
+        output.reason.should.match(/75<80; no high-temp/);
     });
 
     it('should cancel high-temp when low and rising', function () {
@@ -108,6 +113,7 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.equal(0);
         output.duration.should.equal(0);
+        output.reason.should.match(/BG 75<80/);
     });
 
     it('should high-temp when > 80-ish and rising w/ lots of negative IOB', function () {
@@ -116,6 +122,7 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.be.above(1);
         output.duration.should.equal(30);
+        output.reason.should.match(/no temp, setting/);
     });
 
 });
