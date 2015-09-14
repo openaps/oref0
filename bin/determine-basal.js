@@ -150,19 +150,18 @@ function init() {
         
         if (bg > 10) {  //Dexcom is in ??? mode or calibrating, do nothing. Asked @benwest for raw data in iter_glucose
             var threshold = profile.min_bg - 30;
-            var reason="";
             
             if (bg < threshold) { // low glucose suspend mode: BG is < ~80
-                reason = "BG " + bg + "<" + threshold;
-                console.error(reason);
+                rT.reason = "BG " + bg + "<" + threshold;
+                console.error(rT.reason);
                 if (glucose_status.delta > 0) { // if BG is rising
                     if (currenttemp.rate > profile.current_basal) { // if a high-temp is running
                         return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel high temp
                     } else if (currenttemp.duration && eventualBG > profile.max_bg) { // if low-temped and predicted to go high from negative IOB
                         return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel low temp
                     } else {
-                        reason = bg + "<" + threshold + "; no high-temp to cancel";
-                        console.error(reason);
+                        rT.reason = bg + "<" + threshold + "; no high-temp to cancel";
+                        console.error(rT.reason);
                     }
                 }
                 else { // BG is not yet rising
@@ -176,15 +175,15 @@ function init() {
                     if (currenttemp.duration > 0) { // if there is currently any temp basal running
                         // if it's a low-temp and eventualBG < profile.max_bg, let it run a bit longer
                         if (currenttemp.rate <= profile.current_basal && eventualBG < profile.max_bg) {
-                            reason = "BG" + tick + " but eventualBG " + eventualBG + "<" + profile.max_bg;
-                            console.error(reason);
+                            rT.reason = "BG" + tick + " but eventualBG " + eventualBG + "<" + profile.max_bg;
+                            console.error(rT.reason);
                         } else {
-                            reason = tick + " and eventualBG " + eventualBG;
+                            rT.reason = tick + " and eventualBG " + eventualBG;
                             return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
                         }
                     } else {
-                        reason = tick + "; no temp to cancel";
-                        console.error(reason);
+                        rT.reason = tick + "; no temp to cancel";
+                        console.error(rT.reason);
                     }
         
                 } else if (eventualBG < profile.min_bg) { // if eventual BG is below target:
@@ -192,14 +191,14 @@ function init() {
                     if (snoozeBG > profile.min_bg) { // if adding back in the bolus contribution BG would be above min
                         // if BG is falling and high-temped, or rising and low-temped, cancel
                         if (glucose_status.delta < 0 && currenttemp.rate > profile.current_basal) {
-                            reason = tick + " and temp " + currenttemp.rate + " > basal " + profile.current_basal;
+                            rT.reason = tick + " and temp " + currenttemp.rate + " > basal " + profile.current_basal;
                             return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
                         } else if (glucose_status.delta > 0 && currenttemp.rate < profile.current_basal) {
-                            reason = tick + " and temp " + currenttemp.rate + " < basal " + profile.current_basal;
+                            rT.reason = tick + " and temp " + currenttemp.rate + " < basal " + profile.current_basal;
                             return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
                         } else {
-                            reason = "bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
-                            console.error(reason);
+                            rT.reason = "bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
+                            console.error(rT.reason);
                         }
                     } else {
                         // calculate 30m low-temp required to get projected BG up to target
@@ -212,10 +211,10 @@ function init() {
                         rate = Math.round( rate * 1000 ) / 1000;
                         // if required temp < existing temp basal
                         if (typeof currenttemp.rate !== 'undefined' && (currenttemp.duration > 0 && rate > currenttemp.rate - 0.1)) {
-                            reason = "temp " + currenttemp.rate + " <~ req " + rate + "U/hr";
-                            console.error(reason);
+                            rT.reason = "temp " + currenttemp.rate + " <~ req " + rate + "U/hr";
+                            console.error(rT.reason);
                         } else {
-                            reason = "Eventual BG " + eventualBG + "<" + profile.min_bg;
+                            rT.reason = "Eventual BG " + eventualBG + "<" + profile.min_bg;
                             return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
                         }
                     }
@@ -224,7 +223,7 @@ function init() {
                     // if iob is over max, just cancel any temps
                     var basal_iob = Math.round(( iob_data.iob - iob_data.bolusiob )*1000)/1000;
                     if (basal_iob > max_iob) {
-                        reason = "basal_iob " + basal_iob + " > max_iob " + max_iob;
+                        rT.reason = "basal_iob " + basal_iob + " > max_iob " + max_iob;
                         return determinebasal.setTempBasal(0, 0);
                     } else {
                         // calculate 30m high-temp required to get projected BG down to target
@@ -232,7 +231,7 @@ function init() {
                         var insulinReq = (eventualBG - target_bg) / profile.sens;
                         // if that would put us over max_iob, then reduce accordingly
                         if (insulinReq > max_iob-basal_iob) {
-                            reason = "max_iob " + max_iob + ", ";
+                            rT.reason = "max_iob " + max_iob + ", ";
                             insulinReq = max_iob-basal_iob;
                         }
 
@@ -247,28 +246,28 @@ function init() {
                         }
                         var insulinScheduled = currenttemp.duration * (currenttemp.rate - profile.current_basal) / 60;
                         if (insulinScheduled > insulinReq + 0.3) { // if current temp would deliver >0.3U more than the required insulin, lower the rate
-                            reason = currenttemp.duration + "@" + currenttemp.rate + " > req " + insulinReq + "U";
+                            rT.reason = currenttemp.duration + "@" + currenttemp.rate + " > req " + insulinReq + "U";
                             return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
                         }
                         else if (typeof currenttemp.rate == 'undefined' || currenttemp.rate == 0) { // no temp is set
-                            reason += "no temp, setting " + rate + "U/hr";
+                            rT.reason += "no temp, setting " + rate + "U/hr";
                             return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
                         }
                         else if (currenttemp.duration > 0 && rate < currenttemp.rate + 0.1) { // if required temp <~ existing temp basal
-                            reason += "temp " + currenttemp.rate + " >~ req " + rate + "U/hr";
-                            console.error(reason);
+                            rT.reason += "temp " + currenttemp.rate + " >~ req " + rate + "U/hr";
+                            console.error(rT.reason);
                         } else { // required temp > existing temp basal
-                            reason += "temp " + currenttemp.rate + "<" + rate + "U/hr";
+                            rT.reason += "temp " + currenttemp.rate + "<" + rate + "U/hr";
                             return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
                         }
                     }
         
                 } else { 
-                    reason = eventualBG + " is in range. No temp required.";
+                    rT.reason = eventualBG + " is in range. No temp required.";
                     if (currenttemp.duration > 0) { // if there is currently any temp basal running
                         return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
                     } else {
-                        console.error(reason);
+                        console.error(rT.reason);
                     }
                 }
             }
@@ -276,17 +275,15 @@ function init() {
             if (offline == 'Offline') {
                 // if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
                 if ((!currenttemp.duration || (currenttemp.rate == profile.current_basal)) && !rT.duration) {
-                    reason = reason + "; setting current basal of " + profile.current_basal + " as temp";
+                    rT.reason = rT.reason + "; setting current basal of " + profile.current_basal + " as temp";
                     return determinebasal.setTempBasal(profile.current_basal, 30, profile, rT, offline);
                 }
             }
         }  else {
-            reason = "CGM is calibrating or in ??? state";
-            console.error(reason);
+            rT.reason = "CGM is calibrating or in ??? state";
+            console.error(rT.reason);
         }
 
-
-        rT.reason = reason;    
         return rT;
     }
 
@@ -306,7 +303,6 @@ function init() {
 
         rT.duration = duration;
         rT.rate = Math.round((Math.round(rate / 0.05) * 0.05)*100)/100;
-        rT.reason = reason;    
         console.log(JSON.stringify(rT));
         return rT;
     };
