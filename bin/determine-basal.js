@@ -255,6 +255,8 @@ function init() {
                         else if (currenttemp.duration > 0 && rate < currenttemp.rate + 0.1) { // if required temp <~ existing temp basal
                             rT.reason += "temp " + currenttemp.rate + " >~ req " + rate + "U/hr";
                             console.error(rT.reason);
+                            console.log(JSON.stringify(rT));
+                            return rT;
                         } else { // required temp > existing temp basal
                             rT.reason += "temp " + currenttemp.rate + "<" + rate + "U/hr";
                             return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
@@ -281,6 +283,7 @@ function init() {
         }  else {
             rT.reason = "CGM is calibrating or in ??? state";
             console.error(rT.reason);
+            console.log(JSON.stringify(rT));
         }
 
         return rT;
