@@ -222,6 +222,7 @@ function init() {
                 } else if (eventualBG > profile.max_bg) { // if eventual BG is above target:
                     // if iob is over max, just cancel any temps
                     var basal_iob = Math.round(( iob_data.iob - iob_data.bolusiob )*1000)/1000;
+                    rT.reason = "";
                     if (basal_iob > max_iob) {
                         rT.reason = "basal_iob " + basal_iob + " > max_iob " + max_iob;
                         return determinebasal.setTempBasal(0, 0);
@@ -242,7 +243,6 @@ function init() {
                         maxSafeBasal = Math.min(profile.max_basal, 3 * profile.max_daily_basal, 4 * profile.current_basal);
                         if (rate > maxSafeBasal) {
                             rate = maxSafeBasal;
-                            //console.error(maxSafeBasal);
                         }
                         var insulinScheduled = currenttemp.duration * (currenttemp.rate - profile.current_basal) / 60;
                         if (insulinScheduled > insulinReq + 0.3) { // if current temp would deliver >0.3U more than the required insulin, lower the rate
@@ -263,7 +263,7 @@ function init() {
                     }
         
                 } else { 
-                    rT.reason = eventualBG + " is in range. No temp required.";
+                    rT.reason = eventualBG + " is in range. No temp required";
                     if (currenttemp.duration > 0) { // if there is currently any temp basal running
                         return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
                     } else {
