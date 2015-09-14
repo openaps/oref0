@@ -92,6 +92,10 @@ if (!module.parent) {
 
     if (minAgo < 10 && minAgo > -5) { // Dexcom data is recent, but not far in the future
 
+        console.error(JSON.stringify(glucose_status));
+        console.error(JSON.stringify(currenttemp));
+        console.error(JSON.stringify(iob_data));
+        console.error(JSON.stringify(profile));
         requestedTemp = determine_basal(glucose_status, currenttemp, iob_data, profile);
 
     } else {
