@@ -164,7 +164,7 @@ function init() {
                         console.error(rT.reason);
                     }
                 }
-                else { // BG is not yet rising
+                else { // BG is still falling / not yet rising
                     return determinebasal.setTempBasal(0, 30, profile, rT, offline);
                 }
             
