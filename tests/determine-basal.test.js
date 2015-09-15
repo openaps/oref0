@@ -68,7 +68,6 @@ describe('determine-basal', function ( ) {
 
     it('should do nothing when in range w/o IOB', function () {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
-        console.error(JSON.stringify(output));
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
         output.reason.should.match(/in range/);
@@ -143,7 +142,8 @@ describe('determine-basal', function ( ) {
         output.reason.should.match(/no temp, setting/);
     });
 
-    // no-IOB no-basal test cases
+    // low eventualBG
+
     it('should low-temp when eventualBG < min_bg', function () {
         var glucose_status = {"delta":-3,"glucose":110,"avgdelta":-1};
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
@@ -151,37 +151,6 @@ describe('determine-basal', function ( ) {
         output.duration.should.equal(30);
         output.reason.should.match(/Eventual BG .*<110/);
     });
-
-    it('should high-temp when eventualBG > max_bg', function () {
-        var glucose_status = {"delta":+3,"glucose":120,"avgdelta":+1};
-        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
-        output.rate.should.be.above(1);
-        output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*>120/);
-    });
-
-    // high BG
-
-    it('should cancel high-temp when high and falling faster than BGI', function () {
-        var currenttemp = {"duration":20,"rate":2,"temp":"absolute"};
-        var glucose_status = {"delta":-5,"glucose":175,"avgdelta":-5};
-        var iob_data = {"iob":1,"activity":0.01,"bolusiob":0};
-        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
-        output.rate.should.equal(0);
-        output.duration.should.equal(0);
-        output.reason.should.match(/Eventual BG.*>.*but Delta.*< BGI.*; cancel/);
-    });
-
-    it('should high-temp when high and falling slower than BGI', function () {
-        var glucose_status = {"delta":-1,"glucose":175,"avgdelta":-1};
-        var iob_data = {"iob":1,"activity":0.01,"bolusiob":0};
-        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
-        output.rate.should.be.above(1);
-        output.duration.should.equal(30);
-        output.reason.should.match(/no temp, setting/);
-    });
-
-    // low BG
 
     it('should cancel low-temp when lowish and rising faster than BGI', function () {
         var currenttemp = {"duration":20,"rate":0.5,"temp":"absolute"};
@@ -198,6 +167,35 @@ describe('determine-basal', function ( ) {
         var iob_data = {"iob":-0.5,"activity":-0.01,"bolusiob":0};
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.be.below(0.8);
+        output.duration.should.equal(30);
+        output.reason.should.match(/no temp, setting/);
+    });
+
+    // high eventualBG
+
+    it('should high-temp when eventualBG > max_bg', function () {
+        var glucose_status = {"delta":+3,"glucose":120,"avgdelta":+1};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.be.above(1);
+        output.duration.should.equal(30);
+        output.reason.should.match(/Eventual BG .*>120/);
+    });
+
+    it('should cancel high-temp when high and falling faster than BGI', function () {
+        var currenttemp = {"duration":20,"rate":2,"temp":"absolute"};
+        var glucose_status = {"delta":-5,"glucose":175,"avgdelta":-5};
+        var iob_data = {"iob":1,"activity":0.01,"bolusiob":0};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.equal(0);
+        output.duration.should.equal(0);
+        output.reason.should.match(/Eventual BG.*>.*but Delta.*< BGI.*; cancel/);
+    });
+
+    it('should high-temp when high and falling slower than BGI', function () {
+        var glucose_status = {"delta":-1,"glucose":175,"avgdelta":-1};
+        var iob_data = {"iob":1,"activity":0.01,"bolusiob":0};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.be.above(1);
         output.duration.should.equal(30);
         output.reason.should.match(/no temp, setting/);
     });
