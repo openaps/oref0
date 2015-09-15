@@ -155,7 +155,6 @@ function init() {
         
         if (bg < threshold) { // low glucose suspend mode: BG is < ~80
             rT.reason = "BG " + bg + "<" + threshold;
-            console.error(rT.reason);
             if (glucose_status.delta > bgi && glucose_status.avgdelta > bgi) { // if BG is rising faster than BGI
                 if (currenttemp.rate > profile.current_basal) { // if a high-temp is running
                     return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel high temp
@@ -168,6 +167,7 @@ function init() {
                 return rT;
             }
             // BG is still falling / rising slower than predicted
+            console.error(rT.reason);
             return determinebasal.setTempBasal(0, 30, profile, rT, offline);
         } 
         if (eventualBG < profile.min_bg) { // if eventual BG is below target:
@@ -187,6 +187,7 @@ function init() {
             // if this is just due to boluses, we can snooze until the bolus IOB decays (at double speed)
             if (snoozeBG > profile.min_bg) { // if adding back in the bolus contribution BG would be above min
                 // if BG is falling and high-temped, or rising and low-temped, cancel
+                // compare against zero here, not BGI, because BGI will be highly negative from boluses and no carbs
                 if (glucose_status.delta < 0 && currenttemp.rate > profile.current_basal) {
                     rT.reason += tick + ", and temp " + currenttemp.rate + " > basal " + profile.current_basal;
                     return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
@@ -212,7 +213,7 @@ function init() {
                 console.log(JSON.stringify(rT));
                 return rT;
             }
-            rT.reason += "no temp, setting " + rate + "U/hr";
+            rT.reason += ", no temp, setting " + rate + "U/hr";
             return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
         }
         // if eventual BG is above min but BG is falling faster than BGI
@@ -232,7 +233,6 @@ function init() {
             if (currenttemp.duration > 0) { // if there is currently any temp basal running
                 return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
             }
-            console.error(rT.reason);
             if (offline == 'Offline') {
                 // if no temp is running or required, set the current basal as a temp, so you can see on the pump that the loop is working
                 if ((!currenttemp.duration || (currenttemp.rate == profile.current_basal)) && !rT.duration) {
@@ -240,6 +240,7 @@ function init() {
                     return determinebasal.setTempBasal(profile.current_basal, 30, profile, rT, offline);
                 }
             }
+            console.error(rT.reason);
             console.log(JSON.stringify(rT));
             return rT;
         }
@@ -309,6 +310,7 @@ function init() {
         console.log(JSON.stringify(rT));
         return rT;
     };
+
     return determinebasal;
 
 }
