@@ -121,7 +121,7 @@ function init() {
         else { tick = glucose_status.delta; }
         console.error("IOB: " + iob_data.iob.toFixed(2) + ", Bolus IOB: " + iob_data.bolusiob.toFixed(2));
         //calculate BG impact: the amount BG "should" be rising or falling based on insulin activity alone
-        var bgi = -iob_data.activity * profile.sens * 5;
+        var bgi = Math.round(( -iob_data.activity * profile.sens * 5 )*100)/100;
         console.error("Avg. Delta: " + glucose_status.avgdelta.toFixed(1) + ", BGI: " + bgi.toFixed(1));
         // project deviation over next 15 minutes
         var deviation = Math.round( 15 / 5 * ( glucose_status.avgdelta - bgi ) );
