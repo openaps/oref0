@@ -114,7 +114,8 @@ bail() {
 }
 
 actionrequired() {
-    #if diff -u reservoir.json reservoir.json.new; then 
+    # make sure we can still talk to the carelink stick
+    python -m decocare.stick $(python -m decocare.scan) >/dev/null || sudo ~/openaps-js/bin/fix-dead-carelink.sh | tee -a /var/log/openaps/easy.log
     # if reservoir insulin remaining changes by more than 0.2U between runs, that probably indicates a bolus
     if awk '{getline t<"reservoir.json.new"; if (($0-t) > 0.2 || ($0-t < -0.2)) print "Reservoir changed from " $0 " to " t}' reservoir.json | grep changed; then
         echo "Reservoir status changed"
