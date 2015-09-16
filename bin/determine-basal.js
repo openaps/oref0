@@ -173,7 +173,7 @@ function init() {
         if (eventualBG < profile.min_bg) { // if eventual BG is below target:
             rT.reason = "Eventual BG " + eventualBG + "<" + profile.min_bg;
             // if 5m or 15m avg BG is rising faster than BGI
-            if (glucose_status.delta > bgi || glucose_status.avgdelta > bgi) {
+            if (glucose_status.delta > bgi && glucose_status.avgdelta > bgi) {
                 rT.reason += ", but Delta " + tick + " > BGI " + bgi;
                 if (currenttemp.duration > 0) { // if there is currently any temp basal running
                     rT.reason = rT.reason += "; cancel";
