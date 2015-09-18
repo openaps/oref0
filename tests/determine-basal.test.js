@@ -94,7 +94,7 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
-        output.reason.should.match(/75<80; no high-temp/);
+        output.reason.should.match(/75<80.*no high-temp/);
     });
 
     it('should do nothing when low and rising w/ negative IOB', function () {
@@ -103,20 +103,29 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
-        output.reason.should.match(/75<80; no high-temp/);
+        output.reason.should.match(/75<80.*no high-temp/);
     });
 
-    it('should temp to 0 on uptick if avgdelta is still negative', function () {
+    it('should do nothing on uptick even if avgdelta is still negative', function () {
         var glucose_status = {"delta":1,"glucose":75,"avgdelta":-2};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        (typeof output.rate).should.equal('undefined');
+        (typeof output.duration).should.equal('undefined');
+        output.reason.should.match(/BG 75<80/);
+    });
+
+    it('should temp to 0 when rising slower than BGI', function () {
+        var glucose_status = {"delta":1,"glucose":75,"avgdelta":1};
+        var iob_data = {"iob":-1,"activity":-0.01,"bolusiob":0};
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.equal(0);
         output.duration.should.equal(30);
         output.reason.should.match(/BG 75<80/);
     });
 
-    it('should temp to 0 when rising slower than BGI', function () {
-        var glucose_status = {"delta":2,"glucose":75,"avgdelta":1};
-        var iob_data = {"iob":-1,"activity":-0.01,"bolusiob":0};
+    it('should temp to 0 when low and falling, regardless of BGI', function () {
+        var glucose_status = {"delta":-1,"glucose":75,"avgdelta":-1};
+        var iob_data = {"iob":1,"activity":0.01,"bolusiob":0.5};
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.equal(0);
         output.duration.should.equal(30);

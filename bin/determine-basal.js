@@ -155,20 +155,25 @@ function init() {
         
         if (bg < threshold) { // low glucose suspend mode: BG is < ~80
             rT.reason = "BG " + bg + "<" + threshold;
-            if (glucose_status.delta > bgi && glucose_status.avgdelta > bgi) { // if BG is rising faster than BGI
-                if (currenttemp.rate > profile.current_basal) { // if a high-temp is running
-                    return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel high temp
-                } else if (currenttemp.duration && eventualBG > profile.max_bg) { // if low-temped and predicted to go high from negative IOB
-                    return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel low temp
-                }
-                rT.reason = bg + "<" + threshold + "; no high-temp to cancel";
+            if ((glucose_status.delta < 0 && glucose_status.avgdelta < 0) || (glucose_status.delta < bgi && glucose_status.avgdelta < bgi)) {
+                // BG is still falling / rising slower than predicted
                 console.error(rT.reason);
-                console.log(JSON.stringify(rT));
-                return rT;
+                return determinebasal.setTempBasal(0, 30, profile, rT, offline);
             }
-            // BG is still falling / rising slower than predicted
+            if (glucose_status.delta > glucose_status.avgdelta) {
+                rT.reason += ", delta " + glucose_status.delta + ">0";
+            } else {
+                rT.reason += ", avg delta " + glucose_status.avgdelta + ">0";
+            }
+            if (currenttemp.rate > profile.current_basal) { // if a high-temp is running
+                return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel high temp
+            } else if (currenttemp.duration && eventualBG > profile.max_bg) { // if low-temped and predicted to go high from negative IOB
+                return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel low temp
+            }
+            rT.reason += "; no high-temp to cancel";
             console.error(rT.reason);
-            return determinebasal.setTempBasal(0, 30, profile, rT, offline);
+            console.log(JSON.stringify(rT));
+            return rT;
         } 
         if (eventualBG < profile.min_bg) { // if eventual BG is below target:
             rT.reason = "Eventual BG " + eventualBG + "<" + profile.min_bg;
