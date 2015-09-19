@@ -72,15 +72,22 @@ function init() {
         
         var now = data[0];
         var last = data[1];
+        var minutes;
+        var change;
         var avg;
         //TODO: calculate average using system_time instead of assuming 1 data point every 5m
         if (typeof data[3] !== 'undefined' && data[3].glucose > 30) {
-            avg = ( now.glucose - data[3].glucose) / 3;
+            minutes = 3*5;
+            change = now.glucose - data[3].glucose;
         } else if (typeof data[2] !== 'undefined' && data[2].glucose > 30) {
-            avg = ( now.glucose - data[2].glucose) / 2;
+            minutes = 2*5;
+            change = now.glucose - data[2].glucose;
         } else if (typeof data[1] !== 'undefined' && data[1].glucose > 30) {
-            avg = now.glucose - data[1].glucose;
-        } else { avg = 0; }
+            minutes = 1*5;
+            change = now.glucose - data[1].glucose;
+        } else { change = 0; }
+        // multiply by 5 to get the same units as delta, i.e. mg/dL/5m
+        avg = change/min * 5;
         var o = {
             delta: now.glucose - last.glucose
             , glucose: now.glucose
