@@ -27,8 +27,12 @@ cd ~/openaps-dev/ || die "can't cd ~/openaps-dev/"
 
 # remove all requestedtemp* files on startup, just in case an old process is in an endless loop
 rm requestedtemp* 2>/dev/null
-# delete any json files older than 10m to make triply sure we avoid using stale data
-find *.json -mmin +10 -exec rm {} \; 2>/dev/null > /dev/null
+# delete any recent-history json files older than 30m to make triply sure we avoid using stale data
+find pumphistory*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
+find clock*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
+find *temp*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
+find glucose*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
+find iob*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
 
 # remove any old stale lockfiles
 find /tmp/openaps.lock -mmin +10 -exec rm {} \; 2>/dev/null > /dev/null
