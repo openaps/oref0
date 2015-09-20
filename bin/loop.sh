@@ -162,7 +162,7 @@ execute() {
     tail currenttemp.json
 
     # make sure we're not using an old suggestion
-    rm requestedtemp.json* 2>/dev/null
+    rm requestedtemp* 2>/dev/null
     echo "Removing requestedtemp.json and recreating it"
     # if we can't run suggest, it might be because our pumpsettings are missing or screwed up"
     suggest || ( getpumpsettings && suggest ) || ( bail "Can't calculate IOB or basal"; return $? )
