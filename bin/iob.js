@@ -77,7 +77,7 @@ function iobTotal(treatments, time) {
             if (tIOB && tIOB.activityContrib) activity += tIOB.activityContrib;
             // keep track of bolus IOB separately for snoozes, but decay it three times as fast
             if (treatment.insulin >= 0.2 && treatment.started_at) {
-                var bIOB = iobCalc(treatment, time, dia*3)
+                var bIOB = iobCalc(treatment, time, dia*2)
                 //console.log(treatment);
                 //console.log(bIOB);
                 if (bIOB && bIOB.iobContrib) bolusiob += bIOB.iobContrib;
@@ -171,7 +171,7 @@ if (!module.parent) {
     var profile_input = process.argv.slice(3, 4).pop()
     var clock_input = process.argv.slice(4, 5).pop()
   if (!iob_input || !profile_input) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory> <profile.json> <clock.json>');
+    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json>');
     process.exit(1);
   }
     var cwd = process.cwd()

@@ -21,6 +21,15 @@ die() {
   exit 1
 }
 
+# TODO: allow openaps instances in directories other than ~/openaps-dev
+# for now, make sure we're running in ~/openaps-dev/, or die.
+cd ~/openaps-dev/ || die "can't cd ~/openaps-dev/"
+
+# remove all requestedtemp* files on startup, just in case an old process is in an endless loop
+rm requestedtemp* 2>/dev/null
+# delete any json files older than 10m to make triply sure we avoid using stale data
+find *.json -mmin +10 -exec rm {} \; 2>/dev/null > /dev/null
+
 # remove any old stale lockfiles
 find /tmp/openaps.lock -mmin +10 -exec rm {} \; 2>/dev/null > /dev/null
 
@@ -162,7 +171,7 @@ execute() {
     tail currenttemp.json
 
     # make sure we're not using an old suggestion
-    rm requestedtemp.json* 2>/dev/null
+    rm requestedtemp* 2>/dev/null
     echo "Removing requestedtemp.json and recreating it"
     # if we can't run suggest, it might be because our pumpsettings are missing or screwed up"
     suggest || ( getpumpsettings && suggest ) || ( bail "Can't calculate IOB or basal"; return $? )
@@ -248,6 +257,7 @@ while(true); do
         openaps report invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
         openaps report invoke clock.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
         findclocknew && grep T clock.json.new && rsync -tu clock.json.new clock.json || echo -n "!" >> /var/log/openaps/easy.log
+        pebble
         echo -n "-" >> /var/log/openaps/easy.log
         sleep 30
     done
