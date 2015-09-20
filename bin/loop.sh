@@ -21,8 +21,14 @@ die() {
   exit 1
 }
 
+# TODO: allow openaps instances in directories other than ~/openaps-dev
+# for now, make sure we're running in ~/openaps-dev/, or die.
+cd ~/openaps-dev/ || die "can't cd ~/openaps-dev/"
+
 # remove all requestedtemp* files on startup, just in case an old process is in an endless loop
 rm requestedtemp* 2>/dev/null
+# delete any json files older than 10m to make triply sure we avoid using stale data
+find *.json -mmin +10 -exec rm {} \; 2>/dev/null > /dev/null
 
 # remove any old stale lockfiles
 find /tmp/openaps.lock -mmin +10 -exec rm {} \; 2>/dev/null > /dev/null
