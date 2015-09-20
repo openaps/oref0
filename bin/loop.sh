@@ -123,7 +123,7 @@ tail clock.json
 tail currenttemp.json
 
 # make sure we're not using an old suggestion
-rm requestedtemp.json*
+rm requestedtemp*
 # if we can't run suggest, it might be because our pumpsettings are missing or screwed up"
 suggest || ( getpumpsettings && suggest ) || die "Can't calculate IOB or basal"
 pebble
