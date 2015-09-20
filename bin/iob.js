@@ -171,7 +171,7 @@ if (!module.parent) {
     var profile_input = process.argv.slice(3, 4).pop()
     var clock_input = process.argv.slice(4, 5).pop()
   if (!iob_input || !profile_input) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory> <profile.json> <clock.json>');
+    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json>');
     process.exit(1);
   }
     var cwd = process.cwd()
