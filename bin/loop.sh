@@ -21,6 +21,9 @@ die() {
   exit 1
 }
 
+# remove all requestedtemp* files on startup, just in case an old process is in an endless loop
+rm requestedtemp* 2>/dev/null
+
 # remove any old stale lockfiles
 find /tmp/openaps.lock -mmin +10 -exec rm {} \; 2>/dev/null > /dev/null
 
