@@ -248,6 +248,7 @@ while(true); do
         openaps report invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
         openaps report invoke clock.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
         findclocknew && grep T clock.json.new && rsync -tu clock.json.new clock.json || echo -n "!" >> /var/log/openaps/easy.log
+        pebble
         echo -n "-" >> /var/log/openaps/easy.log
         sleep 30
     done
