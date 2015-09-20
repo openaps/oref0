@@ -87,7 +87,7 @@ function init() {
             change = now.glucose - data[1].glucose;
         } else { change = 0; }
         // multiply by 5 to get the same units as delta, i.e. mg/dL/5m
-        avg = change/min * 5;
+        avg = change/minutes * 5;
         var o = {
             delta: now.glucose - last.glucose
             , glucose: now.glucose
