@@ -102,7 +102,7 @@ querypump() {
 }
 # try to upload pumphistory data
 upload() {
-    if $NIGHTSCOUT_HOST; then
+    if [ ! -z "$NIGHTSCOUT_HOST" ]; then
         ~/openaps-js/bin/ns-upload.sh
     fi
 }
@@ -123,7 +123,7 @@ enact() {
     if tail enactedtemp.json; then
         ( echo && cat enactedtemp.json | egrep -i "bg|dur|rate|re|tic|tim" | sort -r ) >> /var/log/openaps/easy.log 
         cat iob.json | json_pp | grep '"iob' >> /var/log/openaps/easy.log 
-        if $AZURE_SQL_API_HOST; then
+        if [ ! -z "$AZURE_SQL_API_HOST" ]; then
             send-tempbasal-Azure iob.json enactedtemp.json glucose.json $AZURE_SQL_API_HOST
         fi
         return 0
