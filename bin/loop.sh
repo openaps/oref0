@@ -25,12 +25,11 @@ die() {
 # for now, make sure we're running in ~/openaps-dev/, or die.
 cd ~/openaps-dev/ || die "can't cd ~/openaps-dev/"
 
-# remove all requestedtemp* files on startup, just in case an old process is in an endless loop
-rm requestedtemp* 2>/dev/null
-# delete any recent-history json files older than 30m to make triply sure we avoid using stale data
+# delete any recent-history json files older than 30m to make doubly sure we avoid using stale data
 find pumphistory*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
 find clock*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
-find *temp*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
+find request*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
+find current*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
 find glucose*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
 find iob*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
 
@@ -87,12 +86,15 @@ getpumpstatus() {
     grep -q status status.json.new && ( rsync -tu status.json.new status.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
 }
 # query pump, and update pump data files if successful
+getcurrenttemp() {
+    openaps report invoke currenttemp.json.new 2>/dev/null || ( echo -n "!" >> /var/log/openaps/easy.log && return 1 )
+    grep -q temp currenttemp.json.new && ( rsync -tu currenttemp.json.new currenttemp.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
+}
 querypump() {
     #openaps pumpquery 2>/dev/null || ( echo -n "!" >> /var/log/openaps/easy.log && return 1 )
     openaps report invoke clock.json.new 2>/dev/null || ( echo -n "!" >> /var/log/openaps/easy.log && return 1 )
     findclocknew && grep T clock.json.new && ( rsync -tu clock.json.new clock.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
-    openaps report invoke currenttemp.json.new 2>/dev/null || ( echo -n "!" >> /var/log/openaps/easy.log && return 1 )
-    grep -q temp currenttemp.json.new && ( rsync -tu currenttemp.json.new currenttemp.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
+    getcurrenttemp || return 1
     openaps report invoke pumphistory.json.new 2>/dev/null || ( echo -n "!" >> /var/log/openaps/easy.log && return 1 )
     grep -q timestamp pumphistory.json.new && ( rsync -tu pumphistory.json.new pumphistory.json && echo -n "." >> /var/log/openaps/easy.log ) || echo -n "!" >> /var/log/openaps/easy.log
     upload
@@ -108,6 +110,24 @@ upload() {
 suggest() {
     openaps suggest || echo -n "!" >> /var/log/openaps/easy.log
     grep -q "too old" requestedtemp.online.json || ( find /tmp/openaps.online -mmin -10 | egrep -q '.*' && rsync -tu requestedtemp.online.json requestedtemp.json || rsync -tu requestedtemp.offline.json requestedtemp.json )
+}
+enact() {
+    retries=5
+    retry=0
+    until openaps enact; do
+        retry=`expr $retry + 1`
+        echo "enact failed; retry $retry"
+        if [ $retry -ge $retries ]; then bail "Failed to enact temp after $retries retries"; return $?; fi
+        sleep 10;
+    done
+    if tail enactedtemp.json; then
+        ( echo && cat enactedtemp.json | egrep -i "bg|dur|rate|re|tic|tim" | sort -r ) >> /var/log/openaps/easy.log 
+        cat iob.json | json_pp | grep '"iob' >> /var/log/openaps/easy.log 
+        if $AZURE_SQL_API_HOST; then
+            send-tempbasal-Azure iob.json enactedtemp.json glucose.json $AZURE_SQL_API_HOST
+        fi
+        return 0
+    fi
 }
 # get updated pump settings (basal schedules, targets, ISF, etc.)
 getpumpsettings() { ~/openaps-js/bin/pumpsettings.sh; }
@@ -191,15 +211,7 @@ execute() {
     cat requestedtemp.json | json_pp | grep reason >> /var/log/openaps/easy.log
     if grep -q rate requestedtemp.json; then
         echo "Enacting temp"
-        retries=5
-        retry=0
-        until openaps enact; do
-            retry=`expr $retry + 1`
-            echo "enact failed; retry $retry"
-            if [ $retry -ge $retries ]; then bail "Failed to enact temp after $retries retries"; return $?; fi
-            sleep 10;
-        done
-        tail enactedtemp.json && ( echo && cat enactedtemp.json | egrep -i "bg|dur|rate|re|tic|tim" | sort -r ) >> /var/log/openaps/easy.log && cat iob.json | json_pp | grep '"iob' >> /var/log/openaps/easy.log && return 0
+        enact
     fi
 }
 
@@ -253,11 +265,11 @@ while(true); do
     getglucose && openaps report invoke requestedtemp.online.json && cat requestedtemp.online.json | json_pp | grep reason >> /var/log/openaps/easy.log
     # set a new reservoir baseline and watch for changes (boluses)
     openaps report invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log && rsync -tu reservoir.json.new reservoir.json
-    openaps report invoke currenttemp.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
+    getcurrenttemp
     until actionrequired; do 
         touch /tmp/openaps.lock
         getglucose && openaps report invoke requestedtemp.online.json && cat requestedtemp.online.json | json_pp | grep reason >> /var/log/openaps/easy.log
-        openaps report invoke currenttemp.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
+        getcurrenttemp
         openaps report invoke reservoir.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
         openaps report invoke clock.json.new 2>/dev/null || echo -n "!" >> /var/log/openaps/easy.log
         findclocknew && grep T clock.json.new && rsync -tu clock.json.new clock.json || echo -n "!" >> /var/log/openaps/easy.log
