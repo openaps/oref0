@@ -1,4 +1,6 @@
-﻿/*
+#!/usr/bin/env node
+
+/*
   Send Temporary Basal to Azure
 
   Copyright (c) 2015 OpenAPS Contributors
