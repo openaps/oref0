@@ -29,9 +29,10 @@ if (!module.parent) {
     }
 }
 
-var glucose_data = require('./' + glucose_input);
-var enacted_temps = require('./' + enacted_temps_input);
-var iob_data = require('./' + iob_input);
+var cwd = process.cwd();
+var glucose_data = require(cwd + '/' + glucose_input);
+var enacted_temps = require(cwd + '/' + enacted_temps_input);
+var iob_data = require(cwd + '/' + iob_input);
 
 
 
