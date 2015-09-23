@@ -29,7 +29,7 @@ cd ~/openaps-dev/ || die "can't cd ~/openaps-dev/"
 find pumphistory*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
 find clock*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
 find request*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
-find current*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
+find current*temp*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
 find glucose*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
 find iob*.json* -mmin +30 -exec rm {} \; 2>/dev/null > /dev/null
 
