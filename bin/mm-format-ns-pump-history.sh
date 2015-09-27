@@ -4,7 +4,7 @@
 # Maintainer: Scott Leibrand
 
 HISTORY=${1-pumphistory.json}
-OUTPUT=${2-pumphistory.ns.json}
+OUTPUT=${2-/dev/fd/1}
 #TZ=${3-$(date +%z)}
 
 cat $HISTORY | \

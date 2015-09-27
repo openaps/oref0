@@ -5,7 +5,7 @@
 
 # Written for decocare v0.0.17. Will need updating the the decocare json format changes.
 HISTORY=${1-glucosehistory.json}
-OUTPUT=${2-glucosehistory.ns.json}
+OUTPUT=${2-/dev/fd/1}
 #TZ=${3-$(date +%z)}
 
 cat $HISTORY | \
