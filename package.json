@@ -17,16 +17,19 @@
   "bugs": {
     "url": "https://github.com/openaps/openaps-js/issues"
   },
-  "bin" : {
-    "calculate-iob" : "./bin/calculate-iob.js",
-    "determine-basal" : "./bin/determine-basal.js",
-    "send-tempbasal-Azure" : "./bin/send-tempbasal-Azure.js",
-    "get-profile" : "./bin/get-profile.js",
+  "bin": {
+    "calculate-iob": "./bin/calculate-iob.js",
+    "determine-basal": "./bin/determine-basal.js",
+    "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
+    "get-profile": "./bin/get-profile.js",
     "reset-wifi-dongle": "bin/reset-wifi-dongle.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",
     "mm-format-ns-pump-history": "./bin/mm-format-ns-pump-history.sh",
     "ns-upload-entries": "./bin/ns-upload-entries.sh",
-    "diyps-pebble" : "./bin/diyps-pebble.js"
+    "diyps-pebble": "./bin/diyps-pebble.js"
   },
-  "homepage": "https://github.com/openaps/openaps-js"
+  "homepage": "https://github.com/openaps/openaps-js",
+  "dependencies": {
+    "share2nightscout-bridge": "^0.1.5"
+  }
 }
