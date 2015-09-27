@@ -21,7 +21,9 @@
     "calculate-iob" : "./bin/calculate-iob.js",
     "determine-basal" : "./bin/determine-basal.js",
     "send-tempbasal-Azure" : "./bin/send-tempbasal-Azure.js",
-    "get-profile" : "./bin/get-profile.js"
+    "get-profile" : "./bin/get-profile.js",
+    "bin/reset-wifi-dongle": "bin/reset-wifi-dongle.sh",
+    "diyps-pebble" : "./bin/diyps-pebble.js"
   },
   "homepage": "https://github.com/openaps/openaps-js"
 }
