@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Author: Ben West, Maintainer: Scott Leibrand
+# Author: Ben West @bewest
+# Maintainer: Chris Oattes @cjo20
 
 # Written for decocare v0.0.17. Will need updating the the decocare json format changes.
 HISTORY=${1-glucosehistory.json}
@@ -15,5 +16,3 @@ cat $HISTORY | \
   json -e "this.device = 'openaps://medtronic/pump/cgm'" \
   > $OUTPUT
 
-# requires API_SECRET and NIGHTSCOUT_HOST to be set in calling environment (i.e. in crontab)
-curl -s -X POST --data-binary @$OUTPUT -H "API-SECRET: $API_SECRET" -H "content-type: application/json" $NIGHTSCOUT_HOST/api/v1/entries.json >/dev/null && ( touch /tmp/openaps.online && echo "Uploaded $OUTPUT to $NIGHTSCOUT_HOST" ) || echo "Unable to upload to $NIGHTSCOUT_HOST"
