@@ -15,6 +15,8 @@ $self <cmd>
 
 Valid commands:
   diyps pebble
+  diyps calculate-iob
+  diyps determine-basal
   diyps help - this message
 EOF
 fi
