@@ -2,6 +2,7 @@
 
 # Author: Ben West, Maintainer: Scott Leibrand
 
+# Written for decocare v0.0.17. Will need updating the the decocare json format changes.
 HISTORY=${1-glucosehistory.json}
 OUTPUT=${2-glucosehistory.ns.json}
 #TZ=${3-$(date +%z)}
