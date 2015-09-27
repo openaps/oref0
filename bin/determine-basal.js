@@ -263,7 +263,7 @@ function init() {
         rT.reason = "Eventual BG " + eventualBG + ">" + profile.max_bg + ", ";
         if (basal_iob > max_iob) {
             rT.reason = "basal_iob " + basal_iob + " > max_iob " + max_iob;
-            return determinebasal.setTempBasal(0, 0);
+            return determinebasal.setTempBasal(0, 0, profile, rT, offline);
         }
         // otherwise, calculate 30m high-temp required to get projected BG down to target
         // insulinReq is the additional insulin required to get down to max bg:

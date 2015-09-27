@@ -1,4 +1,6 @@
-﻿/*
+#!/usr/bin/env node
+
+/*
   Send Temporary Basal to Azure
 
   Copyright (c) 2015 OpenAPS Contributors
@@ -21,15 +23,17 @@ if (!module.parent) {
     var iob_input = process.argv.slice(2, 3).pop()
     var enacted_temps_input = process.argv.slice(3, 4).pop()
     var glucose_input = process.argv.slice(4, 5).pop()
-    if (!iob_input || !enacted_temps_input || !glucose_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<iob.json> <enactedBasal.json> <bgreading.json>');
+    var webapi = process.argv.slice(5, 6).pop()
+    if (!iob_input || !enacted_temps_input || !glucose_input || !webapi) {
+        console.log('usage: ', process.argv.slice(0, 2), '<iob.json> <enactedBasal.json> <bgreading.json> <[your_webapi].azurewebsites.net>');
         process.exit(1);
     }
 }
 
-var glucose_data = require('./' + glucose_input);
-var enacted_temps = require('./' + enacted_temps_input);
-var iob_data = require('./' + iob_input);
+var cwd = process.cwd();
+var glucose_data = require(cwd + '/' + glucose_input);
+var enacted_temps = require(cwd + '/' + enacted_temps_input);
+var iob_data = require(cwd + '/' + iob_input);
 
 
 
@@ -46,7 +50,7 @@ var data = JSON.stringify({
 );
 
 var options = {
-    host: '[your_webapi].azurewebsites.net',
+    host: webapi,
     port: '443',
     path: '/api/openapstempbasals',
     method: 'POST',
