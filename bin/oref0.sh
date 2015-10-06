@@ -12,6 +12,11 @@ function help_message ( ) {
   Usage:
 $self <cmd>
 
+ ______   ______   ______  ______ 0
+/ |  | \ | |  | \ | |     | |      
+| |  | | | |__| | | |---- | |----  
+\_|__|_/ |_|  \_\ |_|____ |_|      
+
 Valid commands:
   oref0 env - print information about environment.
   oref0 pebble
