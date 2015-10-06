@@ -4,7 +4,7 @@
 
 # Written for decocare v0.0.17.
 OUTPUT=/dev/fd/1
-if [[ "$1" == "-f" ]] ; then
+if [[ "${1-}" == "-f" ]] ; then
 shift
 OUTPUT=$1
 shift
