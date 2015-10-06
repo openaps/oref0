@@ -1,6 +1,6 @@
 #!/bin/bash
 
-self=$0
+self=$(basename $0)
 # Something like this:
 # https://maker.ifttt.com/trigger/{event}/with/key/MyKey
 IFTTT_TRIGGER=${IFTTT_TRIGGER-${1}}
@@ -10,6 +10,7 @@ function help_message ( ) {
 cat <<EOF
 Usage:
 $self <IFTTT_TRIGGER> <NOTIFY_USAGE>
+
 ## Setup IFTTT Account
 
 You need to create an account and connect to the Maker channel and the
@@ -54,6 +55,7 @@ Crontab:
 
       IFTT_NOTIFY_USAGE='pump model'
 
+Author: @audiefile
 EOF
 
 }

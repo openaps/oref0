@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-self=$0
+self=$(basename $0)
 NAME=${1-help}
 shift
 PROGRAM="oref0-${NAME}"
@@ -13,7 +13,9 @@ function help_message ( ) {
 $self <cmd>
 
 Valid commands:
+  oref0 env - print information about environment.
   oref0 pebble
+  oref0 iftt-notify
   oref0 get-profile
   oref0 calculate-iob
   oref0 determine-basal
