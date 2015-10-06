@@ -18,20 +18,19 @@
     "url": "https://github.com/openaps/openaps-js/issues"
   },
   "bin": {
-    "calculate-iob": "./bin/calculate-iob.js",
-    "determine-basal": "./bin/determine-basal.js",
-    "diyps-calculate-iob": "./bin/calculate-iob.js",
-    "diyps-determine-basal": "./bin/determine-basal.js",
+    "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
+    "oref0-determine-basal": "./bin/oref0-determine-basal.js",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
-    "get-profile": "./bin/get-profile.js",
+    "oref0-get-profile": "./bin/oref0-get-profile.js",
+    "oref0-iftt-notify": "./bin/oref0-iftt-notify",
     "reset-wifi-dongle": "bin/reset-wifi-dongle.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",
     "mm-format-ns-pump-history": "./bin/mm-format-ns-pump-history.sh",
-    "diyps": "./bin/diyps.sh",
+    "oref0": "./bin/oref0.sh",
     "mm-stick": "./bin/mm-stick.sh",
-    "openaps-js": "./bin/diyps.sh",
+    "openaps-js": "./bin/oref0.sh",
     "ns-upload-entries": "./bin/ns-upload-entries.sh",
-    "diyps-pebble": "./bin/diyps-pebble.js"
+    "oref0-pebble": "./bin/oref0-pebble.js"
   },
   "homepage": "https://github.com/openaps/openaps-js",
   "dependencies": {

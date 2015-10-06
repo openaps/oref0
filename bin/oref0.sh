@@ -2,9 +2,9 @@
 
 
 self=$0
-NAME=$1
+NAME=${1-help}
 shift
-PROGRAM="diyps-${NAME}"
+PROGRAM="oref0-${NAME}"
 COMMAND=$(which $PROGRAM | head -n 1)
 
 function help_message ( ) {
@@ -13,10 +13,11 @@ function help_message ( ) {
 $self <cmd>
 
 Valid commands:
-  diyps pebble
-  diyps calculate-iob
-  diyps determine-basal
-  diyps help - this message
+  oref0 pebble
+  oref0 get-profile
+  oref0 calculate-iob
+  oref0 determine-basal
+  oref0 help - this message
 EOF
 }
 
