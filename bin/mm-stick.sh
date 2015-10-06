@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -eu
 
 # Author: Ben West @bewest
 
@@ -10,6 +10,7 @@ OUTPUT=$1
 shift
 fi
 OPERATION=${1-help}
+export $OPERATION
 
 function print_help ( ) {
   cat <<EOF
@@ -30,20 +31,20 @@ while [ -n "$OPERATION" ] ; do
 (
 case $OPERATION in
   scan)
-    python -m decocare.scan
+    eval python -m decocare.scan
     ;;
   diagnose)
-    python -m decocare.stick $(python -m decocare.scan)
+    eval python -m decocare.stick $(python -m decocare.scan)
     ;;
   remove)
-    modprobe -r usbserial
+    eval modprobe -r usbserial
     ;;
   insert)
     #Bus 002 Device 011: ID 0a21:8001 Medtronic Physio Control Corp. 
-    modprobe --first-time usbserial vendor=0x0a21 product=0x8001
+    eval modprobe --first-time usbserial vendor=0x0a21 product=0x8001
     ;;
   udev-info)
-    udevadm info --query=all $(python -m decocare.scan)
+    eval udevadm info --query=all $(python -m decocare.scan)
     ;;
   reset-usb)
     if [[ $EUID != 0 ]] ; then
@@ -94,7 +95,6 @@ case $OPERATION in
   esac
 )
 shift
-OPERATION=${1}
+OPERATION=${1-}
 done > $OUTPUT
-
-
+exit $?
