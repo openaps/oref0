@@ -91,7 +91,7 @@ echo "Carelink Stick OK"
 # check carelink can talk to pump - if not send notification
 model=$(openaps use $IFTTT_NOTIFY_USAGE)
 echo "Model: " $model
-if [  x$model = x$empty ];
+if [ -z "$model" ];
 then
   echo "Model is empty"
   curl -X POST $IFTTT_TRIGGER
