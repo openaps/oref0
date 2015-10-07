@@ -80,12 +80,11 @@ help)
 esac
 
 
-empty='""'
 # check carelink is working - if not send notification
 # maybe switch:
-# mm-stick diagnose > /dev/null || curl -X POST $IFTTT_TRIGGER
 
-python -m decocare.stick $(python -m decocare.scan) >/dev/null || curl -X POST $IFTTT_TRIGGER
+mm-stick diagnose > /dev/null || curl -X POST $IFTTT_TRIGGER
+# python -m decocare.stick $(python -m decocare.scan) >/dev/null || curl -X POST $IFTTT_TRIGGER
 echo "Carelink Stick OK"
 
 # check carelink can talk to pump - if not send notification
