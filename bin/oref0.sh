@@ -20,7 +20,7 @@ $self <cmd>
 Valid commands:
   oref0 env - print information about environment.
   oref0 pebble
-  oref0 iftt-notify
+  oref0 ifttt-notify
   oref0 get-profile
   oref0 calculate-iob
   oref0 determine-basal
