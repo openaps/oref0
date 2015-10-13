@@ -22,7 +22,7 @@
     "oref0-determine-basal": "./bin/oref0-determine-basal.js",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
     "oref0-get-profile": "./bin/oref0-get-profile.js",
-    "oref0-iftt-notify": "./bin/oref0-iftt-notify",
+    "oref0-ifttt-notify": "./bin/oref0-ifttt-notify",
     "reset-wifi-dongle": "bin/reset-wifi-dongle.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",
     "mm-format-ns-pump-history": "./bin/mm-format-ns-pump-history.sh",
