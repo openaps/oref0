@@ -18,14 +18,26 @@ Usage: $0 [{scan,diagnose,help},...]
 
     scan      - Print the local location of a plugged in stick.
     diagnose  - Run python -m decocare.stick \$(python -m decocare.scan)
+    warmup    - Runs scan and diagnose with no output.
+                Exits 0 on success, non-zero exit code
+                otherwise.
     insert    - Insert usbserial kernel module.
     remove    - Remove usbserial kernel module.
     udev-info - Print udev information about the stick.
     list-usb  - List usb information about the stick.
     reset-usb - Reset entire usb stack. WARNING, be careful.
+    fail      - Always return a failing exit code.
     help      - This message.
 EOF
 }
+
+function print_fail ( ) {
+  cat <<EOF
+$0 FAIL
+$*
+EOF
+}
+
 
 while [ -n "$OPERATION" ] ; do
 (
@@ -35,6 +47,9 @@ case $OPERATION in
     ;;
   diagnose)
     eval python -m decocare.stick $(python -m decocare.scan)
+    ;;
+  warmup)
+    eval python -m decocare.stick $(python -m decocare.scan) > /dev/null
     ;;
   remove)
     eval modprobe -r usbserial
@@ -88,6 +103,10 @@ case $OPERATION in
         ls $i
       done
     done
+    ;;
+  fail)
+    print_fail $*
+    exit 1
     ;;
   *|help)
     print_help
