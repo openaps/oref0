@@ -35,5 +35,9 @@
   "homepage": "https://github.com/openaps/openaps-js",
   "dependencies": {
     "share2nightscout-bridge": "^0.1.5"
+  },
+  "devDependencies": {
+    "mocha": "^2.3.3",
+    "should": "^7.1.0"
   }
 }

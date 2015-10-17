@@ -3,7 +3,7 @@
 require('should');
 
 describe('setTempBasal', function ( ) {
-    var determinebasal = require('../bin/determine-basal')();
+    var determinebasal = require('../bin/oref0-determine-basal')();
 
    //function setTempBasal(rate, duration, profile, requestedTemp)
 
@@ -56,7 +56,7 @@ describe('setTempBasal', function ( ) {
 });
 
 describe('determine-basal', function ( ) {
-    var determinebasal = require('../bin/determine-basal')();
+    var determinebasal = require('../bin/oref0-determine-basal')();
 
    //function determine_basal(glucose_status, currenttemp, iob_data, profile)
 
