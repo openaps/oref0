@@ -45,10 +45,6 @@ function bgTargetsLookup(){
     var now = new Date();
     
     //bgtargets_data.targets.sort(function (a, b) { return a.offset > b.offset });
-    if (bgtargets_data.units != "mg/dL") {
-        console.error("bg_target units of " + bgtargets_data.units + " not supported: please use read_bg_targets_mg_dl.");
-        break;
-    }
 
     var bgTargets = bgtargets_data.targets[bgtargets_data.targets.length - 1]
     
@@ -122,6 +118,11 @@ if (!module.parent) {
     var cwd = process.cwd()
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
+    if (bgtargets_data.units !== 'mg/dL') {
+      console.log('BG Target data is expected to be expressed in mg/dL.'
+                 , 'Found', bgtargets_data.units, 'in', bgtargets_input, '.');
+      process.exit(2);
+    }
     var isf_data = require(cwd + '/' + isf_input);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
     var carbratio_data = require(cwd + '/' + carbratio_input);;
