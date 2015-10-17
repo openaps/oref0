@@ -13,9 +13,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-echo "Power-cycling USB to fix dead Carelink stick"
-sleep 0.1
-echo 0 > /sys/devices/platform/bcm2708_usb/buspower
-sleep 1
-echo 1 > /sys/devices/platform/bcm2708_usb/buspower
-sleep 2
+# Raspberry Pi 1 running Raspbian Wheezy
+FILE=/sys/devices/platform/bcm2708_usb/buspower
+if [ ! -e $FILE ]; then
+# Raspberry Pi 2 running Raspbian Jessie
+    FILE=/sys/devices/platform/soc/3f980000.usb/buspower
+fi
+if [ -e $FILE ]; then
+    echo "Power-cycling USB to fix dead Carelink stick"
+    sleep 0.1
+    echo 0 > $FILE
+    sleep 1
+    echo 1 > $FILE
+    sleep 2
+else
+    echo "Could not find a known USB power control device. Checking /sys/devices/platform/:"
+    find /sys/devices/platform/* | grep buspower
+fi
+

@@ -45,6 +45,11 @@ function bgTargetsLookup(){
     var now = new Date();
     
     //bgtargets_data.targets.sort(function (a, b) { return a.offset > b.offset });
+    if (bgtargets_data.units != "mg/dL") {
+        console.error("bg_target units of " + bgtargets_data.units + " not supported: please use read_bg_targets_mg_dl.");
+        break;
+    }
+
     var bgTargets = bgtargets_data.targets[bgtargets_data.targets.length - 1]
     
     for (var i = 0; i < bgtargets_data.targets.length - 1; i++) {
@@ -53,8 +58,11 @@ function bgTargetsLookup(){
             break;
         }
     }
-    profile.max_bg = bgTargets.high;
-    profile.min_bg = bgTargets.low;
+    // hard-code lower bounds for min_bg and max_bg in case pump is set too low, or units are wrong
+    profile.max_bg = max(100,bgTargets.high);
+    profile.min_bg = max(90,bgTargets.low);
+    // hard-code upper bound for min_bg in case pump is set too high
+    profile.min_bg = min(200,profile.min_bg);
 }
 
 function carbRatioLookup() {
