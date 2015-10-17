@@ -45,6 +45,11 @@ function bgTargetsLookup(){
     var now = new Date();
     
     //bgtargets_data.targets.sort(function (a, b) { return a.offset > b.offset });
+    if (bgtargets_data.units != "mg/dL") {
+        console.error("bg_target units of " + bgtargets_data.units + " not supported: please use read_bg_targets_mg_dl.");
+        break;
+    }
+
     var bgTargets = bgtargets_data.targets[bgtargets_data.targets.length - 1]
     
     for (var i = 0; i < bgtargets_data.targets.length - 1; i++) {
