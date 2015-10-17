@@ -56,6 +56,8 @@ function bgTargetsLookup(){
     // hard-code lower bounds for min_bg and max_bg in case pump is set too low, or units are wrong
     profile.max_bg = max(100,bgTargets.high);
     profile.min_bg = max(90,bgTargets.low);
+    // hard-code upper bound for min_bg in case pump is set too high
+    profile.min_bg = min(200,profile.min_bg);
 }
 
 function carbRatioLookup() {
