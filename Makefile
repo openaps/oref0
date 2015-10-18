@@ -3,4 +3,4 @@ TESTS=tests/*.js
 all: test
 
 test:
-	mocha ${TESTS}
+	./node_modules/.bin/mocha ${TESTS}
