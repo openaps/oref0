@@ -34,7 +34,8 @@
   },
   "homepage": "https://github.com/openaps/openaps-js",
   "dependencies": {
-    "share2nightscout-bridge": "^0.1.5"
+    "share2nightscout-bridge": "^0.1.5",
+    "timezone": "0.0.47"
   },
   "devDependencies": {
     "mocha": "^2.3.3",
