@@ -3,6 +3,10 @@
 
 Javascript plugins for openaps
 
+## Installing
+
+* Coming soon: ~~~`npm install -g oref0`~~~
+
 ## Usage
 
 ### `oref0`
@@ -78,6 +82,32 @@ These can be defined in crontab, or in a simple file, eg
 API_SECRET="..." NIGHTSCOUT_HOST=localhost:1337 ns-upload-entries <input> <output>
 
 ```
+
+## Contributing
+
+See the [CONTRIBUTING document](CONTRIBUTING.md)
+### Get the source
+
+```
+git clone git://github.com/openaps/oref0.git
+git checkout dev
+git checkout -b wip/my-enhancement-fix-or-proposal
+```
+
+### Fork on github.
+
+Fork the repository on github. Add your personal "remote" with something like
+this:
+
+```
+git remote rename origin author
+git remote add origin git@github.com:<github-user>/oref0.git
+git push origin -u wip/my-enhancement-fix-or-proposal
+```
+Then target our `dev` branch for a pull request/peer review.
+
+
+## openaps
 
 This is part of a series of tools to support a self-driven DIY
 implementation based on the OpenAPS reference design. The tools may be
