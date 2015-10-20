@@ -99,6 +99,9 @@ git checkout -b wip/my-enhancement-fix-or-proposal
 This command installs new versions from source:
 `sudo npm install -g`
 
+Alternately, `sudo npm link` or `sudo npm link oref0` should allow you to
+edit from your checkout while using your checkout globally on your system.
+
 ### Fork on github.
 
 Fork the repository on github. Add your personal "remote" with something like
