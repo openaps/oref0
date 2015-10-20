@@ -24,11 +24,10 @@ if (!module.parent) {
     var bgtargets_input = process.argv.slice(3, 4).pop()
     var isf_input = process.argv.slice(4, 5).pop()
     var basalprofile_input = process.argv.slice(5, 6).pop()
-    var carbratio_input = process.argv.slice(6, 7).pop()
-    var maxiob_input = process.argv.slice(7, 8).pop()
+    var maxiob_input = process.argv.slice(6, 7).pop()
     
-    if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input || !carbratio_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <isf.json> <current_basal_profile.json> <carb_ratio.json> [<max_iob.json>]');
+    if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivies.json> <basal_profile.json> [<max_iob.json>]');
         process.exit(1);
     }
     
@@ -42,7 +41,6 @@ if (!module.parent) {
     }
     var isf_data = require(cwd + '/' + isf_input);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
-    var carbratio_data = require(cwd + '/' + carbratio_input);;
 
     var maxiob_data = { max_iob: 0 };
     if (typeof maxiob_input != 'undefined') {
@@ -54,7 +52,6 @@ if (!module.parent) {
     , basals: basalprofile_data
     , isf: isf_data
     , max_iob: maxiob_data.max_iob || 0
-    , carbs: carbratio_data
 
     };
 
