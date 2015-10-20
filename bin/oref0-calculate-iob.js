@@ -35,7 +35,7 @@ if (!module.parent) {
   var profile_data = require(cwd + '/' + profile_input);
   var clock_data = require(cwd + '/' + clock_input);
 
-  all_data.sort(function (a, b) { return a.date > b.date });
+  // all_data.sort(function (a, b) { return a.date > b.date });
 
   var inputs = {
     history: all_data
