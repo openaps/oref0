@@ -5,7 +5,9 @@ Javascript plugins for openaps
 
 ## Installing
 
-* Coming soon: ~~~`npm install -g oref0`~~~
+Install tools globally:
+
+`sudo npm install -g oref0`
 
 ## Usage
 
