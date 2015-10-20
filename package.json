@@ -1,13 +1,13 @@
 {
   "name": "oref0",
   "version": "0.0.8",
-  "description": "openaps js plugins",
+  "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "make test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openaps/openaps-js.git"
+    "url": "https://github.com/openaps/oref0.git"
   },
   "keywords": [
     "openaps"
@@ -15,7 +15,7 @@
   "author": "Scott Leibrand",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/openaps/openaps-js/issues"
+    "url": "https://github.com/openaps/oref0/issues"
   },
   "bin": {
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
@@ -28,11 +28,10 @@
     "mm-format-ns-pump-history": "./bin/mm-format-ns-pump-history.sh",
     "oref0": "./bin/oref0.sh",
     "mm-stick": "./bin/mm-stick.sh",
-    "openaps-js": "./bin/oref0.sh",
     "ns-upload-entries": "./bin/ns-upload-entries.sh",
     "oref0-pebble": "./bin/oref0-pebble.js"
   },
-  "homepage": "https://github.com/openaps/openaps-js",
+  "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
     "share2nightscout-bridge": "^0.1.5",
     "timezone": "0.0.47"
