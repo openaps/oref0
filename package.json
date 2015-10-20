@@ -22,6 +22,7 @@
     "oref0-determine-basal": "./bin/oref0-determine-basal.js",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
     "oref0-get-profile": "./bin/oref0-get-profile.js",
+    "oref0-mint-max-iob": "./bin/oref0-mint-max-iob.sh",
     "oref0-ifttt-notify": "./bin/oref0-ifttt-notify",
     "oref0-reset-usb": "bin/reset-usb.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",
