@@ -3,6 +3,7 @@
 # Author: Ben West @bewest
 
 # Written for decocare v0.0.17.
+self=$(basename $0)
 OUTPUT=/dev/fd/1
 if [[ "${1-}" == "-f" ]] ; then
 shift
@@ -10,11 +11,11 @@ OUTPUT=$1
 shift
 fi
 OPERATION=${1-help}
-export $OPERATION
+export OPERATION
 
 function print_help ( ) {
   cat <<EOF
-Usage: $0 [{scan,diagnose,help},...]
+Usage: $self [{scan,diagnose,help},...]
 
     scan      - Print the local location of a plugged in stick.
     diagnose  - Run python -m decocare.stick \$(python -m decocare.scan)

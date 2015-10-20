@@ -1,6 +1,83 @@
-# openaps-js
+# oref0
+
 
 Javascript plugins for openaps
+
+## Usage
+
+### `oref0`
+The open reference implementation of the reference design.
+```
+  Usage:
+oref0 <cmd>
+
+ ______   ______   ______  ______ 0
+/ |  | \ | |  | \ | |     | |      
+| |  | | | |__| | | |---- | |----  
+\_|__|_/ |_|  \_\ |_|____ |_|      
+
+Valid commands:
+  oref0 env - print information about environment.
+  oref0 pebble
+  oref0 ifttt-notify
+  oref0 get-profile
+  oref0 calculate-iob
+  oref0 determine-basal
+  oref0 help - this message
+```
+
+### `mm-stick`
+Tools to work with carelink stick.
+```
+Usage: mm-stick [{scan,diagnose,help},...]
+
+    scan      - Print the local location of a plugged in stick.
+    diagnose  - Run python -m decocare.stick $(python -m decocare.scan)
+    warmup    - Runs scan and diagnose with no output.
+                Exits 0 on success, non-zero exit code
+                otherwise.
+    insert    - Insert usbserial kernel module.
+    remove    - Remove usbserial kernel module.
+    udev-info - Print udev information about the stick.
+    list-usb  - List usb information about the stick.
+    reset-usb - Reset entire usb stack. WARNING, be careful.
+    fail      - Always return a failing exit code.
+    help      - This message.
+```
+
+### `mm-format-ns-glucose`
+Reformat medtronic's glucose records into format Nightscout prefers.
+The result is suitable for sending to Nightscout's entries api, eg, using
+`ns-upload-entries`.
+```
+mm-format-ns-glucose <input> <output>
+
+
+```
+
+### `mm-format-ns-pump-history`
+Reformat medtronic's pump history records into format Nightscout prefers.
+The result is suitable for sending to Nightscout's entries api, eg, using
+`ns-upload-entries`.
+```
+mm-format-ns-pump-history <input> <output>
+```
+
+
+### `ns-upload-entries`
+
+Upload to Nightscout entries.
+
+This requires two environment variables to be set:
+Set `API_SECRET` to the hashed version of your `API_SECRET`.
+Set `NIGHTSCOUT_HOST` to your Nightscout base URL.
+These can be defined in crontab, or in a simple file, eg
+`/etc/default/openaps`.
+
+```
+API_SECRET="..." NIGHTSCOUT_HOST=localhost:1337 ns-upload-entries <input> <output>
+
+```
 
 This is part of a series of tools to support a self-driven DIY
 implementation based on the OpenAPS reference design. The tools may be
