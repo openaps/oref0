@@ -27,7 +27,7 @@ if (!module.parent) {
     var maxiob_input = process.argv.slice(6, 7).pop()
     
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivies.json> <basal_profile.json> [<max_iob.json>]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<max_iob.json>]');
         process.exit(1);
     }
     
