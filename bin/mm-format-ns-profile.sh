@@ -21,9 +21,14 @@ function dia ( ) {
   cat $1 | json insulin_action_curve
 }
 
+function fix-time-field ( ) {
+  json -e "this.time = this.time.split(':').slice(0, 2).join(':')"
+}
+
 function fix-schedule ( ) {
   field=$1
-  json -e "this.time = this.start; this.value = this.$field.toString( );"
+  json -e "this.time = this.start; this.value = this.$field.toString( );" \
+    | fix-time-field
 }
 
 function carb-ratios ( ) {
@@ -47,8 +52,8 @@ function basal-rates ( ) {
    test -n "$1" && cat $1 || echo "[ ]"
   ) | json  \
     | fix-schedule rate \
-    | json -A -e "this.length > 0 ? this : [ ];" \
-    | json -e "this.seconds = this.minutes * 60;"
+    | json -A -e "this.length > 0 ? this : [ ];"
+    # | json -e "this.seconds = this.minutes * 60;"
 }
 
 function add-basals ( ) {
@@ -85,7 +90,7 @@ function target-category ( ) {
   name="target_$category"
   json -e "this.$name = (this.targets && this.targets.length > 0) ? this.targets : [ ];" \
    | json -e "this.$name = this.$name.map(function (elem) { if (elem.$category) { return {value: elem.$category.toString( ), time: elem.start }; } })" \
-   json $name
+   json $name | fix-time-field
 }
 
 function add-targets ( ) {
@@ -99,9 +104,15 @@ function bgunits ( ) {
   cat $1 | json units
 }
 
+function fix-dates ( ) {
+  # really want to know last changed date
+  startDate=$(date --date "1 minute ago" --iso-8601=minutes)
+  created_at=$(date --iso-8601=minutes)
+  json -e "this.created_at = '$created_at'; this.startDate = '$startDate';"
+}
 
 function stub ( ) {
-  zone=$(date +%Z)
+  zone=$(cat /etc/timezone | tr -d '\n')
   dt=$(date --rfc-3339=ns | tr ' ' 'T')
   DIA=$(dia $SETTINGS)
   cat <<EOF | json
@@ -122,7 +133,11 @@ function stub ( ) {
 EOF
 }
 
-stub $SETTINGS | add-carbs $CARBS | add-basals $BASALRATES | add-isf $SENSITIVITIES | add-targets $TARGETS | json \
-  > $OUTPUT
+stub $SETTINGS | fix-dates \
+  | add-carbs $CARBS \
+  | add-basals $BASALRATES \
+  | add-isf $SENSITIVITIES \
+  | add-targets $TARGETS \
+  | json > $OUTPUT
 
 
