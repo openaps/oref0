@@ -16,6 +16,7 @@
 
 var find_insulin = require('oref0/lib/temps');
 var find_bolus = require('oref0/lib/bolus');
+var describe_pump = require('oref0/lib/pump');
 
 if (!module.parent) {
   var iob_input = process.argv.slice(2, 3).pop()
@@ -32,6 +33,7 @@ if (!module.parent) {
     history: all_data
   };
   var treatments = find_insulin(find_bolus(inputs.history));
+  treatments = describe_pump(treatments);
   // treatments.sort(function (a, b) { return a.date > b.date });
 
 
