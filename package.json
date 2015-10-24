@@ -33,6 +33,8 @@
     "oref0": "./bin/oref0.sh",
     "mm-stick": "./bin/mm-stick.sh",
     "ns-upload-entries": "./bin/ns-upload-entries.sh",
+    "ns-upload": "./bin/ns-upload.sh",
+    "ns-get": "./bin/ns-get.sh",
     "oref0-pebble": "./bin/oref0-pebble.js"
   },
   "homepage": "https://github.com/openaps/oref0",
