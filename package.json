@@ -35,6 +35,7 @@
     "ns-upload-entries": "./bin/ns-upload-entries.sh",
     "ns-upload": "./bin/ns-upload.sh",
     "ns-get": "./bin/ns-get.sh",
+    "ns-dedupe-treatments": "./bin/ns-dedupe-treatments.sh",
     "oref0-pebble": "./bin/oref0-pebble.js"
   },
   "homepage": "https://github.com/openaps/oref0",
