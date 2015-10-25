@@ -4,8 +4,9 @@ self=$(basename $0)
 
 function usage ( ) {
 cat <<EOF
-Usage: $self --find <NIGHTSCOUT_HOST>
-$self delete <NIGHTSCOUT_HOST>
+Usage: $self --find <NIGHTSCOUT_HOST> - No-op version, find out what delete would do.
+$self --list <NIGHTSCOUT_HOST> - list duplicate count per created_at
+$self delete <NIGHTSCOUT_HOST> - Delete duplicate entries from ${NIGHTSCOUT_HOST-<NIGHTSCOUT_HOST>}
 EOF
 }
 
@@ -21,7 +22,7 @@ function flatten ( ) {
 function find_dupes_on ( ) {
   count=$1
   date=$2
-  test $count -gt 1  && curl -g -s ${ENDPOINT}.json"?count=$(($count-1))&find[created_at]=$date" 
+  test $count -gt 1  && curl -g -s ${ENDPOINT}.json"?count=$(($count-1))&find[created_at]=$date"
 }
 function debug_cmd ( ) {
 tid=$1
@@ -33,6 +34,20 @@ tid=$1
 (set -x
 curl -X DELETE -H "API-SECRET: $API_SECRET" ${ENDPOINT}/$tid 
 )
+}
+
+function list ( ) {
+NIGHTSCOUT_HOST=$1
+  test -z "$NIGHTSCOUT_HOST" && echo NIGHTSCOUT_HOST undefined. && usage && exit 1
+ENDPOINT=${NIGHTSCOUT_HOST}/api/v1/treatments
+
+export NIGHTSCOUT_HOST ENDPOINT
+fetch | flatten | while read count date; do
+  test $count -gt 1 && echo "{}" \
+    | json -e "this.count = $count" \
+    | json -e "this.date = '$date'" \
+    | json -e "this.created_at = '$date'"
+done | json -g
 }
 
 function main ( ) {
@@ -49,7 +64,7 @@ fi
 
 export NIGHTSCOUT_HOST ENDPOINT
 fetch | flatten | while read count date; do
-  find_dupes_on $count $date | json -a _id \
+  find_dupes_on $count $date | json -a _id | tac \
   | head -n 30 | while read tid line ; do
     echo -n $count' '
     $ACTION $tid
@@ -62,6 +77,9 @@ done
 
 export API_SECRET
 case "$1" in
+  --list)
+    list $2
+    ;;
   --find)
     main $2
     ;;
