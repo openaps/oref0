@@ -46,6 +46,7 @@ export ENTRIES API_SECRET NIGHTSCOUT_HOST REST_ENDPOINT
 if [[ -z $API_SECRET ]] ; then
   echo "$self: missing API_SECRET"
   test -z "$NIGHTSCOUT_HOST" && echo "$self: also missing NIGHTSCOUT_HOST"
+  usage > /dev/fd/2
   cat <<EOF > /dev/fd/2
 Usage: $self <NIGHTSCOUT_HOST-http://localhost:1337> <API_SECRET> [entries|treatments|profile/] <file-to-upload.json> 
 EOF
