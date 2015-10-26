@@ -54,7 +54,6 @@ EOF
 fi
 # requires API_SECRET and NIGHTSCOUT_HOST to be set in calling environment
 # (i.e. in crontab)
-echo $ENTRIES > /dev/fd/2
 (test "$ENTRIES" != "-" && cat $ENTRIES || cat )| (
 curl -s -X POST --data-binary @- \
   -H "API-SECRET: $API_SECRET" \
