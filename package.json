@@ -26,6 +26,7 @@
     "oref0-mint-max-iob": "./bin/oref0-mint-max-iob.sh",
     "oref0-ifttt-notify": "./bin/oref0-ifttt-notify",
     "oref0-reset-usb": "bin/reset-usb.sh",
+    "oref0-reset-git": "bin/reset-git.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",
     "mm-format-ns-profile": "./bin/mm-format-ns-profile.sh",
     "mm-format-ns-treatments": "./bin/mm-format-ns-treatments.sh",
