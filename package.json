@@ -19,6 +19,7 @@
   },
   "bin": {
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
+    "oref0-find-insulin-uses": "./bin/oref0-find-insulin-uses.js",
     "oref0-determine-basal": "./bin/oref0-determine-basal.js",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
