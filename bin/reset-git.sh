@@ -15,6 +15,6 @@
 
 # must be run from within a git repo to do anything useful
 # remove old lockfile if still present
-find .git/index.lock -mmin +5 -exec rm {} \;
+find .git/index.lock -mmin +5 -exec rm {} \; 2>/dev/null
 # if git repository is too corrupt to do anything, mv it to /tmp and start over.
 git status > /dev/null || ( mv .git /tmp/.git-`date +%s` && openaps init . )
