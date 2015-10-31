@@ -22,7 +22,8 @@ latest-openaps-treatment)
 cull-latest-openaps-treatments)
   INPUT=$1
   LAST_TIME=$2
-  mm-format-ns-treatments $INPUT |  json -c "this.created_at > '$LAST_TIME'"
+  MODEL=$3
+  mm-format-ns-treatments $INPUT $MODEL |  json -c "this.created_at > '$LAST_TIME'"
   ;;
 help)
   help_message
