@@ -3,29 +3,48 @@
 # Author: Ben West
 
 self=$(basename $0)
-NIGHTSCOUT_HOST=${NIGHTSCOUT_HOST-${1-localhost:1337}}
-# QUERY=${3}
-REPORT=${2-entries.json}
-OUTPUT=${3-/dev/fd/1}
+REPORT=${1-entries.json}
+NIGHTSCOUT_HOST=${NIGHTSCOUT_HOST-${2-localhost:1337}}
+QUERY=${3}
+OUTPUT=${4-/dev/fd/1}
 
 function usage ( ) {
 cat <<EOF
-Usage: $self <NIGHTSCOUT_HOST|localhost:1337> [entries.json] [stdout|-]
+Usage: $self <entries.json> [NIGHTSCOUT_HOST|localhost:1337] [QUERY] [stdout|-]
 
-$self --config <NIGHTSCOUT_HOST> <entries.json> monitor/entries.json
+$self type <entries.json> <NIGHTSCOUT_HOST|localhost:1337] [QUERY] [stdout|-]
+$self host <NIGHTSCOUT_HOST|localhost:1337> <entries.json> [QUERY] [stdout|-]
+
+$self --config <device> <entries.json> <NIGHTSCOUT_HOST>  <monitor/entries.json>
 EOF
 }
 
-REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/$REPORT
+REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${QUERY}
 case $1 in
   --config)
-    test -z $3 && usage && exit 1;
+    test -z $2 && echo "Device name missing."  && usage && exit 1;
+    devicename=${2-${self}}
+    test -z $3 && echo "Type is missing"  && usage && exit 1;
     # echo openaps device add $2 process $self $3
     cat <<EOF
-openaps device add $self process --require report $self $2
-openaps report add $4 text $self shell "$3"
+openaps device add $devicename process $self $3 $self-NIGHTSCOUT_HOST
+sed -i -e "s/$self-NIGHTSCOUT_HOST/$4/g" $devicename.ini
+openaps report add $5 text $devicename shell 
 EOF
     exit 0;
+    ;;
+  host)
+    # $self
+    NIGHTSCOUT_HOST=${NIGHTSCOUT_HOST-${2-localhost:1337}}
+    REPORT=${3-entries.json}
+    QUERY=${4}
+    OUTPUT=${5-/dev/fd/1}
+    REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${QUERY}
+
+    ;;
+  type)
+    shift
+    exec $self $*
     ;;
   --noop)
     echo "curl -s $REPORT_ENDPOINT | json"
@@ -34,7 +53,8 @@ EOF
     usage
     ;;
   *)
-    curl -s $REPORT_ENDPOINT | json
+    test -z "$NIGHTSCOUT_HOST" && usage && exit 1;
+    curl -g -s $REPORT_ENDPOINT | json
     ;;
 esac
 

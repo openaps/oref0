@@ -46,6 +46,7 @@ export ENTRIES API_SECRET NIGHTSCOUT_HOST REST_ENDPOINT
 if [[ -z $API_SECRET ]] ; then
   echo "$self: missing API_SECRET"
   test -z "$NIGHTSCOUT_HOST" && echo "$self: also missing NIGHTSCOUT_HOST"
+  usage > /dev/fd/2
   cat <<EOF > /dev/fd/2
 Usage: $self <NIGHTSCOUT_HOST-http://localhost:1337> <API_SECRET> [entries|treatments|profile/] <file-to-upload.json> 
 EOF
@@ -53,7 +54,6 @@ EOF
 fi
 # requires API_SECRET and NIGHTSCOUT_HOST to be set in calling environment
 # (i.e. in crontab)
-echo $ENTRIES > /dev/fd/2
 (test "$ENTRIES" != "-" && cat $ENTRIES || cat )| (
 curl -s -X POST --data-binary @- \
   -H "API-SECRET: $API_SECRET" \

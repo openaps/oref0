@@ -19,6 +19,7 @@
   },
   "bin": {
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
+    "oref0-find-insulin-uses": "./bin/oref0-find-insulin-uses.js",
     "oref0-determine-basal": "./bin/oref0-determine-basal.js",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
@@ -36,6 +37,8 @@
     "ns-upload-entries": "./bin/ns-upload-entries.sh",
     "ns-upload": "./bin/ns-upload.sh",
     "ns-get": "./bin/ns-get.sh",
+    "nightscout": "./bin/ns.sh",
+    "ns-dedupe-treatments": "./bin/ns-dedupe-treatments.sh",
     "oref0-pebble": "./bin/oref0-pebble.js"
   },
   "homepage": "https://github.com/openaps/oref0",
