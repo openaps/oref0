@@ -17,7 +17,7 @@ EOF
 
 case $NAME in
 latest-openaps-treatment)
-  ns-get treatments.json'?count=5' $* | json -c "this.enteredBy && this.enteredBy.indexOf('openaps://') === 0" | json 0
+  ns-get treatments.json'?find[enteredBy]=/openaps:\/\//&count=1' $* | json 0
   ;;
 cull-latest-openaps-treatments)
   INPUT=$1
@@ -32,5 +32,3 @@ help)
   test -n "$COMMAND" && exec $COMMAND $*
   ;;
 esac
-
-
