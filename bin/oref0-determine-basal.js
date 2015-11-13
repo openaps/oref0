@@ -18,18 +18,18 @@
 if (!module.parent) {
     var determinebasal = init();
 
-    var iob_input = process.argv.slice(2, 3).pop()
-    var currenttemp_input = process.argv.slice(3, 4).pop()
-    var glucose_input = process.argv.slice(4, 5).pop()
-    var profile_input = process.argv.slice(5, 6).pop()
-    var offline = process.argv.slice(6, 7).pop()
+    var iob_input = process.argv.slice(2, 3).pop();
+    var currenttemp_input = process.argv.slice(3, 4).pop();
+    var glucose_input = process.argv.slice(4, 5).pop();
+    var profile_input = process.argv.slice(5, 6).pop();
+    var offline = process.argv.slice(6, 7).pop();
 
     if (!iob_input || !currenttemp_input || !glucose_input || !profile_input) {
         console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [Offline]');
         process.exit(1);
     }
     
-    var cwd = process.cwd()
+    var cwd = process.cwd();
     var glucose_data = require(cwd + '/' + glucose_input);
     var currenttemp = require(cwd + '/' + currenttemp_input);
     var iob_data = require(cwd + '/' + iob_input);
@@ -45,7 +45,7 @@ if (!module.parent) {
     } else if (glucose_data[0].dateString) {
         bgTime = new Date(glucose_data[0].dateString);
     } else { console.error("Could not determine last BG time"); }
-    var minAgo = (systemTime - bgTime) / 60 / 1000
+    var minAgo = (systemTime - bgTime) / 60 / 1000;
 
     if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
         var reason = "BG data is too old, or clock set incorrectly";
@@ -69,12 +69,19 @@ function init() {
     };
 
     determinebasal.getLastGlucose = function getLastGlucose(data) {
-        
+
+        data = data.map(function prepGlucose (obj) {
+            //Support the NS sgv field to avoid having to convert in a custom way
+            obj.glucose = obj.glucose || obj.sgv;
+            return obj;
+        });
+
         var now = data[0];
         var last = data[1];
         var minutes;
         var change;
         var avg;
+
         //TODO: calculate average using system_time instead of assuming 1 data point every 5m
         if (typeof data[3] !== 'undefined' && data[3].glucose > 30) {
             minutes = 3*5;
@@ -82,21 +89,19 @@ function init() {
         } else if (typeof data[2] !== 'undefined' && data[2].glucose > 30) {
             minutes = 2*5;
             change = now.glucose - data[2].glucose;
-        } else if (typeof data[1] !== 'undefined' && data[1].glucose > 30) {
-            minutes = 1*5;
-            change = now.glucose - data[1].glucose;
+        } else if (typeof last !== 'undefined' && last.glucose > 30) {
+            minutes = 5;
+            change = now.glucose - last.glucose;
         } else { change = 0; }
         // multiply by 5 to get the same units as delta, i.e. mg/dL/5m
         avg = change/minutes * 5;
-        var o = {
+
+        return {
             delta: now.glucose - last.glucose
             , glucose: now.glucose
             , avgdelta: avg
         };
-        
-        return o;
-        
-    }
+    };
 
 
     determinebasal.determine_basal = function determine_basal(glucose_status, currenttemp, iob_data, profile, offline) {
@@ -301,7 +306,7 @@ function init() {
         return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
 
         
-    }
+    };
 
     determinebasal.setTempBasal = function setTempBasal(rate, duration, profile, rT, offline) {
         

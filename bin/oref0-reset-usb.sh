@@ -19,6 +19,10 @@ if [ ! -e $FILE ]; then
 # Raspberry Pi 2 running Raspbian Jessie
     FILE=/sys/devices/platform/soc/3f980000.usb/buspower
 fi
+if [ ! -e $FILE ]; then
+# Raspberry Pi 1 running Raspbian Jessie
+    FILE=/sys/devices/platform/soc/20980000.usb/buspower
+fi
 if [ -e $FILE ]; then
     echo "Power-cycling USB to fix dead Carelink stick"
     sleep 0.1
