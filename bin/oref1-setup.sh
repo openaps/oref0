@@ -93,7 +93,7 @@ grep settings/settings.json /tmp/openaps-reports || openaps report add settings/
 
 # add aliases to get data
 openaps alias add invoke "report invoke" || die "Can't add invoke"
-openaps alias add preflight '! bash -c "rm -f monitor/clock.json && openaps report invoke monitor/clock.json 2>/dev/null && grep -q T monitor/clock.json && echo PREFLIGHT OK || ( mm-stick warmup || sudo oref0-reset-usb; echo PREFLIGHT FAIL; sleep 120; exit 1 )"' || die "Can't add preflight"
+openaps alias add preflight '! bash -c "rm -f monitor/clock.json && openaps report invoke monitor/clock.json >/dev/null 2>/dev/null && grep -q T monitor/clock.json && echo PREFLIGHT OK || ( mm-stick warmup || sudo oref0-reset-usb; echo PREFLIGHT FAIL; sleep 120; exit 1 )"' || die "Can't add preflight"
 openaps alias add monitor-cgm "report invoke monitor/glucose.json" || die "Can't add monitor-cgm"
 openaps alias add get-ns-glucose "report invoke monitor/ns-glucose.json" || die "Can't add get-ns-glucose"
 openaps alias add monitor-pump "report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json" || die "Can't add monitor-pump"
@@ -107,7 +107,7 @@ ls upload 2>/dev/null >/dev/null || mkdir upload || die "Can't mkdir upload"
 openaps alias add latest-ns-treatment-time '! bash -c "nightscout latest-openaps-treatment $NIGHTSCOUT_HOST | json created_at"' || die "Can't add latest-ns-treatment-time"
 openaps alias add format-latest-nightscout-treatments '! bash -c "nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json"' || die "Can't add format-latest-nightscout-treatments"
 openaps alias add upload-recent-treatments '! bash -c "openaps format-latest-nightscout-treatments && test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0 && (ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json ) || echo \"No recent treatments to upload\""' || die "Can't add upload-recent-treatments"
-openaps alias add upload '! bash -c "openaps preflight && openaps upload-recent-treatments >/dev/null && openaps get-settings"' || die "Can't add upload"
+openaps alias add upload '! bash -c "openaps preflight && ( openaps upload-recent-treatments && openaps get-settings) >/dev/null && echo -n \"Uploaded; most recent treatment event @ \"; openaps latest-ns-treatment-time"' || die "Can't add upload"
 
 read -p "Schedule oref1 (openaps nightscout uploader) in cron? " -n 1 -r
 echo
