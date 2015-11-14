@@ -97,7 +97,7 @@ openaps alias add preflight '! bash -c "rm -f monitor/clock.json && openaps repo
 openaps alias add monitor-cgm "report invoke monitor/glucose.json" || die "Can't add monitor-cgm"
 openaps alias add get-ns-glucose "report invoke monitor/ns-glucose.json" || die "Can't add get-ns-glucose"
 openaps alias add monitor-pump "report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json" || die "Can't add monitor-pump"
-openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/profile.json" || die "Can't add get-settings"
+openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json" || die "Can't add get-settings"
 openaps alias add get-bg '! bash -c "openaps monitor-cgm 2>/dev/null || ( openaps get-ns-glucose && grep -q glucose monitor/ns-glucose.json && mv monitor/ns-glucose.json monitor/glucose.json )"' || die "Can't add get-bg"
 openaps alias add gather '! bash -c "rm monitor/*; ( openaps get-bg && openaps get-settings >/dev/null && openaps monitor-pump ) 2>/dev/null"' || die "Can't add gather"
 openaps alias add wait-for-bg '! bash -c "cp monitor/glucose.json monitor/last-glucose.json; while(diff -q monitor/last-glucose.json monitor/glucose.json); do echo -n .; sleep 10; openaps get-bg >/dev/null; done"'
@@ -107,16 +107,27 @@ ls upload 2>/dev/null >/dev/null || mkdir upload || die "Can't mkdir upload"
 openaps alias add latest-ns-treatment-time '! bash -c "nightscout latest-openaps-treatment $NIGHTSCOUT_HOST | json created_at"' || die "Can't add latest-ns-treatment-time"
 openaps alias add format-latest-nightscout-treatments '! bash -c "nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json"' || die "Can't add format-latest-nightscout-treatments"
 openaps alias add upload-recent-treatments '! bash -c "openaps format-latest-nightscout-treatments && test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0 && (ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json ) || echo \"No recent treatments to upload\""' || die "Can't add upload-recent-treatments"
+openaps alias add upload '! bash -c "openaps preflight && openaps upload-recent-treatments >/dev/null; openaps get-settings"' || die "Can't add upload"
 
-read -p "Schedule openaps uploader in cron? " -n 1 -r
+read -p "Schedule oref1 (openaps nightscout uploader) in cron? " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     # add crontab entries
     (crontab -l; crontab -l | grep -q PATH || echo 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin') | crontab -
     (crontab -l; crontab -l | grep -q killall || echo '* * * * * killall -g --older-than 10m openaps') | crontab -
     (crontab -l; crontab -l | grep -q "reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
-    (crontab -l; crontab -l | grep -q retry-loop || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps' && echo OpenAPS already running || ( openaps monitor-pump && openaps upload-recent-treatments ) ) 2>&1 | tee -a /var/log/openaps/uploader.log") | crontab -
+    (crontab -l; crontab -l | grep -q retry-loop || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps' && echo OpenAPS already running || openaps upload 2>&1 | tee -a /var/log/openaps/uploader.log") | crontab -
     crontab -l
+    read -p "Nightscout hostname? "
+    NIGHTSCOUT_HOST=$REPLY
+    read -p "Hashed API secret? "
+    API_SECRET=$REPLY
+    read -p "Upload to $NIGHTSCOUT_HOST using API secret $API_SECRET, corret? " -n 1 -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        (crontab -l; echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
+        (crontab -l; echo API_SECRET=$API_SECRET) | crontab -
+        crontab -l
+    fi
 fi
 
 fi
