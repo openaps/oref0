@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script sets up an openaps environment to work with loop.sh,
+# This script sets up a read-only openaps environment that uploads pump history data to nightscout
 # by defining the required devices, reports, and aliases.
 #
 # Released under MIT license. See the accompanying LICENSE.txt file for
