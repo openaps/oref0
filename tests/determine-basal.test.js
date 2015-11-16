@@ -168,7 +168,7 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.equal(0);
         output.duration.should.equal(0);
-        output.reason.should.match(/Eventual BG.*<.*but Delta.*> BGI.*; cancel/);
+        output.reason.should.match(/Eventual BG.*<.*but.*Delta.*> BGI.*; cancel/);
     });
 
     it('should low-temp when low and rising slower than BGI', function () {
@@ -197,7 +197,7 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.equal(0);
         output.duration.should.equal(0);
-        output.reason.should.match(/Eventual BG.*>.*but Delta.*< BGI.*; cancel/);
+        output.reason.should.match(/Eventual BG.*>.*but.*Delta.*< BGI.*; cancel/);
     });
 
     it('should high-temp when high and falling slower than BGI', function () {
