@@ -292,7 +292,7 @@ function init() {
             rT.reason = currenttemp.duration + "@" + currenttemp.rate + " > req " + insulinReq + "U";
             return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
         }
-        if (typeof currenttemp.rate == 'undefined' || currenttemp.rate == 0) { // no temp is set
+        if (typeof currenttemp.duration == 'undefined' || currenttemp.duration == 0) { // no temp is set
             rT.reason += "no temp, setting " + rate + "U/hr";
             return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
         }
