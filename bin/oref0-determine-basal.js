@@ -225,7 +225,7 @@ function init() {
             rate = Math.round( rate * 1000 ) / 1000;
             // if required temp < existing temp basal
             if (typeof currenttemp.rate !== 'undefined' && (currenttemp.duration > 0 && rate > currenttemp.rate - 0.1)) {
-                rT.reason += "temp " + currenttemp.rate + " <~ req " + rate + "U/hr";
+                rT.reason += ", temp " + currenttemp.rate + " <~ req " + rate + "U/hr";
                 console.error(rT.reason);
                 console.log(JSON.stringify(rT));
                 return rT;
