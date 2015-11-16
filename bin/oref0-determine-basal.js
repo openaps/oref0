@@ -212,7 +212,7 @@ function init() {
                     rT.reason += tick + ", and temp " + currenttemp.rate + " < basal " + profile.current_basal;
                     return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
                 }
-                rT.reason += "bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
+                rT.reason += ", bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
                 console.error(rT.reason);
                 console.log(JSON.stringify(rT));
                 return rT;
