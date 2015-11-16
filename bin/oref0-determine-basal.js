@@ -167,7 +167,7 @@ function init() {
         
         if (bg < threshold) { // low glucose suspend mode: BG is < ~80
             rT.reason = "BG " + bg + "<" + threshold;
-            if ((glucose_status.delta < 0 && glucose_status.avgdelta < 0) || (glucose_status.delta < bgi && glucose_status.avgdelta < bgi)) {
+            if ((glucose_status.delta <= 0 && glucose_status.avgdelta <= 0) || (glucose_status.delta < bgi && glucose_status.avgdelta < bgi)) {
                 // BG is still falling / rising slower than predicted
                 console.error(rT.reason);
                 return determinebasal.setTempBasal(0, 30, profile, rT, offline);
