@@ -67,15 +67,15 @@ describe('IOB', function ( ) {
     hourLater.bolusiob.should.be.lessThan(.5);
     hourLater.iob.should.be.greaterThan(0);
 
-    var after3hDIAInputs = inputs;
-    after3hDIAInputs.clock = new Date(now + (3 * 60 * 60 * 1000)).toISOString();
-    var after3hDIA = require('../lib/iob')(after3hDIAInputs);
-    after3hDIA.iob.should.greaterThan(0);
+    var after3hInputs = inputs;
+    after3hInputs.clock = new Date(now + (3 * 60 * 60 * 1000)).toISOString();
+    var after3h = require('../lib/iob')(after3hInputs);
+    after3h.iob.should.be.greaterThan(0);
 
-    var after4hDIAInputs = inputs;
-    after4hDIAInputs.clock = new Date(now + (4 * 60 * 60 * 1000)).toISOString();
-    var after4hDIA = require('../lib/iob')(after4hDIAInputs);
-    after4hDIA.iob.should.equal(0);
+    var after4hInputs = inputs;
+    after4hInputs.clock = new Date(now + (4 * 60 * 60 * 1000)).toISOString();
+    var after4h = require('../lib/iob')(after4hInputs);
+    after4h.iob.should.equal(0);
 
   });
 
