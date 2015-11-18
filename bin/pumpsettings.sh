@@ -1,1 +1,0 @@
-../../openaps-sh/pumpsettings.sh
