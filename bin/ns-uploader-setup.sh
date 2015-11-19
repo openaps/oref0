@@ -41,8 +41,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 ( ( cd $directory 2>/dev/null && git status ) || ( openaps init $directory ) ) || die "Can't init $directory"
 cd $directory || die "Can't cd $directory"
 
-sudo cp ~/src/oref0/logrotate.openaps /etc/logrotate.d/openaps
-sudo cp ~/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog
+#sudo cp ~/src/oref0/logrotate.openaps /etc/logrotate.d/openaps
+sudo bash -c "curl -s https://raw.githubusercontent.com/openaps/oref0/master/logrotate.openaps > /etc/logrotate.d/openaps"
+#sudo cp ~/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog
+sudo bash -c "curl -s https://raw.githubusercontent.com/openaps/oref0/master/logrotate.rsyslog > /etc/logrotate.d/rsyslog"
 
 test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps
 
