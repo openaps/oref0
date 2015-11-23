@@ -163,7 +163,8 @@ function init() {
             console.log(JSON.stringify(rT));
             return rT;
         }
-        var threshold = profile.min_bg - 30;
+        // min_bg of 90 -> threshold of 70, 110 -> 80, and 130 -> 90
+        var threshold = profile.min_bg - 0.5*(profile.min_bg-50);
         
         if (bg < threshold) { // low glucose suspend mode: BG is < ~80
             rT.reason = "BG " + bg + "<" + threshold;
