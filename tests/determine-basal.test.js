@@ -171,7 +171,7 @@ describe('determine-basal', function ( ) {
 
     it('should temp to 0 when LOW w/ no IOB', function () {
         var glucose_status = {"delta":0,"glucose":39,"avgdelta":0};
-        var iob_data = {"iob":-0,"activity":0,"bolusiob":0};
+        var iob_data = {"iob":0,"activity":0,"bolusiob":0};
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.equal(0);
         output.duration.should.equal(30);
