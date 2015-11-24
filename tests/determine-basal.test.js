@@ -160,6 +160,15 @@ describe('determine-basal', function ( ) {
         output.reason.should.match(/BG 39<80/);
     });
 
+    it('should temp to 0 when LOW w/ negative IOB', function () {
+        var glucose_status = {"delta":0,"glucose":39,"avgdelta":0};
+        var iob_data = {"iob":-2.5,"activity":-0.03,"bolusiob":0};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.equal(0);
+        output.duration.should.equal(30);
+        output.reason.should.match(/BG 39<80/);
+    });
+
     // low eventualBG
 
     it('should low-temp when eventualBG < min_bg', function () {
