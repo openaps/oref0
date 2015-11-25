@@ -331,6 +331,7 @@ describe('determine-basal', function ( ) {
     });
 
     // meal assist / bolus snooze
+    // right after 20g 1U meal bolus
     it('should do nothing when low and rising after meal bolus', function () {
         var glucose_status = {"delta":1,"glucose":80,"avgdelta":1};
         var iob_data = {"iob":0.5,"activity":-0.01,"bolusiob":1};
@@ -354,6 +355,82 @@ describe('determine-basal', function ( ) {
         var iob_data = {"iob":0.5,"activity":-0.01,"bolusiob":1};
         var currenttemp = {"duration":20,"rate":0,"temp":"absolute"};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined,setTempBasal);
+        output.rate.should.equal(0);
+        output.duration.should.equal(0);
+    });
+
+    // 40m after 20g 1U meal bolus
+    it('should high-temp aggressively when 120 and rising after meal bolus', function () {
+        var glucose_status = {"delta":10,"glucose":120,"avgdelta":10};
+        var iob_data = {"iob":0.4,"activity":0,"bolusiob":0.7};
+        var meal_data = {"dia_carbs":20,"dia_bolused":1};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.be.above(1.8);
+        output.duration.should.equal(30);
+    });
+
+    // 60m after 20g 1U meal bolus
+    it('should high-temp aggressively when 150 and rising after meal bolus', function () {
+        var glucose_status = {"delta":3,"glucose":150,"avgdelta":5};
+        var iob_data = {"iob":0.5,"activity":0.01,"bolusiob":0.6};
+        var meal_data = {"dia_carbs":20,"dia_bolused":1};
+        var currenttemp = {"duration":10,"rate":2,"temp":"absolute"};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.be.above(2.2);
+        output.duration.should.equal(30);
+    });
+
+    // 75m after 20g 1U meal bolus
+    it('should cancel high-temp when 160 and dropping after meal bolus', function () {
+        var glucose_status = {"delta":-3,"glucose":160,"avgdelta":0};
+        var iob_data = {"iob":0.9,"activity":0.02,"bolusiob":0.5};
+        var meal_data = {"dia_carbs":20,"dia_bolused":1};
+        var currenttemp = {"duration":15,"rate":2.5,"temp":"absolute"};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.equal(0);
+        output.duration.should.equal(0);
+    });
+
+    // right after 120g 6U meal bolus
+    it('should high-temp when 120 and rising after meal bolus', function () {
+        var glucose_status = {"delta":1,"glucose":120,"avgdelta":1};
+        var iob_data = {"iob":6,"activity":0,"bolusiob":6};
+        var meal_data = {"dia_carbs":120,"dia_bolused":6};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.be.above(1);
+        output.duration.should.equal(30);
+    });
+
+    // after 120g 6U meal bolus
+    it('should high-temp when 140 and rising after meal bolus', function () {
+        var glucose_status = {"delta":1,"glucose":140,"avgdelta":1};
+        //TODO: figure out how to track basal_iob vs. net_iob
+        var iob_data = {"iob":6.5,"activity":0.01,"bolusiob":5.5};
+        var meal_data = {"dia_carbs":120,"dia_bolused":6};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.be.above(1);
+        output.duration.should.equal(30);
+    });
+
+    // after 120g 6U meal bolus
+    it('should high-temp when 160 and rising after meal bolus', function () {
+        var glucose_status = {"delta":1,"glucose":160,"avgdelta":1};
+        //TODO: figure out how to track basal_iob vs. net_iob
+        var iob_data = {"iob":7.0,"activity":0.02,"bolusiob":5};
+        var meal_data = {"dia_carbs":120,"dia_bolused":6};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.be.above(1);
+        output.duration.should.equal(30);
+    });
+
+    // after 120g 6U meal bolus
+    it('should cancel temp when 160 and falling after meal bolus', function () {
+        var glucose_status = {"delta":-1,"glucose":160,"avgdelta":-1};
+        //TODO: figure out how to track basal_iob vs. net_iob
+        var iob_data = {"iob":7.0,"activity":0.03,"bolusiob":5};
+        var meal_data = {"dia_carbs":120,"dia_bolused":6};
+        var currenttemp = {"duration":15,"rate":2.5,"temp":"absolute"};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.equal(0);
         output.duration.should.equal(0);
     });
