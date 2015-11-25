@@ -210,10 +210,10 @@ function init() {
             if (snoozeBG > profile.min_bg) { // if adding back in the bolus contribution BG would be above min
                 // if BG is falling and high-temped, or rising and low-temped, cancel
                 // compare against zero here, not BGI, because BGI will be highly negative from boluses and no carbs
-                if (glucose_status.delta < 0 && currenttemp.rate > profile.current_basal) {
+                if (glucose_status.delta < 0 && currenttemp.duration > 0 && currenttemp.rate > profile.current_basal) {
                     rT.reason += tick + ", and temp " + currenttemp.rate + " > basal " + profile.current_basal;
                     return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
-                } else if (glucose_status.delta > 0 && currenttemp.rate < profile.current_basal) {
+                } else if (glucose_status.delta > 0 && currenttemp.duration > 0 && currenttemp.rate < profile.current_basal) {
                     rT.reason += tick + ", and temp " + currenttemp.rate + " < basal " + profile.current_basal;
                     return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
                 }
