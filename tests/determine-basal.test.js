@@ -243,5 +243,14 @@ describe('determine-basal', function ( ) {
       glucose_status.avgdelta.should.equal(10);
     });
 
+    // meal assist
+    it('should do nothing when low and rising after meal bolus', function () {
+        var glucose_status = {"delta":1,"glucose":80,"avgdelta":1};
+        var iob_data = {"iob":0.5,"activity":-0.01,"bolusiob":1};
+        var meal_data = {"dia_carbs":20,"dia_bolused":1};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        (typeof output.rate).should.equal('undefined');
+        (typeof output.duration).should.equal('undefined');
+    });
 
 });
