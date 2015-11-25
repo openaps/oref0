@@ -243,7 +243,7 @@ describe('determine-basal', function ( ) {
       glucose_status.avgdelta.should.equal(10);
     });
 
-    // meal assist
+    // meal assist / bolus snooze
     it('should do nothing when low and rising after meal bolus', function () {
         var glucose_status = {"delta":1,"glucose":80,"avgdelta":1};
         var iob_data = {"iob":0.5,"activity":-0.01,"bolusiob":1};
