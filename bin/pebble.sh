@@ -1,1 +1,0 @@
-../../openaps-sh/pebble.sh

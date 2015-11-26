@@ -163,11 +163,12 @@ function init() {
             console.log(JSON.stringify(rT));
             return rT;
         }
-        var threshold = profile.min_bg - 30;
+        // min_bg of 90 -> threshold of 70, 110 -> 80, and 130 -> 90
+        var threshold = profile.min_bg - 0.5*(profile.min_bg-50);
         
         if (bg < threshold) { // low glucose suspend mode: BG is < ~80
             rT.reason = "BG " + bg + "<" + threshold;
-            if ((glucose_status.delta < 0 && glucose_status.avgdelta < 0) || (glucose_status.delta < bgi && glucose_status.avgdelta < bgi)) {
+            if ((glucose_status.delta <= 0 && glucose_status.avgdelta <= 0) || (glucose_status.delta < bgi && glucose_status.avgdelta < bgi)) {
                 // BG is still falling / rising slower than predicted
                 console.error(rT.reason);
                 return determinebasal.setTempBasal(0, 30, profile, rT, offline);
@@ -191,7 +192,11 @@ function init() {
             rT.reason = "Eventual BG " + eventualBG + "<" + profile.min_bg;
             // if 5m or 15m avg BG is rising faster than BGI/2
             if (glucose_status.delta > bgi/2 && glucose_status.avgdelta > bgi/2) {
-                rT.reason += ", but Delta " + tick + " > BGI " + bgi + " / 2";
+                if (glucose_status.delta > glucose_status.avgdelta) {
+                    rT.reason += ", but Delta " + tick + " > BGI " + bgi + " / 2";
+                } else {
+                    rT.reason += ", but Avg. Delta " + glucose_status.avgdelta + " > BGI " + bgi + " / 2";
+                }
                 if (currenttemp.duration > 0) { // if there is currently any temp basal running
                     rT.reason = rT.reason += "; cancel";
                     return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
@@ -205,14 +210,14 @@ function init() {
             if (snoozeBG > profile.min_bg) { // if adding back in the bolus contribution BG would be above min
                 // if BG is falling and high-temped, or rising and low-temped, cancel
                 // compare against zero here, not BGI, because BGI will be highly negative from boluses and no carbs
-                if (glucose_status.delta < 0 && currenttemp.rate > profile.current_basal) {
+                if (glucose_status.delta < 0 && currenttemp.duration > 0 && currenttemp.rate > profile.current_basal) {
                     rT.reason += tick + ", and temp " + currenttemp.rate + " > basal " + profile.current_basal;
                     return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
-                } else if (glucose_status.delta > 0 && currenttemp.rate < profile.current_basal) {
+                } else if (glucose_status.delta > 0 && currenttemp.duration > 0 && currenttemp.rate < profile.current_basal) {
                     rT.reason += tick + ", and temp " + currenttemp.rate + " < basal " + profile.current_basal;
                     return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
                 }
-                rT.reason += "bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
+                rT.reason += ", bolus snooze: eventual BG range " + eventualBG + "-" + snoozeBG;
                 console.error(rT.reason);
                 console.log(JSON.stringify(rT));
                 return rT;
@@ -225,7 +230,7 @@ function init() {
             rate = Math.round( rate * 1000 ) / 1000;
             // if required temp < existing temp basal
             if (typeof currenttemp.rate !== 'undefined' && (currenttemp.duration > 0 && rate > currenttemp.rate - 0.1)) {
-                rT.reason += "temp " + currenttemp.rate + " <~ req " + rate + "U/hr";
+                rT.reason += ", temp " + currenttemp.rate + " <~ req " + rate + "U/hr";
                 console.error(rT.reason);
                 console.log(JSON.stringify(rT));
                 return rT;
@@ -235,7 +240,11 @@ function init() {
         }
         // if eventual BG is above min but BG is falling faster than BGI/2
         if (glucose_status.delta < bgi/2 || glucose_status.avgdelta < bgi/2) {
-            rT.reason = "Eventual BG " + eventualBG + ">" + profile.min_bg + " but Delta " + tick + " < BGI " + bgi + " / 2";
+            if (glucose_status.delta < glucose_status.avgdelta) {
+                rT.reason = "Eventual BG " + eventualBG + ">" + profile.min_bg + " but Delta " + tick + " < BGI " + bgi + " / 2";
+            } else {
+                rT.reason = "Eventual BG " + eventualBG + ">" + profile.min_bg + " but Avg. Delta " + glucose_status.avgdelta + " < BGI " + bgi + " / 2";
+            }
             if (currenttemp.duration > 0) { // if there is currently any temp basal running
                 rT.reason = rT.reason += "; cancel";
                 return determinebasal.setTempBasal(0, 0, profile, rT, offline); // cancel temp
@@ -292,7 +301,7 @@ function init() {
             rT.reason = currenttemp.duration + "@" + currenttemp.rate + " > req " + insulinReq + "U";
             return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
         }
-        if (typeof currenttemp.rate == 'undefined' || currenttemp.rate == 0) { // no temp is set
+        if (typeof currenttemp.duration == 'undefined' || currenttemp.duration == 0) { // no temp is set
             rT.reason += "no temp, setting " + rate + "U/hr";
             return determinebasal.setTempBasal(rate, 30, profile, rT, offline);
         }

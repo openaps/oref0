@@ -151,6 +151,33 @@ describe('determine-basal', function ( ) {
         output.reason.should.match(/no temp, setting/);
     });
 
+    it('should temp to 0 when LOW w/ positive IOB', function () {
+        var glucose_status = {"delta":0,"glucose":39,"avgdelta":0};
+        var iob_data = {"iob":1,"activity":0.01,"bolusiob":0.5};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.equal(0);
+        output.duration.should.equal(30);
+        output.reason.should.match(/BG 39<80/);
+    });
+
+    it('should temp to 0 when LOW w/ negative IOB', function () {
+        var glucose_status = {"delta":0,"glucose":39,"avgdelta":0};
+        var iob_data = {"iob":-2.5,"activity":-0.03,"bolusiob":0};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.equal(0);
+        output.duration.should.equal(30);
+        output.reason.should.match(/BG 39<80/);
+    });
+
+    it('should temp to 0 when LOW w/ no IOB', function () {
+        var glucose_status = {"delta":0,"glucose":39,"avgdelta":0};
+        var iob_data = {"iob":0,"activity":0,"bolusiob":0};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        output.rate.should.equal(0);
+        output.duration.should.equal(30);
+        output.reason.should.match(/BG 39<80/);
+    });
+
     // low eventualBG
 
     it('should low-temp when eventualBG < min_bg', function () {
@@ -168,7 +195,7 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.equal(0);
         output.duration.should.equal(0);
-        output.reason.should.match(/Eventual BG.*<.*but Delta.*> BGI.*; cancel/);
+        output.reason.should.match(/Eventual BG.*<.*but.*Delta.*> BGI.*; cancel/);
     });
 
     it('should low-temp when low and rising slower than BGI', function () {
@@ -197,7 +224,7 @@ describe('determine-basal', function ( ) {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
         output.rate.should.equal(0);
         output.duration.should.equal(0);
-        output.reason.should.match(/Eventual BG.*>.*but Delta.*< BGI.*; cancel/);
+        output.reason.should.match(/Eventual BG.*>.*but.*Delta.*< BGI.*; cancel/);
     });
 
     it('should high-temp when high and falling slower than BGI', function () {
@@ -216,5 +243,14 @@ describe('determine-basal', function ( ) {
       glucose_status.avgdelta.should.equal(10);
     });
 
+    // meal assist / bolus snooze
+    it('should do nothing when low and rising after meal bolus', function () {
+        var glucose_status = {"delta":1,"glucose":80,"avgdelta":1};
+        var iob_data = {"iob":0.5,"activity":-0.01,"bolusiob":1};
+        var meal_data = {"dia_carbs":20,"dia_bolused":1};
+        var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
+        (typeof output.rate).should.equal('undefined');
+        (typeof output.duration).should.equal('undefined');
+    });
 
 });

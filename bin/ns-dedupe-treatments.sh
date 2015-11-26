@@ -76,6 +76,7 @@ done
 }
 
 export API_SECRET
+test -n "$3" && API_SECRET=$3
 case "$1" in
   --list)
     list $2
