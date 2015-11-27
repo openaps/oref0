@@ -47,13 +47,13 @@ if (!module.parent) {
 
     var status = {
       openaps: {
-        clock: require(cwd + '/' + clock_input)
-        , iob: requireWithTimestamp(cwd + '/' + iob_input)
+        iob: requireWithTimestamp(cwd + '/' + iob_input)
         , suggested: requireWithTimestamp(cwd + '/' + suggested_input)
         , enacted: requireWithTimestamp(cwd + '/' + enacted_input)
       }
       , pump: {
-        battery: require(cwd + '/' + battery_input)
+        clock: require(cwd + '/' + clock_input)
+        , battery: require(cwd + '/' + battery_input)
         , reservoir: require(cwd + '/' + reservoir_input)
         , status: requireWithTimestamp(cwd + '/' + status_input)
       }
