@@ -108,6 +108,9 @@ function init() {
 
 
     determinebasal.determine_basal = function determine_basal(glucose_status, currenttemp, iob_data, profile, offline) {
+        var rT = { //short for requestedTemp
+        };
+    
         if (typeof profile === 'undefined' || typeof profile.current_basal === 'undefined') {
             rT.error ='Error: could not get current basal rate';
             return rT;
@@ -147,7 +150,7 @@ function init() {
         var bgi = Math.round(( -iob_data.activity * profile.sens * 5 )*100)/100;
         // project deviation over next 15 minutes
         var deviation = Math.round( 15 / 5 * ( glucose_status.avgdelta - bgi ) );
-        console.log("Avg.Delta: " + glucose_status.avgdelta.toFixed(1) + ", BGI: " + bgi.toFixed(1) + " 15m activity projection: " + deviation.toFixed(0));
+        //console.log("Avg.Delta: " + glucose_status.avgdelta.toFixed(1) + ", BGI: " + bgi.toFixed(1) + " 15m activity projection: " + deviation.toFixed(0));
         
         // calculate the naive (bolus calculator math) eventual BG based on net IOB and sensitivity
         var naive_eventualBG = Math.round( bg - (iob_data.iob * profile.sens) );
@@ -160,20 +163,14 @@ function init() {
         // adjust that for deviation like we did eventualBG
         var snoozeBG = naive_snoozeBG + deviation;
         
-        console.log("BG: " + bg +"(" + tick + ","+glucose_status.avgdelta.toFixed(1)+")"+ " -> " + eventualBG + "-" + snoozeBG + " (Unadjusted: " + naive_eventualBG + "-" + naive_snoozeBG + ")");
+        //console.log("BG: " + bg +"(" + tick + ","+glucose_status.avgdelta.toFixed(1)+")"+ " -> " + eventualBG + "-" + snoozeBG + " (Unadjusted: " + naive_eventualBG + "-" + naive_snoozeBG + ")");
         
         if (typeof eventualBG === 'undefined') { 
             console.error('Error: could not calculate eventualBG');
             rT.error ='Error: could not calculate eventualBG';
             return rT;
         }
-        var rT = { //short for requestedTemp
-            'temp': 'absolute'
-            , 'bg': bg
-            , 'tick': tick
-            , 'eventualBG': eventualBG
-            , 'snoozeBG': snoozeBG
-        };
+        
         
         
         if (bg < 30) {  //Dexcom is in ??? mode or calibrating, do nothing. Asked @benwest for raw data in iter_glucose

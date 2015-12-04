@@ -52,6 +52,12 @@ describe('setTempBasal', function ( ) {
         requestedTemp.rate.should.equal(2.8);
         requestedTemp.duration.should.equal(30);
     });
+    it('should temp to 0 when requested rate is less then 0 * current_basal', function () {
+        var profile = { "current_basal":0.7,"max_daily_basal":1.3,"max_basal":10.0 };
+        var requestedTemp = determinebasal.setTempBasal(-1, 30, profile, rt);
+        requestedTemp.rate.should.equal(0);
+        requestedTemp.duration.should.equal(30);
+    });
 
 });
 
@@ -64,7 +70,7 @@ describe('determine-basal', function ( ) {
     var glucose_status = {"delta":0,"glucose":115,"avgdelta":0};
     var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
     var iob_data = {"iob":0,"activity":0,"bolusiob":0};
-    var profile = {"max_iob":1.5,"dia":3,"type":"current","current_basal":0.9,"max_daily_basal":1.3,"max_basal":3.5,"max_bg":120,"min_bg":110,"sens":40};
+    var profile = {"max_iob":1.5,"dia":3,"type":"current","current_basal":0.9,"max_daily_basal":1.3,"max_basal":3.5,"max_bg":120,"min_bg":110,"sens":40, "target_bg":110};
 
     it('should do nothing when in range w/o IOB', function () {
         var output = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile);
@@ -243,6 +249,21 @@ describe('determine-basal', function ( ) {
       glucose_status.avgdelta.should.equal(10);
     });
 
+    it('should profile.current_basal be undefined return error', function () {
+      var glucose_status = determinebasal.determine_basal(undefined,undefined,undefined,undefined);
+      glucose_status.error.should.equal('Error: could not get current basal rate');
+    }); 
+
+    it('should bg be < 30 (Dexcom is in ???) return error', function () {
+      var glucose_status = determinebasal.determine_basal({glucose:18},undefined, undefined, profile);
+      glucose_status.error.should.equal('CGM is calibrating or in ??? state');
+    });  
+
+    it('profile should contain min_bg,max_bg or target_bg', function () {
+      var glucose_status = determinebasal.determine_basal({glucose:100},undefined, undefined, {"current_basal":0.0});
+      glucose_status.error.should.equal('Error: could not determine target_bg');
+    });      
+    
     // meal assist / bolus snooze
     it('should do nothing when low and rising after meal bolus', function () {
         var glucose_status = {"delta":1,"glucose":80,"avgdelta":1};
