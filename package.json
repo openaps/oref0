@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
-    "test": "make test"
+    "test": "mocha tests/*.js"
   },
   "repository": {
     "type": "git",
@@ -50,5 +50,17 @@
   "devDependencies": {
     "mocha": "^2.3.3",
     "should": "^7.1.0"
+  },
+  "config": {
+    "blanket": {
+      "pattern": [
+        "bin",
+        "lib",
+        "tests"
+      ],
+      "data-cover-never": [
+        "node_modules"
+      ]
+    }
   }
 }
