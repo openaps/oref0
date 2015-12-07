@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
-    "test": "mocha tests/*.js"
+    "test": "make test"
   },
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
   "keywords": [
     "openaps"
   ],
-  "author": "Scott Leibrand",
+  "author": "Scott Leibrand, OpenAPS contributors",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/openaps/oref0/issues"
