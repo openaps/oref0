@@ -66,7 +66,6 @@ if (!module.parent) {
     } else {
         console.error(rT.error);
     }
-    rT=rT;
 
 }
     
@@ -75,7 +74,6 @@ function init() {
     var determinebasal = {
         name: 'determine-basal'
         , label: "OpenAPS Determine Basal"
-        , pluginType: 'pill-major'
     };
     
     determinebasal.getLastGlucose = require('../lib/glucose-get-last');
