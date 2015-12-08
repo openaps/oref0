@@ -23,9 +23,10 @@ if (!module.parent) {
     var glucose_input = process.argv.slice(4, 5).pop();
     var profile_input = process.argv.slice(5, 6).pop();
     var offline = process.argv.slice(6, 7).pop();
+    var meal_input = process.argv.slice(7, 8).pop();
 
     if (!iob_input || !currenttemp_input || !glucose_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [Offline]');
+        console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [Offline] [meal.json]');
         process.exit(1);
     }
     
@@ -35,6 +36,7 @@ if (!module.parent) {
     var iob_data = require(cwd + '/' + iob_input);
     var profile = require(cwd + '/' + profile_input);
     var glucose_status = determinebasal.getLastGlucose(glucose_data);
+    if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
 
     //if old reading from Dexcom do nothing
 
@@ -59,7 +61,7 @@ if (!module.parent) {
     
     var setTempBasal = require('../lib/basal-set-temp'); 
     
-    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, setTempBasal);
+    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal, setTempBasal);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));
