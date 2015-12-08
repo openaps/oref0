@@ -12,7 +12,7 @@
   "keywords": [
     "openaps"
   ],
-  "author": "Scott Leibrand",
+  "author": "Scott Leibrand, OpenAPS contributors",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/openaps/oref0/issues"
@@ -50,5 +50,17 @@
   "devDependencies": {
     "mocha": "^2.3.3",
     "should": "^7.1.0"
+  },
+  "config": {
+    "blanket": {
+      "pattern": [
+        "bin",
+        "lib",
+        "tests"
+      ],
+      "data-cover-never": [
+        "node_modules"
+      ]
+    }
   }
 }
