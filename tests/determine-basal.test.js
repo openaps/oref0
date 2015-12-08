@@ -14,7 +14,7 @@ describe('determine-basal', function ( ) {
     var glucose_status = {"delta":0,"glucose":115,"avgdelta":0};
     var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
     var iob_data = {"iob":0,"activity":0,"bolusiob":0};
-    var profile = {"max_iob":2.5,"dia":3,"type":"current","current_basal":0.9,"max_daily_basal":1.3,"max_basal":3.5,"max_bg":120,"min_bg":110,"sens":40, "target_bg":110};
+    var profile = {"max_iob":2.5,"dia":3,"type":"current","current_basal":0.9,"max_daily_basal":1.3,"max_basal":3.5,"max_bg":120,"min_bg":110,"sens":40,"target_bg":110,"carb_ratio":10};
     var meal_data = {};
 
     it('should do nothing when in range w/o IOB', function () {
