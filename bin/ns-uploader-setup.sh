@@ -102,7 +102,7 @@ openaps alias add monitor-pump "report invoke monitor/clock.json monitor/temp_ba
 openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json" || die "Can't add get-settings"
 openaps alias add get-bg '! bash -c "openaps monitor-cgm 2>/dev/null || ( openaps get-ns-glucose && grep -q glucose monitor/ns-glucose.json && mv monitor/ns-glucose.json monitor/glucose.json )"' || die "Can't add get-bg"
 openaps alias add gather '! bash -c "rm monitor/*; ( openaps get-bg && openaps get-settings >/dev/null && openaps monitor-pump ) 2>/dev/null"' || die "Can't add gather"
-openaps alias add wait-for-bg '! bash -c "cp monitor/glucose.json monitor/last-glucose.json; while(diff -q monitor/last-glucose.json monitor/glucose.json); do echo -n .; sleep 10; openaps get-bg >/dev/null; done"'
+openaps alias add wait-for-bg '! bash -c "touch monitor/glucose.json; cp monitor/glucose.json monitor/last-glucose.json; while(diff -q monitor/last-glucose.json monitor/glucose.json); do echo -n .; sleep 10; openaps get-bg >/dev/null; done"'
 
 # upload treatments to nightscout
 ls upload 2>/dev/null >/dev/null || mkdir upload || die "Can't mkdir upload"
