@@ -47,9 +47,16 @@ if (!module.parent) {
     if (typeof maxiob_input != 'undefined') {
         maxiob_data = require(cwd + '/' + maxiob_input);
     }
+    var fs = require('fs');
+    //console.log(carbratio_data);
     var carbratio_data = { };
+    //console.log("carbratio_input",carbratio_input);
     if (typeof carbratio_input != 'undefined') {
-        carbratio_data = require(cwd + '/' + carbratio_input);
+        try {
+            carbratio_data = JSON.parse(fs.readFileSync(carbratio_input, 'utf8'));
+        } catch (e) {
+            console.error("Warning: could not parse carbratio_data. Meal Assist disabled.");
+        }
     }
     var inputs = {
       settings: pumpsettings_data
