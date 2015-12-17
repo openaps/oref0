@@ -30,13 +30,29 @@ if (!module.parent) {
         process.exit(1);
     }
     
-    var cwd = process.cwd();
-    var glucose_data = require(cwd + '/' + glucose_input);
-    var currenttemp = require(cwd + '/' + currenttemp_input);
-    var iob_data = require(cwd + '/' + iob_input);
-    var profile = require(cwd + '/' + profile_input);
-    var glucose_status = determinebasal.getLastGlucose(glucose_data);
-    if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
+    var fs = require('fs');
+    try {
+        var cwd = process.cwd();
+        var glucose_data = require(cwd + '/' + glucose_input);
+        var currenttemp = require(cwd + '/' + currenttemp_input);
+        var iob_data = require(cwd + '/' + iob_input);
+        var profile = require(cwd + '/' + profile_input);
+        var glucose_status = determinebasal.getLastGlucose(glucose_data);
+    } catch (e) {
+        return console.error("Could not parse input data: ", e);
+    }
+
+    //console.log(carbratio_data);
+    var meal_data = { };
+    //console.error("meal_input",meal_input);
+    if (typeof meal_input != 'undefined') {
+        try {
+            meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
+        } catch (e) {
+            console.error("Warning: could not parse meal_input. Meal Assist disabled.");
+        }
+    }
+    //if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
 
     //if old reading from Dexcom do nothing
 
@@ -61,7 +77,7 @@ if (!module.parent) {
     
     var setTempBasal = require('../lib/basal-set-temp'); 
     
-    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal, setTempBasal);
+    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));
