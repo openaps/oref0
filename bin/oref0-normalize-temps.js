@@ -30,7 +30,7 @@ if (!module.parent) {
   try {
     var all_data = require(cwd + '/' + iob_input);
   } catch (e) {
-    return console.log("Could not parse pumphistory: ", e);
+    return console.error("Could not parse pumphistory: ", e);
   }
 
   var inputs = {
