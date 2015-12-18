@@ -48,6 +48,7 @@ if (!module.parent) {
     if (typeof meal_input != 'undefined') {
         try {
             meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
+            console.error(JSON.stringify(meal_data));
         } catch (e) {
             console.error("Warning: could not parse meal_input. Meal Assist disabled.");
         }
