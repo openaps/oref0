@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 /*
-  Insulin On Board (IOB) calculations.
+  oref0 meal data tool
 
-  IOB is also known as "Bolus on Board", "Active Insulin", or "Insulin Remaining"
+  Collects meal data (carbs and boluses for last DIA hours)
+  for use in oref0 meal assist algorithm
 
   Released under MIT license. See the accompanying LICENSE.txt file for
   full terms and conditions
