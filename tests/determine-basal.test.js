@@ -204,6 +204,37 @@ describe('determine-basal', function ( ) {
         output.reason.should.match(/Eventual BG .*<110, no temp, setting .*/);
     });
     
+    it('should low-temp when eventualBG < min_bg with delta > exp. delta', function () {
+        var glucose_status = {"delta":-5,"glucose":115,"avgdelta":-6};
+        var iob_data = {"iob":2,"activity":0.05,"bolusiob":0};
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined,setTempBasal);
+        //console.log(output);
+        output.rate.should.be.below(0.2);
+        output.duration.should.equal(30);
+        output.reason.should.match(/Eventual BG .*<110, no temp, setting .*/);
+    });
+    
+    it('should low-temp when eventualBG < min_bg with delta > exp. delta', function () {
+        var glucose_status = {"delta":-2,"glucose":156,"avgdelta":-1.33};
+        var iob_data = {"iob":3.51,"activity":0.06,"bolusiob":0.08};
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined,setTempBasal);
+        console.log(output);
+        output.rate.should.be.below(0.8);
+        output.duration.should.equal(30);
+        output.reason.should.match(/Eventual BG .*<110, no temp, setting .*/);
+    });
+
+    it('should low-temp much less when eventualBG < min_bg with delta barely negative', function () {
+        var glucose_status = {"delta":-1,"glucose":115,"avgdelta":-1};
+        var iob_data = {"iob":2,"activity":0.05,"bolusiob":0};
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined,setTempBasal);
+        //console.log(output);
+        output.rate.should.be.above(0.5);
+        output.rate.should.be.below(0.8);
+        output.duration.should.equal(30);
+        output.reason.should.match(/Eventual BG .*<110, no temp, setting .*/);
+    });
+
     it('should do nothing when eventualBG < min_bg but low temp in progress', function () {
         var glucose_status = {"delta":-3,"glucose":110,"avgdelta":-1};
         var currenttemp = {"duration":20,"rate":0.0,"temp":"absolute"};
