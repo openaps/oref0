@@ -125,8 +125,7 @@ describe('determine-basal', function ( ) {
         var glucose_status = {"delta":5,"glucose":185,"avgdelta":5};
         var iob_data = {"iob":0,"activity":-0.01,"bolusiob":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
-
-        output.reason.should.match(/.*, adj. req. rate:.* to maxSafeBasal:.*,no temp, setting/);
+        output.reason.should.match(/.*, adj. req. rate:.* to maxSafeBasal:.*, no temp, setting/);
     });
     
     it('should reduce high-temp when schedule would be above max', function () {
