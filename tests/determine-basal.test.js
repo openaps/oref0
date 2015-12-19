@@ -134,7 +134,7 @@ describe('determine-basal', function ( ) {
         var iob_data = {"iob":0,"activity":-0.01,"bolusiob":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         output.duration.should.equal(30);
-        output.reason.should.match(/.*mins .* = .* > req .*/);
+        output.reason.should.match(/.*m.* = .* > req .*/);
     });
     
     it('should continue high-temp when required ~= temp running', function () {
@@ -236,17 +236,15 @@ describe('determine-basal', function ( ) {
         output.reason.should.match(/Eventual BG .*<110, setting .*/);
     });
 
-/*
-    it('should do nothing when eventualBG < min_bg but low temp in progress', function () {
+    it('should do nothing when eventualBG < min_bg but appropriate low temp in progress', function () {
         var glucose_status = {"delta":-3,"glucose":110,"avgdelta":-1};
-        var currenttemp = {"duration":20,"rate":0.0,"temp":"absolute"};
+        var currenttemp = {"duration":20,"rate":0.5,"temp":"absolute"};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
-        console.log(output);
+        //console.log(output);
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
-*/
-//        output.reason.should.match(/Eventual BG .*<110, temp .*/);
-//    });
+        output.reason.should.match(/Eventual BG .*<110, temp .*/);
+    });
 
     it('should cancel low-temp when lowish and avg.delta rising faster than BGI', function () {
         var currenttemp = {"duration":20,"rate":0.5,"temp":"absolute"};
