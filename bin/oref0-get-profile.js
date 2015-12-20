@@ -41,6 +41,11 @@ if (!module.parent) {
       process.exit(2);
     }
     var isf_data = require(cwd + '/' + isf_input);
+    if (isf_data.units !== 'mg/dL') {
+      console.log('ISF is expected to be expressed in mg/dL.'
+                 , 'Found', isf_data.units, 'in', isf_input, '.');
+      process.exit(2);
+    }
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
 
     var maxiob_data = { max_iob: 0 };
