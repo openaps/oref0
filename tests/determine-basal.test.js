@@ -162,7 +162,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         output.rate.should.equal(0);
         output.duration.should.equal(0);
-        output.reason.should.match(/basal_iob .* > max_iob .*/);
+        output.reason.should.match(/basaliob .* > max_iob .*/);
     });
 
     it('should temp to 0 when LOW w/ positive IOB', function () {
@@ -471,7 +471,6 @@ describe('determine-basal', function ( ) {
     // after 120g 6U meal bolus
     it('should high-temp when 140 and rising after meal bolus', function () {
         var glucose_status = {"delta":1,"glucose":140,"avgdelta":1};
-        //TODO: figure out how to track basal_iob vs. net_iob
         var iob_data = {"iob":6.5,"activity":0.01,"bolusiob":5.5,"basaliob":1};
         var meal_data = {"carbs":120,"boluses":6};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
@@ -483,7 +482,6 @@ describe('determine-basal', function ( ) {
     // after 120g 6U meal bolus
     it('should high-temp when 160 and rising after meal bolus', function () {
         var glucose_status = {"delta":1,"glucose":160,"avgdelta":1};
-        //TODO: figure out how to track basal_iob vs. net_iob
         var iob_data = {"iob":7.0,"activity":0.02,"bolusiob":5.0,"basaliob":2};
         var meal_data = {"carbs":120,"boluses":6};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
@@ -495,7 +493,6 @@ describe('determine-basal', function ( ) {
     // after 120g 6U meal bolus
     it('should cancel temp when 160 and falling after meal bolus', function () {
         var glucose_status = {"delta":-1,"glucose":160,"avgdelta":-1};
-        //TODO: figure out how to track basal_iob vs. net_iob
         var iob_data = {"iob":7.0,"activity":0.03,"bolusiob":5.0,"basaliob":2};
         var meal_data = {"carbs":120,"boluses":6};
         var currenttemp = {"duration":15,"rate":2.5,"temp":"absolute"};
@@ -506,7 +503,6 @@ describe('determine-basal', function ( ) {
 
     it('should not set temp when boluses + basal IOB cover meal carbs', function () {
         var glucose_status = {"delta":1,"glucose":160,"avgdelta":1};
-        //TODO: figure out how to track basal_iob vs. net_iob
         var iob_data = {"iob":7.0,"activity":0.02,"bolusiob":5.0,"basaliob":2};
         var meal_data = {"carbs":120,"boluses":11};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
