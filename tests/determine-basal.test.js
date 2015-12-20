@@ -503,10 +503,10 @@ describe('determine-basal', function ( ) {
 
     it('should not set temp when boluses + basal IOB cover meal carbs', function () {
         var glucose_status = {"delta":1,"glucose":160,"avgdelta":1};
-        var iob_data = {"iob":7.0,"activity":0.02,"bolusiob":5.0,"basaliob":2};
+        var iob_data = {"iob":7.0,"activity":0.02,"bolusiob":4.0,"basaliob":3};
         var meal_data = {"carbs":120,"boluses":11};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
-        ////console.log(output);
+        //console.log(output);
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
     });
