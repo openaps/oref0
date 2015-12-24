@@ -22,29 +22,47 @@
 var generate = require('oref0/lib/meal');
 
 if (!module.parent) {
-  var pumphistory_input = process.argv.slice(2, 3).pop();
-  var profile_input = process.argv.slice(3, 4).pop();
-  var clock_input = process.argv.slice(4, 5).pop();
+    var pumphistory_input = process.argv.slice(2, 3).pop();
+    var profile_input = process.argv.slice(3, 4).pop();
+    var clock_input = process.argv.slice(4, 5).pop();
+    var carb_input = process.argv.slice(5, 6).pop();
 
-  if (!pumphistory_input || !profile_input) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json>');
-    process.exit(1);
-  }
+    if (!pumphistory_input || !profile_input) {
+        console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> [carbhistory.json]');
+        process.exit(1);
+    }
 
-  var cwd = process.cwd();
-  var all_data = require(cwd + '/' + pumphistory_input);
-  var profile_data = require(cwd + '/' + profile_input);
-  var clock_data = require(cwd + '/' + clock_input);
+    var fs = require('fs');
+    try {
+        var cwd = process.cwd();
+        var all_data = require(cwd + '/' + pumphistory_input);
+        var profile_data = require(cwd + '/' + profile_input);
+        var clock_data = require(cwd + '/' + clock_input);
+    } catch (e) {
+        return console.error("Could not parse input data: ", e);
+    }
 
-  // all_data.sort(function (a, b) { return a.date > b.date });
+    //console.log(carbratio_data);
+    var carb_data = { };
+    if (typeof carb_input != 'undefined') {
+        try {
+            carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
+            //console.error(JSON.stringify(carb_data));
+        } catch (e) {
+            //console.error("Warning: could not parse carb_input.");
+        }
+    }
 
-  var inputs = {
-    history: all_data
-  , profile: profile_data
-  , clock: clock_data
-  };
+    // all_data.sort(function (a, b) { return a.date > b.date });
 
-  var dia_carbs = generate(inputs);
-  console.log(JSON.stringify(dia_carbs));
+    var inputs = {
+        history: all_data
+    , profile: profile_data
+    , clock: clock_data
+    , carbs: carb_data
+    };
+
+    var dia_carbs = generate(inputs);
+    console.log(JSON.stringify(dia_carbs));
 }
 
