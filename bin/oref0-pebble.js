@@ -91,7 +91,11 @@ if (!module.parent) {
     } else {
         tempstring = "Tmp: " + temp.duration + "m@" + temp.rate.toFixed(1);
     }
-    var requestedtemp = require(cwd + '/' + requestedtemp_input);
+    try {
+        var requestedtemp = require(cwd + '/' + requestedtemp_input);
+    } catch (e) {
+        return console.error("Could not parse requestedtemp: ", e);
+    }
     var reqtempstring;
     if (typeof requestedtemp.duration === 'undefined') {
         reqtempstring = "None";
