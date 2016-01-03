@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test"
@@ -12,7 +12,7 @@
   "keywords": [
     "openaps"
   ],
-  "author": "Scott Leibrand",
+  "author": "Scott Leibrand, OpenAPS contributors",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/openaps/oref0/issues"
@@ -37,6 +37,7 @@
     "ns-upload-entries": "./bin/ns-upload-entries.sh",
     "ns-upload": "./bin/ns-upload.sh",
     "ns-get": "./bin/ns-get.sh",
+    "ns-status": "./bin/ns-status.js",
     "nightscout": "./bin/nightscout.sh",
     "ns-dedupe-treatments": "./bin/ns-dedupe-treatments.sh",
     "oref0-pebble": "./bin/oref0-pebble.js"
@@ -49,5 +50,17 @@
   "devDependencies": {
     "mocha": "^2.3.3",
     "should": "^7.1.0"
+  },
+  "config": {
+    "blanket": {
+      "pattern": [
+        "bin",
+        "lib",
+        "tests"
+      ],
+      "data-cover-never": [
+        "node_modules"
+      ]
+    }
   }
 }
