@@ -230,7 +230,7 @@ describe('determine-basal', function ( ) {
         var iob_data = {"iob":2,"activity":0.05,"bolussnooze":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         //console.log(output);
-        output.rate.should.be.above(0.5);
+        output.rate.should.be.above(0.3);
         output.rate.should.be.below(0.8);
         output.duration.should.equal(30);
         output.reason.should.match(/Eventual BG .*<110.*setting .*/);
@@ -238,7 +238,7 @@ describe('determine-basal', function ( ) {
 
     it('should do nothing when eventualBG < min_bg but appropriate low temp in progress', function () {
         var glucose_status = {"delta":-3,"glucose":110,"avgdelta":-1};
-        var currenttemp = {"duration":20,"rate":0.5,"temp":"absolute"};
+        var currenttemp = {"duration":20,"rate":0.25,"temp":"absolute"};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         //console.log(output);
         (typeof output.rate).should.equal('undefined');
