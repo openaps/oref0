@@ -492,7 +492,7 @@ describe('determine-basal', function ( ) {
     });
 
     // after 120g 6U meal bolus
-    it('should  NOT high-temp when 160 and rising slowly after meal bolus', function () {
+    it('should not high-temp when 160 and rising slowly after meal bolus', function () {
         var glucose_status = {"delta":1,"glucose":160,"avgdelta":1};
         var iob_data = {"iob":7.0,"activity":0.02,"bolussnooze":5.0,"basaliob":2};
         var meal_data = {"carbs":120,"boluses":6};
