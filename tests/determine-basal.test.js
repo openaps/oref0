@@ -464,6 +464,7 @@ describe('determine-basal', function ( ) {
         var iob_data = {"iob":6,"activity":0,"bolussnooze":6,"basaliob":0};
         var meal_data = {"carbs":120,"boluses":6};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        //console.log(output);
         output.rate.should.be.above(1);
         output.duration.should.equal(30);
     });
