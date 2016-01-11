@@ -1,6 +1,6 @@
 'use strict';
 
-require('should');
+var should = require('should');
 
 
 
@@ -460,17 +460,18 @@ describe('determine-basal', function ( ) {
 
     // right after 120g 6U meal bolus
     it('should high-temp when 120 and rising after meal bolus', function () {
-        var glucose_status = {"delta":1,"glucose":120,"avgdelta":1};
+        var glucose_status = {"delta":4,"glucose":120,"avgdelta":4};
         var iob_data = {"iob":6,"activity":0,"bolussnooze":6,"basaliob":0};
         var meal_data = {"carbs":120,"boluses":6};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        //console.log(output);
         output.rate.should.be.above(1);
         output.duration.should.equal(30);
     });
 
     // after 120g 6U meal bolus
     it('should high-temp when 140 and rising after meal bolus', function () {
-        var glucose_status = {"delta":1,"glucose":140,"avgdelta":1};
+        var glucose_status = {"delta":4,"glucose":140,"avgdelta":4};
         var iob_data = {"iob":6.5,"activity":0.01,"bolussnooze":5.5,"basaliob":1};
         var meal_data = {"carbs":120,"boluses":6};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
@@ -481,13 +482,24 @@ describe('determine-basal', function ( ) {
 
     // after 120g 6U meal bolus
     it('should high-temp when 160 and rising after meal bolus', function () {
-        var glucose_status = {"delta":1,"glucose":160,"avgdelta":1};
+        var glucose_status = {"delta":4,"glucose":160,"avgdelta":4};
         var iob_data = {"iob":7.0,"activity":0.02,"bolussnooze":5.0,"basaliob":2};
         var meal_data = {"carbs":120,"boluses":6};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         //console.log(output);
         output.rate.should.be.above(1);
         output.duration.should.equal(30);
+    });
+
+    // after 120g 6U meal bolus
+    it('should not high-temp when 160 and rising slowly after meal bolus', function () {
+        var glucose_status = {"delta":1,"glucose":160,"avgdelta":1};
+        var iob_data = {"iob":7.0,"activity":0.02,"bolussnooze":5.0,"basaliob":2};
+        var meal_data = {"carbs":120,"boluses":6};
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        //console.log(output);
+        should.not.exist(output.rate);
+        should.not.exist(output.duration);
     });
 
     // after 120g 6U meal bolus
