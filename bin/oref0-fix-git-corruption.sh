@@ -30,6 +30,9 @@ function find_last_valid_commit ( ) {
   # last used branch
   BRANCH=$(find_last_branch_log)
   # Find second from last commit
+  if [ -z $BRANCH ]; then
+    exit 1
+  fi
   tail -n 2 $BRANCH | head -n 1 | cut -d' ' -f 2
 }
 
@@ -40,6 +43,12 @@ fi
 
 # find previous commit before the corruption
 VALID_COMMIT=$(find_last_valid_commit)
+
+if [ -z $VALID_COMMIT ]; then
+    echo "Error: Could not find last valid commit; aborting."
+    exit 1
+fi
+
 echo "Fixing, attempting to restore to $VALID_COMMIT"
 while is_corrupt ; do
 
