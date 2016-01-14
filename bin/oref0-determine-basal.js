@@ -55,22 +55,12 @@ if (!module.parent) {
     }
     //if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
 
-    //if old reading from Dexcom do nothing
-
-    var systemTime = new Date();
-    var bgTime;
-    if (glucose_data[0].display_time) {
-        bgTime = new Date(glucose_data[0].display_time.replace('T', ' '));
-    } else if (glucose_data[0].dateString) {
-        bgTime = new Date(glucose_data[0].dateString);
-    } else { console.error("Could not determine last BG time"); }
-    var minAgo = (systemTime - bgTime) / 60 / 1000;
-
-    if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
-        var reason = "BG data is too old, or clock set incorrectly "+bgTime;
+    if (!checkGlucoseDateValidity(glucose_data[0])) {
+        var reason = "BG data is too old, clock set incorrectly, or cannot get BG time"+bgTime;
         console.error(reason);
         return 1;
     }
+
     console.error(JSON.stringify(glucose_status));
     console.error(JSON.stringify(currenttemp));
     console.error(JSON.stringify(iob_data));
@@ -87,6 +77,44 @@ if (!module.parent) {
     }
 
 }
+
+function checkGlucoseDateValidity(glucoseRecord)
+{
+    var bgTime;
+    if (glucoseRecord.display_time) {
+        bgTime = new Date(glucoseRecord.display_time.replace('T', ' '));
+        if (checkGlucoseDateIsInMinutesRange(bgTime))
+	    return true;
+    }
+    if (glucoseRecord.dateString) {
+        bgTime = new Date(glucoseRecord.dateString);
+        if (checkGlucoseDateIsInMinutesRange(bgTime))
+	    return true;
+    }
+    if (glucoseRecord.date) {
+        bgTime = new Date(glucoseRecord.date);
+        if (checkGlucoseDateIsInMinutesRange(bgTime))
+	    return true;
+    }
+    return false;
+		
+}
+function checkGlucoseDateIsInMinutesRange(bgTime)
+{
+    //Check for Invalid Date
+    if (bgTime instanceof Date && isFinite(bgTime))
+    {
+	var systemTime = new Date();
+	var minAgo = (systemTime - bgTime) / 60 / 1000;
+	if (minAgo < 10 && minAgo > -5) { // We are in range
+	    return true;
+	}
+
+    }
+    return false;
+}
+
+
     
 function init() {
 
