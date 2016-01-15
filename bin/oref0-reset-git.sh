@@ -17,6 +17,8 @@
 # remove old lockfile if still present
 find .git/index.lock -mmin +5 -exec rm {} \; 2>/dev/null
 # first, try oref0-fix-git-corruption.sh to preserve git history up to last good commit
-oref0-fix-git-corruption
+echo "Attempting to fix git corruption.  Please wait 15s."
+oref0-fix-git-corruption &
+sleep 15 && killall oref0-fix-git-corruption
 # if git repository is too corrupt to do anything, mv it to /tmp and start over.
 git status > /dev/null || ( mv .git /tmp/.git-`date +%s`; openaps init . )
