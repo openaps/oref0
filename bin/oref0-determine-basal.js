@@ -55,8 +55,8 @@ if (!module.parent) {
     }
     //if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
 
-    if (!checkGlucoseDateValidity(glucose_data[0])) {
-        var reason = "BG data is too old, clock set incorrectly, or cannot get BG time"+bgTime;
+    if (!glucose_status.isValid) {
+        var reason = "Aborting due to glucose data inconsistancy";
         console.error(reason);
         return 1;
     }
@@ -77,43 +77,6 @@ if (!module.parent) {
     }
 
 }
-
-function checkGlucoseDateValidity(glucoseRecord)
-{
-    var bgTime;
-    if (glucoseRecord.display_time) {
-        bgTime = new Date(glucoseRecord.display_time.replace('T', ' '));
-        if (checkGlucoseDateIsInMinutesRange(bgTime))
-	    return true;
-    }
-    if (glucoseRecord.dateString) {
-        bgTime = new Date(glucoseRecord.dateString);
-        if (checkGlucoseDateIsInMinutesRange(bgTime))
-	    return true;
-    }
-    if (glucoseRecord.date) {
-        bgTime = new Date(glucoseRecord.date);
-        if (checkGlucoseDateIsInMinutesRange(bgTime))
-	    return true;
-    }
-    return false;
-		
-}
-function checkGlucoseDateIsInMinutesRange(bgTime)
-{
-    //Check for Invalid Date
-    if (bgTime instanceof Date && isFinite(bgTime))
-    {
-	var systemTime = new Date();
-	var minAgo = (systemTime - bgTime) / 60 / 1000;
-	if (minAgo < 10 && minAgo > -5) { // We are in range
-	    return true;
-	}
-
-    }
-    return false;
-}
-
 
     
 function init() {
