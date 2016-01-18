@@ -45,19 +45,23 @@ if (!module.parent) {
     
     var cwd = process.cwd();
 
-    var status = {
-      openaps: {
-        iob: requireWithTimestamp(cwd + '/' + iob_input)
-        , suggested: requireWithTimestamp(cwd + '/' + suggested_input)
-        , enacted: requireWithTimestamp(cwd + '/' + enacted_input)
-      }
-      , pump: {
-        clock: require(cwd + '/' + clock_input)
-        , battery: require(cwd + '/' + battery_input)
-        , reservoir: require(cwd + '/' + reservoir_input)
-        , status: requireWithTimestamp(cwd + '/' + status_input)
-      }
-    };
+    try {
+        var status = {
+        openaps: {
+            iob: requireWithTimestamp(cwd + '/' + iob_input)
+            , suggested: requireWithTimestamp(cwd + '/' + suggested_input)
+            , enacted: requireWithTimestamp(cwd + '/' + enacted_input)
+        }
+        , pump: {
+            clock: require(cwd + '/' + clock_input)
+            , battery: require(cwd + '/' + battery_input)
+            , reservoir: require(cwd + '/' + reservoir_input)
+            , status: requireWithTimestamp(cwd + '/' + status_input)
+        }
+        };
+    } catch (e) {
+        return console.error("Could not parse input data: ", e);
+    }
 
     console.log(JSON.stringify(status));
 }
