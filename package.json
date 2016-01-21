@@ -46,6 +46,7 @@
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
+    "natural-spline-interpolator": "^1.0.2",
     "share2nightscout-bridge": "^0.1.5",
     "timezone": "0.0.47"
   },

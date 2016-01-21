@@ -55,9 +55,8 @@ if (!module.parent) {
     }
     //if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
 
-    if (!glucose_status.isValid) {
-        var reason = "Aborting due to glucose data inconsistancy";
-        console.error(reason);
+    if (!glucose_status.isFailure) {
+        console.error(glucose_status.reasonHint);
         return 1;
     }
 
