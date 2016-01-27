@@ -463,7 +463,7 @@ describe('determine-basal', function ( ) {
         var iob_data = {"iob":6,"activity":0,"bolussnooze":6,"basaliob":0,"netbasalinsulin":0};
         var meal_data = {"carbs":120,"boluses":6};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
-        console.log(output);
+        //console.log(output);
         output.rate.should.be.above(1);
         output.duration.should.equal(30);
     });
@@ -474,7 +474,7 @@ describe('determine-basal', function ( ) {
         var iob_data = {"iob":6.5,"activity":0.01,"bolussnooze":5.5,"basaliob":1,"netbasalinsulin":1};
         var meal_data = {"carbs":120,"boluses":6};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
-        console.log(output);
+        //console.log(output);
         output.rate.should.be.above(1);
         output.duration.should.equal(30);
     });
@@ -485,7 +485,7 @@ describe('determine-basal', function ( ) {
         var iob_data = {"iob":7.0,"activity":0.02,"bolussnooze":5.0,"basaliob":2,"netbasalinsulin":2};
         var meal_data = {"carbs":120,"boluses":6};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
-        console.log(output);
+        //console.log(output);
         output.rate.should.be.above(1);
         output.duration.should.equal(30);
     });
