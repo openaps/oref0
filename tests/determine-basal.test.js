@@ -17,14 +17,7 @@ describe('determine-basal', function ( ) {
     var profile = {"max_iob":2.5,"dia":3,"type":"current","current_basal":0.9,"max_daily_basal":1.3,"max_basal":3.5,"max_bg":120,"min_bg":110,"sens":40,"target_bg":110,"carb_ratio":10};
     var meal_data = {};
 
-    it('should do nothing when in range w/o IOB', function () {
-        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
-        (typeof output.rate).should.equal('undefined');
-        (typeof output.duration).should.equal('undefined');
-        output.reason.should.match(/in range/);
-    });
-
-    it('should set current temp when in range w/o IOB with Offline set', function () {
+    it('should set current temp when in range w/o IOB', function () {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, 'Offline', meal_data, setTempBasal);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
@@ -265,13 +258,16 @@ describe('determine-basal', function ( ) {
         output.reason.should.match(/.*; cancel/);
     });
     
-    it('should do nothing when lowish and delta rising faster than BGI', function () {
+    it('should set current basal as temp when lowish and delta rising faster than BGI', function () {
         var currenttemp = {"duration":0,"rate":0.5,"temp":"absolute"};
         var glucose_status = {"delta":3,"glucose":85,"avgdelta":3};
         var iob_data = {"iob":-0.5,"activity":-0.01,"bolussnooze":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
-        (typeof output.rate).should.equal('undefined');
-        (typeof output.duration).should.equal('undefined');
+        //(typeof output.rate).should.equal('undefined');
+        //(typeof output.duration).should.equal('undefined');
+        output.rate.should.equal(0.9);
+        output.duration.should.equal(30);
+        output.reason.should.match(/in range.*setting current basal/);
     });
 
     it('should low-temp when low and rising slower than BGI', function () {
