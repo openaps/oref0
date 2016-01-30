@@ -309,14 +309,16 @@ describe('determine-basal', function ( ) {
         output.reason.should.match(/Eventual BG.*>.*but.*Delta.*< Exp.*; cancel/);
     });
     
-    it('should do nothing when not temp and high and delta falling faster than BGI', function () {
+    it('should do nothing when no temp and high and delta falling faster than BGI', function () {
         var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
         var glucose_status = {"delta":-5,"glucose":175,"avgdelta":-4};
         var iob_data = {"iob":1,"activity":0.01,"bolussnooze":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
-        (typeof output.rate).should.equal('undefined');
-        (typeof output.duration).should.equal('undefined');
-        output.reason.should.match(/Eventual BG.*>.*but.*Delta.*< Exp.*; no temp to cancel/);
+        //(typeof output.rate).should.equal('undefined');
+        //(typeof output.duration).should.equal('undefined');
+        output.rate.should.equal(0.9);
+        output.duration.should.equal(30);
+        output.reason.should.match(/Eventual BG.*>.*but.*Delta.*< Exp.*/);
     });
 
     it('should high-temp when high and falling slower than BGI', function () {
