@@ -92,12 +92,12 @@ if (!module.parent) {
     avgDeltas.sort(function(a, b){return a-b});
     bgis.sort(function(a, b){return a-b});
     deviations.sort(function(a, b){return a-b});
-    for (var i=.51; i > .29; i = i - .01) {
+    for (var i=0.51; i > 0.29; i = i - 0.01) {
         console.error("p="+i.toFixed(2)+": "+percentile(avgDeltas, i).toFixed(2)+", "+percentile(bgis, i).toFixed(2)+", "+percentile(deviations, i).toFixed(2));
     }
-    p50 = percentile(deviations, .5);
+    p50 = percentile(deviations, 0.5);
     //p40 = percentile(deviations, .4);
-    p30 = percentile(deviations, .3);
+    p30 = percentile(deviations, 0.3);
     var basalOff = 0;
 
     if(p50 < 0) { // sensitive
