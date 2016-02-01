@@ -64,7 +64,7 @@ if (!module.parent) {
         //console.log(bgTime);
         var bg = glucose_data[i].glucose;
         if ( bg < 40 || glucose_data[i+3].glucose < 40) {
-            process.stdout.write("!");
+            process.stderr.write("!");
             continue;
         }
         var avgDelta = (bg - glucose_data[i+3].glucose)/3;
@@ -79,21 +79,21 @@ if (!module.parent) {
         deviation = avgDelta-bgi;
         deviation = deviation.toFixed(2);
         //console.log("BG: "+bg+", avgDelta: "+avgDelta+", BGI: "+bgi);
-        process.stdout.write(".");
+        process.stderr.write(".");
 
         avgDeltas.push(avgDelta);
         bgis.push(bgi);
         deviations.push(deviation);
 
     }
-    console.log("");
+    console.error("");
     //console.log(JSON.stringify(avgDeltas));
     //console.log(JSON.stringify(bgis));
     avgDeltas.sort(function(a, b){return a-b});
     bgis.sort(function(a, b){return a-b});
     deviations.sort(function(a, b){return a-b});
     for (var i=.51; i > .29; i = i - .01) {
-        console.log("p="+i.toFixed(2)+": "+percentile(avgDeltas, i).toFixed(2)+", "+percentile(bgis, i).toFixed(2)+", "+percentile(deviations, i).toFixed(2));
+        console.error("p="+i.toFixed(2)+": "+percentile(avgDeltas, i).toFixed(2)+", "+percentile(bgis, i).toFixed(2)+", "+percentile(deviations, i).toFixed(2));
     }
     p50 = percentile(deviations, .5);
     //p40 = percentile(deviations, .4);
@@ -102,19 +102,19 @@ if (!module.parent) {
 
     if(p50 < 0) { // sensitive
         basalOff = p50 * (60/5) / profile.sens;
-        console.log("Excess insulin sensitivity detected");
+        console.error("Excess insulin sensitivity detected");
     } else if (p30 > 0) { // resistant
         basalOff = p30 * (60/5) / profile.sens;
-        console.log("Excess insulin resistance detected");
+        console.error("Excess insulin resistance detected");
     } else {
         //basalOff = p40 * (60/5) / profile.sens;
-        console.log("Sensitivity within normal ranges");
+        console.error("Sensitivity within normal ranges");
     }
     ratio = 1 + (basalOff / profile.max_daily_basal);
     ratio = Math.round(ratio*100)/100
     newisf = profile.sens / ratio;
-    console.log("Basal off "+basalOff.toFixed(2)+"U/hr");
-    console.log("Ratio: "+ratio*100+"%: new ISF: "+newisf.toFixed(1)+"mg/dL/U");
+    console.error("Basal off "+basalOff.toFixed(2)+"U/hr");
+    console.error("Ratio: "+ratio*100+"%: new ISF: "+newisf.toFixed(1)+"mg/dL/U");
     var sensAdj = {
         ratio: ratio
     }
