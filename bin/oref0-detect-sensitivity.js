@@ -118,7 +118,7 @@ if (!module.parent) {
     var sensAdj = {
         "ratio": ratio
     }
-    return console.log(sensAdj);
+    return console.log(JSON.stringify(sensAdj));
 }
 
 function init() {
