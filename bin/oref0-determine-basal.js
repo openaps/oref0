@@ -22,11 +22,11 @@ if (!module.parent) {
     var currenttemp_input = process.argv.slice(3, 4).pop();
     var glucose_input = process.argv.slice(4, 5).pop();
     var profile_input = process.argv.slice(5, 6).pop();
-    var offline = process.argv.slice(6, 7).pop();
+    var autosens_input = process.argv.slice(6, 7).pop();
     var meal_input = process.argv.slice(7, 8).pop();
 
     if (!iob_input || !currenttemp_input || !glucose_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [Offline] [meal.json]');
+        console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [autosens.json] [meal.json]');
         process.exit(1);
     }
     
@@ -50,11 +50,21 @@ if (!module.parent) {
             meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
             console.error(JSON.stringify(meal_data));
         } catch (e) {
-            console.error("Warning: could not parse meal_input. Meal Assist disabled.");
+            console.error("Optional feature Meal Assist not configured.");
         }
     }
     //if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
 
+    var autosens_data = { };
+    //console.error("meal_input",meal_input);
+    if (typeof autosens_input != 'undefined') {
+        try {
+            autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
+            console.error(JSON.stringify(autosens_data));
+        } catch (e) {
+            console.error("Optional feature Auto Sensitivity not configured.");
+        }
+    }
     //if old reading from Dexcom do nothing
 
     var systemTime = new Date();
@@ -78,7 +88,7 @@ if (!module.parent) {
     
     var setTempBasal = require('../lib/basal-set-temp'); 
     
-    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, setTempBasal);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));
