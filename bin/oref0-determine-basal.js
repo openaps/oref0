@@ -55,9 +55,10 @@ if (!module.parent) {
     }
     //if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
 
+    console.error(autosens_input);
     var autosens_data = { };
     //console.error("meal_input",meal_input);
-    if (typeof autosens_input != 'undefined') {
+    if (typeof autosens_input !== 'undefined') {
         try {
             autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
             console.error(JSON.stringify(autosens_data));

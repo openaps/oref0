@@ -533,4 +533,14 @@ describe('determine-basal', function ( ) {
         //(typeof output.duration).should.equal('undefined');
     });
 
+    it('should temp to zero with double sensitivity adjustment', function () {
+        //var glucose_status = {"delta":1,"glucose":160,"avgdelta":1};
+        var iob_data = {"iob":0.5,"activity":0.001,"bolussnooze":0.0,"basaliob":0.5};
+        var autosens_data = {"ratio":0.5};
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, setTempBasal);
+        console.log(output);
+        output.rate.should.equal(0);
+        output.duration.should.equal(30);
+    });
+
 });

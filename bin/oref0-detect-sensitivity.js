@@ -116,7 +116,7 @@ if (!module.parent) {
     console.error("Basal off "+basalOff.toFixed(2)+"U/hr");
     console.error("Ratio: "+ratio*100+"%: new ISF: "+newisf.toFixed(1)+"mg/dL/U");
     var sensAdj = {
-        ratio: ratio
+        "ratio": ratio
     }
     return console.log(sensAdj);
 }
