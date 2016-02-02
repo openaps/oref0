@@ -19,8 +19,20 @@ var os = require("os");
 
 */
 
+function safeRequire (path) {
+  var resolved;
+
+  try {
+    resolved = require(path);
+  } catch (e) {
+    console.error("Could not require: " + path, e);
+  }
+
+  return resolved;
+}
+
 function requireWithTimestamp (path) {
-  var resolved = require(path);
+  var resolved = safeRequire(path);
 
   if (resolved) {
     resolved.timestamp = fs.statSync(path).mtime;
@@ -62,9 +74,9 @@ if (!module.parent) {
                 , enacted: requireWithTimestamp(cwd + '/' + enacted_input)
             }
             , pump: {
-                clock: require(cwd + '/' + clock_input)
-                , battery: require(cwd + '/' + battery_input)
-                , reservoir: require(cwd + '/' + reservoir_input)
+                clock: safeRequire(cwd + '/' + clock_input)
+                , battery: safeRequire(cwd + '/' + battery_input)
+                , reservoir: safeRequire(cwd + '/' + reservoir_input)
                 , status: requireWithTimestamp(cwd + '/' + status_input)
             }
         };
