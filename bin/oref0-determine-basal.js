@@ -56,7 +56,7 @@ if (!module.parent) {
     //if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
 
     console.error(autosens_input);
-    var autosens_data = { };
+    var autosens_data = { "ratio":1 };
     //console.error("meal_input",meal_input);
     if (typeof autosens_input !== 'undefined') {
         try {
