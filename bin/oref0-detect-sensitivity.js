@@ -60,7 +60,12 @@ if (!module.parent) {
     var deviations = [];
     for (var i=0; i < glucose_data.length-3; ++i) {
         //console.log(glucose_data[i]);
-        var bgTime = new Date(glucose_data[i].display_time.replace('T', ' '));
+        var bgTime;
+        if (glucose_data[0].display_time) {
+            bgTime = new Date(glucose_data[0].display_time.replace('T', ' '));
+        } else if (glucose_data[0].dateString) {
+            bgTime = new Date(glucose_data[0].dateString);
+        } else { console.error("Could not determine last BG time"); }
         //console.log(bgTime);
         var bg = glucose_data[i].glucose;
         if ( bg < 40 || glucose_data[i+3].glucose < 40) {

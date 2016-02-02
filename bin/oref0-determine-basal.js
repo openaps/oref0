@@ -57,7 +57,6 @@ if (!module.parent) {
 
     console.error(autosens_input);
     var autosens_data = { "ratio":1 };
-    //console.error("meal_input",meal_input);
     if (typeof autosens_input !== 'undefined') {
         try {
             autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
