@@ -55,14 +55,14 @@ if (!module.parent) {
     }
     //if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
 
-    console.error(autosens_input);
+    //console.error(autosens_input);
     var autosens_data = { "ratio":1 };
     if (typeof autosens_input !== 'undefined') {
         try {
             autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
             console.error(JSON.stringify(autosens_data));
         } catch (e) {
-            console.error("Optional feature Auto Sensitivity not configured.");
+            console.error("Optional feature Auto Sensitivity not enabled: ", e);
         }
     }
     //if old reading from Dexcom do nothing
