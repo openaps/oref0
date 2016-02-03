@@ -35,15 +35,20 @@ if (!module.parent) {
     try {
         var cwd = process.cwd();
         var glucose_data = require(cwd + '/' + glucose_input);
+        if (glucose_data.length < 40) {
+            console.log('Error: not enough glucose data to calculate autosens.');
+            process.exit(2);
+        }
+
         var pumphistory_data = require(cwd + '/' + pumphistory_input);
         var profile = require(cwd + '/' + profile_input);
         //console.log(profile);
         var glucose_status = detectsensitivity.getLastGlucose(glucose_data);
         var isf_data = require(cwd + '/' + isf_input);
         if (isf_data.units !== 'mg/dL') {
-        console.log('ISF is expected to be expressed in mg/dL.'
+            console.log('ISF is expected to be expressed in mg/dL.'
                     , 'Found', isf_data.units, 'in', isf_input, '.');
-        process.exit(2);
+            process.exit(2);
         }
         var basalprofile = require(cwd + '/' + basalprofile_input);
 
@@ -61,10 +66,10 @@ if (!module.parent) {
     for (var i=0; i < glucose_data.length-3; ++i) {
         //console.log(glucose_data[i]);
         var bgTime;
-        if (glucose_data[0].display_time) {
-            bgTime = new Date(glucose_data[0].display_time.replace('T', ' '));
-        } else if (glucose_data[0].dateString) {
-            bgTime = new Date(glucose_data[0].dateString);
+        if (glucose_data[i].display_time) {
+            bgTime = new Date(glucose_data[i].display_time.replace('T', ' '));
+        } else if (glucose_data[i].dateString) {
+            bgTime = new Date(glucose_data[i].dateString);
         } else { console.error("Could not determine last BG time"); }
         //console.log(bgTime);
         var bg = glucose_data[i].glucose;
