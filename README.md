@@ -85,6 +85,31 @@ API_SECRET="..." NIGHTSCOUT_HOST=localhost:1337 ns-upload-entries <input> <outpu
 
 ```
 
+
+### `format-ns-glucose`
+
+Format OpenAPS dexcom readings (glucose,calibrations) to a format that Nightscout prefers.
+The `TYPE` parameter specifies if you would like formatting for glucose readings `sgv` or calibrations readings `mbg`. If the input file is result of `openaps use cgm iter_glucose` please specify `sgv`, if the input is the result of `openaps use cgm iter_calibrations` then use `mbg` as the `TYPE` parameter.
+The `MODEL` parameter is a string that can be used to identify the dexcom model used to retrieve the readings.
+
+```
+format-ns-glucose <input> <model> <type> <output>
+
+```
+
+
+### `format-ns-dexcom-treatment`
+
+Format the OpenAPS dexcom reading (sensor_insertions) to a format that Nightscout prefers.
+The `MODEL` parameter is a string that can be used to identify the dexcom model used to retrieve the readings.
+
+```
+format-ns-dexcom-treatment <input> <model> <output>
+
+```
+
+
+
 ## Contributing
 
 See the [CONTRIBUTING document](CONTRIBUTING.md)
