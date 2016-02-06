@@ -63,6 +63,7 @@ if (!module.parent) {
     var avgDeltas = [];
     var bgis = [];
     var deviations = [];
+    var deviationSum = 0;
     for (var i=0; i < glucose_data.length-3; ++i) {
         //console.log(glucose_data[i]);
         var bgTime;
@@ -88,12 +89,15 @@ if (!module.parent) {
         bgi = bgi.toFixed(2);
         deviation = avgDelta-bgi;
         deviation = deviation.toFixed(2);
-        //console.log("BG: "+bg+", avgDelta: "+avgDelta+", BGI: "+bgi);
+        //if (deviation < 0 && deviation > -2) {
+            //console.log("BG: "+bg+", avgDelta: "+avgDelta+", BGI: "+bgi+", deviation: "+deviation);
+        //}
         process.stderr.write(".");
 
         avgDeltas.push(avgDelta);
         bgis.push(bgi);
         deviations.push(deviation);
+        deviationSum += parseFloat(deviation);
 
     }
     console.error("");
@@ -108,6 +112,10 @@ if (!module.parent) {
     p50 = percentile(deviations, 0.5);
     //p40 = percentile(deviations, .4);
     p30 = percentile(deviations, 0.3);
+
+    average = deviationSum / deviations.length;
+
+    console.log("Mean deviation: "+average.toFixed(2));
     var basalOff = 0;
 
     if(p50 < 0) { // sensitive
@@ -123,7 +131,7 @@ if (!module.parent) {
     ratio = 1 + (basalOff / profile.max_daily_basal);
     ratio = Math.round(ratio*100)/100
     newisf = profile.sens / ratio;
-    console.error("Basal off "+basalOff.toFixed(2)+"U/hr");
+    console.error("Basal adjustment "+basalOff.toFixed(2)+"U/hr");
     console.error("Ratio: "+ratio*100+"%: new ISF: "+newisf.toFixed(1)+"mg/dL/U");
     var sensAdj = {
         "ratio": ratio
@@ -178,3 +186,4 @@ function percentRank(arr, v) {
     }
     return 1;
 }
+
