@@ -15,6 +15,7 @@
   THE SOFTWARE.
 */
 
+var basal = require('oref0/lib/profile/basal');
 var get_iob = require('oref0/lib/iob');
 
 if (!module.parent) {
@@ -81,7 +82,8 @@ if (!module.parent) {
         var avgDelta = (bg - glucose_data[i+3].glucose)/3;
         avgDelta = avgDelta.toFixed(2);
         iob_inputs.clock=bgTime;
-        //console.log(JSON.stringify(iob_inputs.clock));
+        iob_inputs.profile.current_basal = basal.basalLookup(basalprofile, bgTime);
+        //console.log(JSON.stringify(iob_inputs.profile));
         var iob = get_iob(iob_inputs);
         //console.log(JSON.stringify(iob));
 
