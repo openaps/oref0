@@ -115,7 +115,7 @@ if (!module.parent) {
 
     average = deviationSum / deviations.length;
 
-    console.log("Mean deviation: "+average.toFixed(2));
+    console.error("Mean deviation: "+average.toFixed(2));
     var basalOff = 0;
 
     if(p50 < 0) { // sensitive
