@@ -126,7 +126,7 @@ if (!module.parent) {
                 mealCOB = meal_data.mealCOB;
             }
         } catch (e) {
-            console.error("Optional feature Meal Assist not configured.");
+            //console.error("Optional feature Meal Assist not configured.");
         }
     }
 
