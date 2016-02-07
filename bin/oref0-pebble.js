@@ -60,9 +60,10 @@ if (!module.parent) {
     var currenttemp_input = process.argv.slice(5, 6).pop()
     var requestedtemp_input = process.argv.slice(6, 7).pop()
     var enactedtemp_input = process.argv.slice(7, 8).pop()
+    var meal_input = process.argv.slice(8, 9).pop()
     
     if (!glucose_input || !iob_input || !basalprofile_input || !currenttemp_input || !requestedtemp_input || !enactedtemp_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json>');
+        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json> [meal.json]');
         process.exit(1);
     }
     
@@ -116,6 +117,16 @@ if (!module.parent) {
     enactedHMS = enactedDate.toLocaleTimeString().split(":")
     enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
 
+    var mealCOB = "???";
+    if (typeof meal_input != 'undefined') {
+        try {
+            meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
+            console.error(JSON.stringify(meal_data));
+            mealCOB = meal_data.mealCOB;
+        } catch (e) {
+            console.error("Optional feature Meal Assist not configured.");
+        }
+    }
 
     var pebble = {        
         "content" : "" + bgnow + requestedtemp.tick + " " + bgTime + "\n"
@@ -126,7 +137,8 @@ if (!module.parent) {
         + " at " + temp_time + "\n"
         + "Req: " + reqtempstring + "\n"
         + requestedtemp.reason + "\n"
-        + "Sched: " + basalRate + "U/hr\n",
+        + "Sched: " + basalRate + "U/hr\n"
+        + "mealCOB: " + mealCOB + "g\n",
         "refresh_frequency": 1
     };
 
