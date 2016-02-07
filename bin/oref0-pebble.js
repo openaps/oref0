@@ -122,7 +122,9 @@ if (!module.parent) {
         try {
             meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
             console.error(JSON.stringify(meal_data));
-            mealCOB = meal_data.mealCOB;
+            if (typeof meal_data.mealCOB != 'undefined') {
+                mealCOB = meal_data.mealCOB;
+            }
         } catch (e) {
             console.error("Optional feature Meal Assist not configured.");
         }
