@@ -41,6 +41,12 @@ function requireWithTimestamp (path) {
   return resolved;
 }
 
+function fixRecFlag (enacted) {
+  if (enacted) {
+    enacted.recieved = enacted.recieved || enacted.duration === enacted.requested.duration
+  }
+}
+
 function mmtuneStatus (status) {
     if (mmtune_input) {
         var mmtune = requireWithTimestamp(cwd + '/' + mmtune_input);
@@ -95,6 +101,8 @@ if (!module.parent) {
                 , status: requireWithTimestamp(cwd + '/' + status_input)
             }
         };
+
+        fixRecFlag(status.openaps.enacted);
 
         mmtuneStatus(status);
     } catch (e) {
