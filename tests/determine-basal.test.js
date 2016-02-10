@@ -37,6 +37,15 @@ describe('determine-basal', function ( ) {
         output.reason.should.match(/BG 75<80/);
     });
 
+    it('should not extend temp to 0 when >20m left', function () {
+        var currenttemp = {"duration":27,"rate":0,"temp":"absolute"};
+        var glucose_status = {"delta":-5,"glucose":75,"avgdelta":-5};
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        //console.log(output);
+        (typeof output.rate).should.equal('undefined');
+        (typeof output.duration).should.equal('undefined');
+    });
+
     it('should do nothing when low and rising w/o IOB', function () {
         var glucose_status = {"delta":5,"glucose":75,"avgdelta":5};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
@@ -267,6 +276,7 @@ describe('determine-basal', function ( ) {
         output.duration.should.equal(30);
         output.reason.should.match(/in range.*setting current basal/);
     });
+
 
     it('should low-temp when low and rising slower than BGI', function () {
         var glucose_status = {"delta":1,"glucose":85,"avgdelta":1};
