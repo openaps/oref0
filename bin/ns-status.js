@@ -41,7 +41,7 @@ function requireWithTimestamp (path) {
   return resolved;
 }
 
-function mmtuneStatus() {
+function mmtuneStatus (status) {
     if (mmtune_input) {
         var mmtune = requireWithTimestamp(cwd + '/' + mmtune_input);
         if (mmtune) {
@@ -96,7 +96,7 @@ if (!module.parent) {
             }
         };
 
-        mmtuneStatus();
+        mmtuneStatus(status);
     } catch (e) {
         return console.error("Could not parse input data: ", e);
     }
