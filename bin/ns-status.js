@@ -43,7 +43,7 @@ function requireWithTimestamp (path) {
 
 function mmtuneStatus() {
     if (mmtune_input) {
-        var mmtune = safeRequire(cwd + '/' + mmtune_input);
+        var mmtune = requireWithTimestamp(cwd + '/' + mmtune_input);
         if (mmtune) {
             if (mmtune.scanDetails && mmtune.scanDetails.length > 0) {
                 mmtune.scanDetails = mmtune.scanDetails.filter(function (d) {
