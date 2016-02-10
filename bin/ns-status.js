@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var fs = require('fs');
+var os = require("os");
 
 /*
   Prepare Status info to for upload to Nightscout
@@ -18,8 +19,20 @@ var fs = require('fs');
 
 */
 
+function safeRequire (path) {
+  var resolved;
+
+  try {
+    resolved = require(path);
+  } catch (e) {
+    console.error("Could not require: " + path, e);
+  }
+
+  return resolved;
+}
+
 function requireWithTimestamp (path) {
-  var resolved = require(path);
+  var resolved = safeRequire(path);
 
   if (resolved) {
     resolved.timestamp = fs.statSync(path).mtime;
@@ -42,22 +55,30 @@ if (!module.parent) {
         console.log('usage: ', process.argv.slice(0, 2), '<clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json>');
         process.exit(1);
     }
-    
+
     var cwd = process.cwd();
+
+    var hostname = 'unknown';
+    try {
+        hostname = os.hostname();
+    } catch (e) {
+      return console.error('Unable to get hostname to send with status', e);
+    }
 
     try {
         var status = {
-        openaps: {
-            iob: requireWithTimestamp(cwd + '/' + iob_input)
-            , suggested: requireWithTimestamp(cwd + '/' + suggested_input)
-            , enacted: requireWithTimestamp(cwd + '/' + enacted_input)
-        }
-        , pump: {
-            clock: require(cwd + '/' + clock_input)
-            , battery: require(cwd + '/' + battery_input)
-            , reservoir: require(cwd + '/' + reservoir_input)
-            , status: requireWithTimestamp(cwd + '/' + status_input)
-        }
+            device: 'openaps://' + os.hostname()
+            , openaps: {
+                iob: requireWithTimestamp(cwd + '/' + iob_input)
+                , suggested: requireWithTimestamp(cwd + '/' + suggested_input)
+                , enacted: requireWithTimestamp(cwd + '/' + enacted_input)
+            }
+            , pump: {
+                clock: safeRequire(cwd + '/' + clock_input)
+                , battery: safeRequire(cwd + '/' + battery_input)
+                , reservoir: safeRequire(cwd + '/' + reservoir_input)
+                , status: requireWithTimestamp(cwd + '/' + status_input)
+            }
         };
     } catch (e) {
         return console.error("Could not parse input data: ", e);
