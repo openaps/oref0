@@ -26,7 +26,7 @@ describe('IOB', function ( ) {
     entry.raw.should.equal(115);
   });
 
-  it('should add raw glucose, but set missing glucose above maxRaw', function ( ) {
+  it('should add raw glucose, but not set missing glucose above maxRaw', function ( ) {
     var entry = {unfiltered: 143680, filtered: 141232, noise: 1};
     withRawGlucose(entry, cal, 150);
 
