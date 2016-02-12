@@ -31,14 +31,19 @@ if (!module.parent) {
   //limit to prevent high temping
   var max_raw = process.argv.slice(4, 5).pop();
 
+  if (!glucose_input || !cal_input) {
+    console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <cal.json> [150]');
+    process.exit(1);
+  }
+
   try {
     var cwd = process.cwd();
     var glucose_data = safeRequire(cwd + '/' + glucose_input);
-    var cal = safeRequire(cwd + '/' + cal_input);
+    var cals = safeRequire(cwd + '/' + cal_input);
 
 
     glucose_data = glucose_data.map(function each (entry) {
-      return withRawGlucose(entry, cal, max_raw);
+      return withRawGlucose(entry, cals, max_raw);
     });
 
     console.log(JSON.stringify(glucose_data));
