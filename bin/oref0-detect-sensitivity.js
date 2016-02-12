@@ -44,7 +44,7 @@ if (!module.parent) {
         var pumphistory_data = require(cwd + '/' + pumphistory_input);
         var profile = require(cwd + '/' + profile_input);
         //console.log(profile);
-        var glucose_status = detectsensitivity.getLastGlucose(glucose_data);
+        //var glucose_status = detectsensitivity.getLastGlucose(glucose_data);
         var isf_data = require(cwd + '/' + isf_input);
         if (isf_data.units !== 'mg/dL') {
             console.log('ISF is expected to be expressed in mg/dL.'
@@ -151,7 +151,7 @@ function init() {
         , label: "OpenAPS Detect Sensitivity"
     };
 
-    detectsensitivity.getLastGlucose = require('../lib/glucose-get-last');
+    //detectsensitivity.getLastGlucose = require('../lib/glucose-get-last');
     //detectsensitivity.detect_sensitivity = require('../lib/determine-basal/determine-basal');
     return detectsensitivity;
 
