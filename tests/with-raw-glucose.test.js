@@ -18,6 +18,15 @@ describe('IOB', function ( ) {
     entry.raw.should.equal(113);
   });
 
+  it('should add raw glucose and not mess with sgv from NS', function ( ) {
+    var entry = {unfiltered: 113680, filtered: 111232, sgv: 110, noise: 1};
+    withRawGlucose(entry, cals);
+
+    should.not.exist(entry.glucose);
+    entry.sgv.should.equal(110);
+    entry.raw.should.equal(113);
+  });
+
   it('should add raw glucose and set missing glucose', function ( ) {
     var entry = {unfiltered: 113680, filtered: 111232, noise: 1};
     withRawGlucose(entry, cals);
