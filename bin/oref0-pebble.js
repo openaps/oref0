@@ -143,7 +143,7 @@ if (!module.parent) {
         + "Req: " + reqtempstring + "\n"
         + requestedtemp.reason + "\n"
         + "Sched: " + basalRate + "U/hr\n"
-        + "mealCOB: " + mealCOB + "g\n",
+        + "mealCOB: " + mealCOB + "g\n"
         + host + "\n",
         "refresh_frequency": 1
     };
