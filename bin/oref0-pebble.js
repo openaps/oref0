@@ -130,6 +130,9 @@ if (!module.parent) {
         }
     }
 
+    var os = require("os");
+    var host = os.hostname();
+
     var pebble = {        
         "content" : "" + bgnow + requestedtemp.tick + " " + bgTime + "\n"
         + iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + "\n"
@@ -141,6 +144,7 @@ if (!module.parent) {
         + requestedtemp.reason + "\n"
         + "Sched: " + basalRate + "U/hr\n"
         + "mealCOB: " + mealCOB + "g\n",
+        + host + "\n",
         "refresh_frequency": 1
     };
 
