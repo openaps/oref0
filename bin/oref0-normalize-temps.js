@@ -19,7 +19,7 @@ var find_bolus = require('oref0/lib/bolus');
 var describe_pump = require('oref0/lib/pump');
 
 if (!module.parent) {
-  var iob_input = process.argv.slice(2, 3).pop()
+  var iob_input = process.argv.slice(2, 3).pop();
 
   if (!iob_input) {
     console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json>');
