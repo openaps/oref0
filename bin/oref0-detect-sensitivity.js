@@ -36,7 +36,7 @@ if (!module.parent) {
     try {
         var cwd = process.cwd();
         var glucose_data = require(cwd + '/' + glucose_input);
-        if (glucose_data.length < 40) {
+        if (glucose_data.length < 72) {
             console.log('Error: not enough glucose data to calculate autosens.');
             process.exit(2);
         }
