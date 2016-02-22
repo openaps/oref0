@@ -28,7 +28,7 @@ if (!module.parent) {
     var profile_input = process.argv.slice(6, 7).pop();
 
     if (!glucose_input || !pumphistory_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<glucose-24h.json> <pumphistory-30h.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json>');
+        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json>');
         process.exit(1);
     }
     
@@ -112,8 +112,8 @@ if (!module.parent) {
         console.error("p="+i.toFixed(2)+": "+percentile(avgDeltas, i).toFixed(2)+", "+percentile(bgis, i).toFixed(2)+", "+percentile(deviations, i).toFixed(2));
     }
     p50 = percentile(deviations, 0.5);
-    //p40 = percentile(deviations, .4);
-    p30 = percentile(deviations, 0.3);
+    p40 = percentile(deviations, 0.4);
+    //p30 = percentile(deviations, 0.3);
 
     average = deviationSum / deviations.length;
 
@@ -123,8 +123,8 @@ if (!module.parent) {
     if(p50 < 0) { // sensitive
         basalOff = p50 * (60/5) / profile.sens;
         console.error("Excess insulin sensitivity detected");
-    } else if (p30 > 0) { // resistant
-        basalOff = p30 * (60/5) / profile.sens;
+    } else if (p40 > 0) { // resistant
+        basalOff = p40 * (60/5) / profile.sens;
         console.error("Excess insulin resistance detected");
     } else {
         //basalOff = p40 * (60/5) / profile.sens;
