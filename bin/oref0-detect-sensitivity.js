@@ -112,7 +112,7 @@ if (!module.parent) {
         console.error("p="+i.toFixed(2)+": "+percentile(avgDeltas, i).toFixed(2)+", "+percentile(bgis, i).toFixed(2)+", "+percentile(deviations, i).toFixed(2));
     }
     p50 = percentile(deviations, 0.5);
-    p40 = percentile(deviations, 0.4);
+    p45 = percentile(deviations, 0.45);
     //p30 = percentile(deviations, 0.3);
 
     average = deviationSum / deviations.length;
@@ -123,11 +123,10 @@ if (!module.parent) {
     if(p50 < 0) { // sensitive
         basalOff = p50 * (60/5) / profile.sens;
         console.error("Excess insulin sensitivity detected");
-    } else if (p40 > 0) { // resistant
-        basalOff = p40 * (60/5) / profile.sens;
+    } else if (p45 > 0) { // resistant
+        basalOff = p45 * (60/5) / profile.sens;
         console.error("Excess insulin resistance detected");
     } else {
-        //basalOff = p40 * (60/5) / profile.sens;
         console.error("Sensitivity within normal ranges");
     }
     ratio = 1 + (basalOff / profile.max_daily_basal);
