@@ -27,11 +27,11 @@ if (!module.parent) {
     var clock_input = process.argv.slice(4, 5).pop();
     var carb_input = process.argv.slice(5, 6).pop();
     var glucose_input = process.argv.slice(6, 7).pop();
-    //var basalprofile_input = process.argv.slice(5, 6).pop()
+    var basalprofile_input = process.argv.slice(7, 8).pop()
     //var isf_input = process.argv.slice(4, 5).pop()
 
     if (!pumphistory_input || !profile_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> [carbhistory.json] [glucose.json]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> [carbhistory.json] [glucose.json] [basalprofile.json]');
         process.exit(1);
     }
 
@@ -57,9 +57,10 @@ if (!module.parent) {
     }
 
     var glucose_data = { };
-    if (typeof glucose_input != 'undefined') {
+    if (typeof glucose_input != 'undefined' && basalprofile_input != 'undefined') {
         try {
             glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
+            basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
             //console.error(JSON.stringify(carb_data));
         } catch (e) {
             //console.error("Optional feature mealCOB disabled: glucose history not available.");
@@ -71,6 +72,7 @@ if (!module.parent) {
     var inputs = {
         history: all_data
     , profile: profile_data
+    , basalprofile: basalprofile_data
     , clock: clock_data
     , carbs: carb_data
     , glucose: glucose_data
