@@ -137,6 +137,8 @@ console.log("<body>");
     console.log("<title>");
         console.log( bgnow + " " + tick + " at " + bgTime );
     console.log("</title>");
+    console.log('<meta http-equiv="refresh" content="60">');
+    console.log('<meta name="viewport" content="width=500">');
 console.log("<head>");
 
 console.log("<body>");
