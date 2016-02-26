@@ -24,7 +24,7 @@ if [ ! -e $FILE ]; then
     FILE=/sys/devices/platform/soc/20980000.usb/buspower
 fi
 if [ -e $FILE ]; then
-    echo "Power-cycling USB to fix dead Carelink stick"
+    echo "Power-cycling USB to fix dead stick"
     sleep 0.1
     echo 0 > $FILE
     sleep 1

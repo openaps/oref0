@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test"
@@ -20,9 +20,12 @@
   "bin": {
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-find-insulin-uses": "./bin/oref0-find-insulin-uses.js",
+    "oref0-detect-sensitivity": "./bin/oref0-detect-sensitivity.js",
     "oref0-determine-basal": "./bin/oref0-determine-basal.js",
+    "oref0-meal": "./bin/oref0-meal.js",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
+    "oref0-fix-git-corruption": "bin/oref0-fix-git-corruption.sh",
     "oref0-get-profile": "./bin/oref0-get-profile.js",
     "oref0-mint-max-iob": "./bin/oref0-mint-max-iob.sh",
     "oref0-ifttt-notify": "./bin/oref0-ifttt-notify",
@@ -40,6 +43,7 @@
     "ns-status": "./bin/ns-status.js",
     "nightscout": "./bin/nightscout.sh",
     "ns-dedupe-treatments": "./bin/ns-dedupe-treatments.sh",
+    "oref0-html": "./bin/oref0-html.js",
     "oref0-pebble": "./bin/oref0-pebble.js"
   },
   "homepage": "https://github.com/openaps/oref0",

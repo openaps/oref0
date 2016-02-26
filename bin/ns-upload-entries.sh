@@ -11,7 +11,7 @@ OUTPUT=${2}
 export ENTRIES API_SECRET NIGHTSCOUT_HOST
 # requires API_SECRET and NIGHTSCOUT_HOST to be set in calling environment (i.e. in crontab)
 (
-curl -s -X POST --data-binary @$ENTRIES \
+curl -m 30 -s -X POST --data-binary @$ENTRIES \
   -H "API-SECRET: $API_SECRET" \
   -H "content-type: application/json" \
   $NIGHTSCOUT_HOST/api/v1/entries.json

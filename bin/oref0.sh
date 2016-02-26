@@ -23,6 +23,7 @@ Valid commands:
   oref0 ifttt-notify
   oref0 get-profile
   oref0 calculate-iob
+  oref0 meal
   oref0 determine-basal
   oref0 help - this message
 EOF

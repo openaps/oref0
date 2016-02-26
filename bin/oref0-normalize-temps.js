@@ -27,7 +27,11 @@ if (!module.parent) {
   }
 
   var cwd = process.cwd()
-  var all_data = require(cwd + '/' + iob_input);
+  try {
+    var all_data = require(cwd + '/' + iob_input);
+  } catch (e) {
+    return console.error("Could not parse pumphistory: ", e);
+  }
 
   var inputs = {
     history: all_data
