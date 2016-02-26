@@ -81,9 +81,14 @@ if (!module.parent) {
         console.error(reason);
         return 1;
     }
+
+    if (typeof(iob_data.length) && iob_data.length > 1) {
+        console.error(JSON.stringify(iob_data[0]));
+    } else {
+        console.error(JSON.stringify(iob_data));
+    }
     console.error(JSON.stringify(glucose_status));
     console.error(JSON.stringify(currenttemp));
-    console.error(JSON.stringify(iob_data));
     console.error(JSON.stringify(profile));
     
     var setTempBasal = require('../lib/basal-set-temp'); 
