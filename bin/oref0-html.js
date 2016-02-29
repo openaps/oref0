@@ -133,6 +133,17 @@ if (!module.parent) {
         }
     }
 
+//console.log("<!-- ");
+console.log( bgnow + requestedtemp.tick + " " + bgTime + ", "
+    + iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + ", "
+    + tempstring + "U/hr at " + temp_time + ", "
+    + "->" + reqtempstring
+    //+ ", " + requestedtemp.reason + ", "
+    //+ "Sched: " + basalRate + "U/hr, "
+    //+ "mealCOB: " + mealCOB + "g"
+    );
+//console.log(" -->");
+
 console.log("<body>");
     console.log("<title>");
         console.log( bgnow + " " + tick + " at " + bgTime );
