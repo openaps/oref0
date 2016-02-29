@@ -7,7 +7,7 @@ CARBS=${2-monitor/carb-ratios.json}
 BASALRATES=${3-monitor/active-basal-profile.json}
 SENSITIVITIES=${4-monitor/insulin-sensitivities.json}
 TARGETS=${5-monitor/bg-targets.json}
-OUTPUT=${6-settings/ns-profile.json}
+OUTPUT=${6-/dev/fd/1}
 # DIA
 # CARBRATIO
 #TZ=${3-$(date +%z)}
