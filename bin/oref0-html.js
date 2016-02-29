@@ -137,8 +137,8 @@ if (!module.parent) {
 console.log( bgnow + requestedtemp.tick + " " + bgTime + ", "
     + iob + "U -> " + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + ", "
     + tempstring + "U/hr @ " + temp_time
-    + ": " + reqtempstring
-    //+ ", " + requestedtemp.reason + ", "
+    + " " + reqtempstring
+    + ", " + requestedtemp.reason + ", "
     //+ "Sched: " + basalRate + "U/hr, "
     //+ "mealCOB: " + mealCOB + "g"
     );
