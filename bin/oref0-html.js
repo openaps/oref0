@@ -93,7 +93,7 @@ if (!module.parent) {
     if (temp.duration < 1) {
         tempstring = "No temp basal";
     } else {
-        tempstring = "Tmp: " + temp.duration + "m@" + temp.rate.toFixed(1);
+        tempstring = "Tmp: " + temp.duration + "m @ " + temp.rate.toFixed(1);
     }
     try {
         var requestedtemp = require(cwd + '/' + requestedtemp_input);
@@ -135,8 +135,8 @@ if (!module.parent) {
 
 //console.log("<!-- ");
 console.log( bgnow + requestedtemp.tick + " " + bgTime + ", "
-    + iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + ", "
-    + tempstring + "U/hr at " + temp_time
+    + iob + "U -> " + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + ", "
+    + tempstring + "U/hr @ " + temp_time
     + ": " + reqtempstring
     //+ ", " + requestedtemp.reason + ", "
     //+ "Sched: " + basalRate + "U/hr, "
