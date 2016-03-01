@@ -29,6 +29,7 @@
     "oref0-get-profile": "./bin/oref0-get-profile.js",
     "oref0-mint-max-iob": "./bin/oref0-mint-max-iob.sh",
     "oref0-ifttt-notify": "./bin/oref0-ifttt-notify",
+    "oref0-raw": "./bin/oref0-raw.js",
     "oref0-reset-usb": "bin/oref0-reset-usb.sh",
     "oref0-reset-git": "bin/oref0-reset-git.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",

@@ -93,7 +93,7 @@ if (!module.parent) {
     if (temp.duration < 1) {
         tempstring = "No temp basal";
     } else {
-        tempstring = "Tmp: " + temp.duration + "m@" + temp.rate.toFixed(1);
+        tempstring = "Tmp: " + temp.duration + "m @ " + temp.rate.toFixed(1);
     }
     try {
         var requestedtemp = require(cwd + '/' + requestedtemp_input);
@@ -132,6 +132,17 @@ if (!module.parent) {
             //console.error("Optional feature Meal Assist not configured.");
         }
     }
+
+//console.log("<!-- ");
+console.log( bgnow + requestedtemp.tick + " " + bgTime + ", "
+    + iob + "U -> " + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + ", "
+    + tempstring + "U/hr @ " + temp_time
+    + " " + reqtempstring
+    + ", " + requestedtemp.reason + ", "
+    //+ "Sched: " + basalRate + "U/hr, "
+    //+ "mealCOB: " + mealCOB + "g"
+    );
+//console.log(" -->");
 
 console.log("<body>");
     console.log("<title>");
