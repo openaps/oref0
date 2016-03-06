@@ -102,7 +102,8 @@ if (!module.parent) {
         var iob = get_iob(iob_inputs);
         //console.log(JSON.stringify(iob));
 
-        var bgi = -iob.activity*profile.sens;
+        //var bgi = -iob.activity*profile.sens;
+        var bgi = Math.round(( -iob.activity * profile.sens * 5 )*100)/100;
         bgi = bgi.toFixed(2);
         deviation = avgDelta-bgi;
         deviation = deviation.toFixed(2);
@@ -123,11 +124,11 @@ if (!module.parent) {
     avgDeltas.sort(function(a, b){return a-b});
     bgis.sort(function(a, b){return a-b});
     deviations.sort(function(a, b){return a-b});
-    for (var i=0.51; i > 0.29; i = i - 0.01) {
+    for (var i=0.60; i > 0.25; i = i - 0.02) {
         console.error("p="+i.toFixed(2)+": "+percentile(avgDeltas, i).toFixed(2)+", "+percentile(bgis, i).toFixed(2)+", "+percentile(deviations, i).toFixed(2));
     }
-    p50 = percentile(deviations, 0.5);
-    p45 = percentile(deviations, 0.45);
+    pSensitive = percentile(deviations, 0.50);
+    pResistant = percentile(deviations, 0.30);
     //p30 = percentile(deviations, 0.3);
 
     average = deviationSum / deviations.length;
@@ -135,11 +136,11 @@ if (!module.parent) {
     console.error("Mean deviation: "+average.toFixed(2));
     var basalOff = 0;
 
-    if(p50 < 0) { // sensitive
-        basalOff = p50 * (60/5) / profile.sens;
+    if(pSensitive < 0) { // sensitive
+        basalOff = pSensitive * (60/5) / profile.sens;
         console.error("Excess insulin sensitivity detected");
-    } else if (p45 > 0) { // resistant
-        basalOff = p45 * (60/5) / profile.sens;
+    } else if (pResistant > 0) { // resistant
+        basalOff = pResistant * (60/5) / profile.sens;
         console.error("Excess insulin resistance detected");
     } else {
         console.error("Sensitivity within normal ranges");
