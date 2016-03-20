@@ -76,7 +76,7 @@ if (!module.parent) {
     } else { console.error("Could not determine last BG time"); }
     var minAgo = (systemTime - bgTime) / 60 / 1000;
 
-    if (minAgo > 70 || minAgo < -65) { // Dexcom data is too old, or way in the future
+    if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
         var reason = "BG data is too old, or clock set incorrectly "+bgTime+" vs "+systemTime;
         console.error(reason);
         return 1;
