@@ -131,7 +131,10 @@ if (!module.parent) {
         console.error("Sensitivity within normal ranges");
     }
     ratio = 1 + (basalOff / profile.max_daily_basal);
-    ratio = Math.round(ratio*100)/100
+    // don't adjust more than 2x
+    ratio = Math.max(ratio, 0.5);
+    ratio = Math.min(ratio, 2);
+    ratio = Math.round(ratio*100)/100;
     newisf = profile.sens / ratio;
     console.error("Basal adjustment "+basalOff.toFixed(2)+"U/hr");
     console.error("Ratio: "+ratio*100+"%: new ISF: "+newisf.toFixed(1)+"mg/dL/U");
