@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test"
@@ -20,6 +20,7 @@
   "bin": {
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-find-insulin-uses": "./bin/oref0-find-insulin-uses.js",
+    "oref0-detect-sensitivity": "./bin/oref0-detect-sensitivity.js",
     "oref0-determine-basal": "./bin/oref0-determine-basal.js",
     "oref0-meal": "./bin/oref0-meal.js",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
@@ -43,6 +44,7 @@
     "ns-status": "./bin/ns-status.js",
     "nightscout": "./bin/nightscout.sh",
     "ns-dedupe-treatments": "./bin/ns-dedupe-treatments.sh",
+    "oref0-html": "./bin/oref0-html.js",
     "oref0-pebble": "./bin/oref0-pebble.js"
   },
   "homepage": "https://github.com/openaps/oref0",

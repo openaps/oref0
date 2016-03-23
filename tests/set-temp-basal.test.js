@@ -34,12 +34,6 @@ describe('setTempBasal', function ( ) {
         requestedTemp.duration.should.equal(30);
     });
 
-    it('should set current_basal as temp on requestedTemp if offline', function () {
-        var requestedTemp = setTempBasal(0, 0, profile, rt, "Offline");
-        requestedTemp.rate.should.equal(0.8);
-        requestedTemp.duration.should.equal(30);
-    });
-
     it('should limit high temp to 3 * max_daily_basal', function () {
         var profile = { "current_basal":1.0,"max_daily_basal":1.3,"max_basal":10.0 };
         var requestedTemp = setTempBasal(6, 30, profile, rt);
