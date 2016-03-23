@@ -14,11 +14,19 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
+function usage ( ) {
+  console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [Offline] [meal.json]');
+
+}
 /* istanbul ignore next */
 if (!module.parent) {
     var determinebasal = init();
 
     var iob_input = process.argv.slice(2, 3).pop();
+    if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
+      usage( );
+      process.exit(0)
+    }
     var currenttemp_input = process.argv.slice(3, 4).pop();
     var glucose_input = process.argv.slice(4, 5).pop();
     var profile_input = process.argv.slice(5, 6).pop();
@@ -26,7 +34,7 @@ if (!module.parent) {
     var meal_input = process.argv.slice(7, 8).pop();
 
     if (!iob_input || !currenttemp_input || !glucose_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [Offline] [meal.json]');
+        usage( );
         process.exit(1);
     }
     

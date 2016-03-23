@@ -12,10 +12,10 @@ function help_message ( ) {
   Usage:
 $self <cmd>
 
- ______   ______   ______  ______ 0
-/ |  | \ | |  | \ | |     | |      
-| |  | | | |__| | | |---- | |----  
-\_|__|_/ |_|  \_\ |_|____ |_|      
+     ______   ______   ______  ______ 0
+    / |  | \ | |  | \ | |     | |      
+    | |  | | | |__| | | |---- | |----  
+    \_|__|_/ |_|  \_\ |_|____ |_|      
 
 Valid commands:
   oref0 env - print information about environment.
@@ -35,7 +35,7 @@ env)
   env
   exit
   ;;
-help)
+help|--help|-h)
   help_message
   ;;
 *)

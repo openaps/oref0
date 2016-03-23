@@ -68,8 +68,9 @@ env)
   env
   exit
   ;;
-help)
+help|--help|-h)
   help_message
+  exit 0
   ;;
 *)
   if [[ -z "$IFTTT_TRIGGER" || -z  "$IFTTT_NOTIFY_USAGE" ]] ; then

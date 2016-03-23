@@ -20,15 +20,22 @@
 */
 
 var generate = require('oref0/lib/meal');
+function usage ( ) {
+        console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> [carbhistory.json]');
+}
 
 if (!module.parent) {
     var pumphistory_input = process.argv.slice(2, 3).pop();
+    if ([null, '--help', '-h', 'help'].indexOf(pumphistory_input) > 0) {
+      usage( );
+      process.exit(0)
+    }
     var profile_input = process.argv.slice(3, 4).pop();
     var clock_input = process.argv.slice(4, 5).pop();
     var carb_input = process.argv.slice(5, 6).pop();
 
     if (!pumphistory_input || !profile_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> [carbhistory.json]');
+        usage( );
         process.exit(1);
     }
 

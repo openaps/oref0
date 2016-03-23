@@ -20,6 +20,22 @@ die() {
 }
 
 self=$(basename $0)
+
+function usage ( ) {
+
+cat <<EOF
+$self <directory> <serial> <??> <diyps_url>
+$self - setup uploading to NS?
+EOF
+}
+
+case "$1" in
+  --help|help|-h)
+    usage
+    exit 0
+    ;;
+esac
+
 if [[ $# -lt 2 ]]; then
     openaps device show pump 2>/dev/null >/dev/null || die "Usage: $self <directory> <pump serial #>"
 fi

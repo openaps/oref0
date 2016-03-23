@@ -17,12 +17,19 @@
 var find_insulin = require('oref0/lib/temps');
 var find_bolus = require('oref0/lib/bolus');
 var describe_pump = require('oref0/lib/pump');
+function usage ( ) {
+    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json>');
+}
 
 if (!module.parent) {
   var iob_input = process.argv.slice(2, 3).pop();
 
+  if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
+    usage( );
+    process.exit(0)
+  }
   if (!iob_input) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json>');
+    usage( )
     process.exit(1);
   }
 

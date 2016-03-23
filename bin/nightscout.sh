@@ -12,6 +12,15 @@ function help_message ( ) {
   Usage:
 $self <cmd>
 
+* latest-openaps-treatment
+* cull-latest-openaps-treatments
+
+* ns-get
+* ns-upload
+* ns-dedupe-treatments
+* ns-status
+* ns-upload-entries
+
 EOF
 }
 
@@ -25,8 +34,9 @@ cull-latest-openaps-treatments)
   LAST_TIME=$3
   mm-format-ns-treatments $INPUT $MODEL |  json -c "this.created_at > '$LAST_TIME'"
   ;;
-help)
+help|--help|-h)
   help_message
+  exit 0
   ;;
 *)
   test -n "$COMMAND" && exec $COMMAND $*

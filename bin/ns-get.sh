@@ -49,7 +49,7 @@ EOF
   --noop)
     echo "curl -s $REPORT_ENDPOINT | json"
     ;;
-  help)
+  help|--help|-h)
     usage
     ;;
   *)
