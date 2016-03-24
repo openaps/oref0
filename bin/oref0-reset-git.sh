@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Delete git lock / history if necessary to recover from corrupted .git objects
 #
