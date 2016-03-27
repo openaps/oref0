@@ -82,7 +82,7 @@ if (!module.parent) {
     var tick = delta;
     if (delta >= 0) { tick = "+" + delta; } 
     var iob_data = require(cwd + '/' + iob_input);
-    iob = iob_data.iob.toFixed(1);
+    iob = iob_data[0].iob.toFixed(1);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
     var basalRate;
     basalLookup();
@@ -93,7 +93,7 @@ if (!module.parent) {
     if (temp.duration < 1) {
         tempstring = "No temp basal";
     } else {
-        tempstring = "Tmp: " + temp.duration + "m@" + temp.rate.toFixed(1);
+        tempstring = "Tmp: " + temp.duration + "m @ " + temp.rate.toFixed(1);
     }
     try {
         var requestedtemp = require(cwd + '/' + requestedtemp_input);
@@ -132,6 +132,17 @@ if (!module.parent) {
             //console.error("Optional feature Meal Assist not configured.");
         }
     }
+
+//console.log("<!-- ");
+console.log( bgnow + requestedtemp.tick + " " + bgTime + ", "
+    + iob + "U -> " + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + ", "
+    + tempstring + "U/hr @ " + temp_time
+    + " " + reqtempstring
+    + ", " + requestedtemp.reason + ", "
+    //+ "Sched: " + basalRate + "U/hr, "
+    //+ "mealCOB: " + mealCOB + "g"
+    );
+//console.log(" -->");
 
 console.log("<body>");
     console.log("<title>");

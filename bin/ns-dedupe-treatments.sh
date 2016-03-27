@@ -11,7 +11,7 @@ EOF
 }
 
 function fetch ( ) {
-  curl -s $ENDPOINT.json
+  curl -s -g $ENDPOINT.json
 }
 
 function flatten ( ) {
