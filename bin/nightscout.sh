@@ -11,7 +11,6 @@ function help_message ( ) {
   cat <<EOF
   Usage:
 $self <cmd>
-
 EOF
 }
 
@@ -24,6 +23,22 @@ cull-latest-openaps-treatments)
   MODEL=$2
   LAST_TIME=$3
   mm-format-ns-treatments $INPUT $MODEL |  json -c "this.created_at > '$LAST_TIME'"
+  ;;
+latest-dexcom-treatment)
+  ns-get treatments.json'?find[enteredBy]=/dexcom:\/\/openaps/&count=1' $* | json 0
+  ;;
+cull-latest-dexcom-treatments)
+  INPUT=$1
+  MODEL=$2
+  LAST_TIME=$3
+  format-ns-dexcom-treatment $INPUT $MODEL |  json -c "this.created_at > '$LAST_TIME'"
+  ;;
+cull-latest-dexcom-entries)
+  INPUT=$1
+  MODEL=$2
+  TYPE=$3
+  LAST_TIME=$4
+  format-ns-glucose $INPUT $MODEL $TYPE |  json -c "this.dateString > '$LAST_TIME'"
   ;;
 help)
   help_message
