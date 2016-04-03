@@ -55,7 +55,6 @@
       "astimezone": "False",
       "date": "None",
       "adjust": "missing",
-      "timezone": "PDT",
       "device": "tz",
       "input": "raw-pump/clock-raw.json"
     },
@@ -103,7 +102,6 @@
       "astimezone": "False",
       "date": "timestamp dateString start_at end_at created_at",
       "adjust": "missing",
-      "timezone": "PDT",
       "device": "tz",
       "input": "raw-pump/pump-history-raw.json"
     },
