@@ -376,15 +376,26 @@ describe('determine-basal', function ( ) {
       result.error.should.equal('Error: could not get current basal rate');
     }); 
 
-    it('should bg be < 30 (Dexcom is in ???) return error', function () {
-      var result = determine_basal({glucose:18},undefined, undefined, {"current_basal":0.0}, undefined, meal_data, setTempBasal);
-      result.error.should.equal('CGM is calibrating or in ??? state');
+    it('should let low-temp run when bg < 30 (Dexcom is in ???)', function () {
+        var currenttemp = {"duration":30,"rate":0,"temp":"absolute"};
+        var output = determine_basal({glucose:18},currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        //console.log(output);
+        (typeof output.rate).should.equal('undefined');
+        output.reason.should.match(/CGM is calibrating/);
+    });
+
+    it('should cancel high-temp when bg < 30 (Dexcom is in ???)', function () {
+        var currenttemp = {"duration":30,"rate":2,"temp":"absolute"};
+        var output = determine_basal({glucose:18},currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        //console.log(output);
+        output.rate.should.be.below(1);
+        output.reason.should.match(/CGM is calibrating/);
     });  
 
     it('profile should contain min_bg,max_bg or target_bg', function () {
       var result = determine_basal({glucose:100},undefined, undefined, {"current_basal":0.0}, undefined, meal_data, setTempBasal);
       result.error.should.equal('Error: could not determine target_bg');
-    }); 
+    });
 
     it('iob_data should not be undefined', function () {
       var result = determine_basal({glucose:100},undefined, undefined, {"current_basal":0.0, "target_bg":100}, undefined, meal_data, setTempBasal);
