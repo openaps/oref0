@@ -18,6 +18,8 @@ $self <cmd>
     \_|__|_/ |_|  \_\ |_|____ |_|      
 
 Valid commands:
+  oref0 device-helper - <name> <spec>: create/template a device from bash commands easily
+  oref0 alias-helper - <name> <spec>: create/template a alias from bash commands easily
   oref0 env - print information about environment.
   oref0 pebble
   oref0 ifttt-notify
@@ -30,6 +32,21 @@ EOF
 }
 
 case $NAME in
+device-helper)
+  name=$1
+  shift
+  cat <<EOF
+{"$name": {"vendor": "openaps.vendors.process", "extra": "${name}.ini"}, "type": "device", "name": "$name", "extra": {"fields": "", "cmd": "bash", "args": "-c \"$*\" -- "}}
+
+EOF
+  ;;
+alias-helper)
+  name=$1
+  shift
+  cat <<EOF
+{"type": "alias", "name": "$name", "$name": {"command": "! bash -c \"$*\" --"}}
+EOF
+  ;;
 env)
   echo PATH=$PATH
   env
