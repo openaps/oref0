@@ -40,6 +40,8 @@ EOF
     QUERY=${4}
     OUTPUT=${5-/dev/fd/1}
     REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${QUERY}
+    test -z "$NIGHTSCOUT_HOST" && usage && exit 1;
+    curl -g -s $REPORT_ENDPOINT | json
 
     ;;
   type)
@@ -49,7 +51,7 @@ EOF
   --noop)
     echo "curl -s $REPORT_ENDPOINT | json"
     ;;
-  help)
+  help|--help|-h)
     usage
     ;;
   *)

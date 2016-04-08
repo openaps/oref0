@@ -30,7 +30,7 @@ EOF
 }
 
 case $MAX_IOB in
-""| help)
+--help|-h|""| help)
   help_message
   ;;
 *)

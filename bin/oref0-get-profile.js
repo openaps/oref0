@@ -17,10 +17,17 @@
 */
 
 var generate = require('oref0/lib/profile/');
+function usage ( ) {
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<max_iob.json>] [<carb_ratios.json>]');
+}
 
 if (!module.parent) {
     
     var pumpsettings_input = process.argv.slice(2, 3).pop()
+    if ([null, '--help', '-h', 'help'].indexOf(pumpsettings_input) > 0) {
+      usage( );
+      process.exit(0)
+    }
     var bgtargets_input = process.argv.slice(3, 4).pop()
     var isf_input = process.argv.slice(4, 5).pop()
     var basalprofile_input = process.argv.slice(5, 6).pop()
@@ -28,7 +35,7 @@ if (!module.parent) {
     var carbratio_input = process.argv.slice(7, 8).pop()
     
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<max_iob.json>] [<carb_ratios.json>]');
+        usage( );
         process.exit(1);
     }
     

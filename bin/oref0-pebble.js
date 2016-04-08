@@ -50,11 +50,19 @@ function fileHM(file) {
     return HMS[0].concat(":", HMS[1]);
 }
 
+function usage ( ) {
+        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json> [meal.json]');
+}
+
 if (!module.parent) {
     
     var fs = require('fs');
 
     var glucose_input = process.argv.slice(2, 3).pop()
+    if ([null, '--help', '-h', 'help'].indexOf(glucose_input) > 0) {
+      usage( );
+      process.exit(0)
+    }
     var iob_input = process.argv.slice(3, 4).pop()
     var basalprofile_input = process.argv.slice(4, 5).pop()
     var currenttemp_input = process.argv.slice(5, 6).pop()
@@ -63,7 +71,7 @@ if (!module.parent) {
     var meal_input = process.argv.slice(8, 9).pop()
     
     if (!glucose_input || !iob_input || !basalprofile_input || !currenttemp_input || !requestedtemp_input || !enactedtemp_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json> [meal.json]');
+        usage( );
         process.exit(1);
     }
     

@@ -2,18 +2,32 @@
 
 # Author: Ben West
 
+self=$(basename $0)
 SETTINGS=${1-monitor/settings.json}
 CARBS=${2-monitor/carb-ratios.json}
 BASALRATES=${3-monitor/active-basal-profile.json}
 SENSITIVITIES=${4-monitor/insulin-sensitivities.json}
 TARGETS=${5-monitor/bg-targets.json}
-OUTPUT=${6-settings/ns-profile.json}
+OUTPUT=${6-/dev/fd/1}
 # DIA
 # CARBRATIO
 #TZ=${3-$(date +%z)}
 
 function usage ( ) {
 cat <<EOF
+$self: Format known pump data into Nightscout "profile".
+
+Profile documents allow Nightscout to establish a common set of settings for
+therapy, including the type of units used, the timezone, carb-ratios, active
+basal profiles, insulin sensitivities, and BG targets.  This compiles the
+separate pump reports into a single profile document for Nightscout.
+
+Usage:
+$self pump-settings carb-ratios active-basal-profile insulin-sensitivities bg-targets
+
+Examples:
+bewest@bewest-MacBookPro:~/Documents/openaps$ mm-format-ns-profile monitor/settings.json monitor/carb-ratios.json monitor/active-basal-profile.json monitor/insulin-sensitivities.json monitor/bg-targets.json  
+
 EOF
 }
 
@@ -132,7 +146,12 @@ function stub ( ) {
   }
 EOF
 }
-
+case $1 in
+  --help|config|help|-h)
+    usage
+    exit 0
+    ;;
+esac
 stub $SETTINGS | fix-dates \
   | add-carbs $CARBS \
   | add-basals $BASALRATES \
