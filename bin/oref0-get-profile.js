@@ -26,9 +26,10 @@ if (!module.parent) {
     var basalprofile_input = process.argv.slice(5, 6).pop()
     var maxiob_input = process.argv.slice(6, 7).pop()
     var carbratio_input = process.argv.slice(7, 8).pop()
+    var temptargets_input = process.argv.slice(8, 9).pop()
     
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<max_iob.json>] [<carb_ratios.json>]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<max_iob.json>] [<carb_ratios.json>] [<temptargets.json>]');
         process.exit(1);
     }
     
@@ -62,6 +63,14 @@ if (!module.parent) {
             console.error("Could not parse carbratio_data. Optional feature Meal Assist disabled.");
         }
     }
+    var temptargets_data = { };
+    if (typeof temptargets_input != 'undefined') {
+        try {
+            temptargets_data = JSON.parse(fs.readFileSync(temptargets_input, 'utf8'));
+        } catch (e) {
+            //console.error("Could not parse carbratio_data. Optional feature Meal Assist disabled.");
+        }
+    }
     //console.log(carbratio_data);
     var inputs = {
       settings: pumpsettings_data
@@ -70,6 +79,7 @@ if (!module.parent) {
     , isf: isf_data
     , max_iob: maxiob_data.max_iob || 0
     , carbratio: carbratio_data
+    , temptargets: temptargets_data
     };
 
     var profile = generate(inputs);
