@@ -6,6 +6,7 @@ NAME=${1-help}
 shift
 PROGRAM="ns-${NAME}"
 COMMAND=$(which $PROGRAM | head -n 1)
+NIGHTSCOUT_DEBUG=${NIGHTSCOUT_DEBUG-0}
 
 function help_message ( ) {
   cat <<EOF
@@ -18,6 +19,7 @@ $self <cmd>
 * get
 * upload
 * dedupe-treatments
+* hash-api-secret
 * status
 * upload-entries
 * autoconfigure-device-crud
