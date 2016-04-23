@@ -65,6 +65,23 @@ ns)
     get)
     exec ns-get host $NIGHTSCOUT_HOST $*
     ;;
+    latest-treatment-time)
+      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST treatments.json'?find[enteredBy]=/openaps:\/\//&count=1'  | json 0)
+      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | json -j created_at
+    # exec ns-get host $NIGHTSCOUT_HOST $*
+    ;;
+    format-recent-history-treatments)
+      HISTORY=$1
+      MODEL=$2
+      LAST_TIME=$(nightscout ns $NIGHTSCOUT_HOST $API_SECRET latest-treatment-time | json)
+      exec nightscout cull-latest-openaps-treatments $HISTORY $MODEL ${LAST_TIME}
+
+    ;;
+    upload-non-empty-treatments)
+      test $(cat $1 | json -a | wc -l) -lt 1 && echo "Nothing to upload." > /dev/stderr && cat $1 && exit 0
+    exec ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json $1
+
+    ;;
     upload)
     exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $*
     ;;
