@@ -25,6 +25,7 @@
     "oref0-meal": "./bin/oref0-meal.js",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
+    "send-device-status": "./bin/send-device-status.js",
     "oref0-fix-git-corruption": "bin/oref0-fix-git-corruption.sh",
     "oref0-get-profile": "./bin/oref0-get-profile.js",
     "oref0-mint-max-iob": "./bin/oref0-mint-max-iob.sh",
