@@ -43,6 +43,13 @@ cat <<EOF
 TODO: improve help
 openaps use ns shell get entries.json 'count=10'
 openaps use ns shell upload treatments.json recently/combined-treatments.json
+
+    -h             This message.
+    get type args  Get records of type from Nightscout matching args.
+    upload endpoint file Upload a file to the Nightscout endpoint.
+    latest-treatment-time - get latest treatment time from Nightscout
+    format-recent-history-treatments history model - Formats medtronic pump history and model into Nightscout compatible treatments.
+    upload-non-empty-treatments file - Upload a non empty treatments file to Nightscout.
 EOF
 }
 case $NAME in
@@ -115,7 +122,7 @@ autoconfigure-device-crud)
   # openaps device add ns-get host
   test -z "$NIGHTSCOUT_HOST" && setup_help && exit 1;
   test -z "$API_SECRET" && setup_help && exit 1;
-  openaps device add ns process --require "oper remote input" nightscout ns "NIGHTSCOUT_HOST" "API_SECRET"
+  openaps device add ns process --require "oper" nightscout ns "NIGHTSCOUT_HOST" "API_SECRET"
   openaps device show ns --json | json \
     | json -e "this.extra.args = this.extra.args.replace(' NIGHTSCOUT_HOST ', ' $NIGHTSCOUT_HOST ')" \
     | json -e "this.extra.args = this.extra.args.replace(' API_SECRET', ' $API_SECRET')" \
