@@ -42,7 +42,7 @@ var iob_data = require(cwd + '/' + iob_input);
 
 var data = {
     bg: glucose_data[0].glucose,
-    iob: iob_data.iob,
+    iob: iob_data[0].iob,
     temp:enacted_temps.temp,
     rate: enacted_temps.rate,
     duration: enacted_temps.duration,
