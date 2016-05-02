@@ -50,6 +50,7 @@ openaps use ns shell upload treatments.json recently/combined-treatments.json
     latest-treatment-time - get latest treatment time from Nightscout
     format-recent-history-treatments history model - Formats medtronic pump history and model into Nightscout compatible treatments.
     upload-non-empty-treatments file - Upload a non empty treatments file to Nightscout.
+    lsgaps tz entries  - Re-use openaps timezone device to find gaps in a type (entries) by default.
 EOF
 }
 case $NAME in
@@ -71,10 +72,40 @@ ns)
     ;;
     get)
     exec ns-get host $NIGHTSCOUT_HOST $*
+    exit 0
+    ;;
+    lsgaps)
+      ZONE=${1-'tz'}
+      TYPE=${2-'entries'}
+      ns-get host $NIGHTSCOUT_HOST "${TYPE}.json" 'count=300' \
+        | openaps use $ZONE  \
+          rezone --astimezone --date dateString - \
+        | openaps use $ZONE  \
+          lsgaps --after now  --date dateString -
+
+
+    ;;
+    format-recent-type)
+      ZONE=${1-'tz'}
+      TYPE=${2-'entries'}
+      FILE=${3-''}
+      # nightscout ns $NIGHTSCOUT_HOST $API_SECRET
+      test -z ${ZONE} && "Missing first argument, ZONE, usually is set to tz" && exit 1
+      test -z ${TYPE} && "Missing second argument, TYPE, one of: entries, treatments, devicestatus, profiles." && exit 1
+      test ! -e ${FILE} && "Third argument, contents to upload, FILE, does not exist" && exit 1
+      test ! -r ${FILE} && "Third argument, contents to upload, FILE, not readable." && exit 1
+      openaps use ns shell lsgaps ${ZONE} ${TYPE} \
+        |  openaps use ${ZONE} select --gaps - ${FILE}  | json
+    ;;
+    latest-entries-time)
+      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST entries.json 'find[type]=sgv'  | json 0)
+      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | json -j dateString
+      exit 0
     ;;
     latest-treatment-time)
       PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST treatments.json'?find[enteredBy]=/openaps:\/\//&count=1'  | json 0)
       test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | json -j created_at
+      exit 0
     # exec ns-get host $NIGHTSCOUT_HOST $*
     ;;
     format-recent-history-treatments)
@@ -82,7 +113,14 @@ ns)
       MODEL=$2
       LAST_TIME=$(nightscout ns $NIGHTSCOUT_HOST $API_SECRET latest-treatment-time | json)
       exec nightscout cull-latest-openaps-treatments $HISTORY $MODEL ${LAST_TIME}
+      exit 0
 
+    ;;
+    upload-non-empty-type)
+      TYPE=${1-entries.json}
+      FILE=$2
+      test $(cat $FILE | json -a | wc -l) -lt 1 && echo "Nothing to upload." > /dev/stderr && cat $FILE && exit 0
+      exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $TYPE $FILE
     ;;
     upload-non-empty-treatments)
       test $(cat $1 | json -a | wc -l) -lt 1 && echo "Nothing to upload." > /dev/stderr && cat $1 && exit 0
@@ -98,6 +136,7 @@ ns)
     exit 1;
     ;;
   esac
+    exit 0
 
   ;;
 hash-api-secret)
