@@ -44,13 +44,30 @@ TODO: improve help
 openaps use ns shell get entries.json 'count=10'
 openaps use ns shell upload treatments.json recently/combined-treatments.json
 
-    -h             This message.
-    get type args  Get records of type from Nightscout matching args.
-    upload endpoint file Upload a file to the Nightscout endpoint.
-    latest-treatment-time - get latest treatment time from Nightscout
-    format-recent-history-treatments history model - Formats medtronic pump history and model into Nightscout compatible treatments.
-    upload-non-empty-treatments file - Upload a non empty treatments file to Nightscout.
-    lsgaps tz entries  - Re-use openaps timezone device to find gaps in a type (entries) by default.
+  -h                                  This message.
+  get type args                                  Get records of type from
+                                                 Nightscout matching args.
+
+  upload endpoint file                           Upload a file to the Nightscout endpoint.
+  latest-treatment-time                          - get latest treatment time from Nightscout
+  format-recent-history-treatments history model - Formats medtronic pump
+                                                 history and model into
+                                                 Nightscout compatible
+                                                 treatments.
+
+  format-recent-type ZONE type file              - Selects elements from the
+                                                 file where the elements would
+                                                 satisfy a gap in the last 1000
+                                                 Nightscout records.
+
+  upload-non-empty-treatments file               - Upload a non empty treatments
+                                                 file to Nightscout.
+  lsgaps tz entries                              - Re-use openaps timezone device
+                                                 to find gaps in a type (entries)
+                                                 by default.
+  upload-non-empty-type type file
+  status                                         - Retrieve status
+  preflight                                      - NS preflight
 EOF
 }
 case $NAME in
@@ -74,6 +91,19 @@ ns)
     exec ns-get host $NIGHTSCOUT_HOST $*
     exit 0
     ;;
+    preflight)
+      STATUS=$(ns-get host $NIGHTSCOUT_HOST status.json | json status)
+      if [[ $STATUS = "ok" ]] ; then
+        echo "true" | json -j
+        exit 0
+      else
+        echo "false" | json -j
+        exit 1
+      fi
+    ;;
+    status)
+      ns-get host $NIGHTSCOUT_HOST status.json | json
+    ;;
     lsgaps)
       ZONE=${1-'tz'}
       TYPE=${2-'entries'}
@@ -95,7 +125,7 @@ ns)
       test ! -e ${FILE} && "Third argument, contents to upload, FILE, does not exist" && exit 1
       test ! -r ${FILE} && "Third argument, contents to upload, FILE, not readable." && exit 1
       openaps use ns shell lsgaps ${ZONE} ${TYPE} \
-        |  openaps use ${ZONE} select --gaps - ${FILE}  | json
+        |  openaps use ${ZONE} select --current now --gaps - ${FILE}  | json
     ;;
     latest-entries-time)
       PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST entries.json 'find[type]=sgv'  | json 0)
