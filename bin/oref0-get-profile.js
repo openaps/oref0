@@ -67,7 +67,7 @@ if (!module.parent) {
             carbratio_data = JSON.parse(fs.readFileSync(carbratio_input, 'utf8'));
 
         } catch (e) {
-            var msg = { error: e, msg: "Could not parse carbratio_data. Optional feature Meal Assist disabled.", file: carbratio_input };
+            var msg = { error: e, msg: "Could not parse carbratio_data. Feature Meal Assist enabled but cannot find required carb_ratios.", file: carbratio_input };
             console.error(msg.msg);
             console.log(JSON.stringify(msg));
             process.exit(1);
