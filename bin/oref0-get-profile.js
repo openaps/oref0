@@ -65,8 +65,29 @@ if (!module.parent) {
     if (typeof carbratio_input != 'undefined') {
         try {
             carbratio_data = JSON.parse(fs.readFileSync(carbratio_input, 'utf8'));
+
         } catch (e) {
-            console.error("Could not parse carbratio_data. Optional feature Meal Assist disabled.");
+            var msg = { error: e, msg: "Could not parse carbratio_data. Optional feature Meal Assist disabled.", file: carbratio_input };
+            console.error(msg.msg);
+            console.log(JSON.stringify(msg));
+            process.exit(1);
+        }
+        var errors = [ ];
+
+        if (!(carbratio_data.schedule && carbratio_data.schedule[0].start && carbratio_data.schedule[0].ratio)) {
+          errors.push({msg: "Carb ratio data should have an array called schedule with a start and ratio fields.", file: carbratio_input, data: carbratio_data});
+        } else {
+        }
+        if (carbratio_data.units != 'grams') {
+          errors.push({msg: "Carb ratio should have units field set to 'grams'.", file: carbratio_input, data: carbratio_data});
+        }
+        if (errors.length) {
+
+          errors.forEach(function (msg) {
+            console.error(msg.msg);
+          });
+          console.log(JSON.stringify(errors));
+          process.exit(1);
         }
     }
     //console.log(carbratio_data);
