@@ -30,13 +30,7 @@ if (!module.parent) {
         default: true
 
       })
-      .option('auto-sens-ratio', {
-        alias: 'r',
-        describe: "Auto-sensitivity configuration",
-        number: true,
-        default: 1
 
-      })
 
       .strict(true)
       .help('help')
@@ -96,7 +90,7 @@ if (!module.parent) {
     var autosens_data = null;
     if (autosens_input) {
       // { "ratio":1 };
-      autosens_data = { "ratio": params.autoSenseRatio };
+      autosens_data = { "ratio": 1 };
       if (autosens_input !== true && autosens_input.length) {
         try {
             autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
