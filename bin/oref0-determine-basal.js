@@ -14,16 +14,13 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-function usage ( ) {
-  console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [[--auto-sens] autosens.json] [meal.json]');
 
-}
 /* istanbul ignore next */
 if (!module.parent) {
     var determinebasal = init();
 
     var argv = require('yargs')
-      .usage("$0 iob.json currenttemp.json glucose.json profile.json [autosens.json] [meal.json]")
+      .usage("$0 iob.json currenttemp.json glucose.json profile.json [[--auto-sens] autosens.json] [meal.json]")
       .option('auto-sens', {
         alias: 'a',
         describe: "Auto-sensitivity configuration",
@@ -34,12 +31,16 @@ if (!module.parent) {
       .strict(true)
       .help('help')
     ;
+    function usage ( ) {
+      argv.showHelp( );
+    }
 
     var params = argv.argv;
     var errors = [ ];
 
     var iob_input = params._.slice(0, 1).pop();
     if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
+
       usage( );
       process.exit(0)
     }
