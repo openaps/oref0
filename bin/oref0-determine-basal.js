@@ -75,20 +75,11 @@ if (!module.parent) {
     }
     //if old reading from Dexcom do nothing
 
-    var systemTime = new Date();
-    var bgTime;
-    if (glucose_data[0].display_time) {
-        bgTime = new Date(glucose_data[0].display_time.replace('T', ' '));
-    } else if (glucose_data[0].dateString) {
-        bgTime = new Date(glucose_data[0].dateString);
-    } else { console.error("Could not determine last BG time"); }
-    var minAgo = (systemTime - bgTime) / 60 / 1000;
-
-    if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
-        var reason = "BG data is too old, or clock set incorrectly "+bgTime+" vs "+systemTime;
-        console.error(reason);
+    if (!glucose_status.isFailure) {
+        console.error(glucose_status.reasonHint);
         return 1;
     }
+    
     console.error(JSON.stringify(glucose_status));
     console.error(JSON.stringify(currenttemp));
     console.error(JSON.stringify(iob_data));
