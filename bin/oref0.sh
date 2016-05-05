@@ -26,8 +26,7 @@ Valid commands:
   oref0 get-profile
   oref0 calculate-iob
   oref0 meal
-  oref0 calculate-basal - With switches
-  oref0 determine-basal - Without switches.
+  oref0 determine-basal
   oref0 help - this message
 EOF
 }
