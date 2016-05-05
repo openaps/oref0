@@ -15,7 +15,7 @@
   THE SOFTWARE.
 */
 function usage ( ) {
-  console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [autosens.json] [meal.json]');
+  console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [--auto-sens autosens.json] [meal.json]');
 
 }
 /* istanbul ignore next */
