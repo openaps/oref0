@@ -23,7 +23,7 @@ if (!module.parent) {
     var determinebasal = init();
 
     var argv = require('yargs')
-      .usage("$0 iob.json currenttemp.json glucose.json profile.json [meal.json]")
+      .usage("$0 iob.json currenttemp.json glucose.json profile.json [autosens.json] [meal.json]")
       .option('auto-sens', {
         alias: 'a',
         describe: "Auto-sensitivity configuration",
@@ -37,6 +37,7 @@ if (!module.parent) {
     ;
 
     var params = argv.argv;
+    var errors = [ ];
 
     var iob_input = params._.slice(0, 1).pop();
     if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
@@ -48,6 +49,10 @@ if (!module.parent) {
     var profile_input = params._.slice(3, 4).pop();
     var meal_input = params._.slice(4, 5).pop();
     var autosens_input = params.autoSens;
+    if (params._.length > 5) {
+      autosens_input = params.autoSens ? params._.slice(4, 5).pop() : false;
+      meal_input = params._.slice(5, 6).pop();
+    }
 
     if (!iob_input || !currenttemp_input || !glucose_input || !profile_input) {
         usage( );
@@ -80,8 +85,9 @@ if (!module.parent) {
             , error: e
             };
             console.error(msg.msg);
-            console.log(JSON.stringify(msg));
-            process.exit(1);
+            // console.log(JSON.stringify(msg));
+            errors.push(msg);
+            // process.exit(1);
         }
     }
     //if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
@@ -102,8 +108,9 @@ if (!module.parent) {
             };
             console.error(msg.msg);
             console.error(e);
-            console.log(JSON.stringify(msg));
-            process.exit(1);
+            // console.log(JSON.stringify(msg));
+            errors.push(msg);
+            // process.exit(1);
         }
       }
     }
@@ -121,7 +128,13 @@ if (!module.parent) {
     if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
         var reason = "BG data is too old, or clock set incorrectly "+bgTime+" vs "+systemTime;
         console.error(reason);
-        return 1;
+        var msg = {msg: reason }
+        errors.push(msg);
+        /// return 1;
+    }
+    if (errors.length) {
+      console.log(JSON.stringify(errors));
+      process.exit(1);
     }
     console.error(JSON.stringify(glucose_status));
     console.error(JSON.stringify(currenttemp));
