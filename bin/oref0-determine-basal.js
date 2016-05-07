@@ -95,8 +95,9 @@ if (!module.parent) {
     console.error(JSON.stringify(profile));
     
     var setTempBasal = require('oref0/lib/basal-set-temp');
+    var setTempBasal = require('oref0/lib/basal-set-temp');
     
-    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, setTempBasal);
+    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, determinebasal.mealAssistFn, setTempBasal);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));
@@ -115,6 +116,7 @@ function init() {
     
     determinebasal.getLastGlucose = require('oref0/lib/glucose-get-last');
     determinebasal.determine_basal = require('oref0/lib/determine-basal/determine-basal');
+    determinebasal.mealAssistFn = require('oref0/lib/determine-basal/meal-assist');
     return determinebasal;
 
 }
