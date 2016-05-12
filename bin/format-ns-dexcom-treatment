@@ -13,9 +13,9 @@ self=$(basename $0)
 cat $GLUCOSE | \
   json -e "this.created_at = this.display_time ? (this.display_time + '$(date +%z)') : this.created_at ? this.created_at : (this.date + '$(date +%z)')" | \
   json -e "this.timestamp = this.created_at" | \
-  json -e "this.eventType = 'Sensor insertion'" | \
+  json -e "this.eventType = 'Sensor Start'" | \
   json -e "this.enteredBy = this.enteredBy ? this.enteredBy : 'dexcom://openaps/$self'" | \
-  json -e "this.dexcom = 'dexcom://openaps/$MODEL'" | \
+  json -e "this.dexcom = 'openaps://dexcom/$MODEL'" | \
   json -e "this.notes = this.session_state" | \
   json -a  created_at timestamp eventType enteredBy dexcom notes -o json \
    > $OUTPUT
