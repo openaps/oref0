@@ -25,7 +25,7 @@ cull-latest-openaps-treatments)
   mm-format-ns-treatments $INPUT $MODEL |  json -c "this.created_at > '$LAST_TIME'"
   ;;
 latest-dexcom-treatment)
-  ns-get treatments.json'?find[enteredBy]=/dexcom:\/\/openaps/&count=1' $* | json 0
+  ns-get treatments.json'?find[enteredBy]=/openaps:\/\/dexcom/&count=1' $* | json 0
   ;;
 cull-latest-dexcom-treatments)
   INPUT=$1
