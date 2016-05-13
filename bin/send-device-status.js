@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
-  Send Temporary Basal to Azure
+  Send Device Status to Azure for Push Notifications
 
   Copyright (c) 2015 OpenAPS Contributors
 
@@ -21,7 +21,7 @@ var http = require('https');
 var reason = process.argv.slice(2, 3).pop()
 
 var data = JSON.stringify({
-    "DeviceName": "Medtronics 512",
+    "DeviceName": "Medtronics",
     "TimeStamp": new Date(),
     "Reason":  reason   }
 );
