@@ -98,27 +98,6 @@
     "name": "do-everything"
   },
   {
-    "type": "alias",
-    "ping": {
-      "command": "! echo PING"
-    },
-    "name": "ping"
-  },
-  {
-    "pong": {
-      "command": "! echo PONG"
-    },
-    "type": "alias",
-    "name": "pong"
-  },
-  {
-    "type": "alias",
-    "name": "hello",
-    "hello": {
-      "command": "! echo hello"
-    }
-  },
-  {
     "type": "vendor",
     "name": "mmeowlink.vendors.mmeowlink",
     "mmeowlink.vendors.mmeowlink": {
