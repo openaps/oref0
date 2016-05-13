@@ -18,7 +18,7 @@
 
 var generate = require('oref0/lib/profile/');
 function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<max_iob.json>] [<carb_ratios.json>]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>]');
 }
 
 if (!module.parent) {
@@ -31,7 +31,7 @@ if (!module.parent) {
     var bgtargets_input = process.argv.slice(3, 4).pop()
     var isf_input = process.argv.slice(4, 5).pop()
     var basalprofile_input = process.argv.slice(5, 6).pop()
-    var maxiob_input = process.argv.slice(6, 7).pop()
+    var preferences_input = process.argv.slice(6, 7).pop()
     var carbratio_input = process.argv.slice(7, 8).pop()
     
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
@@ -55,9 +55,9 @@ if (!module.parent) {
     }
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
 
-    var maxiob_data = { max_iob: 0 };
-    if (typeof maxiob_input != 'undefined') {
-        maxiob_data = require(cwd + '/' + maxiob_input);
+    var preferences = { max_iob: 0 };
+    if (typeof preferences_input != 'undefined') {
+        preferences = require(cwd + '/' + preferences_input);
     }
     var fs = require('fs');
     var carbratio_data = { };
@@ -96,7 +96,7 @@ if (!module.parent) {
     , targets: bgtargets_data
     , basals: basalprofile_data
     , isf: isf_data
-    , max_iob: maxiob_data.max_iob || 0
+    , max_iob: preferences.max_iob || 0
     , carbratio: carbratio_data
     };
 
