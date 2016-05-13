@@ -202,6 +202,19 @@
   },
   {
     "extra": {
+      "fields": "glucose pumphistory isf basal_profile profile",
+      "cmd": "oref0",
+      "args": "detect-sensitivity"
+    },
+    "type": "device",
+    "name": "detect-sensitivity",
+    "detect-sensitivity": {
+      "vendor": "openaps.vendors.process",
+      "extra": "detect-sensitivity.ini"
+    }
+  },
+  {
+    "extra": {
       "fields": "settings bg-targets insulin-sensitivities basal-profile max-iob",
       "cmd": "oref0",
       "args": "get-profile"
