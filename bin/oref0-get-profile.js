@@ -55,7 +55,7 @@ if (!module.parent) {
     }
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
 
-    var preferences = { max_iob: 0 };
+    var preferences = {};
     if (typeof preferences_input != 'undefined') {
         preferences = require(cwd + '/' + preferences_input);
     }
@@ -97,6 +97,7 @@ if (!module.parent) {
     , basals: basalprofile_data
     , isf: isf_data
     , max_iob: preferences.max_iob || 0
+    , set_neutral_temps: preferences.set_neutral_temps || false
     , carbratio: carbratio_data
     };
 
