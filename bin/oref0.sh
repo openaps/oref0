@@ -27,6 +27,7 @@ Valid commands:
   oref0 calculate-iob
   oref0 meal
   oref0 determine-basal
+  oref0 export-loop  - Print a backup json representation of entire configuration.
   oref0 help - this message
 EOF
 }
@@ -50,6 +51,11 @@ EOF
 env)
   echo PATH=$PATH
   env
+  exit
+  ;;
+export-loop)
+  openaps import -l | while read type ; do openaps $type show --json ; done | json -g
+
   exit
   ;;
 help|--help|-h)
