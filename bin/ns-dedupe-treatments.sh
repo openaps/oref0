@@ -11,7 +11,7 @@ EOF
 }
 
 function fetch ( ) {
-  curl -s $ENDPOINT.json
+  curl -s -g $ENDPOINT.json
 }
 
 function flatten ( ) {
@@ -87,7 +87,7 @@ case "$1" in
   delete)
     main $2 delete_cmd
     ;;
-  *|help)
+  *|help|--help|-h)
     usage
     exit 1;
     ;;

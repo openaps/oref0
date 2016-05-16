@@ -25,7 +25,8 @@ if you wish.
 On the Maker channel there is a "how to trigger" link. Copy and paste the url
 for the example curl command, be sure to change the event name field.
 The URL, something like:
-# https://maker.ifttt.com/trigger/{event}/with/key/MyKey
+
+    https://maker.ifttt.com/trigger/{event}/with/key/MyKey
 
 You can pass the IFTTT_TRIGGER, which is the trigger URL as the first
 argument, or define it as an environment variable in your crontab.
@@ -68,8 +69,9 @@ env)
   env
   exit
   ;;
-help)
+help|--help|-h)
   help_message
+  exit 0
   ;;
 *)
   if [[ -z "$IFTTT_TRIGGER" || -z  "$IFTTT_NOTIFY_USAGE" ]] ; then
