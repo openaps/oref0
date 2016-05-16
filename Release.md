@@ -5,12 +5,12 @@ v0.2.0 / 2016-05-15
 ## new features
 * meal-assist
   * Helps administer extra insulin when needed after meals. Must be configured. Must be willing to consistently enter carbs (via pump's bolus wizard or can be configured to pull from NS care portal) to avoid triggering wtf-assist erroneously. 
-  * automatic sensitivity detection (auto-sens)
-    * Auto-adjusts basal rates and ISF used by oref0 based on deviations from normal over the last 24h
-    * `nightscout` full suite of tools for managing entries and treatments
-      * Makes it easier to upload, download, and manage BG and pump data to/from Nightscout.
-      * lots of other new tools
-        * aiding setup, see `templates`, `nightscout autoconfigure-device-crud`, `alias-helper`, `device-helper` and other friendly tools designed to work in tandem with the `openaps import` features.
+* automatic sensitivity detection (auto-sens)
+  * Auto-adjusts basal rates and ISF used by oref0 based on deviations from normal over the last 24h
+* `nightscout` full suite of tools for managing entries and treatments
+  * Makes it easier to upload, download, and manage BG and pump data to/from Nightscout.
+* lots of other new tools
+  * aiding setup, see `templates`, `nightscout autoconfigure-device-crud`, `alias-helper`, `device-helper` and other friendly tools designed to work in tandem with the `openaps import` features.
 
 ## changes
 * `determine-basal` is now stricter with it's arguments, now producing errors when a file for a feature such as auto-sens or meal-assist is enabled but does not have appropriate input/data.
