@@ -35,9 +35,8 @@ if (!module.parent) {
     var glucose_input = process.argv.slice(5, 6).pop();
     var basalprofile_input = process.argv.slice(6, 7).pop();
     var carb_input = process.argv.slice(7, 8).pop()
-    // TODO: add logic to handle old order of arguments: carbhistory.json glucose.json basalprofile.json
-    // TODO: something like this: check against actual glucose data format to see if this will work
     if (typeof(basalprofile_input[0].glucose != undefined)) {
+      console.error("Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
       var temp = carb_input;
       carb_input = glucose_input;
       glucose_input = basalprofile_input;
