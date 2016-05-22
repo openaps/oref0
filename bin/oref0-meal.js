@@ -52,14 +52,6 @@ if (!module.parent) {
         return console.error("Could not parse input data: ", e);
     }
 
-    if (typeof basalprofile_input[0].glucose != 'undefined') {
-      console.error("Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
-      var temp = carb_input;
-      carb_input = glucose_input;
-      glucose_input = basalprofile_input;
-      basalprofile_input = temp;
-    }
-
     //console.log(carbratio_data);
     var carb_data = { };
     if (typeof carb_input != 'undefined') {
@@ -69,6 +61,14 @@ if (!module.parent) {
         } catch (e) {
             //console.error("Warning: could not parse carb_input.");
         }
+    }
+
+    if (typeof basalprofile_data[0].glucose != 'undefined') {
+      console.error("Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
+      var temp = carb_data;
+      carb_data = glucose_data;
+      glucose_data = basalprofile_data;
+      basalprofile_data = temp;
     }
 
     var inputs = {
