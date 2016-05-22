@@ -36,6 +36,13 @@ if (!module.parent) {
     var basalprofile_input = process.argv.slice(6, 7).pop();
     var carb_input = process.argv.slice(7, 8).pop()
     // TODO: add logic to handle old order of arguments: carbhistory.json glucose.json basalprofile.json
+    // TODO: something like this: check against actual glucose data format to see if this will work
+    if (typeof(basalprofile_input[0].glucose != undefined) {
+      var temp = carb_input;
+      carb_input = glucose_input;
+      glucose_input = basalprofile_input;
+      basalprofile_input = temp;
+    }
 
     if (!pumphistory_input || !profile_input || !clock_input || !glucose_input || !basalprofile_input) {
         usage( );
