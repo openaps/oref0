@@ -142,6 +142,7 @@ if (!module.parent) {
     } else {
         console.error(JSON.stringify(iob_data));
     }
+
     console.error(JSON.stringify(glucose_status));
     console.error(JSON.stringify(currenttemp));
     console.error(JSON.stringify(profile));
