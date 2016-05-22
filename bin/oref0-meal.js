@@ -35,13 +35,6 @@ if (!module.parent) {
     var glucose_input = process.argv.slice(5, 6).pop();
     var basalprofile_input = process.argv.slice(6, 7).pop();
     var carb_input = process.argv.slice(7, 8).pop()
-    if (typeof(basalprofile_input[0].glucose != 'undefined')) {
-      console.error("Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
-      var temp = carb_input;
-      carb_input = glucose_input;
-      glucose_input = basalprofile_input;
-      basalprofile_input = temp;
-    }
 
     if (!pumphistory_input || !profile_input || !clock_input || !glucose_input || !basalprofile_input) {
         usage( );
@@ -57,6 +50,14 @@ if (!module.parent) {
         var basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
     } catch (e) {
         return console.error("Could not parse input data: ", e);
+    }
+
+    if (typeof basalprofile_input[0].glucose != 'undefined') {
+      console.error("Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
+      var temp = carb_input;
+      carb_input = glucose_input;
+      glucose_input = basalprofile_input;
+      basalprofile_input = temp;
     }
 
     //console.log(carbratio_data);
