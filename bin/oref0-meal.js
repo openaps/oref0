@@ -21,7 +21,7 @@
 
 var generate = require('oref0/lib/meal');
 function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> [carbhistory.json] [glucose.json] [basalprofile.json]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [carbhistory.json]');
 }
 
 if (!module.parent) {
@@ -32,22 +32,30 @@ if (!module.parent) {
     }
     var profile_input = process.argv.slice(3, 4).pop();
     var clock_input = process.argv.slice(4, 5).pop();
-    var carb_input = process.argv.slice(5, 6).pop();
-    var glucose_input = process.argv.slice(6, 7).pop();
-    var basalprofile_input = process.argv.slice(7, 8).pop()
-    //var isf_input = process.argv.slice(4, 5).pop()
+    var glucose_input = process.argv.slice(5, 6).pop();
+    var basalprofile_input = process.argv.slice(6, 7).pop();
+    var carb_input = process.argv.slice(7, 8).pop()
+    // TODO: add logic to handle old order of arguments: carbhistory.json glucose.json basalprofile.json
+    // TODO: something like this: check against actual glucose data format to see if this will work
+    if (typeof(basalprofile_input[0].glucose != undefined) {
+      var temp = carb_input;
+      carb_input = glucose_input;
+      glucose_input = basalprofile_input;
+      basalprofile_input = temp;
+    }
 
-    if (!pumphistory_input || !profile_input) {
+    if (!pumphistory_input || !profile_input || !clock_input || !glucose_input || !basalprofile_input) {
         usage( );
         process.exit(1);
     }
 
     var fs = require('fs');
     try {
-        var cwd = process.cwd();
-        var all_data = require(cwd + '/' + pumphistory_input);
-        var profile_data = require(cwd + '/' + profile_input);
-        var clock_data = require(cwd + '/' + clock_input);
+        var pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
+        var profile_data = JSON.parse(fs.readFileSync(profile_input, 'utf8'));
+        var clock_data = JSON.parse(fs.readFileSync(clock_input, 'utf8'));
+        var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
+        var basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
     } catch (e) {
         return console.error("Could not parse input data: ", e);
     }
@@ -63,21 +71,8 @@ if (!module.parent) {
         }
     }
 
-    var glucose_data = { };
-    if (typeof glucose_input != 'undefined' && basalprofile_input != 'undefined') {
-        try {
-            glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
-            basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
-            //console.error(JSON.stringify(carb_data));
-        } catch (e) {
-            //console.error("Optional feature mealCOB disabled: glucose history not available.");
-        }
-    }
-
-    // all_data.sort(function (a, b) { return a.date > b.date });
-
     var inputs = {
-        history: all_data
+        history: pumphistory_data
     , profile: profile_data
     , basalprofile: basalprofile_data
     , clock: clock_data

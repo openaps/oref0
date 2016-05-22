@@ -96,7 +96,7 @@ if (!module.parent) {
         try {
             temptargets_data = JSON.parse(fs.readFileSync(temptargets_input, 'utf8'));
         } catch (e) {
-            //console.error("Could not parse carbratio_data. Optional feature Meal Assist disabled.");
+            //console.error("Could not parse temptargets_data.");
         }
     }
     //console.log(carbratio_data);
