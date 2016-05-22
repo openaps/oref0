@@ -20,20 +20,20 @@ describe('IOB', function ( ) {
         }
       };
 
-    var rightAfterBolus = require('../lib/iob')(inputs);
+    var rightAfterBolus = require('../lib/iob')(inputs)[0];
     rightAfterBolus.iob.should.equal(1);
     rightAfterBolus.bolussnooze.should.equal(1);
 
     var hourLaterInputs = inputs;
     hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-    var hourLater = require('../lib/iob')(hourLaterInputs);
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
     hourLater.iob.should.be.lessThan(1);
     hourLater.bolussnooze.should.be.lessThan(.5);
     hourLater.iob.should.be.greaterThan(0);
 
     var afterDIAInputs = inputs;
     afterDIAInputs.clock = new Date(now + (3 * 60 * 60 * 1000)).toISOString();
-    var afterDIA = require('../lib/iob')(afterDIAInputs);
+    var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
 
     afterDIA.iob.should.equal(0);
     afterDIA.bolussnooze.should.equal(0);
@@ -56,25 +56,26 @@ describe('IOB', function ( ) {
         }
       };
 
-    var rightAfterBolus = require('../lib/iob')(inputs);
+    var rightAfterBolus = require('../lib/iob')(inputs)[0];
+    //console.log(rightAfterBolus);
     rightAfterBolus.iob.should.equal(1);
     rightAfterBolus.bolussnooze.should.equal(1);
 
     var hourLaterInputs = inputs;
     hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-    var hourLater = require('../lib/iob')(hourLaterInputs);
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
     hourLater.iob.should.be.lessThan(1);
     hourLater.bolussnooze.should.be.lessThan(.5);
     hourLater.iob.should.be.greaterThan(0);
 
     var after3hInputs = inputs;
     after3hInputs.clock = new Date(now + (3 * 60 * 60 * 1000)).toISOString();
-    var after3h = require('../lib/iob')(after3hInputs);
+    var after3h = require('../lib/iob')(after3hInputs)[0];
     after3h.iob.should.be.greaterThan(0);
 
     var after4hInputs = inputs;
     after4hInputs.clock = new Date(now + (4 * 60 * 60 * 1000)).toISOString();
-    var after4h = require('../lib/iob')(after4hInputs);
+    var after4h = require('../lib/iob')(after4hInputs)[0];
     after4h.iob.should.equal(0);
 
   });
