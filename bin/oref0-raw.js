@@ -24,15 +24,22 @@ var withRawGlucose = require('../lib/with-raw-glucose');
 
  */
 
+function usage ( ) {
+    console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <cal.json> [150]');
+}
 if (!module.parent) {
   var glucose_input = process.argv.slice(2, 3).pop();
+  if ([null, '--help', '-h', 'help'].indexOf(glucose_input) > 0) {
+    usage( );
+    process.exit(0)
+  }
   var cal_input = process.argv.slice(3, 4).pop();
 
   //limit to prevent high temping
   var max_raw = process.argv.slice(4, 5).pop();
 
   if (!glucose_input || !cal_input) {
-    console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <cal.json> [150]');
+    usage( );
     process.exit(1);
   }
 

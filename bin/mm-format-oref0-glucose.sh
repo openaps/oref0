@@ -4,9 +4,23 @@
 # Maintainer: @tghoward
 
 # Written for decocare v0.0.18. Will need updating the the decocare json format changes.
+self=$(basename $0)
 HISTORY=${1-glucosehistory.json}
 OUTPUT=${2-/dev/fd/1}
 #TZ=${3-$(date +%z)}
+function usage ( ) {
+
+cat <<EOT
+$self <glucose-history.json>
+$self - Format medtronic glucose data into oref0 format. 
+EOT
+}
+
+case "$1" in
+  --help|-h|help)
+    usage
+    exit 0
+esac
 
 cat $HISTORY | \
   json -e "this.medtronic = this._type;" | \

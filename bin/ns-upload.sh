@@ -54,6 +54,12 @@ EOF
 fi
 # requires API_SECRET and NIGHTSCOUT_HOST to be set in calling environment
 # (i.e. in crontab)
+if [[ "$ENTRIES" != "-" ]] ; then
+  if [[ ! -f $ENTRIES ]] ; then
+    echo "Input file $ENTRIES" does not exist.
+    exit 1;
+  fi
+fi
 (test "$ENTRIES" != "-" && cat $ENTRIES || cat )| (
 curl -m 30 -s -X POST --data-binary @- \
   -H "API-SECRET: $API_SECRET" \

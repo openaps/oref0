@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test"
@@ -46,12 +46,15 @@
     "nightscout": "./bin/nightscout.sh",
     "ns-dedupe-treatments": "./bin/ns-dedupe-treatments.sh",
     "oref0-html": "./bin/oref0-html.js",
+    "oref0-template": "./bin/oref0-template.js",
+    "oref0-copy-fresher": "./bin/oref0-copy-fresher",
     "oref0-pebble": "./bin/oref0-pebble.js"
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
     "share2nightscout-bridge": "^0.1.5",
-    "timezone": "0.0.47"
+    "timezone": "0.0.47",
+    "yargs": "~4.3.2"
   },
   "devDependencies": {
     "mocha": "^2.3.3",
