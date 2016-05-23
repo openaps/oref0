@@ -38,8 +38,9 @@ if (!module.parent) {
         var cwd = process.cwd();
         var glucose_data = require(cwd + '/' + glucose_input);
         if (glucose_data.length < 72) {
-            console.log('Error: not enough glucose data to calculate autosens.');
-            process.exit(2);
+            console.error("Optional feature autosens disabled: not enough glucose data to calculate sensitivity");
+            return console.log('{ "ratio": 1, "reason": "not enough glucose data to calculate autosens" }');
+            //process.exit(2);
         }
 
         var pumphistory_data = require(cwd + '/' + pumphistory_input);

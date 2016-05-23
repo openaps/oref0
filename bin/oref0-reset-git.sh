@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Delete git lock / history if necessary to recover from corrupted .git objects
 #
@@ -15,10 +15,30 @@
 
 # must be run from within a git repo to do anything useful
 # remove old lockfile if still present
+self=$(basename $0)
+BACKUP_AREA=${1-${BACKUP_AREA-/var/cache/openaps-ruination}}
+function usage ( ) {
+
+cat <<EOF
+$self
+$self - Wipe out all history, forcibly re-initialzize openaps from scratch.
+EOF
+}
+
+case "$1" in
+  --help|help|-h)
+    usage
+    exit 0
+    ;;
+esac
+test ! -d $BACKUP_AREA && BACKUP_AREA=/tmp
+BACKUP="$BACKUP_AREA/git-$(date +%s)"
+
 find .git/index.lock -mmin +5 -exec rm {} \; 2>/dev/null
 # first, try oref0-fix-git-corruption.sh to preserve git history up to last good commit
 echo "Attempting to fix git corruption.  Please wait 15s."
 oref0-fix-git-corruption &
 sleep 15 && killall oref0-fix-git-corruption
 # if git repository is too corrupt to do anything, mv it to /tmp and start over.
-git status > /dev/null || ( mv .git /tmp/.git-`date +%s`; openaps init . )
+
+git status > /dev/null || (echo "Saving backup to: $BACKUP" > /dev/stderr; mv .git $BACKUP; openaps init . )

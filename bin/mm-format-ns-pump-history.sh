@@ -3,6 +3,22 @@
 # Author: Ben West
 # Maintainer: Scott Leibrand
 
+self=$(basename $0)
+function usage ( ) {
+
+cat <<EOT
+$self <medtronic-pump-history.json>
+$self - Format Medtronic pump-history data into something acceptable to Nightscout.
+EOT
+}
+
+case "$1" in
+  --help|-h|help)
+    usage
+    exit 0
+esac
+
+
 HISTORY=${1-pumphistory.json}
 OUTPUT=${2-/dev/fd/1}
 #TZ=${3-$(date +%z)}

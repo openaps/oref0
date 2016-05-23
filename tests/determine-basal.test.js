@@ -64,7 +64,7 @@ describe('determine-basal', function ( ) {
     });
 
     it('should do nothing on large uptick even if avgdelta is still negative', function () {
-        var glucose_status = {"delta":2,"glucose":75,"avgdelta":-2};
+        var glucose_status = {"delta":4,"glucose":75,"avgdelta":-2};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
@@ -352,7 +352,7 @@ describe('determine-basal', function ( ) {
     });
 
     it('should set lower high-temp when high and falling almost fast enough with low insulin activity', function () {
-        var glucose_status = {"delta":-5,"glucose":300,"avgdelta":-5};
+        var glucose_status = {"delta":-8,"glucose":300,"avgdelta":-5};
         var iob_data = {"iob":0.5,"activity":0.005,"bolussnooze":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         output.rate.should.be.above(1);
@@ -362,7 +362,7 @@ describe('determine-basal', function ( ) {
     });
 
     it('should reduce high-temp when high and falling almost fast enough with low insulin activity', function () {
-        var glucose_status = {"delta":-5,"glucose":300,"avgdelta":-5};
+        var glucose_status = {"delta":-8,"glucose":300,"avgdelta":-5};
         var iob_data = {"iob":0.5,"activity":0.005,"bolussnooze":0};
         var currenttemp = {"duration":30,"rate":2.5,"temp":"absolute"};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);

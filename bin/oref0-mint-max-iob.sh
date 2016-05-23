@@ -8,11 +8,11 @@ shift
 
 function help_message ( ) {
   cat <<EOF
-  Usage:
-$self max_iob <max_iob> [max_iob.json]
+Usage:
+$self <max_iob> [preferences.json]
 
 $self help - this message
-Print a perfect max_iob.json.
+Print a perfect preferences.json.
 
 
 Examples:
@@ -23,14 +23,13 @@ $ $self 2
 
 $ $self 2 foo.json
 max_iob 2 saved in foo.json
-bewest@hither:~/src/openaps/oref0$ 
 
 
 EOF
 }
 
 case $MAX_IOB in
-""| help)
+--help|-h|""| help)
   help_message
   ;;
 *)

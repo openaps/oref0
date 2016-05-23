@@ -109,7 +109,7 @@ case $OPERATION in
     print_fail $*
     exit 1
     ;;
-  *|help)
+  *|help|--help|-h)
     print_help
     ;;
   esac

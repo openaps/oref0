@@ -8,6 +8,21 @@
 NSONLY=""
 test "$1" = "--oref0" && NSONLY="this.glucose = this.sgv" && shift
 
+self=$(basename $0)
+function usage ( ) {
+
+cat <<EOT
+$self [--oref0] <medtronic-glucose.json>
+$self - Format Medtronic glucose data into something acceptable to Nightscout.
+EOT
+}
+
+case "$1" in
+  --help|-h|help)
+    usage
+    exit 0
+esac
+
 HISTORY=${1-glucosehistory.json}
 OUTPUT=${2-/dev/fd/1}
 #TZ=${3-$(date +%z)}
