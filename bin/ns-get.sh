@@ -8,6 +8,11 @@ NIGHTSCOUT_HOST=${NIGHTSCOUT_HOST-${2-localhost:1337}}
 QUERY=${3}
 OUTPUT=${4-/dev/fd/1}
 
+CURL_FLAGS="-g -s"
+NIGHTSCOUT_FORMAT=${NIGHTSCOUT_FORMAT-json}
+test "$NIGHTSCOUT_DEBUG" = "1" && CURL_FLAGS="${CURL_FLAGS} -iv"
+test "$NIGHTSCOUT_DEBUG" = "1" && set -x
+
 function usage ( ) {
 cat <<EOF
 Usage: $self <entries.json> [NIGHTSCOUT_HOST|localhost:1337] [QUERY] [stdout|-]
@@ -40,6 +45,8 @@ EOF
     QUERY=${4}
     OUTPUT=${5-/dev/fd/1}
     REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${QUERY}
+    test -z "$NIGHTSCOUT_HOST" && usage && exit 1;
+    curl ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
 
     ;;
   type)
@@ -49,12 +56,12 @@ EOF
   --noop)
     echo "curl -s $REPORT_ENDPOINT | json"
     ;;
-  help)
+  help|--help|-h)
     usage
     ;;
   *)
     test -z "$NIGHTSCOUT_HOST" && usage && exit 1;
-    curl -g -s $REPORT_ENDPOINT | json
+    curl ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
     ;;
 esac
 

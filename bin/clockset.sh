@@ -24,6 +24,22 @@ PUMP=${3-pump}
 CGM=${4-cgm}
 
 die() { echo "$@" ; exit 1; }
+self=$(basename $0)
+function usage ( ) {
+
+cat <<EOF
+$self
+$self - Restart NTP, manipulate realtime clock
+EOF
+}
+
+case "$1" in
+  --help|help|-h)
+    usage
+    exit 0
+    ;;
+esac
+
 
 #ntp-wait -n 1 -v && die "NTP already synchronized." || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v && die "NTP re-synchronized." )
 checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v ) }
