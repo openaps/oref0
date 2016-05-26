@@ -58,7 +58,7 @@ if (!module.parent) {
         usage( );
         process.exit(1);
     }
-    
+
     var fs = require('fs');
     try {
         var cwd = process.cwd();
@@ -126,7 +126,7 @@ if (!module.parent) {
     var minAgo = (systemTime - bgTime) / 60 / 1000;
 
     if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
-        var reason = "BG data is too old, or clock set incorrectly "+bgTime+" vs "+systemTime;
+        var reason = "BG data is too old, or clock set incorrectly.  Your Dexcom time is "+bgTime+" but your system time is "+systemTime;
         console.error(reason);
         var msg = {msg: reason }
         errors.push(msg);
@@ -146,9 +146,9 @@ if (!module.parent) {
     console.error(JSON.stringify(glucose_status));
     console.error(JSON.stringify(currenttemp));
     console.error(JSON.stringify(profile));
-    
+
     var setTempBasal = require('oref0/lib/basal-set-temp');
-    
+
     rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, setTempBasal);
 
     if(typeof rT.error === 'undefined') {
@@ -158,14 +158,14 @@ if (!module.parent) {
     }
 
 }
-    
+
 function init() {
 
     var determinebasal = {
         name: 'determine-basal'
         , label: "OpenAPS Determine Basal"
     };
-    
+
     determinebasal.getLastGlucose = require('oref0/lib/glucose-get-last');
     determinebasal.determine_basal = require('oref0/lib/determine-basal/determine-basal');
     return determinebasal;
