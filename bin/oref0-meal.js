@@ -46,20 +46,23 @@ if (!module.parent) {
         var pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
         var profile_data = JSON.parse(fs.readFileSync(profile_input, 'utf8'));
         var clock_data = JSON.parse(fs.readFileSync(clock_input, 'utf8'));
-        var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
         var basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
     } catch (e) {
         return console.error("Could not parse input data: ", e);
     }
 
-    //console.log(carbratio_data);
+    try {
+        var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
+    } catch (e) {
+        console.error("Warning: could not parse "+glucose_input);
+    }
+
     var carb_data = { };
     if (typeof carb_input != 'undefined') {
         try {
             carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
-            //console.error(JSON.stringify(carb_data));
         } catch (e) {
-            //console.error("Warning: could not parse carb_input.");
+            console.error("Warning: could not parse "+carb_input);
         }
     }
 
