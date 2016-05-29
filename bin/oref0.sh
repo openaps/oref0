@@ -68,7 +68,8 @@ env)
   exit
   ;;
 export-loop)
-  openaps import -l | while read type ; do openaps $type show --json ; done | json -g
+  out=${1-/dev/stdout}
+  openaps import -l | while read type ; do openaps $type show --json ; done | json -g > $out
 
   exit
   ;;
