@@ -25,8 +25,68 @@ $self <cmd>
 * autoconfigure-device-crud
 
 EOF
+
+extra_ns_help
+
 }
 
+function extra_ns_help ( ) {
+
+cat <<EOF
+## Nightscout Endpoints
+
+* entries.json - Glucose values, mbgs, sensor data.
+* treatments.json - Pump history, bolus, treatments, temp basals.
+* devicestatus.json - Battery levels, reservoir.
+* profile.json - Planned rates/settings/ratios/sensitivities.
+* status.json  - Server status.
+
+## Examples
+
+
+### Get records from Nightscout
+
+Use the get feature which takes two arguments: the name of the endpoint
+(entries, devicestatus, treatments, profiles) and any query arguments to append
+to the argument string. 'count=10' is a reasonable debugging value.
+The query-params can be used to generate any query Nightscout can respond to.
+
+    openaps use ns shell get \$endpoint \$query-params
+
+### Unifying pump treatments in Nightscout
+
+To upload treatments data to Nightscout, prepare you zoned glucose, and pump
+model reports, and use the following two reports:
+
+    openaps report add nightscout/recent-treatments.json JSON ns shell  format-recent-history-treatments monitor/pump-history.json model.json
+    openaps report add nightscout/uploaded.json JSON  ns shell upload-non-empty-treatments  nightscout/recent-treatments.json
+
+Here are the equivalent uses:
+
+    openaps use ns shell format-recent-history-treatments monitor/pump-history.json model.json
+    openaps use ns shell upload-non-empty-treatments nightscout/recent-treatments.json
+
+The first report runs the format-recent-history-treatments use, which fetches
+data from Nightscout and determines which of the latest deltas from openaps
+need to be sent. The second one uses the upload-non-empty-treatments use to
+upload treatments to Nightscout, if there is any data to upload.
+
+### Uploading glucose values to Nightscout
+
+Format potential entries (glucose values) for Nightscout.
+
+    openaps use ns shell format-recent-type tz entries monitor/glucose.json  | json -a dateString | wc -l
+    # Add it as a report
+    openaps report add nightscout/recent-missing-entries.json JSON ns shell format-recent-type tz entries monitor/glucose.json  
+    # fetch data for first time
+    openaps report invoke nightscout/recent-missing-entries.json
+
+    # add report for uploading to NS
+    openaps report add nightscout/uploaded-entries.json JSON  ns shell upload entries.json nightscout/recent-missing-entries.json 
+    # upload for fist time.
+    openaps report invoke nightscout/uploaded-entries.json
+EOF
+}
 function setup_help ( ) {
 
 cat <<EOF
@@ -35,12 +95,16 @@ $self autoconfigure-device-crud <NIGHTSCOUT_HOST> <API_SECRET>
 sets up:
 openaps use ns shell get entries.json 'count=10'
 openaps use ns shell upload treatments.json recently/combined-treatments.json
+
+
+
 EOF
+extra_ns_help
 }
 
 function ns_help ( ) {
 cat <<EOF
-TODO: improve help
+
 openaps use ns shell get entries.json 'count=10'
 openaps use ns shell upload treatments.json recently/combined-treatments.json
 
@@ -69,6 +133,7 @@ openaps use ns shell upload treatments.json recently/combined-treatments.json
   status                                         - Retrieve status
   preflight                                      - NS preflight
 EOF
+extra_ns_help
 }
 case $NAME in
 latest-openaps-treatment)
