@@ -185,10 +185,10 @@ ns)
       TYPE=${2-'entries'}
       FILE=${3-''}
       # nightscout ns $NIGHTSCOUT_HOST $API_SECRET
-      test -z ${ZONE} && "Missing first argument, ZONE, usually is set to tz" && exit 1
-      test -z ${TYPE} && "Missing second argument, TYPE, one of: entries, treatments, devicestatus, profiles." && exit 1
-      test ! -e ${FILE} && "Third argument, contents to upload, FILE, does not exist" && exit 1
-      test ! -r ${FILE} && "Third argument, contents to upload, FILE, not readable." && exit 1
+      test -z ${ZONE} && echo "Missing first argument, ZONE, usually is set to tz" && exit 1
+      test -z ${TYPE} && echo "Missing second argument, TYPE, one of: entries, treatments, devicestatus, profiles." && exit 1
+      test ! -e ${FILE} && echo "Third argument, contents to upload, FILE, does not exist" && exit 1
+      test ! -r ${FILE} && echo "Third argument, contents to upload, FILE, not readable." && exit 1
       openaps use ns shell lsgaps ${ZONE} ${TYPE} \
         |  openaps use ${ZONE} select --current now --gaps - ${FILE}  | json
     ;;
