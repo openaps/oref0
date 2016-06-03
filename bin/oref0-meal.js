@@ -58,10 +58,6 @@ if (!module.parent) {
     } catch (e) {
         console.error("Warning: could not parse "+glucose_input);
     }
-    if (glucose_data.length < 36) {
-        console.error("Optional feature meal assist disabled: not enough glucose data to calculate carb absorption");
-        return console.log('{ "carbs": 0, "reason": "not enough glucose data to calculate carb absorption" }');
-    }
 
     var carb_data = { };
     if (typeof carb_input != 'undefined') {
@@ -78,6 +74,11 @@ if (!module.parent) {
       carb_data = glucose_data;
       glucose_data = basalprofile_data;
       basalprofile_data = temp;
+    }
+
+    if (glucose_data.length < 36) {
+        console.error("Optional feature meal assist disabled: not enough glucose data to calculate carb absorption; found:", glucose_data.length);
+        return console.log('{ "carbs": 0, "reason": "not enough glucose data to calculate carb absorption" }');
     }
 
     var inputs = {
