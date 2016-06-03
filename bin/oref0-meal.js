@@ -38,7 +38,7 @@ if (!module.parent) {
 
     if (!pumphistory_input || !profile_input || !clock_input || !glucose_input || !basalprofile_input) {
         usage( );
-        console.log('{ "carbs": 0 }');
+        console.log('{ "carbs": 0, "reason": "Insufficient arguments" }');
         process.exit(1);
     }
 
@@ -49,7 +49,7 @@ if (!module.parent) {
         var clock_data = JSON.parse(fs.readFileSync(clock_input, 'utf8'));
         var basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
     } catch (e) {
-        console.log('{ "carbs": 0 }');
+        console.log('{ "carbs": 0, "reason": "Could not parse input data" }');
         return console.error("Could not parse input data: ", e);
     }
 
@@ -57,6 +57,10 @@ if (!module.parent) {
         var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
     } catch (e) {
         console.error("Warning: could not parse "+glucose_input);
+    }
+    if (glucose_data.length < 36) {
+        console.error("Optional feature meal assist disabled: not enough glucose data to calculate carb absorption");
+        return console.log('{ "carbs": 0, "reason": "not enough glucose data to calculate carb absorption" }');
     }
 
     var carb_data = { };
