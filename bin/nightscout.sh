@@ -21,6 +21,7 @@ $self <cmd>
 * dedupe-treatments
 * hash-api-secret
 * status
+* get-status
 * upload-entries
 * autoconfigure-device-crud
 
@@ -130,7 +131,8 @@ openaps use ns shell upload treatments.json recently/combined-treatments.json
                                                  to find gaps in a type (entries)
                                                  by default.
   upload-non-empty-type type file
-  status                                         - Retrieve status
+  status                                         - ns-status
+  get-status                                     - status - get NS status
   preflight                                      - NS preflight
 EOF
 extra_ns_help
@@ -166,8 +168,11 @@ ns)
         exit 1
       fi
     ;;
-    status)
+    get-status)
       ns-get host $NIGHTSCOUT_HOST status.json | json
+    ;;
+    status)
+      ns-status $*
     ;;
     lsgaps)
       ZONE=${1-'tz'}
