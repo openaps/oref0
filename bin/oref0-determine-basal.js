@@ -32,6 +32,11 @@ if (!module.parent) {
         default: true
 
       })
+      .option('missing-auto-sens-ok', {
+        describe: "If auto-sens data is missing, try anyway.",
+        default: true
+
+      })
       .option('missing-meal-ok', {
         describe: "If meal data is missing, try anyway.",
         default: true
@@ -124,7 +129,9 @@ if (!module.parent) {
             console.error(msg.msg);
             console.error(e);
             // console.log(JSON.stringify(msg));
-            errors.push(msg);
+            if (!params['missing-auto-sens-ok']) {
+              errors.push(msg);
+            }
             // process.exit(1);
         }
       }
