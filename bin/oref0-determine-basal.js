@@ -27,6 +27,16 @@ if (!module.parent) {
         default: true
 
       })
+      .option('meal', {
+        describe: "json doc describing meals",
+        default: true
+
+      })
+      .option('missing-meal-ok', {
+        describe: "If meal data is missing, try anyway.",
+        default: true
+
+      })
       // error and show help if some other args given
       .strict(true)
       .help('help')
@@ -53,6 +63,9 @@ if (!module.parent) {
       autosens_input = params.autoSens ? params._.slice(4, 5).pop() : false;
       meal_input = params._.slice(5, 6).pop();
     }
+    if (params.meal && params.meal !== true && !meal_input) {
+      meal_input = params.meal;
+    }
 
     if (!iob_input || !currenttemp_input || !glucose_input || !profile_input) {
         usage( );
@@ -74,7 +87,7 @@ if (!module.parent) {
     //console.log(carbratio_data);
     var meal_data = { };
     //console.error("meal_input",meal_input);
-    if (typeof meal_input != 'undefined') {
+    if (meal_input && typeof meal_input != 'undefined') {
         try {
             meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
             console.error(JSON.stringify(meal_data));
@@ -86,7 +99,9 @@ if (!module.parent) {
             };
             console.error(msg.msg);
             // console.log(JSON.stringify(msg));
-            errors.push(msg);
+            if (!params['missing-meal-ok']) {
+              errors.push(msg);
+            }
             // process.exit(1);
         }
     }
