@@ -44,7 +44,7 @@ esac
 #ntp-wait -n 1 -v && die "NTP already synchronized." || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v && die "NTP re-synchronized." )
 checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v ) }
 
-if [ checkNTP ]; then
+if checkNTP; then
     echo Setting pump and CGM time to `date`
     openaps use $PUMP set_clock --to now
     openaps use $CGM UpdateTime --to now
