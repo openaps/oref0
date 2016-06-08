@@ -37,6 +37,7 @@ if (!module.parent) {
 
     var params = argv.argv;
     var errors = [ ];
+    var warnings = [ ];
 
     var iob_input = params._.slice(0, 1).pop();
     if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
@@ -86,7 +87,7 @@ if (!module.parent) {
             };
             console.error(msg.msg);
             // console.log(JSON.stringify(msg));
-            errors.push(msg);
+            warnings.push(msg);
             // process.exit(1);
         }
     }
@@ -132,6 +133,10 @@ if (!module.parent) {
         errors.push(msg);
         /// return 1;
     }
+    if (warnings.length) {
+      console.error(JSON.stringify(warnings));
+    }
+
     if (errors.length) {
       console.log(JSON.stringify(errors));
       process.exit(1);
