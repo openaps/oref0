@@ -21,7 +21,7 @@
 
 var generate = require('oref0/lib/meal');
 function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> [carbhistory.json]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [carbhistory.json]');
 }
 
 if (!module.parent) {
@@ -32,19 +32,22 @@ if (!module.parent) {
     }
     var profile_input = process.argv.slice(3, 4).pop();
     var clock_input = process.argv.slice(4, 5).pop();
-    var carb_input = process.argv.slice(5, 6).pop();
+    var glucose_input = process.argv.slice(5, 6).pop();
+    var basalprofile_input = process.argv.slice(6, 7).pop();
+    var carb_input = process.argv.slice(7, 8).pop()
 
-    if (!pumphistory_input || !profile_input) {
+    if (!pumphistory_input || !profile_input || !clock_input || !glucose_input || !basalprofile_input) {
         usage( );
         process.exit(1);
     }
 
     var fs = require('fs');
     try {
-        var cwd = process.cwd();
-        var all_data = require(cwd + '/' + pumphistory_input);
-        var profile_data = require(cwd + '/' + profile_input);
-        var clock_data = require(cwd + '/' + clock_input);
+        var pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
+        var profile_data = JSON.parse(fs.readFileSync(profile_input, 'utf8'));
+        var clock_data = JSON.parse(fs.readFileSync(clock_input, 'utf8'));
+        var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
+        var basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
     } catch (e) {
         return console.error("Could not parse input data: ", e);
     }
@@ -60,13 +63,21 @@ if (!module.parent) {
         }
     }
 
-    // all_data.sort(function (a, b) { return a.date > b.date });
+    if (typeof basalprofile_data[0].glucose != 'undefined') {
+      console.error("Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
+      var temp = carb_data;
+      carb_data = glucose_data;
+      glucose_data = basalprofile_data;
+      basalprofile_data = temp;
+    }
 
     var inputs = {
-        history: all_data
+        history: pumphistory_data
     , profile: profile_data
+    , basalprofile: basalprofile_data
     , clock: clock_data
     , carbs: carb_data
+    , glucose: glucose_data
     };
 
     var dia_carbs = generate(inputs);

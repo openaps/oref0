@@ -18,7 +18,7 @@
 
 var generate = require('oref0/lib/profile/');
 function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<max_iob.json>] [<carb_ratios.json>] [<temptargets.json>]');
 }
 
 if (!module.parent) {
@@ -33,6 +33,7 @@ if (!module.parent) {
     var basalprofile_input = process.argv.slice(5, 6).pop()
     var preferences_input = process.argv.slice(6, 7).pop()
     var carbratio_input = process.argv.slice(7, 8).pop()
+    var temptargets_input = process.argv.slice(8, 9).pop()
     
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
         usage( );
@@ -90,6 +91,15 @@ if (!module.parent) {
           process.exit(1);
         }
     }
+    var temptargets_data = { };
+    if (typeof temptargets_input != 'undefined') {
+        try {
+            temptargets_data = JSON.parse(fs.readFileSync(temptargets_input, 'utf8'));
+        } catch (e) {
+            //console.error("Could not parse temptargets_data.");
+        }
+    }
+
     //console.log(carbratio_data);
     var inputs = {
       settings: pumpsettings_data
@@ -99,6 +109,7 @@ if (!module.parent) {
     , max_iob: preferences.max_iob || 0
     , skip_neutral_temps: preferences.skip_neutral_temps || false
     , carbratio: carbratio_data
+    , temptargets: temptargets_data
     };
 
     var profile = generate(inputs);

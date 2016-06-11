@@ -87,7 +87,7 @@ if (!module.parent) {
 
     var bgnow = glucose_data[0].glucose;
     var iob_data = require(cwd + '/' + iob_input);
-    iob = iob_data.iob.toFixed(1);
+    iob = iob_data[0].iob.toFixed(1);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
     var basalRate;
     basalLookup();
