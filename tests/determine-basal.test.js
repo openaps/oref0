@@ -2,10 +2,47 @@
 
 var should = require('should');
 
+describe('round_basal', function ( ) {
+    var round_basal = require('../lib/determine-basal/determine-basal').round_basal;
+    it('should round basal rates properly (0.83 -> 0.825)', function() {
+        var basal = 0.83;
+        var output = round_basal(basal);
+        output.should.equal(0.825);
+    });
 
+    it('should round basal rates properly (0.86 -> 0.85)', function() {
+        var basal = 0.86;
+        var output = round_basal(basal);
+        output.should.equal(0.85);
+    });    
+
+    it('should round basal rates properly: (1.83 -> 1.85)', function() {
+        var basal = 1.83;
+        var output = round_basal(basal);
+        output.should.equal(1.85);
+    });
+
+    it('should round basal rates properly: (1.86 -> 1.85)', function() {
+        var basal = 1.86;
+        var output = round_basal(basal);
+        output.should.equal(1.85);
+    });
+
+    it('should round basal rates properly: (10.83 -> 10.8)', function() {
+        var basal = 10.83;
+        var output = round_basal(basal);
+        output.should.equal(10.8);
+    });
+
+    it('should round basal rates properly: (10.86 -> 10.9)', function() {
+        var basal = 10.86;
+        var output = round_basal(basal);
+        output.should.equal(10.9);
+    }); 
+});
 
 describe('determine-basal', function ( ) {
-    var determine_basal = require('../lib/determine-basal/determine-basal');
+    var determine_basal = require('../lib/determine-basal/determine-basal').determine_basal;
     var setTempBasal = require('../lib/basal-set-temp');
 
    //function determine_basal(glucose_status, currenttemp, iob_data, profile)
@@ -577,5 +614,4 @@ describe('determine-basal', function ( ) {
         output.rate.should.equal(0);
         output.duration.should.equal(30);
     });
-
 });
