@@ -239,7 +239,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.be.below(0.8);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
     
     it('should low-temp when eventualBG < min_bg with delta > exp. delta', function () {
@@ -249,7 +249,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.be.below(0.2);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
     
     it('should low-temp when eventualBG < min_bg with delta > exp. delta', function () {
@@ -259,7 +259,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.be.below(0.8);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
 
     it('should low-temp much less when eventualBG < min_bg with delta barely negative', function () {
@@ -269,7 +269,7 @@ describe('determine-basal', function ( ) {
         output.rate.should.be.above(0.3);
         output.rate.should.be.below(0.8);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
 
     it('should do nothing when eventualBG < min_bg but appropriate low temp in progress', function () {
@@ -278,7 +278,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
-        output.reason.should.match(/Eventual BG .*<110, temp .*/);
+        output.reason.should.match(/Eventual BG .*< 110, temp .*/);
     });
 
     it('should cancel low-temp when lowish and avg.delta rising faster than BGI', function () {
