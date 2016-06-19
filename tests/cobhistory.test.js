@@ -35,7 +35,7 @@ describe('cobhistory', function ( ) {
 		
 		var output = find_cob_iob_entries(inputs);
 		
-		console.log(output);
+		//console.log(output);
 		
 		output.length.should.equal(7);
     });
