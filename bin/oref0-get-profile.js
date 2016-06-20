@@ -101,16 +101,26 @@ if (!module.parent) {
     }
 
     //console.log(carbratio_data);
-    var inputs = {
-      settings: pumpsettings_data
-    , targets: bgtargets_data
-    , basals: basalprofile_data
-    , isf: isf_data
-    , max_iob: preferences.max_iob || 0
-    , skip_neutral_temps: preferences.skip_neutral_temps || false
-    , carbratio: carbratio_data
-    , temptargets: temptargets_data
-    };
+    var inputs = { };
+
+    //add all preferences to the inputs
+    for (var pref in preferences) {
+      if (preferences.hasOwnProperty(pref)) {
+        inputs[pref] = preferences[pref];
+      }
+    }
+
+    //make sure max_iob is set or default to 0
+    inputs.max_iob = inputs.max_iob || 0;
+
+    //set these after to make sure nothing happens if they are also set in preferences
+    inputs.settings = pumpsettings_data;
+    inputs.targets = bgtargets_data;
+    inputs.basals = basalprofile_data;
+    inputs.isf = isf_data;
+    inputs.carbratio = carbratio_data;
+    inputs.temptargets = temptargets_data;
+
 
     var profile = generate(inputs);
 
