@@ -110,6 +110,9 @@ if (!module.parent) {
       }
     }
 
+    //make sure max_iob is set or default to 0
+    inputs.max_iob = inputs.max_iob || 0;
+
     //set these after to make sure nothing happens if they are also set in preferences
     inputs.settings = pumpsettings_data;
     inputs.targets = bgtargets_data;
