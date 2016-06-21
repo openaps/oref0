@@ -28,6 +28,16 @@ describe('setTempBasal', function ( ) {
         requestedTemp.duration.should.equal(30);
     });
 
+    it('should not set basal on skip neutral mode', function () {
+        profile.skip_neutral_temps = true;
+        var rt2 = {};
+        var current = {duration: 10};
+        var requestedTemp = setTempBasal(0.8, 30, profile, rt2, current);
+        requestedTemp.duration.should.equal(0);
+        var requestedTemp = setTempBasal(0.8, 30, profile, {});
+        requestedTemp.reason.should.equal('Suggested rate is same as profile rate, no temp basal is active, doing nothing');
+    });
+
     it('should limit high temp to max_basal', function () {
         var requestedTemp = setTempBasal(4, 30, profile, rt);
         requestedTemp.rate.should.equal(3);
