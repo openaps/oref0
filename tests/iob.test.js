@@ -40,6 +40,46 @@ describe('IOB', function ( ) {
 
   });
 
+  it('should calculate IOB with Temp Basals', function() {
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , timestampEarly = new Date(now - (60 * 60 * 1000)).toISOString()
+      , inputs = {
+        clock: timestamp
+        , history: [{
+        _type: 'TempBasalDuration'
+        ,'duration (min)': 30
+    	, date: timestampEarly
+        },{_type: 'TempBasal'
+        , rate: 2
+        , date: timestampEarly
+        , timestamp: timestampEarly
+        },
+        {
+        _type: 'TempBasalDuration'
+        ,'duration (min)': 30
+    	, date: timestamp
+        },{_type: 'TempBasal'
+        , rate: 2
+        , date: timestamp
+        , timestamp: timestamp
+        }]
+        , profile: {
+          dia: 3,
+          current_basal: 1
+        }
+      };
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    
+    hourLater.iob.should.be.lessThan(1);
+    hourLater.iob.should.be.greaterThan(0);
+    
+  });
+
   it('should calculate IOB using a 4 hour duration', function() {
 
     var now = Date.now()
