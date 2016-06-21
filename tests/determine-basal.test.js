@@ -331,7 +331,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         output.rate.should.be.above(1);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*>=120/);
+        output.reason.should.match(/Eventual BG .*>= 120/);
     });
 
     it('should cancel high-temp when high and avg. delta falling faster than BGI', function () {
