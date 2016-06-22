@@ -44,31 +44,13 @@ describe('IOB', function ( ) {
 
     var now = Date.now()
       , timestamp = new Date(now).toISOString()
-      , timestampEarly = new Date(now - (60 * 60 * 1000)).toISOString()
-      , inputs = {
-        clock: timestamp
-        , history: [{
-        _type: 'TempBasalDuration'
-        ,'duration (min)': 30
-    	, date: timestampEarly
-        },{_type: 'TempBasal'
-        , rate: 2
-        , date: timestampEarly
-        , timestamp: timestampEarly
-        },
-        {
-        _type: 'TempBasalDuration'
-        ,'duration (min)': 30
-    	, date: timestamp
-        },{_type: 'TempBasal'
-        , rate: 2
-        , date: timestamp
-        , timestamp: timestamp
-        }]
-        , profile: {
-          dia: 3,
-          current_basal: 1
-        }
+      , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
+      , inputs = {clock: timestamp,
+        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
+        ,{_type: 'TempBasal', rate: 2, date: timestampEarly, timestamp: timestampEarly}
+        ,{_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
+		,{_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
+		, profile: { dia: 3, current_basal: 1}
       };
 
     var hourLaterInputs = inputs;
@@ -79,6 +61,89 @@ describe('IOB', function ( ) {
     hourLater.iob.should.be.greaterThan(0);
     
   });
+
+  it('should calculate IOB with Temp Basal events that overlap', function() {
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , timestampEarly = new Date(now - 1).toISOString()
+      , inputs = {clock: timestamp,
+        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
+        ,{_type: 'TempBasal', rate: 2, date: timestampEarly, timestamp: timestampEarly}
+        ,{_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
+		,{_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
+		, profile: { dia: 3, current_basal: 1}
+      };
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    
+    hourLater.iob.should.be.lessThan(1);
+    hourLater.iob.should.be.greaterThan(0);
+    
+  });
+
+  it('should calculate IOB with Temp Basals that are lower than base rate', function() {
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
+      , inputs = {clock: timestamp,
+        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
+        ,{_type: 'TempBasal', rate: 1, date: timestampEarly, timestamp: timestampEarly}
+        ,{_type: 'TempBasal', rate: 1, date: timestamp, timestamp: timestamp}
+		,{_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
+		, profile: { dia: 3, current_basal: 2}
+      };
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    
+    hourLater.iob.should.be.lessThan(0);
+    hourLater.iob.should.be.greaterThan(-1);
+    
+  });
+
+  it('should show 0 IOB with Temp Basals if duration is not found', function() {
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , timestampEarly = new Date(now - (60 * 60 * 1000)).toISOString()
+      , inputs = {
+        clock: timestamp
+        , history: [{_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}]
+        , profile: {dia: 3,current_basal: 1}
+      };
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    
+    hourLater.iob.should.equal(0);
+  });
+
+  it('should show 0 IOB with Temp Basals if basal is percentage based', function() {
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , timestampEarly = new Date(now - (60 * 60 * 1000)).toISOString()
+      , inputs = {
+        clock: timestamp
+        , history: [{_type: 'TempBasal', temp: 'percent', rate: 2, date: timestamp, timestamp: timestamp},
+	        {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
+        , profile: {dia: 3,current_basal: 1}
+      };
+
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    
+    hourLater.iob.should.equal(0);
+  });
+
 
   it('should calculate IOB using a 4 hour duration', function() {
 
