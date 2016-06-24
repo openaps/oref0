@@ -41,4 +41,4 @@ oref0-fix-git-corruption &
 sleep 15 && killall oref0-fix-git-corruption
 # if git repository is too corrupt to do anything, mv it to /tmp and start over.
 
-git status > /dev/null || (echo "Saving backup to: $BACKUP" > /dev/stderr; mv .git $BACKUP; openaps init . )
+(git status && git diff) > /dev/null || (echo "Saving backup to: $BACKUP" > /dev/stderr; mv .git $BACKUP; openaps init . )
