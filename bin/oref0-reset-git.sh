@@ -45,7 +45,7 @@ wait $pid
 
 status=$?
 if [ $status -lt 128 ]; then
-	kill $sleep_pid 2> /dev/null
+	kill $sleep_pid
 fi
 # if git repository is too corrupt to do anything, mv it to /tmp and start over.
 
