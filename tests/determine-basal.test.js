@@ -2,10 +2,47 @@
 
 var should = require('should');
 
+describe('round_basal', function ( ) {
+    var round_basal = require('../lib/determine-basal/determine-basal').round_basal;
+    it('should round basal rates properly (0.83 -> 0.825)', function() {
+        var basal = 0.83;
+        var output = round_basal(basal);
+        output.should.equal(0.825);
+    });
 
+    it('should round basal rates properly (0.86 -> 0.85)', function() {
+        var basal = 0.86;
+        var output = round_basal(basal);
+        output.should.equal(0.85);
+    });    
+
+    it('should round basal rates properly: (1.83 -> 1.85)', function() {
+        var basal = 1.83;
+        var output = round_basal(basal);
+        output.should.equal(1.85);
+    });
+
+    it('should round basal rates properly: (1.86 -> 1.85)', function() {
+        var basal = 1.86;
+        var output = round_basal(basal);
+        output.should.equal(1.85);
+    });
+
+    it('should round basal rates properly: (10.83 -> 10.8)', function() {
+        var basal = 10.83;
+        var output = round_basal(basal);
+        output.should.equal(10.8);
+    });
+
+    it('should round basal rates properly: (10.86 -> 10.9)', function() {
+        var basal = 10.86;
+        var output = round_basal(basal);
+        output.should.equal(10.9);
+    }); 
+});
 
 describe('determine-basal', function ( ) {
-    var determine_basal = require('../lib/determine-basal/determine-basal');
+    var determine_basal = require('../lib/determine-basal/determine-basal').determine_basal;
     var setTempBasal = require('../lib/basal-set-temp');
 
    //function determine_basal(glucose_status, currenttemp, iob_data, profile)
@@ -202,7 +239,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.be.below(0.8);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
     
     it('should low-temp when eventualBG < min_bg with delta > exp. delta', function () {
@@ -212,7 +249,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.be.below(0.2);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
     
     it('should low-temp when eventualBG < min_bg with delta > exp. delta', function () {
@@ -222,7 +259,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.be.below(0.8);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
 
     it('should low-temp much less when eventualBG < min_bg with delta barely negative', function () {
@@ -232,7 +269,7 @@ describe('determine-basal', function ( ) {
         output.rate.should.be.above(0.3);
         output.rate.should.be.below(0.8);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
 
     it('should do nothing when eventualBG < min_bg but appropriate low temp in progress', function () {
@@ -241,7 +278,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
-        output.reason.should.match(/Eventual BG .*<110, temp .*/);
+        output.reason.should.match(/Eventual BG .*< 110, temp .*/);
     });
 
     it('should cancel low-temp when lowish and avg.delta rising faster than BGI', function () {
@@ -294,7 +331,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
         output.rate.should.be.above(1);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*>=120/);
+        output.reason.should.match(/Eventual BG .*>= 120/);
     });
 
     it('should cancel high-temp when high and avg. delta falling faster than BGI', function () {
@@ -577,5 +614,4 @@ describe('determine-basal', function ( ) {
         output.rate.should.equal(0);
         output.duration.should.equal(30);
     });
-
 });
