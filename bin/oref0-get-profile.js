@@ -21,13 +21,49 @@ function usage ( ) {
         console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<max_iob.json>] [<carb_ratios.json>] [<temptargets.json>]');
 }
 
+function exportDefaults () {
+	var defaults = generate.defaults();
+	console.log(JSON.stringify(defaults, null, '\t'));
+}
+
+function updatePreferences (prefs) {
+	var defaults = generate.defaults();
+	
+	// check for any keys missing from current prefs and add from defaults
+	
+    for (var pref in defaults) {
+      if (defaults.hasOwnProperty(pref) && !prefs.hasOwnProperty(pref)) {
+        prefs[pref] = defaults[pref];
+      }
+    }
+
+	console.log(JSON.stringify(prefs, null, '\t'));
+}
+
 if (!module.parent) {
     
-    var pumpsettings_input = process.argv.slice(2, 3).pop()
+    var cwd = process.cwd()
+        
+    var pumpsettings_input = process.argv.slice(2, 3).pop();
+
+    if (pumpsettings_input !== undefined && pumpsettings_input.indexOf('export-defaults') > 0) {
+      exportDefaults();
+      process.exit(0);
+    }
+
+    if (pumpsettings_input !== undefined && pumpsettings_input.indexOf('update-preferences') > 0) {
+      var prefs_input = process.argv.slice(3, 4).pop();
+	  if (!prefs_input) { console.error('usage: ', process.argv.slice(0, 2), '<preferences.json>'); process.exit(0); }
+      var prefs = require(cwd + '/' + prefs_input);
+      updatePreferences(prefs);
+      process.exit(0);
+    }
+
     if ([null, '--help', '-h', 'help'].indexOf(pumpsettings_input) > 0) {
       usage( );
-      process.exit(0)
+      process.exit(0);
     }
+    
     var bgtargets_input = process.argv.slice(3, 4).pop()
     var isf_input = process.argv.slice(4, 5).pop()
     var basalprofile_input = process.argv.slice(5, 6).pop()
@@ -40,7 +76,6 @@ if (!module.parent) {
         process.exit(1);
     }
     
-    var cwd = process.cwd()
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
     if (bgtargets_data.units !== 'mg/dL') {
@@ -101,16 +136,26 @@ if (!module.parent) {
     }
 
     //console.log(carbratio_data);
-    var inputs = {
-      settings: pumpsettings_data
-    , targets: bgtargets_data
-    , basals: basalprofile_data
-    , isf: isf_data
-    , max_iob: preferences.max_iob || 0
-    , skip_neutral_temps: preferences.skip_neutral_temps || false
-    , carbratio: carbratio_data
-    , temptargets: temptargets_data
-    };
+    var inputs = { };
+
+    //add all preferences to the inputs
+    for (var pref in preferences) {
+      if (preferences.hasOwnProperty(pref)) {
+        inputs[pref] = preferences[pref];
+      }
+    }
+
+    //make sure max_iob is set or default to 0
+    inputs.max_iob = inputs.max_iob || 0;
+
+    //set these after to make sure nothing happens if they are also set in preferences
+    inputs.settings = pumpsettings_data;
+    inputs.targets = bgtargets_data;
+    inputs.basals = basalprofile_data;
+    inputs.isf = isf_data;
+    inputs.carbratio = carbratio_data;
+    inputs.temptargets = temptargets_data;
+
 
     var profile = generate(inputs);
 

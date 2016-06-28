@@ -49,7 +49,7 @@ if (!module.parent) {
         var clock_data = JSON.parse(fs.readFileSync(clock_input, 'utf8'));
         var basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
     } catch (e) {
-        console.log('{ "carbs": 0, "reason": "Could not parse input data" }');
+        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse input data" }');
         return console.error("Could not parse input data: ", e);
     }
 
