@@ -113,6 +113,17 @@ openaps use ns shell upload treatments.json recently/combined-treatments.json
   get type args                                  Get records of type from
                                                  Nightscout matching args.
 
+  oref0_glucose [tz] [args]                      Get records matching oref0
+                                                 requirements according to args
+                                                 from Nightscout.
+                                                 tz should be the name of the
+                                                 timezones device (default with
+                                                 no args is tz).
+                                                 args are ampersand separated
+                                                 arguments to append to the
+                                                 search query for Nightscout.
+  oref0_glucose_without_zone [args]              Like oref0_glucose but without
+                                                 rezoning.
   upload endpoint file                           Upload a file to the Nightscout endpoint.
   latest-treatment-time                          - get latest treatment time from Nightscout
   format-recent-history-treatments history model - Formats medtronic pump
@@ -229,6 +240,21 @@ ns)
     ;;
     upload)
     exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $*
+    ;;
+    oref0_glucose)
+    zone=${1-'tz'}
+    shift
+    params=$*
+    params=${params-'count=10'}
+    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
+      | json -e "this.glucose = this.sgv" \
+      | openaps use $zone rezone --astimezone --date dateString -
+    ;;
+    oref0_glucose_without_zone)
+    params=$*
+    params=${params-'count=10'}
+    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
+      | json -e "this.glucose = this.sgv"
     ;;
     *)
     echo "Unknown request:" $OP
