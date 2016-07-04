@@ -230,11 +230,11 @@ ns)
     upload-non-empty-type)
       TYPE=${1-entries.json}
       FILE=$2
-      test $(cat $FILE | json -a | wc -l) -lt 1 && echo "Nothing to upload." > /dev/stderr && cat $FILE && exit 0
+      test $(cat $FILE | json -a | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $FILE && exit 0
       exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $TYPE $FILE
     ;;
     upload-non-empty-treatments)
-      test $(cat $1 | json -a | wc -l) -lt 1 && echo "Nothing to upload." > /dev/stderr && cat $1 && exit 0
+      test $(cat $1 | json -a | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $1 && exit 0
     exec ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json $1
 
     ;;
