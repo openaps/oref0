@@ -183,7 +183,7 @@ function init() {
     };
     
     determinebasal.getLastGlucose = require('oref0/lib/glucose-get-last');
-    determinebasal.determine_basal = require('oref0/lib/determine-basal/determine-basal').determine_basal;
+    determinebasal.determine_basal = require('oref0/lib/determine-basal/determine-basal');
     return determinebasal;
 
 }
