@@ -18,7 +18,7 @@
 
 var generate = require('oref0/lib/profile/');
 function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [model.json] [<carb_ratios.json>]');
 }
 
 if (!module.parent) {
@@ -32,8 +32,9 @@ if (!module.parent) {
     var isf_input = process.argv.slice(4, 5).pop()
     var basalprofile_input = process.argv.slice(5, 6).pop()
     var preferences_input = process.argv.slice(6, 7).pop()
-    var carbratio_input = process.argv.slice(7, 8).pop()
-    
+    var model_input = process.argv.slice(7, 8).pop()
+    var carbratio_input = process.argv.slice(8, 9).pop()
+
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
         usage( );
         process.exit(1);
@@ -60,6 +61,20 @@ if (!module.parent) {
         preferences = require(cwd + '/' + preferences_input);
     }
     var fs = require('fs');
+
+    var model_data = { }
+    if (typeof model_input != 'undefined') {
+	try {
+	    model_string = fs.readFileSync(model_input, 'utf8');
+	    model_data = model_string.replace(/\"/gi, '');
+	} catch (e) {
+		var msg = { error: e, msg: "Could not parse model_data", file: model_input};
+		console.error(msg.msg);
+		console.log(JSON.stringify(msg));
+		process.exit(1);
+	}
+    }
+
     var carbratio_data = { };
     //console.log("carbratio_input",carbratio_input);
     if (typeof carbratio_input != 'undefined') {
@@ -99,6 +114,7 @@ if (!module.parent) {
     , max_iob: preferences.max_iob || 0
     , skip_neutral_temps: preferences.skip_neutral_temps || false
     , carbratio: carbratio_data
+    , model: model_data
     };
 
     var profile = generate(inputs);
