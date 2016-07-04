@@ -21,13 +21,49 @@ function usage ( ) {
         console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<max_iob.json>] [<carb_ratios.json>] [<temptargets.json>]');
 }
 
+function exportDefaults () {
+	var defaults = generate.defaults();
+	console.log(JSON.stringify(defaults, null, '\t'));
+}
+
+function updatePreferences (prefs) {
+	var defaults = generate.defaults();
+	
+	// check for any keys missing from current prefs and add from defaults
+	
+    for (var pref in defaults) {
+      if (defaults.hasOwnProperty(pref) && !prefs.hasOwnProperty(pref)) {
+        prefs[pref] = defaults[pref];
+      }
+    }
+
+	console.log(JSON.stringify(prefs, null, '\t'));
+}
+
 if (!module.parent) {
     
-    var pumpsettings_input = process.argv.slice(2, 3).pop()
+    var cwd = process.cwd()
+        
+    var pumpsettings_input = process.argv.slice(2, 3).pop();
+
+    if (pumpsettings_input !== undefined && pumpsettings_input.indexOf('export-defaults') > 0) {
+      exportDefaults();
+      process.exit(0);
+    }
+
+    if (pumpsettings_input !== undefined && pumpsettings_input.indexOf('update-preferences') > 0) {
+      var prefs_input = process.argv.slice(3, 4).pop();
+	  if (!prefs_input) { console.error('usage: ', process.argv.slice(0, 2), '<preferences.json>'); process.exit(0); }
+      var prefs = require(cwd + '/' + prefs_input);
+      updatePreferences(prefs);
+      process.exit(0);
+    }
+
     if ([null, '--help', '-h', 'help'].indexOf(pumpsettings_input) > 0) {
       usage( );
-      process.exit(0)
+      process.exit(0);
     }
+    
     var bgtargets_input = process.argv.slice(3, 4).pop()
     var isf_input = process.argv.slice(4, 5).pop()
     var basalprofile_input = process.argv.slice(5, 6).pop()
@@ -40,7 +76,6 @@ if (!module.parent) {
         process.exit(1);
     }
     
-    var cwd = process.cwd()
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
     if (bgtargets_data.units !== 'mg/dL') {
