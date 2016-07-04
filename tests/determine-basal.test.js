@@ -3,11 +3,41 @@
 var should = require('should');
 
 describe('round_basal', function ( ) {
-    var round_basal = require('../lib/determine-basal/determine-basal').round_basal;
+    var round_basal = require('../lib/round-basal');
+
+    it('should round correctly without profile being passed in', function() {
+        var basal = 0.025;
+        var output = round_basal(basal);
+        output.should.equal(0.05);
+    });
+
+    var profile = {model: "522"};
+    it('should round correctly with an old pump model', function() {
+        var basal = 0.025;
+        var output = round_basal(basal, profile);
+        output.should.equal(0.05);
+    });
+
+    
+    it('should round correctly with a new pump model', function() {
+        var basal = 0.025;
+        profile.model = "554";
+        var output = round_basal(basal, profile);
+        output.should.equal(0.025);
+        console.error(output);
+    });
+
+    it('should round correctly with an invalid pump model', function() {
+        var basal = 0.025;
+        profile.model = "HelloThisIsntAPumpModel";
+        var output = round_basal(basal, profile);
+        output.should.equal(0.05);
+    });
+
     it('should round basal rates properly (0.83 -> 0.825)', function() {
         var basal = 0.83;
         var output = round_basal(basal);
-        output.should.equal(0.825);
+        output.should.equal(0.85);
     });
 
     it('should round basal rates properly (0.86 -> 0.85)', function() {
@@ -42,7 +72,7 @@ describe('round_basal', function ( ) {
 });
 
 describe('determine-basal', function ( ) {
-    var determine_basal = require('../lib/determine-basal/determine-basal').determine_basal;
+    var determine_basal = require('../lib/determine-basal/determine-basal');
     var setTempBasal = require('../lib/basal-set-temp');
 
    //function determine_basal(glucose_status, currenttemp, iob_data, profile)
@@ -614,4 +644,31 @@ describe('determine-basal', function ( ) {
         output.rate.should.equal(0);
         output.duration.should.equal(30);
     });
+
+    it('should match the basal rate precision available on a 523', function () {
+        //var currenttemp = {"duration":30,"rate":0,"temp":"absolute"};
+        var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
+        profile.current_basal = 0.825;
+        profile.model = "523";
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        //output.rate.should.equal(0);
+        //output.duration.should.equal(0);
+        output.rate.should.equal(0.825);
+        output.duration.should.equal(30);
+        output.reason.should.match(/in range.*/);
+    });
+
+    it('should match the basal rate precision available on a 522', function () {
+        //var currenttemp = {"duration":30,"rate":0,"temp":"absolute"};
+        var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
+        profile.current_basal = 0.875;
+        profile.model = "522";
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        //output.rate.should.equal(0);
+        //output.duration.should.equal(0);
+        output.rate.should.equal(0.9);
+        output.duration.should.equal(30);
+        output.reason.should.match(/in range.*/);
+    });    
+
 });
