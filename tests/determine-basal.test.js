@@ -2,7 +2,74 @@
 
 var should = require('should');
 
+describe('round_basal', function ( ) {
+    var round_basal = require('../lib/round-basal');
 
+    it('should round correctly without profile being passed in', function() {
+        var basal = 0.025;
+        var output = round_basal(basal);
+        output.should.equal(0.05);
+    });
+
+    var profile = {model: "522"};
+    it('should round correctly with an old pump model', function() {
+        var basal = 0.025;
+        var output = round_basal(basal, profile);
+        output.should.equal(0.05);
+    });
+
+    
+    it('should round correctly with a new pump model', function() {
+        var basal = 0.025;
+        profile.model = "554";
+        var output = round_basal(basal, profile);
+        output.should.equal(0.025);
+        console.error(output);
+    });
+
+    it('should round correctly with an invalid pump model', function() {
+        var basal = 0.025;
+        profile.model = "HelloThisIsntAPumpModel";
+        var output = round_basal(basal, profile);
+        output.should.equal(0.05);
+    });
+
+    it('should round basal rates properly (0.83 -> 0.825)', function() {
+        var basal = 0.83;
+        var output = round_basal(basal);
+        output.should.equal(0.85);
+    });
+
+    it('should round basal rates properly (0.86 -> 0.85)', function() {
+        var basal = 0.86;
+        var output = round_basal(basal);
+        output.should.equal(0.85);
+    });    
+
+    it('should round basal rates properly: (1.83 -> 1.85)', function() {
+        var basal = 1.83;
+        var output = round_basal(basal);
+        output.should.equal(1.85);
+    });
+
+    it('should round basal rates properly: (1.86 -> 1.85)', function() {
+        var basal = 1.86;
+        var output = round_basal(basal);
+        output.should.equal(1.85);
+    });
+
+    it('should round basal rates properly: (10.83 -> 10.8)', function() {
+        var basal = 10.83;
+        var output = round_basal(basal);
+        output.should.equal(10.8);
+    });
+
+    it('should round basal rates properly: (10.86 -> 10.9)', function() {
+        var basal = 10.86;
+        var output = round_basal(basal);
+        output.should.equal(10.9);
+    }); 
+});
 
 describe('determine-basal', function ( ) {
     var determine_basal = require('../lib/determine-basal/determine-basal');
@@ -203,7 +270,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.be.below(0.8);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
     
     it('should low-temp when eventualBG < min_bg with delta > exp. delta', function () {
@@ -213,7 +280,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.be.below(0.2);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
     
     it('should low-temp when eventualBG < min_bg with delta > exp. delta', function () {
@@ -223,7 +290,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.be.below(0.8);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
 
     it('should low-temp much less when eventualBG < min_bg with delta barely negative', function () {
@@ -233,7 +300,7 @@ describe('determine-basal', function ( ) {
         output.rate.should.be.above(0.3);
         output.rate.should.be.below(0.8);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*<110.*setting .*/);
+        output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
 
     it('should do nothing when eventualBG < min_bg but appropriate low temp in progress', function () {
@@ -242,7 +309,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         (typeof output.rate).should.equal('undefined');
         (typeof output.duration).should.equal('undefined');
-        output.reason.should.match(/Eventual BG .*<110, temp .*/);
+        output.reason.should.match(/Eventual BG .*< 110, temp .*/);
     });
 
     it('should cancel low-temp when lowish and avg.delta rising faster than BGI', function () {
@@ -295,7 +362,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         output.rate.should.be.above(1);
         output.duration.should.equal(30);
-        output.reason.should.match(/Eventual BG .*>=120/);
+        output.reason.should.match(/Eventual BG .*>= 120/);
     });
 
     it('should cancel high-temp when high and avg. delta falling faster than BGI', function () {
@@ -621,5 +688,30 @@ describe('determine-basal', function ( ) {
         output.rate.should.equal(5);
         output.reason.should.match(/.*, adj. req. rate:.* to maxSafeBasal:.*, no temp, setting/);
     });
+    it('should match the basal rate precision available on a 523', function () {
+        //var currenttemp = {"duration":30,"rate":0,"temp":"absolute"};
+        var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
+        profile.current_basal = 0.825;
+        profile.model = "523";
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        //output.rate.should.equal(0);
+        //output.duration.should.equal(0);
+        output.rate.should.equal(0.825);
+        output.duration.should.equal(30);
+        output.reason.should.match(/in range.*/);
+    });
+
+    it('should match the basal rate precision available on a 522', function () {
+        //var currenttemp = {"duration":30,"rate":0,"temp":"absolute"};
+        var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
+        profile.current_basal = 0.875;
+        profile.model = "522";
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        //output.rate.should.equal(0);
+        //output.duration.should.equal(0);
+        output.rate.should.equal(0.9);
+        output.duration.should.equal(30);
+        output.reason.should.match(/in range.*/);
+    });    
 
 });

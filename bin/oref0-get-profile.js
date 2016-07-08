@@ -18,7 +18,7 @@
 
 var generate = require('oref0/lib/profile/');
 function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<max_iob.json>] [<carb_ratios.json>] [<temptargets.json>]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [--model model.json] [<carb_ratios.json>] ');
 }
 
 function exportDefaults () {
@@ -42,40 +42,40 @@ function updatePreferences (prefs) {
 
 if (!module.parent) {
     
-    var cwd = process.cwd()
-        
-    var pumpsettings_input = process.argv.slice(2, 3).pop();
+    var argv = require('yargs')
+      .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [--model model.json] [<carb_ratios.json>]")
+      .option('model', {
+        alias: 'm',
+        describe: "Pump model response",
+        default: false
+      })
+      .strict(true)
+      .help('help')
 
-    if (pumpsettings_input !== undefined && pumpsettings_input.indexOf('export-defaults') > 0) {
-      exportDefaults();
-      process.exit(0);
-    }
-
-    if (pumpsettings_input !== undefined && pumpsettings_input.indexOf('update-preferences') > 0) {
-      var prefs_input = process.argv.slice(3, 4).pop();
-	  if (!prefs_input) { console.error('usage: ', process.argv.slice(0, 2), '<preferences.json>'); process.exit(0); }
-      var prefs = require(cwd + '/' + prefs_input);
-      updatePreferences(prefs);
-      process.exit(0);
-    }
-
+    var params = argv.argv;
+    var pumpsettings_input = params._.slice(0, 1).pop()
     if ([null, '--help', '-h', 'help'].indexOf(pumpsettings_input) > 0) {
       usage( );
       process.exit(0);
     }
-    
-    var bgtargets_input = process.argv.slice(3, 4).pop()
-    var isf_input = process.argv.slice(4, 5).pop()
-    var basalprofile_input = process.argv.slice(5, 6).pop()
-    var preferences_input = process.argv.slice(6, 7).pop()
-    var carbratio_input = process.argv.slice(7, 8).pop()
-    var temptargets_input = process.argv.slice(8, 9).pop()
-    
+    var bgtargets_input = params._.slice(1, 2).pop()
+    var isf_input = params._.slice(2, 3).pop()
+    var basalprofile_input = params._.slice(3, 4).pop()
+    var preferences_input = params._.slice(4, 5).pop()
+    var carbratio_input = params._.slice(5, 6).pop()
+    var model_input = params.model;
+    if (params._.length > 6)
+    {
+      model_input = params.model ? params.params._.slice(5, 6).pop() : false;
+      var carbratio_input = params._.slice(6, 7).pop()
+    }
+
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
         usage( );
         process.exit(1);
     }
-    
+
+    var cwd = process.cwd()
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
     if (bgtargets_data.units !== 'mg/dL') {
@@ -96,6 +96,20 @@ if (!module.parent) {
         preferences = require(cwd + '/' + preferences_input);
     }
     var fs = require('fs');
+
+    var model_data = { }
+    if (params.model) {
+      try {
+        model_string = fs.readFileSync(model_input, 'utf8');
+        model_data = model_string.replace(/\"/gi, '');
+      } catch (e) {
+        var msg = { error: e, msg: "Could not parse model_data", file: model_input};
+        console.error(msg.msg);
+        console.log(JSON.stringify(msg));
+        process.exit(1);
+      }
+    }
+
     var carbratio_data = { };
     //console.log("carbratio_input",carbratio_input);
     if (typeof carbratio_input != 'undefined') {
