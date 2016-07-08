@@ -18,7 +18,7 @@
 
 var generate = require('oref0/lib/profile/');
 function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [--model model.json] [<carb_ratios.json>] ');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [--model model.json] [<carb_ratios.json>] [<temptargets.json>]');
 }
 
 function exportDefaults () {
@@ -43,7 +43,7 @@ function updatePreferences (prefs) {
 if (!module.parent) {
     
     var argv = require('yargs')
-      .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [--model model.json] [<carb_ratios.json>]")
+      .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [--model model.json] [<carb_ratios.json>] [<temptargets.json>]")
       .option('model', {
         alias: 'm',
         describe: "Pump model response",
@@ -63,11 +63,13 @@ if (!module.parent) {
     var basalprofile_input = params._.slice(3, 4).pop()
     var preferences_input = params._.slice(4, 5).pop()
     var carbratio_input = params._.slice(5, 6).pop()
+    var temptargets_input = params._.slice(6, 7).pop()
     var model_input = params.model;
     if (params._.length > 6)
     {
       model_input = params.model ? params.params._.slice(5, 6).pop() : false;
       var carbratio_input = params._.slice(6, 7).pop()
+      var temptargets_input = params._.slice(7, 8).pop()
     }
 
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {

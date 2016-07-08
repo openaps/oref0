@@ -18,7 +18,7 @@ describe('round_basal', function ( ) {
         output.should.equal(0.05);
     });
 
-    
+
     it('should round correctly with a new pump model', function() {
         var basal = 0.025;
         profile.model = "554";
@@ -44,7 +44,7 @@ describe('round_basal', function ( ) {
         var basal = 0.86;
         var output = round_basal(basal);
         output.should.equal(0.85);
-    });    
+    });
 
     it('should round basal rates properly: (1.83 -> 1.85)', function() {
         var basal = 1.83;
@@ -68,7 +68,7 @@ describe('round_basal', function ( ) {
         var basal = 10.86;
         var output = round_basal(basal);
         output.should.equal(10.9);
-    }); 
+    });
 });
 
 describe('determine-basal', function ( ) {
@@ -167,7 +167,7 @@ describe('determine-basal', function ( ) {
         output.duration.should.equal(30);
         output.reason.should.match(/BG 75<80, avg delta .*/);
     });
-    
+
     it('should cancel low-temp when eventualBG is higher then max_bg', function () {
         var currenttemp = {"duration":20,"rate":0,"temp":"absolute"};
         var glucose_status = {"delta":5,"glucose":75,"avgdelta":5};
@@ -187,14 +187,14 @@ describe('determine-basal', function ( ) {
         output.duration.should.equal(30);
         output.reason.should.match(/no temp, setting/);
     });
-    
+
     it('should high-temp when > 180-ish and rising but not more then maxSafeBasal', function () {
         var glucose_status = {"delta":5,"glucose":185,"avgdelta":5};
         var iob_data = {"iob":0,"activity":-0.01,"bolussnooze":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         output.reason.should.match(/.*, adj. req. rate:.* to maxSafeBasal:.*, no temp, setting/);
     });
-    
+
     it('should reduce high-temp when schedule would be above max', function () {
         var glucose_status = {"delta":5,"glucose":145,"avgdelta":5};
         var currenttemp = {"duration":160,"rate":1.9,"temp":"absolute"};
@@ -203,7 +203,7 @@ describe('determine-basal', function ( ) {
         output.duration.should.equal(30);
         output.reason.should.match(/.*m.* = .* > req .*/);
     });
-    
+
     it('should continue high-temp when required ~= temp running', function () {
         var glucose_status = {"delta":5,"glucose":145,"avgdelta":5};
         var currenttemp = {"duration":30,"rate":3.5,"temp":"absolute"};
@@ -214,7 +214,7 @@ describe('determine-basal', function ( ) {
         (typeof output.duration).should.equal('undefined');
         output.reason.should.match(/Eventual BG .*>.*, temp .* >~ req /);
     });
-    
+
     it('should set high-temp when required running temp is low', function () {
         var glucose_status = {"delta":5,"glucose":145,"avgdelta":5};
         var currenttemp = {"duration":30,"rate":1.1,"temp":"absolute"};
@@ -223,7 +223,7 @@ describe('determine-basal', function ( ) {
         output.duration.should.equal(30);
         output.reason.should.match(/Eventual BG .*>.*, temp/);
     });
-    
+
     it('should stop high-temp when iob is near max_iob.', function () {
         var glucose_status = {"delta":5,"glucose":485,"avgdelta":5};
         var iob_data = {"iob":3.5,"activity":0.05,"bolussnooze":0};
@@ -259,7 +259,7 @@ describe('determine-basal', function ( ) {
         output.duration.should.equal(30);
         output.reason.should.match(/BG 39<80/);
     });
-    
+
 
 
     // low eventualBG
@@ -272,7 +272,7 @@ describe('determine-basal', function ( ) {
         output.duration.should.equal(30);
         output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
-    
+
     it('should low-temp when eventualBG < min_bg with delta > exp. delta', function () {
         var glucose_status = {"delta":-5,"glucose":115,"avgdelta":-6};
         var iob_data = {"iob":2,"activity":0.05,"bolussnooze":0};
@@ -282,7 +282,7 @@ describe('determine-basal', function ( ) {
         output.duration.should.equal(30);
         output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
-    
+
     it('should low-temp when eventualBG < min_bg with delta > exp. delta', function () {
         var glucose_status = {"delta":-2,"glucose":156,"avgdelta":-1.33};
         var iob_data = {"iob":3.51,"activity":0.06,"bolussnooze":0.08};
@@ -323,7 +323,7 @@ describe('determine-basal', function ( ) {
         //output.duration.should.equal(0);
         //output.reason.should.match(/.*; cancel/);
     });
-    
+
     it('should cancel low-temp when lowish and delta rising faster than BGI', function () {
         var currenttemp = {"duration":20,"rate":0.5,"temp":"absolute"};
         var glucose_status = {"delta":3,"glucose":85,"avgdelta":3};
@@ -332,7 +332,7 @@ describe('determine-basal', function ( ) {
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
     });
-    
+
     it('should set current basal as temp when lowish and delta rising faster than BGI', function () {
         var currenttemp = {"duration":0,"rate":0.5,"temp":"absolute"};
         var glucose_status = {"delta":3,"glucose":85,"avgdelta":3};
@@ -377,7 +377,7 @@ describe('determine-basal', function ( ) {
         //output.duration.should.equal(0);
         output.reason.should.match(/Eventual BG.*>.*but Avg. Delta.*< Exp.*/);
     });
-    
+
     it('should cancel high-temp when high and delta falling faster than BGI', function () {
         var currenttemp = {"duration":20,"rate":2,"temp":"absolute"};
         var glucose_status = {"delta":-5,"glucose":175,"avgdelta":-4};
@@ -387,7 +387,7 @@ describe('determine-basal', function ( ) {
         output.duration.should.equal(30);
         output.reason.should.match(/Eventual BG.*>.*but.*Delta.*< Exp.*/);
     });
-    
+
     it('should do nothing when no temp and high and delta falling faster than BGI', function () {
         var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
         var glucose_status = {"delta":-5,"glucose":175,"avgdelta":-4};
@@ -442,7 +442,7 @@ describe('determine-basal', function ( ) {
     it('should profile.current_basal be undefined return error', function () {
       var result = determine_basal(undefined,undefined,undefined,undefined);
       result.error.should.equal('Error: could not get current basal rate');
-    }); 
+    });
 
     it('should let low-temp run when bg < 30 (Dexcom is in ???)', function () {
         var currenttemp = {"duration":30,"rate":0,"temp":"absolute"};
@@ -458,7 +458,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.be.below(1);
         output.reason.should.match(/CGM is calibrating/);
-    });  
+    });
 
     it('profile should contain min_bg,max_bg or target_bg', function () {
       var result = determine_basal({glucose:100},undefined, undefined, {"current_basal":0.0}, undefined, meal_data, tempBasalFunctions);
@@ -468,12 +468,12 @@ describe('determine-basal', function ( ) {
     it('iob_data should not be undefined', function () {
       var result = determine_basal({glucose:100},undefined, undefined, {"current_basal":0.0, "target_bg":100}, undefined, meal_data, tempBasalFunctions);
       result.error.should.equal('Error: iob_data undefined');
-    }); 
+    });
 
     it('iob_data should contain activity, iob, bolussnooze', function () {
       var result = determine_basal({glucose:100}, undefined,{"activity":0}, {"current_basal":0.0, "target_bg":100}, undefined, meal_data, tempBasalFunctions);
       result.error.should.equal('Error: iob_data missing some property');
-    });  
+    });
 
 /*
     it('should return error eventualBG if something went wrong', function () {
@@ -516,7 +516,7 @@ describe('determine-basal', function ( ) {
         output.rate.should.be.below(1.0);
         output.duration.should.equal(30);
     });
-    
+
     it('should cancel low temp when low and rising after meal bolus', function () {
         var glucose_status = {"delta":1,"glucose":80,"avgdelta":1};
         var iob_data = {"iob":0.5,"activity":-0.01,"bolussnooze":1,"basaliob":-0.5};
@@ -667,7 +667,7 @@ describe('determine-basal', function ( ) {
         output.rate.should.equal(0.9);
         output.reason.should.match(/.*, adj. req. rate:.* to maxSafeBasal:.*, no temp, setting/);
     });
-    
+
     it('maxSafeBasal max_daily_safety_multiplier of 1 should cause the max daily rate to be set, even if higher is needed', function () {
         var glucose_status = {"delta":5,"glucose":185,"avgdelta":5};
         var iob_data = {"iob":0,"activity":-0.01,"bolussnooze":0};
@@ -693,7 +693,7 @@ describe('determine-basal', function ( ) {
         var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
         profile.current_basal = 0.825;
         profile.model = "523";
-        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         //output.rate.should.equal(0);
         //output.duration.should.equal(0);
         output.rate.should.equal(0.825);
@@ -706,12 +706,12 @@ describe('determine-basal', function ( ) {
         var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
         profile.current_basal = 0.875;
         profile.model = "522";
-        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, setTempBasal);
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         //output.rate.should.equal(0);
         //output.duration.should.equal(0);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
         output.reason.should.match(/in range.*/);
-    });    
+    });
 
 });
