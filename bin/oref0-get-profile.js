@@ -67,9 +67,9 @@ if (!module.parent) {
     var model_input = params.model;
     if (params._.length > 6)
     {
-      model_input = params.model ? params.params._.slice(5, 6).pop() : false;
-      var carbratio_input = params._.slice(6, 7).pop()
-      var temptargets_input = params._.slice(7, 8).pop()
+      model_input = params.model ? params._.slice(5, 6).pop() : false;
+      carbratio_input = params._.slice(6, 7).pop()
+      temptargets_input = params._.slice(7, 8).pop()
     }
 
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
