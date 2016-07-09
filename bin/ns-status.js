@@ -40,11 +40,16 @@ function mmtuneStatus (status) {
 
 function uploaderStatus (status) {
     if (uploader_input ) {
-	var uploader = require(cwd + '/' + uploader_input);
-	if (uploader) {
-	    status.uploader =  {};
-	    status.uploader.battery = uploader;
-	}
+        var uploader = require(cwd + '/' + uploader_input);
+        if (uploader) {
+            if (typeof uploader === 'number') {
+                status.uploader = {
+                    battery: uploader
+                };
+            } else {
+                status.uploader = uploader;
+            }
+        }
     }
 }
 
