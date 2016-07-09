@@ -43,7 +43,7 @@ function updatePreferences (prefs) {
 if (!module.parent) {
     
     var argv = require('yargs')
-      .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [--model model.json] [<carb_ratios.json>] [<temptargets.json>]")
+      .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [<carb_ratios.json>] [<temptargets.json>] [--model model.json]")
       .option('model', {
         alias: 'm',
         describe: "Pump model response",
@@ -65,12 +65,6 @@ if (!module.parent) {
     var carbratio_input = params._.slice(5, 6).pop()
     var temptargets_input = params._.slice(6, 7).pop()
     var model_input = params.model;
-    if (params._.length > 6)
-    {
-      model_input = params.model ? params._.slice(5, 6).pop() : false;
-      carbratio_input = params._.slice(6, 7).pop()
-      temptargets_input = params._.slice(7, 8).pop()
-    }
 
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
         usage( );
