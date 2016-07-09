@@ -18,7 +18,7 @@
 
 var generate = require('oref0/lib/profile/');
 function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [--model model.json] [<carb_ratios.json>] [<temptargets.json>]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>] [<temptargets.json>] [--model model.json]');
 }
 
 function exportDefaults () {
@@ -165,7 +165,7 @@ if (!module.parent) {
     inputs.isf = isf_data;
     inputs.carbratio = carbratio_data;
     inputs.temptargets = temptargets_data;
-
+    inputs.model = model_data;
 
     var profile = generate(inputs);
 
