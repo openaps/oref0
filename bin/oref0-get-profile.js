@@ -15,6 +15,7 @@
   THE SOFTWARE.
 
 */
+var fs = require('fs');
 
 var generate = require('oref0/lib/profile/');
 function usage ( ) {
@@ -41,7 +42,9 @@ function updatePreferences (prefs) {
 }
 
 if (!module.parent) {
-    
+        
+    var cwd = process.cwd()
+
     var argv = require('yargs')
       .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [<carb_ratios.json>] [<temptargets.json>] [--model model.json]")
       .option('model', {
@@ -51,6 +54,19 @@ if (!module.parent) {
       })
       .strict(true)
       .help('help')
+      .command('export-defaults', 'export defaults', {}, function (argv) {
+         exportDefaults();
+         process.exit(0);
+      })
+      .command('update-preferences', 'update an existing preferences file; USAGE oref0-get-profile update-preferences [preferences.json]', {}, function (argv) {
+         var prefs_input = process.argv.slice(3, 4).pop();
+         if (!prefs_input) { console.error('usage: ', process.argv.slice(0, 2), '<preferences.json>'); process.exit(0); }
+         var prefsPath = cwd + '/' + prefs_input;
+         if (!fs.existsSync(prefsPath)) { console.error("existing preferences file " + prefsPath + " not found"); process.exit(0); }
+         var prefs = require(prefsPath);
+         updatePreferences(prefs);
+         process.exit(0);
+      })
 
     var params = argv.argv;
     var pumpsettings_input = params._.slice(0, 1).pop()
@@ -71,7 +87,6 @@ if (!module.parent) {
         process.exit(1);
     }
 
-    var cwd = process.cwd()
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
     if (bgtargets_data.units !== 'mg/dL') {
