@@ -38,7 +38,7 @@
     "type": "alias",
     "name": "monitor-pump-history",
     "monitor-pump-history": {
-      "command": "report invoke monitor/pump-history-raw.json monitor/pump-history.json"
+      "command": "report invoke raw-pump/pump-history-raw.json monitor/pump-history.json"
     }
   },
   {
@@ -59,7 +59,7 @@
     "type": "alias",
     "name": "get-settings",
     "get-settings": {
-      "command": "report invoke settings/bg-targets-raw.json settings/bg-targets.json settings/insulin-sensitivities-raw.json settings/insulin-sensitivities.json settings/selected-basal-profile.json settings/settings.json"
+      "command": "report invoke raw-pump/bg-targets-raw.json settings/bg-targets.json raw-pump/insulin-sensitivities-raw.json settings/insulin-sensitivities.json raw-pump/selected-basal-profile.json settings/selected-basal-profile.json raw-pump/settings.json settings/settings.json"
     }
   },
   {
