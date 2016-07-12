@@ -52,6 +52,7 @@ if (!module.parent) {
 
     var params = argv.argv;
     var errors = [ ];
+    var warnings = [ ];
 
     var iob_input = params._.slice(0, 1).pop();
     if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
@@ -76,7 +77,7 @@ if (!module.parent) {
         usage( );
         process.exit(1);
     }
-    
+
     var fs = require('fs');
     try {
         var cwd = process.cwd();
@@ -105,7 +106,7 @@ if (!module.parent) {
             console.error(msg.msg);
             // console.log(JSON.stringify(msg));
             if (!params['missing-meal-ok']) {
-              errors.push(msg);
+              warnings.push(msg);
             }
             // process.exit(1);
         }
@@ -148,24 +149,34 @@ if (!module.parent) {
     var minAgo = (systemTime - bgTime) / 60 / 1000;
 
     if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
-        var reason = "BG data is too old, or clock set incorrectly "+bgTime+" vs "+systemTime;
+        var reason = "BG data is too old, or clock set incorrectly.  Your CGM time is "+bgTime+" but your system time is "+systemTime;
         console.error(reason);
         var msg = {msg: reason }
         errors.push(msg);
         /// return 1;
     }
+    if (warnings.length) {
+      console.error(JSON.stringify(warnings));
+    }
+
     if (errors.length) {
       console.log(JSON.stringify(errors));
       process.exit(1);
     }
+
+    if (typeof(iob_data.length) && iob_data.length > 1) {
+        console.error(JSON.stringify(iob_data[0]));
+    } else {
+        console.error(JSON.stringify(iob_data));
+    }
+
     console.error(JSON.stringify(glucose_status));
     console.error(JSON.stringify(currenttemp));
-    console.error(JSON.stringify(iob_data));
     console.error(JSON.stringify(profile));
-    
-    var setTempBasal = require('oref0/lib/basal-set-temp');
-    
-    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, setTempBasal);
+
+    var tempBasalFunctions = require('oref0/lib/basal-set-temp');
+
+    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));
@@ -174,14 +185,14 @@ if (!module.parent) {
     }
 
 }
-    
+
 function init() {
 
     var determinebasal = {
         name: 'determine-basal'
         , label: "OpenAPS Determine Basal"
     };
-    
+
     determinebasal.getLastGlucose = require('oref0/lib/glucose-get-last');
     determinebasal.determine_basal = require('oref0/lib/determine-basal/determine-basal');
     return determinebasal;

@@ -18,13 +18,32 @@
 
 var generate = require('oref0/lib/profile/');
 function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [--model model.json] [<carb_ratios.json>] ');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>] [<temptargets.json>] [--model model.json]');
+}
+
+function exportDefaults () {
+	var defaults = generate.defaults();
+	console.log(JSON.stringify(defaults, null, '\t'));
+}
+
+function updatePreferences (prefs) {
+	var defaults = generate.defaults();
+	
+	// check for any keys missing from current prefs and add from defaults
+	
+    for (var pref in defaults) {
+      if (defaults.hasOwnProperty(pref) && !prefs.hasOwnProperty(pref)) {
+        prefs[pref] = defaults[pref];
+      }
+    }
+
+	console.log(JSON.stringify(prefs, null, '\t'));
 }
 
 if (!module.parent) {
     
     var argv = require('yargs')
-      .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [--model model.json] [<carb_ratios.json>]")
+      .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [<carb_ratios.json>] [<temptargets.json>] [--model model.json]")
       .option('model', {
         alias: 'm',
         describe: "Pump model response",
@@ -37,19 +56,15 @@ if (!module.parent) {
     var pumpsettings_input = params._.slice(0, 1).pop()
     if ([null, '--help', '-h', 'help'].indexOf(pumpsettings_input) > 0) {
       usage( );
-      process.exit(0)
+      process.exit(0);
     }
     var bgtargets_input = params._.slice(1, 2).pop()
     var isf_input = params._.slice(2, 3).pop()
     var basalprofile_input = params._.slice(3, 4).pop()
     var preferences_input = params._.slice(4, 5).pop()
     var carbratio_input = params._.slice(5, 6).pop()
+    var temptargets_input = params._.slice(6, 7).pop()
     var model_input = params.model;
-    if (params._.length > 6)
-    {
-      model_input = params.model ? params._.slice(5, 6).pop() : false;
-      carbratio_input = params._.slice(6, 7).pop()
-    }
 
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
         usage( );
@@ -121,17 +136,36 @@ if (!module.parent) {
           process.exit(1);
         }
     }
+    var temptargets_data = { };
+    if (typeof temptargets_input != 'undefined') {
+        try {
+            temptargets_data = JSON.parse(fs.readFileSync(temptargets_input, 'utf8'));
+        } catch (e) {
+            //console.error("Could not parse temptargets_data.");
+        }
+    }
+
     //console.log(carbratio_data);
-    var inputs = {
-      settings: pumpsettings_data
-    , targets: bgtargets_data
-    , basals: basalprofile_data
-    , isf: isf_data
-    , max_iob: preferences.max_iob || 0
-    , skip_neutral_temps: preferences.skip_neutral_temps || false
-    , carbratio: carbratio_data
-    , model: model_data
-    };
+    var inputs = { };
+
+    //add all preferences to the inputs
+    for (var pref in preferences) {
+      if (preferences.hasOwnProperty(pref)) {
+        inputs[pref] = preferences[pref];
+      }
+    }
+
+    //make sure max_iob is set or default to 0
+    inputs.max_iob = inputs.max_iob || 0;
+
+    //set these after to make sure nothing happens if they are also set in preferences
+    inputs.settings = pumpsettings_data;
+    inputs.targets = bgtargets_data;
+    inputs.basals = basalprofile_data;
+    inputs.isf = isf_data;
+    inputs.carbratio = carbratio_data;
+    inputs.temptargets = temptargets_data;
+    inputs.model = model_data;
 
     var profile = generate(inputs);
 
