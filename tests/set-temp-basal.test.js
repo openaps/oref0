@@ -80,11 +80,19 @@ describe('tempBasalFunctions.setTempBasal', function ( ) {
     });
 
     it('should allow small basal change when current temp is also small', function () {
-	var rt = {}
+        var rt = {}
         var profile = { "current_basal":0.075,"max_daily_basal":1.3,"max_basal":10.0, "current_basal_safety_multiplier": 5, "model": "523"};
-	var currentTemp = { "rate": 0.025, "duration": 24};
-        var requestedTemp = tempBasalFunctions.setTempBasal(0.05, 30, profile, rt, currentTemp);
-        requestedTemp.rate.should.equal(0.05);
+        var currentTemp = { "rate": 0.025, "duration": 24};
+        var requestedTemp = tempBasalFunctions.setTempBasal(0, 30, profile, rt, currentTemp);
+        requestedTemp.rate.should.equal(0);
         requestedTemp.duration.should.equal(30);
+    });
+
+    it('should not allow small basal change when current temp is large', function () {
+        var rt = {}
+        var profile = { "current_basal":10.075,"max_daily_basal":11.3,"max_basal":50.0, "current_basal_safety_multiplier": 5, "model": "523"};
+        var currentTemp = { "rate": 10.1, "duration": 24};
+        var requestedTemp = tempBasalFunctions.setTempBasal(10.125, 30, profile, rt, currentTemp);
+        requestedTemp.reason.should.equal("undefined, but 24m left and 10.1 ~ req 10.1U/hr: no action required");
     });
 });
