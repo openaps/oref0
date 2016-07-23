@@ -51,6 +51,14 @@ if (!module.parent) {
       })
       .strict(true)
       .help('help')
+      .option('exportDefaults', {
+        describe: "Show default preference values",
+        default: false
+      })
+      .option('updatePreferences', {
+        describe: "Check for any keys missing from current prefs and add from defaults",
+        default: false
+      })
 
     var params = argv.argv;
     var pumpsettings_input = params._.slice(0, 1).pop()
@@ -58,6 +66,18 @@ if (!module.parent) {
       usage( );
       process.exit(0);
     }
+    if (params.exportDefaults) {
+        exportDefaults();
+        process.exit(0);
+    }
+    if (params.updatePreferences) {
+        var preferences = {};
+        var cwd = process.cwd()
+        preferences = require(cwd + '/' + params.updatePreferences);
+        updatePreferences(preferences);
+        process.exit(0);
+    }
+
     var bgtargets_input = params._.slice(1, 2).pop()
     var isf_input = params._.slice(2, 3).pop()
     var basalprofile_input = params._.slice(3, 4).pop()
@@ -170,4 +190,5 @@ if (!module.parent) {
     var profile = generate(inputs);
 
     console.log(JSON.stringify(profile));
+
 }
