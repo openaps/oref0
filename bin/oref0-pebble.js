@@ -50,19 +50,28 @@ function fileHM(file) {
     return HMS[0].concat(":", HMS[1]);
 }
 
+function usage ( ) {
+        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json> [meal.json]');
+}
+
 if (!module.parent) {
     
     var fs = require('fs');
 
     var glucose_input = process.argv.slice(2, 3).pop()
+    if ([null, '--help', '-h', 'help'].indexOf(glucose_input) > 0) {
+      usage( );
+      process.exit(0)
+    }
     var iob_input = process.argv.slice(3, 4).pop()
     var basalprofile_input = process.argv.slice(4, 5).pop()
     var currenttemp_input = process.argv.slice(5, 6).pop()
     var requestedtemp_input = process.argv.slice(6, 7).pop()
     var enactedtemp_input = process.argv.slice(7, 8).pop()
+    var meal_input = process.argv.slice(8, 9).pop()
     
     if (!glucose_input || !iob_input || !basalprofile_input || !currenttemp_input || !requestedtemp_input || !enactedtemp_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json>');
+        usage( );
         process.exit(1);
     }
     
@@ -78,7 +87,7 @@ if (!module.parent) {
 
     var bgnow = glucose_data[0].glucose;
     var iob_data = require(cwd + '/' + iob_input);
-    iob = iob_data.iob.toFixed(1);
+    iob = iob_data[0].iob.toFixed(1);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
     var basalRate;
     basalLookup();
@@ -91,7 +100,11 @@ if (!module.parent) {
     } else {
         tempstring = "Tmp: " + temp.duration + "m@" + temp.rate.toFixed(1);
     }
-    var requestedtemp = require(cwd + '/' + requestedtemp_input);
+    try {
+        var requestedtemp = require(cwd + '/' + requestedtemp_input);
+    } catch (e) {
+        return console.error("Could not parse requestedtemp: ", e);
+    }
     var reqtempstring;
     if (typeof requestedtemp.duration === 'undefined') {
         reqtempstring = "None";
@@ -112,17 +125,34 @@ if (!module.parent) {
     enactedHMS = enactedDate.toLocaleTimeString().split(":")
     enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
 
+    var mealCOB = "???";
+    if (typeof meal_input != 'undefined') {
+        try {
+            meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
+            //console.error(JSON.stringify(meal_data));
+            if (typeof meal_data.mealCOB != 'undefined') {
+                mealCOB = meal_data.mealCOB;
+            }
+        } catch (e) {
+            //console.error("Optional feature Meal Assist not configured.");
+        }
+    }
+
+    var os = require("os");
+    var host = os.hostname();
 
     var pebble = {        
         "content" : "" + bgnow + requestedtemp.tick + " " + bgTime + "\n"
         + iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + "\n"
-        + "Act: " + enactedstring 
-        + " at " + enactedat + "\n"
+        //+ "Act: " + enactedstring
+        //+ " at " + enactedat + "\n"
         + tempstring
         + " at " + temp_time + "\n"
         + "Req: " + reqtempstring + "\n"
         + requestedtemp.reason + "\n"
-        + "Sched: " + basalRate + "U/hr\n",
+        + "Sched: " + basalRate + "U/hr\n"
+        + "mealCOB: " + mealCOB + "g\n"
+        + host + "\n",
         "refresh_frequency": 1
     };
 

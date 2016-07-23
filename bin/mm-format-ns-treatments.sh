@@ -7,6 +7,20 @@ MODEL=${2-model.json}
 OUTPUT=${3-/dev/fd/1}
 #TZ=${3-$(date +%z)}
 self=$(basename $0)
+function usage ( ) {
+
+cat <<EOT
+$self <pump-history-zoned.json> <model.json>
+$self - Format medtronic history data into Nightscout treatments data.
+EOT
+}
+
+case "$1" in
+  --help|-h|help)
+    usage
+    exit 0
+esac
+
 
 # | json -e "this.type = 'mm://openaps/$self'" \
 model=$(json -f $MODEL)

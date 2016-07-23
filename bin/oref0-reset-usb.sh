@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Power-cycle the Raspberry Pi USB bus to reset attached USB devices
 #
@@ -13,6 +13,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+self=$(basename $0)
+function usage ( ) {
+
+cat <<EOF
+$self
+$self - Drop USB stack, rebind the usb kernel modules.
+EOF
+}
+
+case "$1" in
+  --help|help|-h)
+    usage
+    exit 0
+    ;;
+esac
+
 # Raspberry Pi 1 running Raspbian Wheezy
 FILE=/sys/devices/platform/bcm2708_usb/buspower
 if [ ! -e $FILE ]; then
@@ -24,7 +40,7 @@ if [ ! -e $FILE ]; then
     FILE=/sys/devices/platform/soc/20980000.usb/buspower
 fi
 if [ -e $FILE ]; then
-    echo "Power-cycling USB to fix dead Carelink stick"
+    echo "Power-cycling USB to fix dead stick"
     sleep 0.1
     echo 0 > $FILE
     sleep 1
