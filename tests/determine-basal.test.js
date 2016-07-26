@@ -165,7 +165,7 @@ describe('determine-basal', function ( ) {
         //output.duration.should.equal(0);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
-        output.reason.should.match(/BG 75<80, avg delta .*/);
+        output.reason.should.match(/BG 75<80, min delta .*/);
     });
 
     it('should cancel low-temp when eventualBG is higher then max_bg', function () {
@@ -176,7 +176,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
-        output.reason.should.match(/BG 75<80, avg delta .*/);
+        output.reason.should.match(/BG 75<80, min delta .*/);
     });
 
     it('should high-temp when > 80-ish and rising w/ lots of negative IOB', function () {
@@ -375,7 +375,7 @@ describe('determine-basal', function ( ) {
         //output.reason.should.match(/.*; cancel/);
         //output.rate.should.equal(0);
         //output.duration.should.equal(0);
-        output.reason.should.match(/Eventual BG.*>.*but Avg. Delta.*< Exp.*/);
+        output.reason.should.match(/Eventual BG.*>.*but Min. Delta.*< Exp.*/);
     });
 
     it('should cancel high-temp when high and delta falling faster than BGI', function () {
