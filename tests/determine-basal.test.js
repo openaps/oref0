@@ -165,7 +165,7 @@ describe('determine-basal', function ( ) {
         //output.duration.should.equal(0);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
-        output.reason.should.match(/BG 75<80, avg delta .*/);
+        output.reason.should.match(/BG 75<80, min delta .*/);
     });
 
     it('should cancel low-temp when eventualBG is higher then max_bg', function () {
@@ -176,7 +176,7 @@ describe('determine-basal', function ( ) {
         //console.log(output);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
-        output.reason.should.match(/BG 75<80, avg delta .*/);
+        output.reason.should.match(/BG 75<80, min delta .*/);
     });
 
     it('should high-temp when > 80-ish and rising w/ lots of negative IOB', function () {
@@ -375,7 +375,7 @@ describe('determine-basal', function ( ) {
         //output.reason.should.match(/.*; cancel/);
         //output.rate.should.equal(0);
         //output.duration.should.equal(0);
-        output.reason.should.match(/Eventual BG.*>.*but Avg. Delta.*< Exp.*/);
+        output.reason.should.match(/Eventual BG.*>.*but Min. Delta.*< Exp.*/);
     });
 
     it('should cancel high-temp when high and delta falling faster than BGI', function () {
@@ -688,6 +688,17 @@ describe('determine-basal', function ( ) {
         output.rate.should.equal(5);
         output.reason.should.match(/.*, adj. req. rate:.* to maxSafeBasal:.*, no temp, setting/);
     });
+
+    it('should round appropriately for small basals when setting basal to maxSafeBasal ', function () {
+        var glucose_status = {"delta":5,"glucose":185,"avgdelta":5};
+	var profile2 = {"max_iob":2.5,"dia":3,"type":"current","current_basal":0.025,"max_daily_basal":1.3,"max_basal":.05,"max_bg":120,"min_bg":110,"sens":200,"target_bg":110,"model":"523"};
+	var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile2, undefined, meal_data, tempBasalFunctions);
+        output.rate.should.equal(0.05);
+	output.duration.should.equal(30);
+        output.reason.should.match(/.*, adj. req. rate:.* to maxSafeBasal: 0.05, no temp, setting 0.05/);
+    });
+    
     it('should match the basal rate precision available on a 523', function () {
         //var currenttemp = {"duration":30,"rate":0,"temp":"absolute"};
         var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
