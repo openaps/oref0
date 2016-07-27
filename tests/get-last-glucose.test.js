@@ -27,7 +27,7 @@ describe('getLastGlucose', function ( ) {
       //console.log(glucose_status);
       glucose_status.delta.should.equal(3);
       glucose_status.glucose.should.equal(97);
-      glucose_status.short_avgdelta.should.equal(4.444);
-      glucose_status.long_avgdelta.should.equal(2.865);
+      glucose_status.short_avgdelta.should.equal(4.44);
+      glucose_status.long_avgdelta.should.equal(2.86);
     });
 });
