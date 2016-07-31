@@ -78,12 +78,12 @@ Format potential entries (glucose values) for Nightscout.
 
     openaps use ns shell format-recent-type tz entries monitor/glucose.json  | json -a dateString | wc -l
     # Add it as a report
-    openaps report add nightscout/recent-missing-entries.json JSON ns shell format-recent-type tz entries monitor/glucose.json  
+    openaps report add nightscout/recent-missing-entries.json JSON ns shell format-recent-type tz entries monitor/glucose.json
     # fetch data for first time
     openaps report invoke nightscout/recent-missing-entries.json
 
     # add report for uploading to NS
-    openaps report add nightscout/uploaded-entries.json JSON  ns shell upload entries.json nightscout/recent-missing-entries.json 
+    openaps report add nightscout/uploaded-entries.json JSON  ns shell upload entries.json nightscout/recent-missing-entries.json
     # upload for fist time.
     openaps report invoke nightscout/uploaded-entries.json
 EOF
@@ -230,11 +230,11 @@ ns)
     upload-non-empty-type)
       TYPE=${1-entries.json}
       FILE=$2
-      test $(cat $FILE | json -a | wc -l) -lt 1 && echo "Nothing to upload." > /dev/stderr && cat $FILE && exit 0
+      test $(cat $FILE | json -a | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $FILE && exit 0
       exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $TYPE $FILE
     ;;
     upload-non-empty-treatments)
-      test $(cat $1 | json -a | wc -l) -lt 1 && echo "Nothing to upload." > /dev/stderr && cat $1 && exit 0
+      test $(cat $1 | json -a | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $1 && exit 0
     exec ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json $1
 
     ;;
