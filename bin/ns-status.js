@@ -106,6 +106,7 @@ if (!module.parent) {
         if (iobArray && iobArray.length && iobArray.length > 0) {
             iob = iobArray[0];
             iob.timestamp = iob.time;
+            delete iob.time;
         }
 
         // we only need the most current predBGs
