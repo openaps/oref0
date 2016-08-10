@@ -20,7 +20,7 @@
 
 var generate = require('oref0/lib/iob');
 function usage ( ) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json>');
+    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <clock.json>');
 
 }
 
@@ -30,24 +30,21 @@ if (!module.parent) {
     usage( );
     process.exit(0)
   }
-  var profile_input = process.argv.slice(3, 4).pop();
-  var clock_input = process.argv.slice(4, 5).pop();
+  var clock_input = process.argv.slice(3, 4).pop();
 
-  if (!pumphistory_input || !profile_input) {
+  if (!pumphistory_input) {
     usage( );
     process.exit(1);
   }
 
   var cwd = process.cwd();
   var all_data = require(cwd + '/' + pumphistory_input);
-  var profile_data = require(cwd + '/' + profile_input);
   var clock_data = require(cwd + '/' + clock_input);
 
   // all_data.sort(function (a, b) { return a.date > b.date });
 
   var inputs = {
     history: all_data
-  , profile: profile_data
   , clock: clock_data
   };
 
