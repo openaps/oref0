@@ -3,7 +3,8 @@
   "version": "0.2.0",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
-    "test": "make test"
+    "test": "make test",
+    "global-install": "npm install && sudo npm install -g && sudo npm link && sudo npm link oref0"
   },
   "repository": {
     "type": "git",
