@@ -38,7 +38,29 @@ describe('IOB', function ( ) {
 
     afterDIA.iob.should.equal(0);
     afterDIA.bolussnooze.should.equal(0);
+  });
 
+  it('should snooze fast if bolussnooze_dia_divisor is high', function() {
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , inputs = {
+        clock: timestamp
+        , history: [{
+        _type: 'Bolus'
+        , amount: 1
+        , timestamp: timestamp
+        }]
+        , profile: {
+          dia: 3
+          , bolussnooze_dia_divisor: 10
+        }
+      };
+
+    var snoozeInputs = inputs;
+    snoozeInputs.clock = new Date(now + (20 * 60 * 1000)).toISOString();
+    var snooze = require('../lib/iob')(snoozeInputs)[0];
+    snooze.bolussnooze.should.equal(0);
   });
 
   it('should calculate IOB with Temp Basals', function() {
