@@ -56,14 +56,14 @@ function uploaderStatus (status) {
 if (!module.parent) {
 
     var argv = require('yargs')
-	.usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json]")
-	.option('uploader', {
-	    alias: 'u',
-	    describe: "Uploader battery status",
-	    default: false
-	})
-	.strict(true)
-	.help('help')
+        .usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json]")
+        .option('uploader', {
+            alias: 'u',
+            describe: "Uploader battery status",
+            default: false
+        })
+        .strict(true)
+        .help('help');
 
     var params = argv.argv;
 
@@ -79,8 +79,8 @@ if (!module.parent) {
     var uploader_input = params.uploader;
 
     if (params._.length > 8) {
-	uploader_input = params.uploader ? params._.slice(7, 8).pop() : false;
-	mmtune_input = params._.slice(8, 9).pop();
+        uploader_input = params.uploader ? params._.slice(7, 8).pop() : false;
+        mmtune_input = params._.slice(8, 9).pop();
     }
 
     if (!clock_input || !iob_input || !suggested_input || !enacted_input || !battery_input || !reservoir_input || !status_input) {
@@ -98,12 +98,32 @@ if (!module.parent) {
     }
 
     try {
+        var iob = null
+          , iobArray = requireWithTimestamp(cwd + '/' + iob_input)
+          , suggested = requireWithTimestamp(cwd + '/' + suggested_input)
+          , enacted = requireWithTimestamp(cwd + '/' + enacted_input);
+
+        if (iobArray && iobArray.length && iobArray.length > 0) {
+            iob = iobArray[0];
+            iob.timestamp = iob.time;
+            delete iob.time;
+        }
+
+        // we only need the most current predBGs
+        if (enacted && suggested) {
+          if (enacted.timestamp > suggested.timestamp) {
+            delete suggested.predBGs;
+          } else {
+            delete enacted.predBGs;
+          }
+        }
+
         var status = {
             device: 'openaps://' + os.hostname()
             , openaps: {
-                iob: requireWithTimestamp(cwd + '/' + iob_input)
-                , suggested: requireWithTimestamp(cwd + '/' + suggested_input)
-                , enacted: requireWithTimestamp(cwd + '/' + enacted_input)
+                iob: iob
+                , suggested: suggested
+                , enacted: enacted
             }
             , pump: {
                 clock: safeRequire(cwd + '/' + clock_input)
@@ -114,7 +134,7 @@ if (!module.parent) {
         };
 
         mmtuneStatus(status);
-	uploaderStatus(status);
+        uploaderStatus(status);
     } catch (e) {
         return console.error("Could not parse input data: ", e);
     }

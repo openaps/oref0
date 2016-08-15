@@ -17,6 +17,7 @@ describe('IOB', function ( ) {
         }]
         , profile: {
           dia: 3
+          , bolussnooze_dia_divisor: 2
         }
       };
 
@@ -37,7 +38,29 @@ describe('IOB', function ( ) {
 
     afterDIA.iob.should.equal(0);
     afterDIA.bolussnooze.should.equal(0);
+  });
 
+  it('should snooze fast if bolussnooze_dia_divisor is high', function() {
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , inputs = {
+        clock: timestamp
+        , history: [{
+        _type: 'Bolus'
+        , amount: 1
+        , timestamp: timestamp
+        }]
+        , profile: {
+          dia: 3
+          , bolussnooze_dia_divisor: 10
+        }
+      };
+
+    var snoozeInputs = inputs;
+    snoozeInputs.clock = new Date(now + (20 * 60 * 1000)).toISOString();
+    var snooze = require('../lib/iob')(snoozeInputs)[0];
+    snooze.bolussnooze.should.equal(0);
   });
 
   it('should calculate IOB with Temp Basals', function() {
@@ -47,10 +70,10 @@ describe('IOB', function ( ) {
       , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
       , inputs = {clock: timestamp,
         history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
-        ,{_type: 'TempBasal', rate: 2, date: timestampEarly, timestamp: timestampEarly}
-        ,{_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
-		,{_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
-		, profile: { dia: 3, current_basal: 1}
+        , {_type: 'TempBasal', rate: 2, date: timestampEarly, timestamp: timestampEarly}
+        , {_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
+        , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
+        , profile: { dia: 3, current_basal: 1, bolussnooze_dia_divisor: 2}
       };
 
     var hourLaterInputs = inputs;
@@ -91,10 +114,10 @@ describe('IOB', function ( ) {
       , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
       , inputs = {clock: timestamp,
         history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
-        ,{_type: 'TempBasal', rate: 1, date: timestampEarly, timestamp: timestampEarly}
-        ,{_type: 'TempBasal', rate: 1, date: timestamp, timestamp: timestamp}
-		,{_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
-		, profile: { dia: 3, current_basal: 2}
+        , {_type: 'TempBasal', rate: 1, date: timestampEarly, timestamp: timestampEarly}
+        , {_type: 'TempBasal', rate: 1, date: timestamp, timestamp: timestamp}
+        , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
+        , profile: { dia: 3, current_basal: 2, bolussnooze_dia_divisor: 2}
       };
 
     var hourLaterInputs = inputs;
@@ -114,7 +137,7 @@ describe('IOB', function ( ) {
       , inputs = {
         clock: timestamp
         , history: [{_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}]
-        , profile: {dia: 3,current_basal: 1}
+        , profile: {dia: 3, current_basal: 1, bolussnooze_dia_divisor: 2}
       };
 
     var hourLaterInputs = inputs;
@@ -132,8 +155,8 @@ describe('IOB', function ( ) {
       , inputs = {
         clock: timestamp
         , history: [{_type: 'TempBasal', temp: 'percent', rate: 2, date: timestamp, timestamp: timestamp},
-	        {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
-        , profile: {dia: 3,current_basal: 1}
+            {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
+        , profile: {dia: 3,current_basal: 1, bolussnooze_dia_divisor: 2}
       };
 
 
@@ -158,6 +181,7 @@ describe('IOB', function ( ) {
         }]
         , profile: {
           dia: 4
+          , bolussnooze_dia_divisor: 2
         }
       };
 
