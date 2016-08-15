@@ -34,8 +34,8 @@
       "no_raw": "False",
       "reporter": "JSON",
       "seconds": "",
-      "minutes": "30.0",
-      "hours": "",
+      "minutes": "",
+      "hours": "25",
       "device": "cgm",
       "gaps": "",
       "microseconds": "",
@@ -566,7 +566,7 @@
   },
   {
     "get-bg": {
-      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1; grep -q glucose cgm/cgm-glucose.json && jq -s \\\".[0] + .[1]|unique|sort_by(.dateString)|reverse\\\" cgm/cgm-glucose.json cgm/cgm-glucose-long.json > cgm/cgm-glucose-long.json.new && mv cgm/cgm-glucose-long.json.new cgm/cgm-glucose-long.json; rsync -rtu cgm/glucose-long.json monitor/glucose.json\""
+      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose.json && rsync -rtu cgm/cgm-glucose.json cgm/glucose.json; rsync -rtu cgm/glucose.json monitor/glucose.json\""
     },
     "type": "alias",
     "name": "get-bg"
