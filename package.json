@@ -57,7 +57,10 @@
     "yargs": "~4.3.2"
   },
   "devDependencies": {
+    "coveralls": "^2.11.12",
+    "istanbul": "^0.4.4",
     "mocha": "^2.3.3",
+    "mocha-lcov-reporter": "^1.2.0",
     "should": "^7.1.0"
   },
   "config": {
