@@ -11,7 +11,7 @@ test:
 	./node_modules/.bin/mocha ${TESTS}
 
 travis:
-	${ISTANBUL} cover ${MOCHA} --report lcovonly -- -R tap ${TESTS}
+	${ISTANBUL} cover ${MOCHA} --include-all-sources true --report lcovonly -- -R tap ${TESTS}
 
 report:
 	test -f ${ANALYZED} && \
