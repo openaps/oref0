@@ -74,6 +74,7 @@ describe('IOB', function ( ) {
         , {_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
         , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
         , profile: { dia: 3, current_basal: 1, bolussnooze_dia_divisor: 2}
+        , basalprofile: [{"i": 0, "start": "00:00:00", "rate": 1, "minutes": 0}] 
       };
 
     var hourLaterInputs = inputs;
@@ -82,8 +83,53 @@ describe('IOB', function ( ) {
     
     hourLater.iob.should.be.lessThan(1);
     hourLater.iob.should.be.greaterThan(0);
-    
   });
+
+  it('should calculate IOB with Temp Basals and a basal profile', function() {
+
+	var nowDate = new Date();
+    var now = Date.now();
+    var timestamp = new Date(now).toISOString()
+      , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
+      , inputs = {clock: timestamp,
+        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
+        , {_type: 'TempBasal', rate: 2, date: timestampEarly, timestamp: timestampEarly}
+        , {_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
+        , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
+        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2}
+        , basalprofile: [{"i": 0, "start": "00:00:00", "rate": 2, "minutes": 0},
+        	{"i": 1, "start": nowDate.getHours() + ":" + nowDate.getMinutes() + ":00", "rate": 1, "minutes": nowDate.getHours() * 60 + nowDate.getMinutes() }]
+      };
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (30 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    hourLater.iob.should.be.lessThan(0.5);
+    hourLater.iob.should.be.greaterThan(0);
+  });
+
+  it('should note report negative IOB with Temp Basals and a basal profile with drastic changes', function() {
+
+    var now = Date.now();
+	var nowDate = new Date();
+    var timestamp = new Date(now).toISOString()
+      , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
+      , inputs = {clock: timestamp,
+        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
+        , {_type: 'TempBasal', rate: 0.1, date: timestampEarly, timestamp: timestampEarly}
+        , {_type: 'TempBasal', rate: 1, date: timestamp, timestamp: timestamp}
+        , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
+        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2}
+        , basalprofile: [{"i": 0, "start": "00:00:00", "rate": 0.1, "minutes": 0},
+        	{"i": 1, "start": nowDate.getHours() + ":" + nowDate.getMinutes() + ":00", "rate": 1, "minutes": nowDate.getHours() * 60 + nowDate.getMinutes() }]
+      };
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    hourLater.iob.should.equal(0);
+  });
+
 
   it('should calculate IOB with Temp Basal events that overlap', function() {
 
