@@ -49,7 +49,6 @@ if (!module.parent) {
     history: all_data
   , profile: profile_data
   , clock: clock_data
-  , basalprofile: basalprofile
   };
 
   var iob = generate(inputs);
