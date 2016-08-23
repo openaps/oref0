@@ -20,7 +20,7 @@
 
 var generate = require('oref0/lib/iob');
 function usage ( ) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> <basal-profile.json>');
+    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json>');
 
 }
 
@@ -32,7 +32,6 @@ if (!module.parent) {
   }
   var profile_input = process.argv.slice(3, 4).pop();
   var clock_input = process.argv.slice(4, 5).pop();
-  var basalprofile = process.argv.slice(5, 6).pop();
 
   if (!pumphistory_input || !profile_input) {
     usage( );
