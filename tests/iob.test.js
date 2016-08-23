@@ -89,6 +89,10 @@ describe('IOB', function ( ) {
 
 	var nowDate = new Date();
     var now = Date.now();
+
+    var basalprofile = [{"i": 0, "start": "00:00:00", "rate": 2, "minutes": 0},
+        {"i": 1, "start": nowDate.getHours() + ":" + nowDate.getMinutes() + ":00", "rate": 1, "minutes": nowDate.getHours() * 60 + nowDate.getMinutes() }];
+
     var timestamp = new Date(now).toISOString()
       , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
       , inputs = {clock: timestamp,
@@ -96,9 +100,7 @@ describe('IOB', function ( ) {
         , {_type: 'TempBasal', rate: 2, date: timestampEarly, timestamp: timestampEarly}
         , {_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
         , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
-        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2}
-        , basalprofile: [{"i": 0, "start": "00:00:00", "rate": 2, "minutes": 0},
-        	{"i": 1, "start": nowDate.getHours() + ":" + nowDate.getMinutes() + ":00", "rate": 1, "minutes": nowDate.getHours() * 60 + nowDate.getMinutes() }]
+        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2, "basalprofile": basalprofile}
       };
 
     var hourLaterInputs = inputs;
@@ -112,6 +114,9 @@ describe('IOB', function ( ) {
 
     var now = Date.now();
 	var nowDate = new Date();
+	var basalprofile = [{"i": 0, "start": "00:00:00", "rate": 0.1, "minutes": 0},
+		{"i": 1, "start": nowDate.getHours() + ":" + nowDate.getMinutes() + ":00", "rate": 1, "minutes": nowDate.getHours() * 60 + nowDate.getMinutes() }];
+
     var timestamp = new Date(now).toISOString()
       , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
       , inputs = {clock: timestamp,
@@ -119,9 +124,7 @@ describe('IOB', function ( ) {
         , {_type: 'TempBasal', rate: 0.1, date: timestampEarly, timestamp: timestampEarly}
         , {_type: 'TempBasal', rate: 1, date: timestamp, timestamp: timestamp}
         , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
-        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2}
-        , basalprofile: [{"i": 0, "start": "00:00:00", "rate": 0.1, "minutes": 0},
-        	{"i": 1, "start": nowDate.getHours() + ":" + nowDate.getMinutes() + ":00", "rate": 1, "minutes": nowDate.getHours() * 60 + nowDate.getMinutes() }]
+        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2, "basalprofile": basalprofile}
       };
 
     var hourLaterInputs = inputs;
