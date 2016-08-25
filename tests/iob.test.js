@@ -100,7 +100,7 @@ describe('IOB', function ( ) {
         , {_type: 'TempBasal', rate: 2, date: timestampEarly, timestamp: timestampEarly}
         , {_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
         , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
-        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2, 'basalprofile': basalprofile}
+        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2, basalprofile: basalprofile}
       };
 
     var hourLaterInputs = inputs;
