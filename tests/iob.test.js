@@ -122,7 +122,7 @@ describe('IOB', function ( ) {
         {'i': 1, 'start': '00:15:00', 'rate': 1, 'minutes': 15 },
         {'i': 1, 'start': '00:45:00', 'rate': 0.5, 'minutes': 45 }];
 
-	var startingPoint = moment("2016-06-13 00:15:00.000");
+	var startingPoint = moment('2016-06-13 00:15:00.000');
     var timestamp = startingPoint.format();
     var timestampEarly = startingPoint.subtract(30,'minutes').format()
       , inputs = {clock: timestamp,
@@ -134,7 +134,7 @@ describe('IOB', function ( ) {
       };
 	
     var hourLaterInputs = inputs;
-    hourLaterInputs.clock = moment("2016-06-13 00:45:00.000"); //new Date(now + (30 * 60 * 1000)).toISOString();
+    hourLaterInputs.clock = moment('2016-06-13 00:45:00.000'); //new Date(now + (30 * 60 * 1000)).toISOString();
     var hourLater = require('../lib/iob')(hourLaterInputs)[0];
     
     hourLater.iob.should.be.lessThan(0.8);
@@ -151,7 +151,7 @@ describe('IOB', function ( ) {
         {'i': 1, 'start': '00:30:00', 'rate': 2, 'minutes': 30 },
         {'i': 1, 'start': '00:45:00', 'rate': 0, 'minutes': 45 }];
 
-	var startingPoint = moment("2016-06-13 23:45:00.000");
+	var startingPoint = moment('2016-06-13 23:45:00.000');
     var timestamp = startingPoint.format();
     var timestampEarly = startingPoint.subtract(30,'minutes').format()
       , inputs = {clock: timestamp,
@@ -161,7 +161,7 @@ describe('IOB', function ( ) {
       };
 
     var hourLaterInputs = inputs;
-    hourLaterInputs.clock = moment("2016-06-14 00:45:00.000"); //new Date(now + (30 * 60 * 1000)).toISOString();
+    hourLaterInputs.clock = moment('2016-06-14 00:45:00.000'); //new Date(now + (30 * 60 * 1000)).toISOString();
     var hourLater = require('../lib/iob')(hourLaterInputs)[0];
     
     hourLater.iob.should.be.lessThan(1);
