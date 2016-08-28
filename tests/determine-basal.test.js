@@ -84,16 +84,25 @@ describe('determine-basal', function ( ) {
     var profile = {"max_iob":2.5,"dia":3,"type":"current","current_basal":0.9,"max_daily_basal":1.3,"max_basal":3.5,"max_bg":120,"min_bg":110,"sens":40,"target_bg":110,"carb_ratio":10};
     var meal_data = {};
 
-    it('should cancel any temp when in range w/o IOB', function () {
-        var currenttemp = {"duration":30,"rate":0,"temp":"absolute"};
+    it('should cancel high temp when in range w/o IOB', function () {
+        var currenttemp = {"duration":30,"rate":1.5,"temp":"absolute"};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         //output.rate.should.equal(0);
         //output.duration.should.equal(0);
+        //console.error(output);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
         output.reason.should.match(/in range.*/);
     });
 
+    it('should let low temp run in range w/o IOB', function () {
+        var currenttemp = {"duration":30,"rate":0,"temp":"absolute"};
+        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
+        //console.error(output);
+        (typeof output.rate).should.equal('undefined');
+        (typeof output.duration).should.equal('undefined');
+        output.reason.should.match(/.*letting low.*/);
+    });
 
     // low glucose suspend test cases
     it('should temp to 0 when low w/o IOB', function () {
