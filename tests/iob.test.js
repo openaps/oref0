@@ -141,6 +141,39 @@ describe('IOB', function ( ) {
     hourLater.iob.should.be.greaterThan(0.7);
   });
 
+  it('should calculate IOB with Temp Basals that overlap each other', function() {
+
+	var nowDate = new Date();
+    var now = Date.now();
+
+    var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 1, 'minutes': 0}];
+
+	var startingPoint = moment('2016-06-13 00:30:00.000');
+	var timestampEarly = moment('2016-06-13 00:30:00.000').subtract(30,'minutes');
+	var timestampEarly2 = moment('2016-06-13 00:30:00.000').subtract(29,'minutes');
+	var timestampEarly3 = moment('2016-06-13 00:30:00.000').subtract(28,'minutes');
+	
+    var timestamp = startingPoint;
+    var inputs = {clock: timestamp,
+        history: [
+        {_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly.unix()}
+        , {_type: 'TempBasal', rate: 2, date: timestampEarly.unix(), timestamp: timestampEarly.format()}
+        , {_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly2.unix()}
+        , {_type: 'TempBasal', rate: 2, date: timestampEarly2.unix(), timestamp: timestampEarly2.format()}
+        , {_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly3.unix()}
+        , {_type: 'TempBasal', rate: 2, date: timestampEarly3.unix(), timestamp: timestampEarly3.format()}
+        , {_type: 'TempBasal', rate: 2, date: timestamp.unix(), timestamp: timestamp.format()}
+        , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp.unix()}]
+        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2, basalprofile: basalprofile}
+      };
+	
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = moment('2016-06-13 00:30:00.000'); //new Date(now + (30 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    
+    hourLater.iob.should.be.lessThan(0.5);
+    hourLater.iob.should.be.greaterThan(0.45);
+  });
   it('should calculate IOB with Temp Basals that overlap midnight and a basal profile, part deux', function() {
 
 	var nowDate = new Date();
