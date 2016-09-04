@@ -12,25 +12,25 @@ describe('Basal', function ( ) {
 
  it('should find the right max daily basal', function() {
 
-	var inputs = {'basals': basalprofile};
-	var basal = require('../lib/profile/basal');
-	var maxBasal = basal.maxDailyBasal(inputs);
-	maxBasal.should.equal(2);
-	
+    var inputs = {'basals': basalprofile};
+    var basal = require('../lib/profile/basal');
+    var maxBasal = basal.maxDailyBasal(inputs);
+    maxBasal.should.equal(2);
+
   });
 
 
  it('should find the right basal for a given moment', function() {
 
-	var inputs = {'basals': basalprofile};
-	var startingPoint = new Date(moment('2016-06-13 00:20:00.000').format());
-	var startingPoint2 = new Date(moment('2016-06-13 01:00:00.000').format());
-	var basal = require('../lib/profile/basal');
-	var b = basal.basalLookup(basalprofile,startingPoint);	
-	b.should.equal(2);
-	b = basal.basalLookup(basalprofile,startingPoint2);	
-	b.should.equal(0.5);
-	
+    var inputs = {'basals': basalprofile};
+    var startingPoint = new Date(moment('2016-06-13 00:20:00.000').format());
+    var startingPoint2 = new Date(moment('2016-06-13 01:00:00.000').format());
+    var basal = require('../lib/profile/basal');
+    var b = basal.basalLookup(basalprofile,startingPoint);
+    b.should.equal(2);
+    b = basal.basalLookup(basalprofile,startingPoint2);
+    b.should.equal(0.5);
+
   });
 
 });
