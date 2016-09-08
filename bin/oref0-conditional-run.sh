@@ -3,6 +3,7 @@
 export GENERATE=false
 export FILE=$1
 export FILE2=$2
+export COMMAND=$3
 
 if test ! -n "$FILE"; then
   echo "Usage: oref0-crun <target report> <age-check report>"
@@ -27,7 +28,11 @@ if test -n "$FILE2"; then
 fi
 
 if [ "$GENERATE" = true ]; then
-  openaps invoke $FILE
+  if test ! -n "$COMMAND"; then
+    openaps $COMMAND
+  else
+    openaps invoke $FILE
+  fi
 else
   echo "$FILE exists and is new, skipping invoke"
 fi
