@@ -28,7 +28,7 @@ if test -n "$FILE2"; then
 fi
 
 if [ "$GENERATE" = true ]; then
-  if test ! -n "$COMMAND"; then
+  if test -n "$COMMAND"; then
     openaps $COMMAND
   else
     openaps report invoke $FILE
