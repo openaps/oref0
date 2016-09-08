@@ -31,7 +31,7 @@ if [ "$GENERATE" = true ]; then
   if test ! -n "$COMMAND"; then
     openaps $COMMAND
   else
-    openaps invoke $FILE
+    openaps report invoke $FILE
   fi
 else
   echo "$FILE exists and is new, skipping invoke"
