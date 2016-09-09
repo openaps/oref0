@@ -54,6 +54,7 @@
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
     "lodash": "^4.15.0",
+    "moment": "^2.14.1",
     "share2nightscout-bridge": "^0.1.5",
     "timezone": "0.0.47",
     "yargs": "~4.3.2"
