@@ -49,7 +49,8 @@
     "oref0-html": "./bin/oref0-html.js",
     "oref0-template": "./bin/oref0-template.js",
     "oref0-copy-fresher": "./bin/oref0-copy-fresher",
-    "oref0-pebble": "./bin/oref0-pebble.js"
+    "oref0-pebble": "./bin/oref0-pebble.js",
+    "oref0-crun": "./bin/oref0-conditional-run.sh"
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
