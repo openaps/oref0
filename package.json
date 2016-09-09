@@ -19,6 +19,7 @@
     "url": "https://github.com/openaps/oref0/issues"
   },
   "bin": {
+    "clockset": "./bin/clockset.sh",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-find-insulin-uses": "./bin/oref0-find-insulin-uses.js",
     "oref0-detect-sensitivity": "./bin/oref0-detect-sensitivity.js",
@@ -53,6 +54,7 @@
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
     "lodash": "^4.15.0",
+    "moment": "^2.14.1",
     "share2nightscout-bridge": "^0.1.5",
     "timezone": "0.0.47",
     "yargs": "~4.3.2"

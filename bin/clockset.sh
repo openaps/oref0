@@ -45,6 +45,7 @@ esac
 checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v ) }
 
 if checkNTP; then
+    sudo ntpdate -s -b time.nist.gov
     echo Setting pump and CGM time to `date`
     openaps use $PUMP set_clock --to now
     openaps use $CGM UpdateTime --to now
