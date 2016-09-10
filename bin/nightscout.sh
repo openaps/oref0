@@ -153,6 +153,10 @@ openaps use ns shell upload treatments.json recently/combined-treatments.json
   status                                         - ns-status
   get-status                                     - status - get NS status
   preflight                                      - NS preflight
+  temp_targets [expr]                            - Get temp target treatments from Nightscout
+                                                 expr is used with date -d, default is -24hours.
+  carb_history [expr]                            - Get treatments with carbs from Nightscout
+                                                 expr is used with date -d, default is -24hours.
 EOF
 extra_ns_help
 }
@@ -271,6 +275,14 @@ ns)
     exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json "find[date][\$gte]=$(date -d $expr +"%s%3N")&count=$count" \
       | json -e "this.glucose = this.sgv" \
       | openaps use $zone rezone --astimezone --date dateString -
+    ;;
+    temp_targets)
+    expr=${1--24hours}
+    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes)&find[eventType]=Temporary+Target"
+    ;;
+    carb_history)
+    expr=${1--24hours}
+    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes)&find[carbs][\$exists]=true"
     ;;
     *)
     echo "Unknown request:" $OP
