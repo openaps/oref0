@@ -124,6 +124,13 @@ openaps use ns shell upload treatments.json recently/combined-treatments.json
                                                  search query for Nightscout.
   oref0_glucose_without_zone [args]              Like oref0_glucose but without
                                                  rezoning.
+  oref0_glucose_since expr [tz]                  Get records matching oref0
+                                                 requirements filtered by a date calculated by expr
+                                                 from Nightscout.
+                                                 tz should be the name of the
+                                                 timezones device (default with
+                                                 no args is tz).
+                                                 expr is used with date -d, for example -6hours.
   upload endpoint file                           Upload a file to the Nightscout endpoint.
   latest-treatment-time                          - get latest treatment time from Nightscout
   format-recent-history-treatments history model - Formats medtronic pump
@@ -255,6 +262,13 @@ ns)
     params=${params-'count=10'}
     exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
       | json -e "this.glucose = this.sgv"
+    ;;
+    oref0_glucose_since)
+    expr=$1
+    zone=${2-'tz'}
+    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json "find[date][\$gte]=$(date -d $expr +"%s%3N")&count=5000" \
+      | json -e "this.glucose = this.sgv" \
+      | openaps use $zone rezone --astimezone --date dateString -
     ;;
     *)
     echo "Unknown request:" $OP
