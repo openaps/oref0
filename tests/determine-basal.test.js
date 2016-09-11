@@ -24,7 +24,7 @@ describe('round_basal', function ( ) {
         profile.model = "554";
         var output = round_basal(basal, profile);
         output.should.equal(0.025);
-        console.error(output);
+        //console.error(output);
     });
 
     it('should round correctly with an invalid pump model', function() {
@@ -210,7 +210,7 @@ describe('determine-basal', function ( ) {
         var iob_data = {"iob":0,"activity":-0.01,"bolussnooze":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         output.duration.should.equal(30);
-        output.reason.should.match(/.*m.* = .* > req .*/);
+        output.reason.should.match(/.*m.* = .* >.* req .*/);
     });
 
     it('should continue high-temp when required ~= temp running', function () {
@@ -440,12 +440,13 @@ describe('determine-basal', function ( ) {
     it('should reduce high-temp when high and falling almost fast enough with low insulin activity', function () {
         var glucose_status = {"delta":-8,"glucose":300,"long_avgdelta":-5,"short_avgdelta":-5};
         var iob_data = {"iob":0.5,"activity":0.005,"bolussnooze":0};
-        var currenttemp = {"duration":30,"rate":2.5,"temp":"absolute"};
+        var currenttemp = {"duration":30,"rate":3.5,"temp":"absolute"};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
+        //console.error(output);
         output.rate.should.be.above(1);
         output.rate.should.be.below(2);
         output.duration.should.equal(30);
-        output.reason.should.match(/> req/);
+        output.reason.should.match(/> 2.*req/);
     });
 
     it('should profile.current_basal be undefined return error', function () {
