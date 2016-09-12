@@ -20,8 +20,7 @@ die() {
 }
 
 if [[ $# -lt 2 ]]; then
-    #openaps device show pump 2>/dev/null >/dev/null || die "Usage: setup.sh <directory> <pump serial #> [max_iob] [Share serial #]
-    openaps device show pump 2>/dev/null >/dev/null || die "Usage: setup.sh <directory> <pump serial #> [/dev/ttySOMETHING] [max_iob]"
+    die "Usage: cd && src/oref0/bin/oref0-setup.sh <directory> <pump serial #> [/dev/ttySOMETHING] [max_iob]"
 fi
 directory=`mkdir -p $1; cd $1; pwd`
 serial=$2
