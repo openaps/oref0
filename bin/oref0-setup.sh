@@ -118,16 +118,23 @@ fi
 cat preferences.json
 git add preferences.json
 
-if [ -d "~/src/oref0/" ]; then
-    echo "~/src/oref0/ already exists; pulling latest dev branch"
+if [ -d "$HOME/src/oref0/" ]; then
+    echo "$HOME/src/oref0/ already exists; pulling latest dev branch"
     (cd ~/src/oref0 && git fetch && git checkout dev && git pull) || die "Couldn't pull latest oref0 dev"
 else
     echo -n "Cloning oref0 dev: "
     cd ~/src && git clone -b dev git://github.com/openaps/oref0.git || die "Couldn't clone oref0 dev"
 fi
+if [ -d "$HOME/src/mmeowlink/" ]; then
+    echo "$HOME/src/mmeowlink/ already exists; pulling latest master branch"
+    (cd ~/src/mmeowlink && git fetch && git checkout master && git pull) || die "Couldn't pull latest mmeowlink master"
+else
+    echo -n "Cloning mmeowlink master: "
+    cd ~/src && git clone -b master git://github.com/oskarpearson/mmeowlink.git || die "Couldn't clone mmeowlink master"
+fi
 
-sudo cp ~/src/oref0/logrotate.openaps /etc/logrotate.d/openaps
-sudo cp ~/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog
+sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps
+sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog
 
 test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps
 
@@ -137,7 +144,7 @@ test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var
 #openaps vendor add openxshareble
 
 # import template
-cat ~/src/oref0/lib/templates/refresh-loops.json | openaps import
+cat $HOME/src/oref0/lib/templates/refresh-loops.json | openaps import
 
 # don't re-create devices if they already exist
 openaps device show 2>/dev/null > /tmp/openaps-devices
@@ -153,8 +160,8 @@ if [[ $# -lt 3 ]]; then
     openaps alias add mmtune 'report invoke monitor/temp_basal.json'
 else
     grep pump /tmp/openaps-devices || openaps device add pump mmeowlink subg_rfspy $ttyport $serial || die "Can't add pump"
-    openaps alias add wait-for-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; ~/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
-    openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; ~/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
+    openaps alias add wait-for-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; $HOME/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
+    openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; $HOME/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
 fi
 
 
