@@ -51,7 +51,7 @@ case $i in
     CGM="${i#*=}"
     shift # past argument=value
     ;;
-    -h=*|--ns-host=*)
+    -n=*|--ns-host=*)
     NIGHTSCOUT_HOST="${i#*=}"
     shift # past argument=value
     ;;
@@ -101,7 +101,7 @@ fi
 #fi
 
 echo "Setting up oref0 in $directory"
-echo -n "for pump $serial with Dexcom $CGM, "
+echo -n "for pump $serial with Dexcom $CGM, NS host $NIGHTSCOUT_HOST, "
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
 else
