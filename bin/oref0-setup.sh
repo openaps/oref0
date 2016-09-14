@@ -19,38 +19,88 @@ die() {
   exit 1
 }
 
-if [[ $# -lt 2 ]]; then
-    die "Usage: cd && src/oref0/bin/oref0-setup.sh <directory> <pump serial #> [/dev/ttySOMETHING] [max_iob]"
+# defaults
+max_iob=0
+CGM="G4"
+DIR=""
+directory=""
+
+for i in "$@"
+do
+case $i in
+    -d=*|--dir=*)
+    DIR="${i#*=}"
+    # ~/ paths have to be expanded manually
+    DIR="${DIR/#\~/$HOME}"
+    directory="$(readlink -m $DIR)"
+    shift # past argument=value
+    ;;
+    -s=*|--serial=*)
+    serial="${i#*=}"
+    shift # past argument=value
+    ;;
+    -t=*|--tty=*)
+    ttyport="${i#*=}"
+    shift # past argument=value
+    ;;
+    -m=*|--max_iob=*)
+    max_iob="${i#*=}"
+    shift # past argument=value
+    ;;
+    -c=*|--cgm=*)
+    CGM="${i#*=}"
+    shift # past argument=value
+    ;;
+    #--g5)
+    #CGM="Dexcom_G5"
+    #shift # past argument with no value
+    #;;
+    *)
+            # unknown option
+    echo "Option ${i#*=} unknown"
+    ;;
+esac
+done
+
+#if [[ $CGM != "G4" && $CGM != "G5" ]]; then
+if [[ $CGM != "G4" ]]; then
+    #echo "Unsupported CGM.  Please select (Dexcom) G4 (default) or G5."
+    echo "This script only supports Dexcom G4 at the moment."
+    echo "If you'd like to help add Dexcom G5 or Medtronic CGM support, please contact @scottleibrand on Gitter"
+    echo
+    DIR="" # to force a Usage prompt
 fi
-directory=`mkdir -p $1; cd $1; pwd`
-serial=$2
-
-ttyport=$3
-
-if [[ $# -lt 4 ]]; then
-    max_iob=0
-else
-    max_iob=$4
+if [[ -z "$DIR" || -z "$serial" ]]; then
+    die "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--cgm=G4]"
 fi
 
 #if [[ $# -gt 3 ]]; then
     #share_serial=$4
 #fi
 
-echo -n "Setting up oref0 in $directory for pump $serial with "
-if [[ $# -lt 3 ]]; then
+echo "Setting up oref0 in $directory"
+echo -n "for pump $serial with Dexcom $CGM, "
+if [[ -z "$ttyport" ]]; then
     echo -n Carelink
 else
     echo -n TTY $ttyport
 fi
-if [[ $# -ge 4 ]]; then echo -n " and max_iob $max_iob"; fi
+if [[ "$max_iob" -ne 0 ]]; then echo -n " and max_iob $max_iob"; fi
 echo
 
 read -p "Continue? " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
-( ( cd $directory 2>/dev/null && git status ) || ( openaps init $directory ) ) || die "Can't init $directory"
+echo -n "Checking $directory: "
+mkdir -p $directory
+if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null && echo true ); then
+    echo $directory already exists
+elif openaps init $directory; then
+    echo $directory initialized
+else
+    die "Can't init $directory"
+fi
 cd $directory || die "Can't cd $directory"
 ls monitor 2>/dev/null >/dev/null || mkdir monitor || die "Can't mkdir monitor"
 ls raw-cgm 2>/dev/null >/dev/null || mkdir raw-cgm || die "Can't mkdir raw-cgm"
@@ -59,7 +109,7 @@ ls settings 2>/dev/null >/dev/null || mkdir settings || die "Can't mkdir setting
 ls enact 2>/dev/null >/dev/null || mkdir enact || die "Can't mkdir enact"
 ls upload 2>/dev/null >/dev/null || mkdir upload || die "Can't mkdir upload"
 
-if [[ $# -lt 4 ]]; then
+if [[ "$max_iob" -eq 0 ]]; then
     oref0-get-profile --exportDefaults > preferences.json
 else
     echo "{ \"max_iob\": $max_iob }" > max_iob.json && oref0-get-profile --updatePreferences max_iob.json > preferences.json && rm max_iob.json
@@ -68,8 +118,23 @@ fi
 cat preferences.json
 git add preferences.json
 
-sudo cp ~/src/oref0/logrotate.openaps /etc/logrotate.d/openaps
-sudo cp ~/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog
+if [ -d "$HOME/src/oref0/" ]; then
+    echo "$HOME/src/oref0/ already exists; pulling latest dev branch"
+    (cd ~/src/oref0 && git fetch && git checkout dev && git pull) || die "Couldn't pull latest oref0 dev"
+else
+    echo -n "Cloning oref0 dev: "
+    cd ~/src && git clone -b dev git://github.com/openaps/oref0.git || die "Couldn't clone oref0 dev"
+fi
+if [ -d "$HOME/src/mmeowlink/" ]; then
+    echo "$HOME/src/mmeowlink/ already exists; pulling latest master branch"
+    (cd ~/src/mmeowlink && git fetch && git checkout master && git pull) || die "Couldn't pull latest mmeowlink master"
+else
+    echo -n "Cloning mmeowlink master: "
+    cd ~/src && git clone -b master git://github.com/oskarpearson/mmeowlink.git || die "Couldn't clone mmeowlink master"
+fi
+
+sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps
+sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog
 
 test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps
 
@@ -79,7 +144,7 @@ test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var
 #openaps vendor add openxshareble
 
 # import template
-cat ~/src/oref0/lib/templates/refresh-loops.json | openaps import
+cat $HOME/src/oref0/lib/templates/refresh-loops.json | openaps import
 
 # don't re-create devices if they already exist
 openaps device show 2>/dev/null > /tmp/openaps-devices
@@ -95,8 +160,8 @@ if [[ $# -lt 3 ]]; then
     openaps alias add mmtune 'report invoke monitor/temp_basal.json'
 else
     grep pump /tmp/openaps-devices || openaps device add pump mmeowlink subg_rfspy $ttyport $serial || die "Can't add pump"
-    openaps alias add wait-for-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; ~/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
-    openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; ~/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
+    openaps alias add wait-for-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; $HOME/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
+    openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; $HOME/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
 fi
 
 
