@@ -51,6 +51,14 @@ case $i in
     CGM="${i#*=}"
     shift # past argument=value
     ;;
+    -h=*|--ns-host=*)
+    NIGHTSCOUT_HOST="${i#*=}"
+    shift # past argument=value
+    ;;
+    -a=*|--api-secret=*)
+    API_SECRET="${i#*=}"
+    shift # past argument=value
+    ;;
     #--g5)
     #CGM="Dexcom_G5"
     #shift # past argument with no value
@@ -155,6 +163,13 @@ sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps || die "Could
 sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
 
 test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
+
+if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
+    echo -n "Removing any existing ns device: "
+    openaps device remove ns
+    echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
+    nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
+fi
 
 # import template
 for type in vendor device report alias; do
