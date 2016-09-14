@@ -74,7 +74,7 @@ fi
     #share_serial=$4
 #fi
 
-echo -n "Setting up oref0 in $directory for pump $serial with Dexcom $CGM, "
+echo "Setting up oref0 in $directory for pump $serial with Dexcom $CGM, "
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
 else
@@ -87,6 +87,7 @@ read -p "Continue? " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
+echo -n Checking $directory:
 if ( cd $directory 2>/dev/null && git status ); then
     echo $directory already exists
 elif openaps init $directory; then
@@ -111,9 +112,13 @@ fi
 cat preferences.json
 git add preferences.json
 
-cd ~/src && \
-git clone -b dev git://github.com/openaps/oref0.git || \
-    (cd oref0 && git fetch && git checkout dev && git pull)
+if [ -d "~/src/oref0/" ]; then
+    echo "~/src/oref0/ already exists; pulling latest dev branch"
+    (cd ~/src/oref0 && git fetch && git checkout dev && git pull) || die "Couldn't pull latest oref0 dev"
+else
+    echo "Cloning oref0 dev"
+    cd ~/src && git clone -b dev git://github.com/openaps/oref0.git || die "Couldn't clone oref0 dev"
+fi
 
 sudo cp ~/src/oref0/logrotate.openaps /etc/logrotate.d/openaps
 sudo cp ~/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog
