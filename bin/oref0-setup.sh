@@ -94,7 +94,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 echo -n Checking $directory:
 mkdir -p $directory
-if ( cd $directory && git status ); then
+if ( cd $directory && git status 2>/dev/null ); then
     echo $directory already exists
 elif openaps init $directory; then
     echo $directory initialized
@@ -120,7 +120,8 @@ git add preferences.json
 
 if [ -d "$HOME/src/oref0/" ]; then
     echo "$HOME/src/oref0/ already exists; pulling latest dev branch"
-    (cd ~/src/oref0 && git fetch && git checkout dev && git pull) || die "Couldn't pull latest oref0 dev"
+    #(cd ~/src/oref0 && git fetch && git checkout dev && git pull) || die "Couldn't pull latest oref0 dev"
+    (cd ~/src/oref0 && git fetch && git checkout oref0-setup && git pull) || die "Couldn't pull latest oref0 oref0-setup"
 else
     echo -n "Cloning oref0 dev: "
     cd ~/src && git clone -b dev git://github.com/openaps/oref0.git || die "Couldn't clone oref0 dev"
