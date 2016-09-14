@@ -45,17 +45,19 @@ esac
 checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v ) }
 
 if checkNTP; then
+    sudo ntpdate -s -b time.nist.gov
     echo Setting pump and CGM time to `date`
     openaps use $PUMP set_clock --to now
     openaps use $CGM UpdateTime --to now
 else
 
-( cat $CLOCK; echo ) | sed 's/"//g' | while read line; do date -u -d $line +"%F %R:%S"; done > fake-hwclock.data
+( cat $CLOCK; echo ) | sed 's/"//g' | while read line; do date -u -d $line;  done > fake-hwclock.data
 grep : fake-hwclock.data && sudo cp fake-hwclock.data /etc/fake-hwclock.data
-sudo fake-hwclock load
-grep -q display_time $GLUCOSE && grep display_time $GLUCOSE | head -1 | awk '{print $2}' | sed "s/,//" | sed 's/"//g' | sed "s/$/`date +%z`/" | while read line; do date -u -d $line +"%F %R:%S"; done > fake-hwclock.data
-grep -q dateString $GLUCOSE && grep dateString $GLUCOSE | head -1 | awk '{print $2}' | sed "s/,//" | sed 's/"//g' |while read line; do date -u -d $line +"%F %R:%S"; done > fake-hwclock.data
-grep : fake-hwclock.data && sudo cp fake-hwclock.data /etc/fake-hwclock.data
-sudo fake-hwclock load
+# set system time to pump time if pump time is newer than the system time
+sudo fake-hwclock load || (date +%s; date -d `( cat $CLOCK; echo ) | sed 's/"//g'` +%s) | sort | tail -1 | while read line; do sudo date -s @$line; done;
+#grep -q display_time $GLUCOSE && grep display_time $GLUCOSE | head -1 | awk '{print $2}' | sed "s/,//" | sed 's/"//g' | while read line; do date -u -d $line;  done > fake-hwclock.data
+#grep -q dateString $GLUCOSE && grep dateString $GLUCOSE | head -1 | awk '{print $2}' | sed "s/,//" | sed 's/"//g' |while read line; do date -u -d $line; done > fake-hwclock.data
+#grep : fake-hwclock.data && sudo cp fake-hwclock.data /etc/fake-hwclock.data
+#sudo fake-hwclock load
 
 fi
