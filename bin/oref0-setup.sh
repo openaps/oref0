@@ -152,7 +152,7 @@ openaps device show 2>/dev/null > /tmp/openaps-devices
 # add devices
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
-if [[ $# -lt 3 ]]; then
+if [[ -z "$ttyport" ]]; then
     grep pump /tmp/openaps-devices || openaps device add pump medtronic $serial || die "Can't add pump"
     # carelinks can't listen for silence or mmtune, so just do a preflight check instead
     openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
