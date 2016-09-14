@@ -22,13 +22,17 @@ die() {
 # defaults
 max_iob=0
 CGM="G4"
+DIR=""
+directory=""
 
 for i in "$@"
 do
 case $i in
     -d=*|--dir=*)
     DIR="${i#*=}"
-    directory=`mkdir -p $DIR; cd $DIR; pwd`
+    # ~/ paths have to be expanded manually
+    DIR="${DIR/#\~/$HOME}"
+    directory="$(readlink -m $DIR)"
     shift # past argument=value
     ;;
     -s=*|--serial=*)
@@ -74,7 +78,8 @@ fi
     #share_serial=$4
 #fi
 
-echo "Setting up oref0 in $directory for pump $serial with Dexcom $CGM, "
+echo "Setting up oref0 in $directory"
+echo -n "for pump $serial with Dexcom $CGM, "
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
 else
@@ -88,7 +93,8 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 echo -n Checking $directory:
-if ( cd $directory 2>/dev/null && git status ); then
+mkdir -p $directory
+if ( cd $directory && git status ); then
     echo $directory already exists
 elif openaps init $directory; then
     echo $directory initialized
@@ -116,7 +122,7 @@ if [ -d "~/src/oref0/" ]; then
     echo "~/src/oref0/ already exists; pulling latest dev branch"
     (cd ~/src/oref0 && git fetch && git checkout dev && git pull) || die "Couldn't pull latest oref0 dev"
 else
-    echo "Cloning oref0 dev"
+    echo -n "Cloning oref0 dev: "
     cd ~/src && git clone -b dev git://github.com/openaps/oref0.git || die "Couldn't clone oref0 dev"
 fi
 
