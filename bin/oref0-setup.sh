@@ -94,7 +94,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 echo -n Checking $directory:
 mkdir -p $directory
-if ( cd $directory && git status 2>/dev/null ); then
+if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null && echo true ); then
     echo $directory already exists
 elif openaps init $directory; then
     echo $directory initialized
