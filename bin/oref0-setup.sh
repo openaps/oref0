@@ -71,7 +71,21 @@ if [[ $CGM != "G4" ]]; then
     DIR="" # to force a Usage prompt
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    die "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--cgm=G4]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--cgm=G4]"
+    read -p "Start interactive setup? [Y]/n " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        read -p "What would you like to call your loop directory? [myopenaps] " -r
+        DIR=$REPLY
+        if [[ -z $DIR ]]; then DIR="myopenaps"; fi
+        echo "Ok, $DIR it is."
+        directory="$(readlink -m $DIR)"
+        read -p "What is your pump serial number? " -r
+        serial=$REPLY
+        echo "Ok, $serial it is."
+        read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
+        ttyport=$REPLY
+    fi
 fi
 
 #if [[ $# -gt 3 ]]; then
@@ -88,7 +102,7 @@ fi
 if [[ "$max_iob" -ne 0 ]]; then echo -n " and max_iob $max_iob"; fi
 echo
 
-read -p "Continue? " -n 1 -r
+read -p "Continue? y/[N] " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
@@ -144,7 +158,11 @@ test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var
 #openaps vendor add openxshareble
 
 # import template
-cat $HOME/src/oref0/lib/templates/refresh-loops.json | openaps import
+for type in vendor device report alias; do
+    echo importing $type
+    cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import
+done
+#cat $HOME/src/oref0/lib/templates/refresh-loops.json | openaps import
 
 # don't re-create devices if they already exist
 openaps device show 2>/dev/null > /tmp/openaps-devices
@@ -165,7 +183,7 @@ else
 fi
 
 
-read -p "Schedule openaps in cron? " -n 1 -r
+read -p "Schedule openaps in cron? y/[N] " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 # add crontab entries
