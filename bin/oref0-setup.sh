@@ -123,14 +123,6 @@ ls settings 2>/dev/null >/dev/null || mkdir settings || die "Can't mkdir setting
 ls enact 2>/dev/null >/dev/null || mkdir enact || die "Can't mkdir enact"
 ls upload 2>/dev/null >/dev/null || mkdir upload || die "Can't mkdir upload"
 
-if [[ "$max_iob" -eq 0 ]]; then
-    oref0-get-profile --exportDefaults > preferences.json
-else
-    echo "{ \"max_iob\": $max_iob }" > max_iob.json && oref0-get-profile --updatePreferences max_iob.json > preferences.json && rm max_iob.json
-fi
-
-cat preferences.json
-git add preferences.json
 
 if [ -d "$HOME/src/oref0/" ]; then
     echo "$HOME/src/oref0/ already exists; pulling latest dev branch"
@@ -147,20 +139,27 @@ else
     cd ~/src && git clone -b master git://github.com/oskarpearson/mmeowlink.git || die "Couldn't clone mmeowlink master"
 fi
 
-sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps
-sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog
+echo Checking oref0 installation
+oref0-get-profile --exportDefaults >/dev/null || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
-test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps
+if [[ "$max_iob" -eq 0 ]]; then
+    oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
+else
+    echo "{ \"max_iob\": $max_iob }" > max_iob.json && oref0-get-profile --updatePreferences max_iob.json > preferences.json && rm max_iob.json || die "Could not run oref0-get-profile"
+fi
 
-#openaps vendor add openapscontrib.timezones
-#openaps vendor add mmeowlink.vendors.mmeowlink
+cat preferences.json
+git add preferences.json
 
-#openaps vendor add openxshareble
+sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps || die "Could not cp /etc/logrotate.d/openaps"
+sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
+
+test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
 
 # import template
 for type in vendor device report alias; do
     echo importing $type
-    cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import
+    cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
 #cat $HOME/src/oref0/lib/templates/refresh-loops.json | openaps import
 
@@ -188,7 +187,8 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 # add crontab entries
 (crontab -l; crontab -l | grep -q PATH || echo 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin') | crontab -
-(crontab -l; crontab -l | grep -q killall || echo '* * * * * killall -g --older-than 10m openaps') | crontab -
+(crontab -l; crontab -l | grep -q wpa_cli || echo '* * * * * sudo wpa_cli scan') | crontab -
+(crontab -l; crontab -l | grep -q "killall-g --older-than 10m openaps" || echo '* * * * * killall -g --older-than 10m openaps') | crontab -
 (crontab -l; crontab -l | grep -q "reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
 (crontab -l; crontab -l | grep -q get-bg || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
 (crontab -l; crontab -l | grep -q ns-loop || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
