@@ -162,17 +162,15 @@ fi
 echo Checking oref0 installation
 oref0-get-profile --exportDefaults 2>/dev/null >/dev/null || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
-if [[ ! -z "$ttyport" ]]; then
-    if [ -d "$HOME/src/mmeowlink/" ]; then
-        echo "$HOME/src/mmeowlink/ already exists; pulling latest master branch"
-        (cd ~/src/mmeowlink && git fetch && git checkout master && git pull) || die "Couldn't pull latest mmeowlink master"
-    else
-        echo -n "Cloning mmeowlink master: "
-        (cd ~/src && git clone -b master git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink master"
-    fi
-    echo Checking mmeowlink installation
-    openaps vendor add --path . mmeowlink.vendors.mmeowlink || (echo Installing latest mmeowlink master && cd $HOME/src/mmeowlink/ && sudo pip install -e .)
+if [ -d "$HOME/src/mmeowlink/" ]; then
+    echo "$HOME/src/mmeowlink/ already exists; pulling latest master branch"
+    (cd ~/src/mmeowlink && git fetch && git checkout master && git pull) || die "Couldn't pull latest mmeowlink master"
+else
+    echo -n "Cloning mmeowlink master: "
+    (cd ~/src && git clone -b master git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink master"
 fi
+echo Checking mmeowlink installation
+openaps vendor add --path . mmeowlink.vendors.mmeowlink || (echo Installing latest mmeowlink master && cd $HOME/src/mmeowlink/ && sudo pip install -e .)
 
 cd $directory
 if [[ "$max_iob" -eq 0 ]]; then
