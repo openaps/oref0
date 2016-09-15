@@ -137,19 +137,20 @@ if [ -d "$HOME/src/oref0/" ]; then
     (cd ~/src/oref0 && git fetch && git checkout dev && git pull) || die "Couldn't pull latest oref0 dev"
 else
     echo -n "Cloning oref0 dev: "
-    cd ~/src && git clone -b dev git://github.com/openaps/oref0.git || die "Couldn't clone oref0 dev"
+    (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
 fi
 if [ -d "$HOME/src/mmeowlink/" ]; then
     echo "$HOME/src/mmeowlink/ already exists; pulling latest master branch"
     (cd ~/src/mmeowlink && git fetch && git checkout master && git pull) || die "Couldn't pull latest mmeowlink master"
 else
     echo -n "Cloning mmeowlink master: "
-    cd ~/src && git clone -b master git://github.com/oskarpearson/mmeowlink.git || die "Couldn't clone mmeowlink master"
+    (cd ~/src && git clone -b master git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink master"
 fi
 
 echo Checking oref0 installation
 oref0-get-profile --exportDefaults >/dev/null || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
+cd $directory
 if [[ "$max_iob" -eq 0 ]]; then
     oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
 else
@@ -173,7 +174,7 @@ fi
 
 # import template
 for type in vendor device report alias; do
-    echo importing $type
+    echo importing $type file
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
 #cat $HOME/src/oref0/lib/templates/refresh-loops.json | openaps import
