@@ -79,7 +79,7 @@ if [[ $CGM != "G4" ]]; then
     DIR="" # to force a Usage prompt
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--cgm=G4]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=G4]"
     read -p "Start interactive setup? [Y]/n " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
@@ -93,6 +93,26 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo "Ok, $serial it is."
         read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
         ttyport=$REPLY
+        echo -n "Ok, "
+        if [[ -z "$ttyport" ]]; then
+            echo -n Carelink
+        else
+            echo -n TTY $ttyport
+        fi
+        echo " it is."
+        echo Are you using Nightscout? If not, press enter.
+        read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
+        NIGHTSCOUT_HOST=$REPLY
+        if [[ -z "$ttyport" ]]; then
+            echo Ok, no Nightscout for you.
+        else
+            echo "Ok, $NIGHTSCOUT_HOST it is."
+        fi
+        if [[ ! -z $NIGHTSCOUT_HOST ]]; then
+            read -p "And what is your Nightscout api secret (i.e. myplaintextsecret)? " -r
+            API_SECRET=$REPLY
+            echo "Ok, $API_SECRET it is."
+        fi
     fi
 fi
 
@@ -148,7 +168,7 @@ else
 fi
 
 echo Checking oref0 installation
-oref0-get-profile --exportDefaults >/dev/null || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+oref0-get-profile --exportDefaults 2>/dev/null >/dev/null || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 cd $directory
 if [[ "$max_iob" -eq 0 ]]; then
