@@ -31,11 +31,12 @@
   },
   {
     "cgm/ns-glucose.json": {
-      "device": "ns-glucose",
-      "remainder": "",
+      "oper": "oref0_glucose_since",
       "use": "shell",
-      "json_default": "True",
-      "reporter": "text"
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "-24hours",
+      "json_default": "True"
     },
     "type": "report",
     "name": "cgm/ns-glucose.json"
