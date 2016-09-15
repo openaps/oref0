@@ -10,7 +10,7 @@
     "type": "alias",
     "name": "mmtune",
     "mmtune": {
-      "command": "report invoke monitor/temp_basal.json"
+      "command": "! bash -c \"echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json 2>/dev/null >/dev/null; grep -v setFreq monitor/mmtune.json | grep -A2 `json -a setFreq -f monitor/mmtune.json` | while read line; do echo -n \\\"$line \\\"; done\""
     }
   },
   {
