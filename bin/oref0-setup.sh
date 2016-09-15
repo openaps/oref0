@@ -165,7 +165,7 @@ sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could
 test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
 
 if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
-    echo -n "Removing any existing ns device: "
+    echo "Removing any existing ns device: "
     openaps device remove ns 2>/dev/null
     echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
     nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
@@ -191,7 +191,7 @@ if [[ -z "$ttyport" ]]; then
     openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
     openaps alias add mmtune 'report invoke monitor/temp_basal.json'
 else
-    grep pump /tmp/openaps-devices || openaps device add pump mmeowlink subg_rfspy $ttyport $serial || die "Can't add pump"
+    openaps device add pump mmeowlink subg_rfspy $ttyport $serial || die "Can't add pump"
     openaps alias add wait-for-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; $HOME/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; $HOME/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
 fi
