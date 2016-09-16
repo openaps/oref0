@@ -53,7 +53,7 @@ if (!module.parent) {
         return console.error("Could not parse input data: ", e);
     }
 
-    // disallow impossibly high/low carbRatios due to bad decoding
+    // disallow impossibly low carbRatios due to bad decoding
     if ( typeof(profile_data.carb_ratio) == 'undefined' || profile_data.carb_ratio < 3 ) {
         console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratio ' + profile_data.carb_ratio + ' out of bounds" }');
         return console.error("Error: carb_ratio " + profile_data.carb_ratio + " out of bounds");
