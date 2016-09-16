@@ -146,8 +146,7 @@ if [[ "$max_iob" -ne 0 ]]; then echo -n ", max_iob $max_iob"; fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features$ENABLE"; fi
 echo
 
-read -p "Continue? y/[N] " -n 1 -r
-echo
+read -p "Continue? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 echo -n "Checking $directory: "
@@ -245,6 +244,7 @@ elif [[ $ENABLE =~ meal ]]; then
     EXTRAS='"" monitor/meal.json'
 fi
 
+echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
 read -p "Schedule openaps in cron? y/[N] " -n 1 -r
