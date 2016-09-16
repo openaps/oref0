@@ -94,7 +94,7 @@
     "type": "device",
     "name": "determine-basal",
     "extra": {
-      "fields": "iob temp_basal glucose profile autosens meal",
+      "fields": "iob temp_basal glucose profile",
       "cmd": "oref0",
       "args": "determine-basal"
     }

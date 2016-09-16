@@ -143,7 +143,7 @@ else
     echo -n TTY $ttyport
 fi
 if [[ "$max_iob" -ne 0 ]]; then echo -n ", max_iob $max_iob"; fi
-if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
+if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features$ENABLE"; fi
 echo
 
 read -p "Continue? y/[N] " -n 1 -r
