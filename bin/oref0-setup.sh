@@ -185,7 +185,7 @@ else
     (cd ~/src && git clone -b master git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink master"
 fi
 echo Checking mmeowlink installation
-openaps vendor add --path . mmeowlink.vendors.mmeowlink || (echo Installing latest mmeowlink master && cd $HOME/src/mmeowlink/ && sudo pip install -e .)
+openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module" && (echo Installing latest mmeowlink master && cd $HOME/src/mmeowlink/ && sudo pip install -e .)
 
 cd $directory
 if [[ "$max_iob" -eq 0 ]]; then
@@ -250,6 +250,8 @@ openaps report add enact/suggested.json text determine-basal shell monitor/iob.j
 read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 # add crontab entries
+(crontab -l; crontab -l | grep -q $NIGHTSCOUT_HOST || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
+(crontab -l; crontab -l | grep -q $API_SECRET || echo API_SECRET=`nightscout hash-api-secret $API_SECRET`) | crontab -
 (crontab -l; crontab -l | grep -q PATH || echo 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin') | crontab -
 (crontab -l; crontab -l | grep -q wpa_cli || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than 10m openaps" || echo '* * * * * killall -g --older-than 10m openaps') | crontab -
