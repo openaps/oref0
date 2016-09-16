@@ -170,7 +170,7 @@ else
     (cd ~/src && git clone -b master git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink master"
 fi
 echo Checking mmeowlink installation
-openaps vendor add --path . mmeowlink.vendors.mmeowlink || (echo Installing latest mmeowlink master && cd $HOME/src/mmeowlink/ && sudo pip install -e .)
+openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module" && (echo Installing latest mmeowlink master && cd $HOME/src/mmeowlink/ && sudo pip install -e .)
 
 cd $directory
 if [[ "$max_iob" -eq 0 ]]; then
