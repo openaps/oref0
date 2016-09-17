@@ -24,6 +24,7 @@ max_iob=0
 CGM="G4"
 DIR=""
 directory=""
+EXTRAS=""
 
 for i in "$@"
 do
@@ -59,6 +60,10 @@ case $i in
     API_SECRET="${i#*=}"
     shift # past argument=value
     ;;
+    -e=*|--enable=*)
+    ENABLE="${i#*=}"
+    shift # past argument=value
+    ;;
     #--g5)
     #CGM="Dexcom_G5"
     #shift # past argument with no value
@@ -79,9 +84,8 @@ if [[ $CGM != "G4" ]]; then
     DIR="" # to force a Usage prompt
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=G4]"
-    read -p "Start interactive setup? [Y]/n " -n 1 -r
-    echo
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=G4] [--enable=autosens meal]"
+    read -p "Start interactive setup? [Y]/n " -r
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
         read -p "What would you like to call your loop directory? [myopenaps] " -r
         DIR=$REPLY
@@ -113,6 +117,17 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             API_SECRET=$REPLY
             echo "Ok, $API_SECRET it is."
         fi
+        read -p "Do you need any advanced features? y/[N] " -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            read -p "Enable automatic sensitivity adjustment? y/[N] " -r
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                ENABLE+=" autosens "
+            fi
+            read -p "Enable advanced meal assist? y/[N] " -r
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                ENABLE+=" meal "
+            fi
+        fi
     fi
 fi
 
@@ -127,11 +142,11 @@ if [[ -z "$ttyport" ]]; then
 else
     echo -n TTY $ttyport
 fi
-if [[ "$max_iob" -ne 0 ]]; then echo -n " and max_iob $max_iob"; fi
+if [[ "$max_iob" -ne 0 ]]; then echo -n ", max_iob $max_iob"; fi
+if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features$ENABLE"; fi
 echo
 
-read -p "Continue? y/[N] " -n 1 -r
-echo
+read -p "Continue? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 echo -n "Checking $directory: "
@@ -153,8 +168,8 @@ ls upload 2>/dev/null >/dev/null || mkdir upload || die "Can't mkdir upload"
 
 mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
-    echo "$HOME/src/oref0/ already exists; pulling latest dev branch"
-    (cd ~/src/oref0 && git fetch && git checkout dev && git pull) || die "Couldn't pull latest oref0 dev"
+    echo "$HOME/src/oref0/ already exists; pulling latest"
+    (cd ~/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
 else
     echo -n "Cloning oref0 dev: "
     (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
@@ -221,12 +236,23 @@ else
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 200`; do echo -n .; $HOME/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
 fi
 
+if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
+    EXTRAS="settings/autosens.json monitor/meal.json"
+elif [[ $ENABLE =~ autosens ]]; then
+    EXTRAS="settings/autosens.json"
+elif [[ $ENABLE =~ meal ]]; then
+    EXTRAS='"" monitor/meal.json'
+fi
 
-read -p "Schedule openaps in cron? y/[N] " -n 1 -r
-echo
+echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
+openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
+
+read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 # add crontab entries
-(crontab -l; crontab -l | grep -q PATH || echo 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin') | crontab -
+(crontab -l; crontab -l | grep -q $NIGHTSCOUT_HOST || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
+(crontab -l; crontab -l | grep -q $API_SECRET || echo API_SECRET=`nightscout hash-api-secret $API_SECRET`) | crontab -
+(crontab -l; crontab -l | grep -q PATH || echo "PATH=$PATH" ) | crontab -
 (crontab -l; crontab -l | grep -q wpa_cli || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than 10m openaps" || echo '* * * * * killall -g --older-than 10m openaps') | crontab -
 (crontab -l; crontab -l | grep -q "reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
