@@ -135,15 +135,15 @@ fi
     #share_serial=$4
 #fi
 
-echo "Setting up oref0 in $directory"
-echo -n "for pump $serial with Dexcom $CGM, NS host $NIGHTSCOUT_HOST, "
+echo "Setting up oref0 in $directory for pump $serial with Dexcom $CGM,"
+echo -n "NS host $NIGHTSCOUT_HOST, "
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
 else
     echo -n TTY $ttyport
 fi
 if [[ "$max_iob" -ne 0 ]]; then echo -n ", max_iob $max_iob"; fi
-if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features$ENABLE"; fi
+if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
 
 read -p "Continue? y/[N] " -r
