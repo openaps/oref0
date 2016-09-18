@@ -83,12 +83,12 @@ if [[ $CGM != "G4" ]]; then
     echo
     DIR="" # to force a Usage prompt
 fi
-if [[ ! git config -l | grep -q user.email ]]; then
+if ! ( git config -l | grep -q user.email ) ; then
     read -p "What email address would you like to use for git commits? " -r
     EMAIL=$REPLY
     git config --global user.email $EMAIL
 fi
-if [[ ! git config -l | grep -q user.name ]]; then
+if ! ( git config -l | grep -q user.name ); then
     read -p "What full name would you like to use for git commits? " -r
     NAME=$REPLY
     git config --global user.name $NAME
