@@ -83,7 +83,6 @@ if [[ $CGM != "G4" ]]; then
     echo
     DIR="" # to force a Usage prompt
 fi
-read -p "Start interactive setup? [Y]/n " -r
 if [[ ! git config -l | grep -q user.email ]]; then
     read -p "What email address would you like to use for git commits? " -r
     EMAIL=$REPLY
@@ -96,6 +95,7 @@ if [[ ! git config -l | grep -q user.name ]]; then
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=G4] [--enable='autosens meal']"
+    read -p "Start interactive setup? [Y]/n " -r
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
         read -p "What would you like to call your loop directory? [myopenaps] " -r
         DIR=$REPLY
