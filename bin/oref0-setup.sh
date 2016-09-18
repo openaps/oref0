@@ -84,7 +84,7 @@ if [[ $CGM != "G4" ]]; then
     DIR="" # to force a Usage prompt
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=G4] [--enable=autosens meal]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=G4] [--enable='autosens meal']"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
         read -p "What would you like to call your loop directory? [myopenaps] " -r
@@ -178,14 +178,14 @@ echo Checking oref0 installation
 oref0-get-profile --exportDefaults 2>/dev/null >/dev/null || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 if [ -d "$HOME/src/mmeowlink/" ]; then
-    echo "$HOME/src/mmeowlink/ already exists; pulling latest master branch"
-    (cd ~/src/mmeowlink && git fetch && git checkout master && git pull) || die "Couldn't pull latest mmeowlink master"
+    echo "$HOME/src/mmeowlink/ already exists; pulling latest dev branch"
+    (cd ~/src/mmeowlink && git fetch && git checkout dev && git pull) || die "Couldn't pull latest mmeowlink dev"
 else
-    echo -n "Cloning mmeowlink master: "
-    (cd ~/src && git clone -b master git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink master"
+    echo -n "Cloning mmeowlink dev: "
+    (cd ~/src && git clone -b dev git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink dev"
 fi
 echo Checking mmeowlink installation
-openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module" && (echo Installing latest mmeowlink master && cd $HOME/src/mmeowlink/ && sudo pip install -e .)
+openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module" && (echo Installing latest mmeowlink dev && cd $HOME/src/mmeowlink/ && sudo pip install -e .)
 
 cd $directory
 if [[ "$max_iob" -eq 0 ]]; then
