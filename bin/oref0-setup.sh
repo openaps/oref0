@@ -214,7 +214,7 @@ test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var
 
 if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
     echo "Removing any existing ns device: "
-    openaps device remove ns 2>/dev/null
+    killall -g openaps 2>/dev/null; openaps device remove ns 2>/dev/null
     echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
     nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
 fi
@@ -230,7 +230,7 @@ done
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
 echo "Removing any existing pump device:"
-openaps device remove pump 2>/dev/null
+killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
 if [[ -z "$ttyport" ]]; then
     openaps device add pump medtronic $serial || die "Can't add pump"
     # carelinks can't listen for silence or mmtune, so just do a preflight check instead
