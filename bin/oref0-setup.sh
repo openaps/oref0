@@ -226,14 +226,11 @@ for type in vendor device report alias; do
 done
 #cat $HOME/src/oref0/lib/templates/refresh-loops.json | openaps import
 
-# don't re-create devices if they already exist
-openaps device show 2>/dev/null > /tmp/openaps-devices
-
 # add devices
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
 if [[ -z "$ttyport" ]]; then
-    grep pump /tmp/openaps-devices || openaps device add pump medtronic $serial || die "Can't add pump"
+    openaps device add pump medtronic $serial || die "Can't add pump"
     # carelinks can't listen for silence or mmtune, so just do a preflight check instead
     openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
     openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
