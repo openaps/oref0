@@ -64,10 +64,10 @@ case $i in
     ENABLE="${i#*=}"
     shift # past argument=value
     ;;
-    #--g5)
-    #CGM="Dexcom_G5"
-    #shift # past argument with no value
-    #;;
+    -c=*|--cgm=*)
+    CGM="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -75,11 +75,11 @@ case $i in
 esac
 done
 
-#if [[ $CGM != "G4" && $CGM != "G5" ]]; then
-if [[ $CGM != "G4" ]]; then
-    #echo "Unsupported CGM.  Please select (Dexcom) G4 (default) or G5."
-    echo "This script only supports Dexcom G4 at the moment."
-    echo "If you'd like to help add Dexcom G5 or Medtronic CGM support, please contact @scottleibrand on Gitter"
+if [[ $CGM !~ "G4" && $CGM !~ "G5" ]]; then
+#if [[ $CGM != "G4" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default) or G5."
+    #echo "This script only supports Dexcom G4 at the moment."
+    echo "If you'd like to help add Medtronic CGM support, please contact @scottleibrand on Gitter"
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -94,7 +94,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=G4] [--enable='autosens meal']"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|G5)] [--enable='autosens meal']"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
         read -p "What would you like to call your loop directory? [myopenaps] " -r
@@ -207,11 +207,13 @@ fi
 cat preferences.json
 git add preferences.json
 
+# enable log rotation
 sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps || die "Could not cp /etc/logrotate.d/openaps"
 sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
 
 test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
 
+# configure ns
 if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
     echo "Removing any existing ns device: "
     killall -g openaps 2>/dev/null; openaps device remove ns 2>/dev/null
@@ -224,9 +226,11 @@ for type in vendor device report alias; do
     echo importing $type file
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
-#cat $HOME/src/oref0/lib/templates/refresh-loops.json | openaps import
 
-# add devices
+# add/configure devices
+if [[ $CGM =~ "G5" ]]; then
+    openaps use cgm config --G5
+fi
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
 echo "Removing any existing pump device:"
@@ -243,6 +247,7 @@ else
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 200`; do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
 fi
 
+# configure optional features
 if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
     EXTRAS="settings/autosens.json monitor/meal.json"
 elif [[ $ENABLE =~ autosens ]]; then
