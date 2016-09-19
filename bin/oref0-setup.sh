@@ -234,6 +234,19 @@ grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
 echo "Removing any existing pump device:"
 killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
+
+if [[ "$ttyport" =~ "spi" ]]; then
+    if [ -d "$HOME/src/915MHzEdisonExplorer_SW/" ]; then
+        echo "$HOME/src/915MHzEdisonExplorer_SW/ already exists; pulling latest master branch"
+        (cd ~/src/915MHzEdisonExplorer_SW && git fetch && git checkout master && git pull) || die "Couldn't pull latest 915MHzEdisonExplorer_SW master"
+    else
+        echo -n "Cloning 915MHzEdisonExplorer_SW master: "
+        (cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
+    fi
+    echo Checking 915MHzEdisonExplorer_SW installation
+    python -c "import spi_serial" 2>/dev/null || (echo Installing latest 915MHzEdisonExplorer_SW master && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e .)
+fi
+
 if [[ -z "$ttyport" ]]; then
     openaps device add pump medtronic $serial || die "Can't add pump"
     # carelinks can't listen for silence or mmtune, so just do a preflight check instead
