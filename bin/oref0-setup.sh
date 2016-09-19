@@ -75,10 +75,8 @@ case $i in
 esac
 done
 
-if [[ $CGM !~ "G4" && $CGM !~ "G5" ]]; then
-#if [[ $CGM != "G4" ]]; then
+if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" ]]; then
     echo "Unsupported CGM.  Please select (Dexcom) G4 (default) or G5."
-    #echo "This script only supports Dexcom G4 at the moment."
     echo "If you'd like to help add Medtronic CGM support, please contact @scottleibrand on Gitter"
     echo
     DIR="" # to force a Usage prompt
@@ -228,7 +226,7 @@ for type in vendor device report alias; do
 done
 
 # add/configure devices
-if [[ $CGM =~ "G5" ]]; then
+if [[ ${CGM,,} =~ "g5" ]]; then
     openaps use cgm config --G5
 fi
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
