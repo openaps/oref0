@@ -186,15 +186,17 @@ fi
 echo Checking oref0 installation
 oref0-get-profile --exportDefaults 2>/dev/null >/dev/null || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
-if [ -d "$HOME/src/mmeowlink/" ]; then
-    echo "$HOME/src/mmeowlink/ already exists; pulling latest dev branch"
-    (cd ~/src/mmeowlink && git fetch && git checkout dev && git pull) || die "Couldn't pull latest mmeowlink dev"
-else
-    echo -n "Cloning mmeowlink dev: "
-    (cd ~/src && git clone -b dev git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink dev"
-fi
 echo Checking mmeowlink installation
-openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module" && (echo Installing latest mmeowlink dev && cd $HOME/src/mmeowlink/ && sudo pip install -e .)
+if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
+    if [ -d "$HOME/src/mmeowlink/" ]; then
+        echo "$HOME/src/mmeowlink/ already exists; pulling latest dev branch"
+        (cd ~/src/mmeowlink && git fetch && git checkout dev && git pull) || die "Couldn't pull latest mmeowlink dev"
+    else
+        echo -n "Cloning mmeowlink dev: "
+        (cd ~/src && git clone -b dev git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink dev"
+    fi
+    echo Installing latest mmeowlink dev && cd $HOME/src/mmeowlink/ && sudo pip install -e . || die "Couldn't install mmeowlink"
+fi
 
 cd $directory
 if [[ "$max_iob" -eq 0 ]]; then
@@ -236,15 +238,35 @@ echo "Removing any existing pump device:"
 killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
 
 if [[ "$ttyport" =~ "spi" ]]; then
-    if [ -d "$HOME/src/915MHzEdisonExplorer_SW/" ]; then
-        echo "$HOME/src/915MHzEdisonExplorer_SW/ already exists; pulling latest master branch"
-        (cd ~/src/915MHzEdisonExplorer_SW && git fetch && git checkout master && git pull) || die "Couldn't pull latest 915MHzEdisonExplorer_SW master"
-    else
-        echo -n "Cloning 915MHzEdisonExplorer_SW master: "
-        (cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
-    fi
     echo Checking spi_serial installation
-    python -c "import spi_serial" 2>/dev/null || (echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e .)
+    if ! python -c "import spi_serial" 2>/dev/null; then
+        if [ -d "$HOME/src/915MHzEdisonExplorer_SW/" ]; then
+            echo "$HOME/src/915MHzEdisonExplorer_SW/ already exists; pulling latest master branch"
+            (cd ~/src/915MHzEdisonExplorer_SW && git fetch && git checkout master && git pull) || die "Couldn't pull latest 915MHzEdisonExplorer_SW master"
+        else
+            echo -n "Cloning 915MHzEdisonExplorer_SW master: "
+            (cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
+        fi
+        echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e . || die "Couldn't install spi_serial"
+    fi
+
+    echo Checking mraa installation
+    if ! ldconfig -p | grep -q mraa; then
+        echo Installing swig etc.
+        sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
+
+        if [ -d "$HOME/src/mraa/" ]; then
+            echo "$HOME/src/mraa/ already exists; pulling latest master branch"
+            (cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
+        else
+            echo -n "Cloning mraa master: "
+            (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
+        fi
+        ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
+        make && sudo make install ) || die "Could not compile mraa"
+        sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
+    fi
+
 fi
 
 if [[ -z "$ttyport" ]]; then
