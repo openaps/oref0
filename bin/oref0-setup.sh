@@ -243,8 +243,8 @@ if [[ "$ttyport" =~ "spi" ]]; then
         echo -n "Cloning 915MHzEdisonExplorer_SW master: "
         (cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
     fi
-    echo Checking 915MHzEdisonExplorer_SW installation
-    python -c "import spi_serial" 2>/dev/null || (echo Installing latest 915MHzEdisonExplorer_SW master && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e .)
+    echo Checking spi_serial installation
+    python -c "import spi_serial" 2>/dev/null || (echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e .)
 fi
 
 if [[ -z "$ttyport" ]]; then
