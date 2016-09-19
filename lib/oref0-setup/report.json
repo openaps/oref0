@@ -18,13 +18,13 @@
       "no_raw": "False",
       "reporter": "JSON",
       "seconds": "",
-      "sensor": "",
+      "minutes": "",
       "hours": "25",
       "device": "cgm",
       "gaps": "",
       "microseconds": "",
       "threshold": "100",
-      "minutes": "",
+      "sensor": "",
       "date": "display_time",
       "glucose": ""
     }
@@ -77,9 +77,9 @@
       "astimezone": "False",
       "date": "display_time dateString",
       "adjust": "missing",
-      "timezone": "",
+      "input": "raw-cgm/raw-entries.json",
       "device": "tz",
-      "input": "raw-cgm/raw-entries.json"
+      "timezone": ""
     }
   },
   {
@@ -89,9 +89,9 @@
       "astimezone": "False",
       "date": "None",
       "adjust": "missing",
-      "timezone": "",
+      "input": "monitor/clock.json",
       "device": "tz",
-      "input": "monitor/clock.json"
+      "timezone": ""
     },
     "type": "report",
     "name": "monitor/clock-zoned.json"
@@ -159,9 +159,9 @@
       "astimezone": "False",
       "date": "timestamp dateString start_at end_at created_at",
       "adjust": "missing",
-      "timezone": "",
+      "input": "monitor/pumphistory.json",
       "device": "tz",
-      "input": "monitor/pumphistory.json"
+      "timezone": ""
     },
     "type": "report",
     "name": "monitor/pumphistory-zoned.json"
@@ -175,9 +175,9 @@
       "astimezone": "False",
       "date": "timestamp dateString start_at end_at created_at",
       "adjust": "missing",
-      "timezone": "",
+      "input": "settings/pumphistory-24h.json",
       "device": "tz",
-      "input": "settings/pumphistory-24h.json"
+      "timezone": ""
     }
   },
   {
@@ -230,16 +230,20 @@
   {
     "type": "report",
     "settings/bg_targets.json": {
-      "device": "pump",
-      "use": "read_bg_targets",
+      "device": "units",
+      "to": "mg/dL",
+      "use": "bg_targets",
+      "input": "settings/bg_targets_raw.json",
       "reporter": "JSON"
     },
     "name": "settings/bg_targets.json"
   },
   {
     "settings/insulin_sensitivities.json": {
-      "device": "pump",
-      "use": "read_insulin_sensitivities",
+      "device": "units",
+      "to": "mg/dL",
+      "use": "insulin_sensitivities",
+      "input": "settings/insulin_sensitivities_raw.json",
       "reporter": "JSON"
     },
     "type": "report",
@@ -298,11 +302,11 @@
       "temp_basal": "monitor/temp_basal.json",
       "reporter": "text",
       "json_default": "True",
-      "iob": "monitor/iob.json",
+      "meal": "monitor/meal.json",
       "autosens": "settings/autosens.json",
       "device": "determine-basal",
       "remainder": "",
-      "meal": "monitor/meal.json",
+      "iob": "monitor/iob.json",
       "glucose": "monitor/glucose.json"
     }
   },
@@ -325,13 +329,31 @@
       "reporter": "text",
       "basal_profile": "settings/basal_profile.json",
       "json_default": "True",
-      "iob": "monitor/iob.json",
-      "device": "pebble",
-      "glucose": "monitor/glucose.json",
-      "remainder": "",
       "meal": "monitor/meal.json",
-      "enacted": "enact/enacted.json"
+      "device": "pebble",
+      "enacted": "enact/enacted.json",
+      "remainder": "",
+      "iob": "monitor/iob.json",
+      "glucose": "monitor/glucose.json"
     },
     "name": "upload/pebble.json"
+  },
+  {
+    "type": "report",
+    "name": "settings/bg_targets_raw.json",
+    "settings/bg_targets_raw.json": {
+      "device": "pump",
+      "use": "read_bg_targets",
+      "reporter": "JSON"
+    }
+  },
+  {
+    "settings/insulin_sensitivities_raw.json": {
+      "device": "pump",
+      "use": "read_insulin_sensitivities",
+      "reporter": "JSON"
+    },
+    "type": "report",
+    "name": "settings/insulin_sensitivities_raw.json"
   }
 ]
