@@ -115,7 +115,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo Are you using Nightscout? If not, press enter.
         read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
         NIGHTSCOUT_HOST=$REPLY
-        if [[ -z "$ttyport" ]]; then
+        if [[ -z "$NIGHTSCOUT_HOST" ]]; then
             echo Ok, no Nightscout for you.
         else
             echo "Ok, $NIGHTSCOUT_HOST it is."
