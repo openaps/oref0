@@ -94,47 +94,48 @@ fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|G5)] [--enable='autosens meal']"
     read -p "Start interactive setup? [Y]/n " -r
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-        read -p "What would you like to call your loop directory? [myopenaps] " -r
-        DIR=$REPLY
-        if [[ -z $DIR ]]; then DIR="myopenaps"; fi
-        echo "Ok, $DIR it is."
-        directory="$(readlink -m $DIR)"
-        read -p "What is your pump serial number? " -r
-        serial=$REPLY
-        echo "Ok, $serial it is."
-        read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
-        ttyport=$REPLY
-        echo -n "Ok, "
-        if [[ -z "$ttyport" ]]; then
-            echo -n Carelink
-        else
-            echo -n TTY $ttyport
-        fi
-        echo " it is."
-        echo Are you using Nightscout? If not, press enter.
-        read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
-        NIGHTSCOUT_HOST=$REPLY
-        if [[ -z "$ttyport" ]]; then
-            echo Ok, no Nightscout for you.
-        else
-            echo "Ok, $NIGHTSCOUT_HOST it is."
-        fi
-        if [[ ! -z $NIGHTSCOUT_HOST ]]; then
-            read -p "And what is your Nightscout api secret (i.e. myplaintextsecret)? " -r
-            API_SECRET=$REPLY
-            echo "Ok, $API_SECRET it is."
-        fi
-        read -p "Do you need any advanced features? y/[N] " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        exit
+    fi
+    read -p "What would you like to call your loop directory? [myopenaps] " -r
+    DIR=$REPLY
+    if [[ -z $DIR ]]; then DIR="myopenaps"; fi
+    echo "Ok, $DIR it is."
+    directory="$(readlink -m $DIR)"
+    read -p "What is your pump serial number? " -r
+    serial=$REPLY
+    echo "Ok, $serial it is."
+    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
+    ttyport=$REPLY
+    echo -n "Ok, "
+    if [[ -z "$ttyport" ]]; then
+        echo -n Carelink
+    else
+        echo -n TTY $ttyport
+    fi
+    echo " it is."
+    echo Are you using Nightscout? If not, press enter.
+    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
+    NIGHTSCOUT_HOST=$REPLY
+    if [[ -z "$ttyport" ]]; then
+        echo Ok, no Nightscout for you.
+    else
+        echo "Ok, $NIGHTSCOUT_HOST it is."
+    fi
+    if [[ ! -z $NIGHTSCOUT_HOST ]]; then
+        read -p "And what is your Nightscout api secret (i.e. myplaintextsecret)? " -r
+        API_SECRET=$REPLY
+        echo "Ok, $API_SECRET it is."
+    fi
+    read -p "Do you need any advanced features? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        read -p "Enable automatic sensitivity adjustment? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            read -p "Enable automatic sensitivity adjustment? y/[N] " -r
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                ENABLE+=" autosens "
-            fi
-            read -p "Enable advanced meal assist? y/[N] " -r
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                ENABLE+=" meal "
-            fi
+            ENABLE+=" autosens "
+        fi
+        read -p "Enable advanced meal assist? y/[N] " -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            ENABLE+=" meal "
         fi
     fi
 fi
