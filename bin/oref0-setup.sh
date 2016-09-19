@@ -297,7 +297,7 @@ read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 # add crontab entries
 (crontab -l; crontab -l | grep -q $NIGHTSCOUT_HOST || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
-(crontab -l; crontab -l | grep -q $API_SECRET || echo API_SECRET=`nightscout hash-api-secret $API_SECRET`) | crontab -
+(crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=`nightscout hash-api-secret $API_SECRET`) | crontab -
 (crontab -l; crontab -l | grep -q PATH || echo "PATH=$PATH" ) | crontab -
 (crontab -l; crontab -l | grep -q wpa_cli || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than 10m openaps" || echo '* * * * * killall -g --older-than 10m openaps') | crontab -
