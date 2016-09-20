@@ -279,7 +279,7 @@ fi
 
 # Medtronic CGM
 if [[ ${CGM,,} =~ "mdt" ]]; then
-    pip install -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
+    sudo pip install -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
     openaps device remove cgm 2>/dev/null
     if [[ -z "$ttyport" ]]; then
         openaps device add cgm medtronic $serial || die "Can't add cgm"
