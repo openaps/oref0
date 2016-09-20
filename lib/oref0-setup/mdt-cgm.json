@@ -1,0 +1,51 @@
+[
+  {
+    "type": "vendor",
+    "name": "openapscontrib.glucosetools",
+    "openapscontrib.glucosetools": {
+      "path": ".",
+      "module": "openapscontrib.glucosetools"
+    }
+  },
+  {
+    "extra": {},
+    "type": "device",
+    "name": "glucose",
+    "glucose": {
+      "vendor": "openapscontrib.glucosetools",
+      "extra": "glucose.ini"
+    }
+  },
+  {
+    "monitor/cgm-mm-glucosedirty.json": {
+      "hours": "24.0",
+      "device": "cgm",
+      "use": "iter_glucose_hours",
+      "reporter": "JSON"
+    },
+    "type": "report",
+    "name": "monitor/cgm-mm-glucosedirty.json"
+  },
+  {
+    "type": "report",
+    "name": "cgm/cgm-glucose.json",
+    "cgm/cgm-glucose.json": {
+      "use": "clean",
+      "reporter": "JSON",
+      "astimezone": "False",
+      "date": "display_time dateString",
+      "adjust": "missing",
+      "input": "raw-cgm/raw-entries.json",
+      "device": "glucose",
+      "timezone": "",
+      "infile": "monitor/cgm-mm-glucosedirty.json"
+    }
+  },
+  {
+    "type": "alias",
+    "name": "monitor-cgm",
+    "monitor-cgm": {
+      "command": "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose.json"
+    }
+  }
+]

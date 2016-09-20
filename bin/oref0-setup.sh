@@ -64,10 +64,6 @@ case $i in
     ENABLE="${i#*=}"
     shift # past argument=value
     ;;
-    -c=*|--cgm=*)
-    CGM="${i#*=}"
-    shift # past argument=value
-    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -75,8 +71,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default) or G5."
+if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), G5, or MDT."
     echo "If you'd like to help add Medtronic CGM support, please contact @scottleibrand on Gitter"
     echo
     DIR="" # to force a Usage prompt
@@ -92,7 +88,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|G5)] [--enable='autosens meal']"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|G5|MDT)] [--enable='autosens meal']"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -144,7 +140,7 @@ fi
     #share_serial=$4
 #fi
 
-echo "Setting up oref0 in $directory for pump $serial with Dexcom $CGM,"
+echo "Setting up oref0 in $directory for pump $serial with $CGM CGM,"
 echo -n "NS host $NIGHTSCOUT_HOST, "
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
@@ -279,6 +275,27 @@ else
     openaps device add pump mmeowlink subg_rfspy $ttyport $serial || die "Can't add pump"
     openaps alias add wait-for-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 200`; do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
+fi
+
+# Medtronic CGM
+if [[ ${CGM,,} =~ "mdt" ]]; then
+    pip install -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
+    openaps device remove cgm 2>/dev/null
+    if [[ -z "$ttyport" ]]; then
+        openaps device add cgm medtronic $serial || die "Can't add cgm"
+    else
+        openaps device add cgm mmeowlink subg_rfspy $ttyport $serial || die "Can't add cgm"
+    fi
+    for type in mdt-cgm; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+#openaps vendor add openapscontrib.glucosetools || die "Couldn't add glucosetools vendor"
+#openaps device add glucose glucosetools || die "Couldn't add glucose device"
+#openaps report add monitor/cgm-mm-glucosedirty.json JSON cgm iter_glucose_hours 24 || die "Can't add cgm-mm-glucosedirty.json"
+#openaps report add cgm/cgm-glucose.json JSON glucose clean monitor/cgm-mm-glucosedirty.json || die "Can't add cgm-glucose.json"
+#openaps alias add monitor-cgm "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose.json" || die "Can't add monitor-cgm"
+
 fi
 
 # configure optional features
