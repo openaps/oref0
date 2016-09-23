@@ -101,6 +101,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
+    read -p "What Kind of CGM are you using? (i.e. G4, G5, mdt) " -r
+    CGM=$REPLY
+    echo "Ok, $CGM it is."
     read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
     ttyport=$REPLY
     echo -n "Ok, "
