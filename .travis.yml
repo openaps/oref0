@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 language: node_js
 sudo: false
 node_js:
@@ -5,3 +6,14 @@ node_js:
   - "0.12"
 script: make travis
 after_script: make report
+=======
+sudo: false
+language: python
+python:
+  - "2.7"
+foo:
+  - pip install -e .
+install:
+  - python setup.py install
+script: make ci-test
+>>>>>>> 43401bc3046ccaf4ec65db282e638bd9be2b760a

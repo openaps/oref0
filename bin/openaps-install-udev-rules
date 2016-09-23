@@ -1,0 +1,50 @@
+#! /bin/bash
+
+vendor=${1-'all'}
+function print_dist_data ( ) {
+package=$1
+filename=$2
+cat <<EOF | python -
+import pkg_resources
+print pkg_resources.resource_string("$package", "$filename")
+EOF
+}
+
+function gen_medtronic ( ) {
+   echo decocare etc/80-medtronic-carelink.rules
+}
+
+function gen_dexcom ( ) {
+   echo dexcom_reader etc/udev/rules.d/80-dexcom.rules
+}
+
+function gen_known ( ) {
+"gen_$1"
+}
+
+if [[ $EUID -ne 0 ]] ; then
+  echo run as root
+  exit 1
+fi
+(
+case $vendor in
+  all)
+    for x in medtronic dexcom ; do
+      gen_known $x
+    done
+  ;;
+  medtronic|dexcom)
+    gen_known $vendor
+  ;;
+esac
+) | while read module file ; do
+  filename=$(basename $file)
+  installed="/etc/udev/rules.d/$filename"
+  cat <<EOF | python - > $installed && echo -n installed' ' || echo -n failed' '
+import pkg_resources
+print pkg_resources.resource_string("$module", "$file")
+EOF
+  echo $installed
+done
+udevadm control --reload
+

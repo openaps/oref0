@@ -1,0 +1,16 @@
+box: wercker/python
+
+build:
+    steps:
+      - script:
+          name: 'install'
+          code: |
+            sudo python setup.py install
+
+      - script:
+          name: 'test'
+          code: |
+            make ci-test
+
+
+

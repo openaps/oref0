@@ -1,0 +1,172 @@
+#! /usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
+"""
+
+"""
+from subprocess import call
+
+import sys, os
+import argparse
+import argcomplete
+import openaps
+from openaps import cli
+from openaps import builtins
+
+
+COMMON_COMMANDS = [ 'init', 'alias', 'help', 'use',
+                    'report', 'device', 'vendor' ]
+def complete_args (prefix, parsed_args, action, **kwargs):
+  # argcomplete.debug("parsed_args", parsed_args)
+  compline = os.environ['COMP_LINE']
+  argcomplete.debug("compline", compline)
+
+  point = int(os.environ['COMP_POINT'])
+  # argcomplete.debug("COMP_POINT", point)
+  argcomplete.debug("parsed_args", parsed_args)
+  if parsed_args.command is None:
+    others = builtins.get_builtins( ).keys( ) + COMMON_COMMANDS
+    others.sort( )
+    return [ ] or action.choices or others
+  # if True or parsed_args.command not in ['help', None]:
+  # return [ 'debug' ]
+  shell_cmd = ['openaps-%s' % parsed_args.command ] + parsed_args.args + [ prefix ]
+  other_prog = shell_cmd[0]
+  # point = len(parsed_args.command)
+  # os.environ['COMP_POINT'] = str(point + len(' '.join([ ] + shell_cmd[2:])))
+  old_name = compline.split(' ')
+  compline = ' '.join([other_prog] + parsed_args.args + [ prefix ])
+  os.environ['COMP_LINE'] = compline
+  os.environ['COMP_POINT'] = str(len(compline))
+  os.environ['PROGNAME'] = other_prog
+  argcomplete.debug("subshell", shell_cmd, os.environ.keys( ))
+  os.execvp(shell_cmd[0], shell_cmd[1:])
+  sys.exit(0)
+
+def no_complete (prefix, parsed_args, action, **kwargs):
+  return None
+
+class BaseApp (cli.Base):
+  """
+  openaps - openaps: a toolkit for DIY artificial pancreas system
+
+  Utilities for developing an artificial pancreas system.
+  openaps helps you manage and structure reports for various devices.
+
+       .-. .,-.  .-. .--. .-.  .,-. .--.
+      (   )|   )(.-' |  |(   ) |   )`--.
+       `-' |`-'  `--''  `-`-'`-|`-' `--'
+           |                   |        
+           '                   '        
+Common workflows:
+
+Getting started:
+
+openaps init <name>    - create a new instance of openaps
+openaps init myopenaps - this creates an instance of openaps in a new
+                         directory, called myopenaps
+
+cd myopenaps - change directory to root of new repo
+
+A valid instance of openaps is a git repo with a file called
+openaps.ini present.
+
+openaps will track configuration and some status information inside of
+openaps.ini.  If you already have a git repo which you would like to
+become a valid openaps environent, in the root of your repo, run:
+    
+    touch openaps.ini
+    git add openaps.ini
+    git commit -avm 'init openaps'
+
+Now, wth a valid openaps environment, you can register devices for
+use.  A device is implemented by a vendor.  openaps [will] provide a
+modular, language and process independent environment for creating
+vendors and devices, but for now the only two are dexcom and
+medtronic.
+
+To register devices for use, see:
+  openaps device -h
+  openaps device add <name> <vendor> [opts...]
+  eg:
+  # register a medtronic device named pump
+  openaps device add pump medtronic 665455
+  # register a dexcom device named cgm
+  openaps device add cgm dexcom
+
+Now that devices are known, and we have a variety of commands
+available.  We can explore how to produce reports by using devices
+with the openaps use command:
+
+    openaps use <device-name> <use-name> [opts]
+
+openaps use commands can only be used after devices have been added to
+the openaps.ini config using openaps device add.
+Eg:
+    openaps use pump -h        - show available commands for the
+                                 device known as "pump"
+    openaps use pump iter_pump - get last 100 pump history records
+                                 from the device called pump
+    openaps use cgm -h         - show available commands for the
+                                 device known as "cgm"
+    openaps use cgm glucose
+
+After experimenting with openaps use commands, users can save reports
+using the openaps report commands.
+openaps report commands map openaps use commands to filenames:
+
+    openaps report add <report-name> <report-formatter> <device> <use> [opts]
+
+    # add a report, saved in a file called pump-history.json, which is
+    # JSON format, from device pump using use iter_pump.
+    openaps report add pump-history.json JSON pump iter_pump
+
+    # add a report, saved in a file called glucose.json, which is
+    # JSON format, from device cgm using use glucose.
+    openaps report add glucose.json JSON cgm glucose
+
+    # invoke the report to create glucose.json
+    openaps report invoke glucose.json
+
+    # invoke the report to create pump-history.json
+    openaps report invoke pump-history.json
+
+
+  All commands support tab completion, and -h help options to help
+  explore the live help system.
+
+  """
+  always_complete_options = False
+  def configure_parser (self, parser):
+    self.parser.add_argument('-c', nargs=2).completer = no_complete
+    self.parser.add_argument('-C', '--config', default=None).completer = no_complete
+    self.parser.add_argument('--version', action='version', version='%s %s' % ('%(prog)s', openaps.__version__)).completer = no_complete
+    self.parser.add_argument('command', nargs='?'
+                            # , choices=['init', 'alias', 'help', 'get', 'suggest', 'enact' ]
+                            , default=None).completer = complete_args
+    self.parser.add_argument('args', nargs=argparse.REMAINDER).completer = complete_args
+
+  def run (self, args):
+    if args.config:
+      os.environ['OPENAPS_CONFIG'] = args.config
+      os.chdir(os.path.dirname(args.config))
+    if args.command in ['help', None]:
+      self.parser.print_help( )
+    elif builtins.is_builtin(args.command):
+      builtins.dispatch(args, self)
+    elif args.command in ['get', 'suggest', ]:
+      exit(call(['openaps-%s' % args.command ] + args.args))
+    elif args.command:
+      try:
+        exit(call(['openaps-%s' % args.command ] + args.args))
+      except (OSError), e:
+        print e
+        print """openaps: '{command}' is not an openaps command. See 'openaps --help'.
+        """.format(command=args.command)
+
+
+if __name__ == '__main__':
+
+    app = BaseApp(None)
+    app( )
+    sys.exit(0)
+
