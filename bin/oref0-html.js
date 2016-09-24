@@ -50,19 +50,11 @@ function fileHM(file) {
     return HMS[0].concat(":", HMS[1]);
 }
 
-function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json> [meal.json]');
-}
-
 if (!module.parent) {
     
     var fs = require('fs');
 
     var glucose_input = process.argv.slice(2, 3).pop()
-    if ([null, '--help', '-h', 'help'].indexOf(glucose_input) > 0) {
-      usage( );
-      process.exit(0)
-    }
     var iob_input = process.argv.slice(3, 4).pop()
     var basalprofile_input = process.argv.slice(4, 5).pop()
     var currenttemp_input = process.argv.slice(5, 6).pop()
@@ -70,8 +62,8 @@ if (!module.parent) {
     var enactedtemp_input = process.argv.slice(7, 8).pop()
     var meal_input = process.argv.slice(8, 9).pop()
     
-    if (!glucose_input || !iob_input || !basalprofile_input || !currenttemp_input || !requestedtemp_input || !enactedtemp_input) {
-        usage( );
+    if (!glucose_input || !iob_input || !basalprofile_input || !currenttemp_input || !requestedtemp_input ) {
+        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json> [meal.json]');
         process.exit(1);
     }
     
@@ -86,6 +78,9 @@ if (!module.parent) {
     }
 
     var bgnow = glucose_data[0].glucose;
+    var delta = glucose_data[0].glucose - glucose_data[1].glucose;
+    var tick = delta;
+    if (delta >= 0) { tick = "+" + delta; } 
     var iob_data = require(cwd + '/' + iob_input);
     iob = iob_data.iob.toFixed(1);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
@@ -98,7 +93,7 @@ if (!module.parent) {
     if (temp.duration < 1) {
         tempstring = "No temp basal";
     } else {
-        tempstring = "Tmp: " + temp.duration + "m@" + temp.rate.toFixed(1);
+        tempstring = "Tmp: " + temp.duration + "m @ " + temp.rate.toFixed(1);
     }
     try {
         var requestedtemp = require(cwd + '/' + requestedtemp_input);
@@ -114,16 +109,16 @@ if (!module.parent) {
     } else { 
         reqtempstring = requestedtemp.duration + "m@" + requestedtemp.rate.toFixed(1) + "U";
     }
-    var enactedtemp = require(cwd + '/' + enactedtemp_input);
-    if (enactedtemp.duration < 1) {
-        enactedstring = "Cancel";
-    } else { 
-        enactedstring = enactedtemp.duration + "m@" + enactedtemp.rate.toFixed(1) + "U";
-    }
+    //var enactedtemp = require(cwd + '/' + enactedtemp_input);
+    //if (enactedtemp.duration < 1) {
+        //enactedstring = "Cancel";
+    //} else { 
+        //enactedstring = enactedtemp.duration + "m@" + enactedtemp.rate.toFixed(1) + "U";
+    //}
     tz = new Date().toString().match(/([-\+][0-9]+)\s/)[1]
-    enactedDate = new Date(enactedtemp.timestamp.concat(tz));
-    enactedHMS = enactedDate.toLocaleTimeString().split(":")
-    enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
+    //enactedDate = new Date(enactedtemp.timestamp.concat(tz));
+    //enactedHMS = enactedDate.toLocaleTimeString().split(":")
+    //enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
 
     var mealCOB = "???";
     if (typeof meal_input != 'undefined') {
@@ -138,23 +133,49 @@ if (!module.parent) {
         }
     }
 
-    var os = require("os");
-    var host = os.hostname();
+//console.log("<!-- ");
+console.log( bgnow + requestedtemp.tick + " " + bgTime + ", "
+    + iob + "U -> " + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + ", "
+    + tempstring + "U/hr @ " + temp_time
+    + " " + reqtempstring
+    + ", " + requestedtemp.reason + ", "
+    //+ "Sched: " + basalRate + "U/hr, "
+    //+ "mealCOB: " + mealCOB + "g"
+    );
+//console.log(" -->");
 
-    var pebble = {        
-        "content" : "" + bgnow + requestedtemp.tick + " " + bgTime + "\n"
-        + iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + "\n"
+console.log("<body>");
+    console.log("<title>");
+        console.log( bgnow + " " + tick + " at " + bgTime );
+    console.log("</title>");
+    console.log('<meta http-equiv="refresh" content="60">');
+    console.log('<meta name="viewport" content="width=500">');
+console.log("<head>");
+
+console.log("<body>");
+
+        console.log("<h1>");
+        console.log( bgnow + " " + tick + " at " + bgTime );
+        console.log("<br>");
+        console.log( "IOB: " + iob + "U, eventually " + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + " mg/dL" );
+        console.log("<br>");
         //+ "Act: " + enactedstring
         //+ " at " + enactedat + "\n"
-        + tempstring
-        + " at " + temp_time + "\n"
-        + "Req: " + reqtempstring + "\n"
-        + requestedtemp.reason + "\n"
-        + "Sched: " + basalRate + "U/hr\n"
-        + "mealCOB: " + mealCOB + "g\n"
-        + host + "\n",
-        "refresh_frequency": 1
-    };
+        console.log( tempstring );
+        console.log( "U/hr at " + temp_time );
+        console.log("</h1>");
+        console.log("<br>");
+        console.log( "Req: " + reqtempstring );
+        console.log("<br>");
+        console.log( requestedtemp.reason );
+        console.log("<br>");
+        console.log( "Sched: " + basalRate + "U/hr" );
+        console.log("<br>");
+        console.log( "mealCOB: " + mealCOB + "g" );
 
-    console.log(JSON.stringify(pebble));
+
+console.log("</body>");
+
+
 }
+

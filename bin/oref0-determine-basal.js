@@ -14,28 +14,106 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
+
 /* istanbul ignore next */
 if (!module.parent) {
     var determinebasal = init();
 
-    var iob_input = process.argv.slice(2, 3).pop();
-    var currenttemp_input = process.argv.slice(3, 4).pop();
-    var glucose_input = process.argv.slice(4, 5).pop();
-    var profile_input = process.argv.slice(5, 6).pop();
-    var offline = process.argv.slice(6, 7).pop();
+    var argv = require('yargs')
+      .usage("$0 iob.json currenttemp.json glucose.json profile.json [[--auto-sens] autosens.json] [meal.json]")
+      .option('auto-sens', {
+        alias: 'a',
+        describe: "Auto-sensitivity configuration",
+        default: true
+
+      })
+      // error and show help if some other args given
+      .strict(true)
+      .help('help')
+    ;
+    function usage ( ) {
+      argv.showHelp( );
+    }
+
+    var params = argv.argv;
+    var errors = [ ];
+
+    var iob_input = params._.slice(0, 1).pop();
+    if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
+
+      usage( );
+      process.exit(0)
+    }
+    var currenttemp_input = params._.slice(1, 2).pop();
+    var glucose_input = params._.slice(2, 3).pop();
+    var profile_input = params._.slice(3, 4).pop();
+    var meal_input = params._.slice(4, 5).pop();
+    var autosens_input = params.autoSens;
+    if (params._.length > 5) {
+      autosens_input = params.autoSens ? params._.slice(4, 5).pop() : false;
+      meal_input = params._.slice(5, 6).pop();
+    }
 
     if (!iob_input || !currenttemp_input || !glucose_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<iob.json> <currenttemp.json> <glucose.json> <profile.json> [Offline]');
+        usage( );
         process.exit(1);
     }
     
-    var cwd = process.cwd();
-    var glucose_data = require(cwd + '/' + glucose_input);
-    var currenttemp = require(cwd + '/' + currenttemp_input);
-    var iob_data = require(cwd + '/' + iob_input);
-    var profile = require(cwd + '/' + profile_input);
-    var glucose_status = determinebasal.getLastGlucose(glucose_data);
+    var fs = require('fs');
+    try {
+        var cwd = process.cwd();
+        var glucose_data = require(cwd + '/' + glucose_input);
+        var currenttemp = require(cwd + '/' + currenttemp_input);
+        var iob_data = require(cwd + '/' + iob_input);
+        var profile = require(cwd + '/' + profile_input);
+        var glucose_status = determinebasal.getLastGlucose(glucose_data);
+    } catch (e) {
+        return console.error("Could not parse input data: ", e);
+    }
 
+    //console.log(carbratio_data);
+    var meal_data = { };
+    //console.error("meal_input",meal_input);
+    if (typeof meal_input != 'undefined') {
+        try {
+            meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
+            console.error(JSON.stringify(meal_data));
+        } catch (e) {
+            var msg = {
+              msg: "Optional feature Meal Assist enabled, but could not read required meal data."
+            , file: meal_input
+            , error: e
+            };
+            console.error(msg.msg);
+            // console.log(JSON.stringify(msg));
+            errors.push(msg);
+            // process.exit(1);
+        }
+    }
+    //if (meal_input) { meal_data = require(cwd + '/' + meal_input); }
+
+    //console.error(autosens_input);
+    var autosens_data = null;
+    if (autosens_input) {
+      // { "ratio":1 };
+      autosens_data = { "ratio": 1 };
+      if (autosens_input !== true && autosens_input.length) {
+        try {
+            autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
+            console.error(JSON.stringify(autosens_data));
+        } catch (e) {
+            var msg = {
+              msg: "Optional feature Auto Sensitivity enabled.  Could not find specified auto-sens: " + autosens_input
+            , error: e
+            };
+            console.error(msg.msg);
+            console.error(e);
+            // console.log(JSON.stringify(msg));
+            errors.push(msg);
+            // process.exit(1);
+        }
+      }
+    }
     //if old reading from Dexcom do nothing
 
     var systemTime = new Date();
@@ -48,18 +126,24 @@ if (!module.parent) {
     var minAgo = (systemTime - bgTime) / 60 / 1000;
 
     if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
-        var reason = "BG data is too old, or clock set incorrectly "+bgTime;
+        var reason = "BG data is too old, or clock set incorrectly "+bgTime+" vs "+systemTime;
         console.error(reason);
-        return 1;
+        var msg = {msg: reason }
+        errors.push(msg);
+        /// return 1;
+    }
+    if (errors.length) {
+      console.log(JSON.stringify(errors));
+      process.exit(1);
     }
     console.error(JSON.stringify(glucose_status));
     console.error(JSON.stringify(currenttemp));
     console.error(JSON.stringify(iob_data));
     console.error(JSON.stringify(profile));
     
-    var setTempBasal = require('../lib/basal-set-temp'); 
+    var setTempBasal = require('oref0/lib/basal-set-temp');
     
-    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, setTempBasal);
+    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, setTempBasal);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));
@@ -76,8 +160,8 @@ function init() {
         , label: "OpenAPS Determine Basal"
     };
     
-    determinebasal.getLastGlucose = require('../lib/glucose-get-last');
-    determinebasal.determine_basal = require('../lib/determine-basal/determine-basal');
+    determinebasal.getLastGlucose = require('oref0/lib/glucose-get-last');
+    determinebasal.determine_basal = require('oref0/lib/determine-basal/determine-basal');
     return determinebasal;
 
 }
