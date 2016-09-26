@@ -64,10 +64,6 @@ case $i in
     ENABLE="${i#*=}"
     shift # past argument=value
     ;;
-    -c=*|--cgm=*)
-    CGM="${i#*=}"
-    shift # past argument=value
-    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -75,8 +71,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default) or G5."
+if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), G5, or MDT."
     echo "If you'd like to help add Medtronic CGM support, please contact @scottleibrand on Gitter"
     echo
     DIR="" # to force a Usage prompt
@@ -92,7 +88,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|G5)] [--enable='autosens meal']"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|G5|MDT)] [--enable='autosens meal']"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -105,6 +101,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
+    read -p "What Kind of CGM are you using? (i.e. G4, G5, MDT) " -r
+    CGM=$REPLY
+    echo "Ok, $CGM it is."
     read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
     ttyport=$REPLY
     echo -n "Ok, "
@@ -117,7 +116,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo Are you using Nightscout? If not, press enter.
     read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
     NIGHTSCOUT_HOST=$REPLY
-    if [[ -z "$ttyport" ]]; then
+    if [[ -z $NIGHTSCOUT_HOST ]]; then
         echo Ok, no Nightscout for you.
     else
         echo "Ok, $NIGHTSCOUT_HOST it is."
@@ -144,7 +143,7 @@ fi
     #share_serial=$4
 #fi
 
-echo "Setting up oref0 in $directory for pump $serial with Dexcom $CGM,"
+echo "Setting up oref0 in $directory for pump $serial with $CGM CGM,"
 echo -n "NS host $NIGHTSCOUT_HOST, "
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
@@ -281,6 +280,27 @@ else
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 200`; do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
 fi
 
+# Medtronic CGM
+if [[ ${CGM,,} =~ "mdt" ]]; then
+    sudo pip install -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
+    openaps device remove cgm 2>/dev/null
+    if [[ -z "$ttyport" ]]; then
+        openaps device add cgm medtronic $serial || die "Can't add cgm"
+    else
+        openaps device add cgm mmeowlink subg_rfspy $ttyport $serial || die "Can't add cgm"
+    fi
+    for type in mdt-cgm; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+#openaps vendor add openapscontrib.glucosetools || die "Couldn't add glucosetools vendor"
+#openaps device add glucose glucosetools || die "Couldn't add glucose device"
+#openaps report add monitor/cgm-mm-glucosedirty.json JSON cgm iter_glucose_hours 24 || die "Can't add cgm-mm-glucosedirty.json"
+#openaps report add cgm/cgm-glucose.json JSON glucose clean monitor/cgm-mm-glucosedirty.json || die "Can't add cgm-glucose.json"
+#openaps alias add monitor-cgm "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose.json" || die "Can't add monitor-cgm"
+
+fi
+
 # configure optional features
 if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
     EXTRAS="settings/autosens.json monitor/meal.json"
@@ -293,18 +313,28 @@ fi
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
+echo
+echo Attempting to communicate with pump:
+openaps mmtune
+echo
+
 read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 # add crontab entries
-(crontab -l; crontab -l | grep -q $NIGHTSCOUT_HOST || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
+(crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
 (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=`nightscout hash-api-secret $API_SECRET`) | crontab -
-(crontab -l; crontab -l | grep -q PATH || echo "PATH=$PATH" ) | crontab -
-(crontab -l; crontab -l | grep -q wpa_cli || echo '* * * * * sudo wpa_cli scan') | crontab -
-(crontab -l; crontab -l | grep -q "killall -g --older-than 10m openaps" || echo '* * * * * killall -g --older-than 10m openaps') | crontab -
-(crontab -l; crontab -l | grep -q "reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
-(crontab -l; crontab -l | grep -q get-bg || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
-(crontab -l; crontab -l | grep -q ns-loop || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
-(crontab -l; crontab -l | grep -q pump-loop || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+(crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
+(crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
+(crontab -l; crontab -l | grep -q "killall -g --older-than 20m openaps" || echo '* * * * * killall -g --older-than 20m openaps') | crontab -
+(crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
+if ! [[ ${CGM,,} =~ "mdt" ]]; then
+    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
+fi
+(crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+if [[ $ENABLE =~ autosens ]]; then
+    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens | tee -a /var/log/openaps/autosens-loop.log") | crontab -
+fi
+(crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
 crontab -l
 fi
 

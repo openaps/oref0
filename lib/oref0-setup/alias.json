@@ -100,7 +100,7 @@
   {
     "type": "alias",
     "autosens": {
-      "command": "! bash -c \"(find settings/ -newer settings/autosens.json | grep -q pumphistory-24h-zoned.json || find settings/ -size -5c | grep -q autosens.json || ! find settings/ | grep -q autosens || ! find settings/autosens.json) && openaps invoke settings/autosens.json\""
+      "command": "! bash -c \"date; (find settings/ -newer settings/autosens.json | grep -q pumphistory-24h-zoned.json || find settings/ -size -5c | grep -q autosens.json || ! find settings/ | grep -q autosens || ! find settings/autosens.json) && openaps invoke settings/autosens.json\""
     },
     "name": "autosens"
   },
@@ -171,7 +171,7 @@
     "type": "alias",
     "name": "ns-loop",
     "ns-loop": {
-      "command": "! bash -c \"echo Starting ns-loop at `date`: && openaps get-ns-bg; openaps autosens; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps upload\""
+      "command": "! bash -c \"echo Starting ns-loop at `date`: && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps upload\""
     }
   },
   {

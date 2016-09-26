@@ -1,0 +1,58 @@
+[
+  {
+    "type": "vendor",
+    "name": "openapscontrib.glucosetools",
+    "openapscontrib.glucosetools": {
+      "path": ".",
+      "module": "openapscontrib.glucosetools"
+    }
+  },
+  {
+    "extra": {},
+    "type": "device",
+    "name": "glucose",
+    "glucose": {
+      "vendor": "openapscontrib.glucosetools",
+      "extra": "glucose.ini"
+    }
+  },
+  {
+    "monitor/cgm-mm-glucosedirty.json": {
+      "hours": "24.0",
+      "device": "cgm",
+      "use": "iter_glucose_hours",
+      "reporter": "JSON"
+    },
+    "type": "report",
+    "name": "monitor/cgm-mm-glucosedirty.json"
+  },
+  {
+    "type": "report",
+    "name": "cgm/cgm-glucose.json",
+    "cgm/cgm-glucose.json": {
+      "use": "clean",
+      "reporter": "JSON",
+      "astimezone": "False",
+      "date": "display_time dateString",
+      "adjust": "missing",
+      "input": "raw-cgm/raw-entries.json",
+      "device": "glucose",
+      "timezone": "",
+      "infile": "monitor/cgm-mm-glucosedirty.json"
+    }
+  },
+  {
+    "type": "alias",
+    "name": "monitor-cgm",
+    "monitor-cgm": {
+      "command": "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose.json"
+    }
+  },
+  {
+    "pump-loop": {
+      "command": "! bash -c \"sleep $[ ( $RANDOM / 2048 ) ]s; until(echo Starting pump-loop at `date`: && openaps wait-for-silence && openaps get-bg && openaps refresh-old-pumphistory && openaps refresh-old-pumphistory-24h && openaps refresh-old-profile && openaps refresh-temp-and-enact && openaps refresh-pumphistory-and-enact && openaps refresh-profile && openaps refresh-pumphistory-24h && echo Completed pump-loop at `date` && echo); do echo Error, retrying && [[ $RANDOM > 30000 ]] && openaps wait-for-long-silence && openaps mmtune; sleep 5; done\""
+    },
+    "type": "alias",
+    "name": "pump-loop"
+  }
+]

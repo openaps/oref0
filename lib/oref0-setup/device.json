@@ -49,7 +49,7 @@
   },
   {
     "extra": {
-      "fields": "pumphistory profile clock carbs glucose basal",
+      "fields": "pumphistory profile clock glucose basal carbs",
       "cmd": "oref0",
       "args": "meal"
     },
