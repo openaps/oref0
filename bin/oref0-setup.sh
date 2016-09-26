@@ -325,7 +325,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=`nightscout hash-api-secret $API_SECRET`) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
-(crontab -l; crontab -l | grep -q "killall -g --older-than 10m openaps" || echo '* * * * * killall -g --older-than 10m openaps') | crontab -
+(crontab -l; crontab -l | grep -q "killall -g --older-than 20m openaps" || echo '* * * * * killall -g --older-than 20m openaps') | crontab -
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
 if ! [[ ${CGM,,} =~ "mdt" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
