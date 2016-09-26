@@ -199,16 +199,16 @@
     "name": "monitor/meal.json",
     "monitor/meal.json": {
       "profile": "settings/profile.json",
-      "carbs": "monitor/glucose.json",
+      "glucose": "monitor/glucose.json",
       "clock": "monitor/clock-zoned.json",
       "reporter": "text",
       "json_default": "True",
       "use": "shell",
       "pumphistory": "monitor/pumphistory-zoned.json",
-      "basal": "monitor/carbhistory.json",
+      "carbs": "monitor/carbhistory.json",
       "device": "meal",
       "remainder": "",
-      "glucose": "settings/basal_profile.json"
+      "basal": "settings/basal_profile.json"
     }
   },
   {
