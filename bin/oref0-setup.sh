@@ -314,6 +314,10 @@ echo Running: openaps report add enact/suggested.json text determine-basal shell
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
 echo
+if [[ "$ttyport" =~ "spi" ]]; then
+    echo Resetting spi_serial
+    reset_spi_serial.py
+fi
 echo Attempting to communicate with pump:
 openaps mmtune
 echo
