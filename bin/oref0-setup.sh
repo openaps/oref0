@@ -268,6 +268,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
 
 fi
 
+cd $directory || die "Can't cd $directory"
 if [[ -z "$ttyport" ]]; then
     openaps device add pump medtronic $serial || die "Can't add pump"
     # carelinks can't listen for silence or mmtune, so just do a preflight check instead
