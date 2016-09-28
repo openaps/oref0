@@ -244,7 +244,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
             (cd ~/src/915MHzEdisonExplorer_SW && git fetch && git checkout master && git pull) || die "Couldn't pull latest 915MHzEdisonExplorer_SW master"
         else
             echo -n "Cloning 915MHzEdisonExplorer_SW master: "
-            (cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
+            (cd ~/src && git clone -b master https://github.com/scottleibrand/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
         fi
         echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e . || die "Couldn't install spi_serial"
     fi
@@ -261,13 +261,14 @@ if [[ "$ttyport" =~ "spi" ]]; then
             echo -n "Cloning mraa master: "
             (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
         fi
-        ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
-        make && sudo make install ) || die "Could not compile mraa"
+        ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && make clean && cmake .. -DBUILDSWIGNODE=OFF && \
+        make && sudo make install && echo && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
         sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
     fi
 
 fi
 
+cd $directory || die "Can't cd $directory"
 if [[ -z "$ttyport" ]]; then
     openaps device add pump medtronic $serial || die "Can't add pump"
     # carelinks can't listen for silence or mmtune, so just do a preflight check instead
@@ -314,6 +315,10 @@ echo Running: openaps report add enact/suggested.json text determine-basal shell
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
 echo
+if [[ "$ttyport" =~ "spi" ]]; then
+    echo Resetting spi_serial
+    reset_spi_serial.py
+fi
 echo Attempting to communicate with pump:
 openaps mmtune
 echo
@@ -333,6 +338,9 @@ fi
 (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
 if [[ $ENABLE =~ autosens ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens | tee -a /var/log/openaps/autosens-loop.log") | crontab -
+fi
+if [[ "$ttyport" =~ "spi" ]]; then
+    (crontab -l; crontab -l | grep -q "cd $directory && reset_spi_serial.py" || echo "@reboot cd $directory && reset_spi_serial.py") | crontab -
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
 crontab -l
