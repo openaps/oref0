@@ -349,7 +349,7 @@ elif [[ ${CGM,,} =~ "G4" || ${CGM,,} =~ "shareble" ]]; then
                 (cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
             else
                 echo -n "Cloning openaps dev: "
-                (cd ~/src && git clone -b dev git://github.com/oskarpearson/openaps.git) || die "Couldn't clone openaps dev"
+                (cd ~/src && git clone -b dev git://github.com/openaps/openaps.git) || die "Couldn't clone openaps dev"
             fi
             echo Installing latest openaps dev && (cd $HOME/src/openaps/ && sudo python setup.py develop) || die "Couldn't install openaps"
         fi
