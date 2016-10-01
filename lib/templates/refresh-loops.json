@@ -566,7 +566,7 @@
   },
   {
     "get-bg": {
-      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose.json && rsync -rtu cgm/cgm-glucose.json cgm/glucose.json; rsync -rtu cgm/glucose.json monitor/glucose.json\""
+      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
     },
     "type": "alias",
     "name": "get-bg"
@@ -575,7 +575,7 @@
     "type": "alias",
     "name": "get-ns-bg",
     "get-ns-bg": {
-      "command": "! bash -c \"openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 30\\\" | grep -q glucose && rsync -rtu cgm/ns-glucose.json cgm/glucose.json; rsync -rtu cgm/glucose.json monitor/glucose.json\""
+      "command": "! bash -c \"openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 30\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
     }
   },
   {
