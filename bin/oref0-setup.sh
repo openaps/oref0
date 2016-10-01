@@ -340,12 +340,10 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
         echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
-#openaps vendor add openapscontrib.glucosetools || die "Couldn't add glucosetools vendor"
-#openaps device add glucose glucosetools || die "Couldn't add glucose device"
-#openaps report add monitor/cgm-mm-glucosedirty.json JSON cgm iter_glucose_hours 24 || die "Can't add cgm-mm-glucosedirty.json"
-#openaps report add cgm/cgm-glucose.json JSON glucose clean monitor/cgm-mm-glucosedirty.json || die "Can't add cgm-glucose.json"
-#openaps alias add monitor-cgm "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose.json" || die "Can't add monitor-cgm"
-
+elif [[ ${CGM,,} =~ "G4" || ${CGM,,} =~ "shareble" ]]; then
+    if [[ $ENABLE =~ "raw" ]]; then
+        openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24" --threshold "100"
+    fi
 fi
 
 # configure optional features
