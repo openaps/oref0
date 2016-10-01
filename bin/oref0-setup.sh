@@ -370,6 +370,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
 (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=`nightscout hash-api-secret $API_SECRET`) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
+if [[ ${CGM,,} =~ "shareble" ]]; then
+    # cross-platform hack to make sure experimental bluetoothd is running for openxshareble
+    (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sudo killall bluetoothd && sudo /usr/local/bin/bluetoothd --experimental') | crontab -
+fi
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than 20m openaps" || echo '* * * * * killall -g --older-than 20m openaps') | crontab -
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
