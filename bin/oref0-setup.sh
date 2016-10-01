@@ -75,7 +75,7 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble"]]; then
+if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" ]]; then
     echo "Unsupported CGM.  Please select (Dexcom) G4 (default), shareble, G5, or MDT."
     echo "If you'd like to help add Medtronic CGM support, please contact @scottleibrand on Gitter"
     echo
