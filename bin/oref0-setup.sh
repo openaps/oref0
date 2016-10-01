@@ -274,7 +274,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     openaps vendor add openxshareble || die "Couldn't add openxshareble vendor"
     openaps device remove cgm || die "Couldn't remove existing cgm device"
     openaps device add cgm openxshareble || die "Couldn't add openxshareble device"
-    openaps use share configure --serial $BLE_SERIAL || die "Couldn't configure share serial"
+    openaps use cgm configure --serial $BLE_SERIAL || die "Couldn't configure share serial"
 
 fi
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
