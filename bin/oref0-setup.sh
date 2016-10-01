@@ -269,7 +269,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
-        sudo killall bluetoothd && sudo /usr/local/bin/bluetoothd --experimental
+        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental
     fi
     openaps vendor add openxshareble || die "Couldn't add openxshareble vendor"
     openaps device remove cgm || die "Couldn't remove existing cgm device"
