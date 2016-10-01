@@ -60,12 +60,16 @@ case $i in
     API_SECRET="${i#*=}"
     shift # past argument=value
     ;;
-    -e=*|--enable=*)
-    ENABLE="${i#*=}"
+    -r=*|--radio-locale=*)
+    radio_locale="${i#*=}"
     shift # past argument=value
     ;;
     -b=*|--bleserial=*)
     BLE_SERIAL="${i#*=}"
+    shift # past argument=value
+    ;;
+    -e=*|--enable=*)
+    ENABLE="${i#*=}"
     shift # past argument=value
     ;;
     *)
@@ -74,6 +78,10 @@ case $i in
     ;;
 esac
 done
+if [[ -z $TTY && radio_locale != "US" ]]; then
+    echo "World wide radio locale is only supported with TI stick currently"
+    echo "If you'd like to help add World Wide radio locale support, please contact @pietergit on Gitter"
+fi
 
 if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" ]]; then
     echo "Unsupported CGM.  Please select (Dexcom) G4 (default), shareble, G5, or MDT."
@@ -92,7 +100,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--enable='autosens meal']"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--radio-locale=(US|WW)] [--enable='autosens meal']"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -122,6 +130,17 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo -n TTY $ttyport
     fi
     echo " it is."
+	# 
+	if [[ -n "$ttyport" ]]; then
+		read -p "Are you using a USA (US) or world wide (WW) Medtronic pump? If US, press enter, otherwise enter WW. " -r
+		radio_locale=$REPLY
+		if [[ $radio_locale =~ ^[Ww][Ww]$ ]]; then
+			radio_locale="WW"
+		else
+			radio_locale="US"
+		fi
+	fi
+
     echo Are you using Nightscout? If not, press enter.
     read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
     NIGHTSCOUT_HOST=$REPLY
@@ -203,6 +222,10 @@ if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No modul
         echo -n "Cloning mmeowlink dev: "
         (cd ~/src && git clone -b dev git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink dev"
     fi
+	if [[ "$radio_locale" -eq "WW" ]]; then
+		echo -n "Patching mmtune.py for WW frequencies. " # temporary fix for https://github.com/oskarpearson/mmeowlink/issues/16
+		sed -i "s/def __init__(self, link, pumpserial, radio_locale='US'):/def __init__(self, link, pumpserial, radio_locale='WW'):/g" ~/src/mmeowlink/mmeowlink/mmtune.py || die "Couldn't patch mmtune.py"
+	fi
     echo Installing latest mmeowlink dev && cd $HOME/src/mmeowlink/ && sudo pip install -e . || die "Couldn't install mmeowlink"
 fi
 
