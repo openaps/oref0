@@ -251,15 +251,15 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         fi
         echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
     fi
+    if [ -d "$HOME/src/openxshareble/" ]; then
+        echo "$HOME/src/openxshareble/ already exists; pulling latest master branch"
+        (cd ~/src/openxshareble && git fetch && git checkout master && git pull) || die "Couldn't pull latest openxshareble master"
+    else
+        echo -n "Cloning openxshareble master: "
+        (cd ~/src && git clone https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble master"
+    fi
     echo Checking openxshareble installation
     if ! python -c "import openxshareble" 2>/dev/null; then
-        if [ -d "$HOME/src/openxshareble/" ]; then
-            echo "$HOME/src/openxshareble/ already exists; pulling latest master branch"
-            (cd ~/src/openxshareble && git fetch && git checkout master && git pull) || die "Couldn't pull latest openxshareble master"
-        else
-            echo -n "Cloning openxshareble master: "
-            (cd ~/src && git clone https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble master"
-        fi
         echo Installing openxshareble && cd $HOME/src/openxshareble && sudo python setup.py develop || die "Couldn't install openxshareble"
     fi
     sudo apt-get -y install libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
