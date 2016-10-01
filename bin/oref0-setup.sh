@@ -64,6 +64,10 @@ case $i in
     ENABLE="${i#*=}"
     shift # past argument=value
     ;;
+    -b=*|--bleserial=*)
+    BLE_SERIAL="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -71,8 +75,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), G5, or MDT."
+if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble"]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), shareble, G5, or MDT."
     echo "If you'd like to help add Medtronic CGM support, please contact @scottleibrand on Gitter"
     echo
     DIR="" # to force a Usage prompt
@@ -88,7 +92,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|G5|MDT)] [--enable='autosens meal']"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--enable='autosens meal']"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -101,9 +105,14 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What Kind of CGM are you using? (i.e. G4, G5, MDT) " -r
+    read -p "What kind of CGM are you using? (i.e. G4, shareble, G5, MDT) " -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
+    if [[ ${CGM,,} =~ "shareble" ]]; then
+        read -p "What is your G4 Share Serial Number? (i.e. SM12345678) " -r
+        BLE_SERIAL=$REPLY
+        echo "$BLE_SERIAL? Got it."
+    fi
     read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
     ttyport=$REPLY
     echo -n "Ok, "
@@ -138,10 +147,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         fi
     fi
 fi
-
-#if [[ $# -gt 3 ]]; then
-    #share_serial=$4
-#fi
 
 echo "Setting up oref0 in $directory for pump $serial with $CGM CGM,"
 echo -n "NS host $NIGHTSCOUT_HOST, "
@@ -230,6 +235,42 @@ done
 # add/configure devices
 if [[ ${CGM,,} =~ "g5" ]]; then
     openaps use cgm config --G5
+elif [[ ${CGM,,} =~ "shareble" ]]; then
+    echo Checking Adafruit_BluefruitLE installation
+    if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
+        if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
+            echo "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
+            (cd ~/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+        else
+            echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
+            (cd ~/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+        fi
+        echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
+    fi
+    echo Checking openxshareble installation
+    if ! python -c "import openxshareble" 2>/dev/null; then
+        if [ -d "$HOME/src/openxshareble/" ]; then
+            echo "$HOME/src/openxshareble/ already exists; pulling latest master branch"
+            (cd ~/src/openxshareble && git fetch && git checkout master && git pull) || die "Couldn't pull latest openxshareble master"
+        else
+            echo -n "Cloning openxshareble master: "
+            (cd ~/src && git clone https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble master"
+        fi
+        echo Installing openxshareble && cd $HOME/src/openxshareble && sudo python setup.py develop || die "Couldn't install openxshareble"
+    fi
+    sudo apt-get -y install libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
+    echo Checking bluez installation
+    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
+        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
+        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
+        make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+        sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
+    fi
+    openaps vendor add openxshareble || die "Couldn't add openxshareble vendor"
+    openaps device remove cgm || die "Couldn't remove existing cgm device"
+    openaps device add cgm openxshareble || die "Couldn't add openxshareble device"
+    openaps use share configure --serial $BLE_SERIAL || die "Couldn't configure share serial"
+
 fi
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
@@ -344,6 +385,12 @@ if [[ "$ttyport" =~ "spi" ]]; then
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
 crontab -l
+
+if [[ ${CGM,,} =~ "shareble" ]]; then
+    echo
+    echo "To pair your G4 Share receiver, open its Setttings, select Share, Forget Device (if previously paired), then turn sharing On"
+fi
+
 fi
 
 fi
