@@ -342,7 +342,18 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
     done
 elif [[ ${CGM,,} =~ "G4" || ${CGM,,} =~ "shareble" ]]; then
     if [[ $ENABLE =~ "raw" ]]; then
-        openaps device add raw process --require "glucose cal maxraw" oref0 raw
+        echo Checking openaps dev installation
+        if ! openaps use cgm -h | grep -q nightscout_calibrations; then
+            if [ -d "$HOME/src/openaps/" ]; then
+                echo "$HOME/src/openaps/ already exists; pulling latest dev branch"
+                (cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
+            else
+                echo -n "Cloning openaps dev: "
+                (cd ~/src && git clone -b dev git://github.com/oskarpearson/openaps.git) || die "Couldn't clone openaps dev"
+            fi
+            echo Installing latest openaps dev && cd $HOME/src/openaps/ && sudo python setup.py develop || die "Couldn't install openaps"
+        fi
+        openaps device add raw process --require "glucose cal maxraw" oref0 raw 2>/dev/null
         openaps report add monitor/cal.json JSON cgm nightscout_calibrations 1
         openaps report add monitor/cal-zoned.json JSON tz rezone monitor/cal.json --date "display_time system_time dateString" --adjust missing
         openaps report add cgm/cgm-glucose-raw.json JSON raw shell cgm/cgm-glucose.json monitor/cal.json 150
@@ -381,7 +392,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
 if [[ ${CGM,,} =~ "shareble" ]]; then
     # cross-platform hack to make sure experimental bluetoothd is running for openxshareble
-    (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sleep 30; sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental') | crontab -
+    (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sleep 15; sudo killall bluetoothd; sleep 15; sudo /usr/local/bin/bluetoothd --experimental') | crontab -
 fi
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
