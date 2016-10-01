@@ -351,7 +351,7 @@ elif [[ ${CGM,,} =~ "G4" || ${CGM,,} =~ "shareble" ]]; then
                 echo -n "Cloning openaps dev: "
                 (cd ~/src && git clone -b dev git://github.com/oskarpearson/openaps.git) || die "Couldn't clone openaps dev"
             fi
-            echo Installing latest openaps dev && cd $HOME/src/openaps/ && sudo python setup.py develop || die "Couldn't install openaps"
+            echo Installing latest openaps dev && (cd $HOME/src/openaps/ && sudo python setup.py develop) || die "Couldn't install openaps"
         fi
         openaps device add raw process --require "glucose cal maxraw" oref0 raw 2>/dev/null
         openaps report add monitor/cal.json JSON cgm nightscout_calibrations 1
