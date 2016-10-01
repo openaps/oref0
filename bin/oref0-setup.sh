@@ -148,7 +148,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 fi
 
-echo "Setting up oref0 in $directory for pump $serial with $CGM CGM,"
+echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
+if [[ ${CGM,,} =~ "shareble" ]]; then
+    echo -n "Share serial $BLE_SERIAL, "
+fi
+echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
