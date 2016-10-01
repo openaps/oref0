@@ -377,7 +377,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
 if [[ ${CGM,,} =~ "shareble" ]]; then
     # cross-platform hack to make sure experimental bluetoothd is running for openxshareble
-    (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sudo killall bluetoothd && sudo /usr/local/bin/bluetoothd --experimental') | crontab -
+    (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sleep 30; sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental') | crontab -
 fi
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than 20m openaps" || echo '* * * * * killall -g --older-than 20m openaps') | crontab -
