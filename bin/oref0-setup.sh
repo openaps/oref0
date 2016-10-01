@@ -183,7 +183,7 @@ else
     (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
 fi
 echo Checking oref0 installation
-oref0-get-profile --exportDefaults 2>/dev/null >/dev/null || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+( grep -q oref0_glucose_since `which nightscout` && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
@@ -244,7 +244,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
             (cd ~/src/915MHzEdisonExplorer_SW && git fetch && git checkout master && git pull) || die "Couldn't pull latest 915MHzEdisonExplorer_SW master"
         else
             echo -n "Cloning 915MHzEdisonExplorer_SW master: "
-            (cd ~/src && git clone -b master https://github.com/scottleibrand/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
+            (cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
         fi
         echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e . || die "Couldn't install spi_serial"
     fi
@@ -262,7 +262,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
             (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
         fi
         ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
-        make && sudo make install ) || die "Could not compile mraa"
+        make && sudo make install && echo && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
         sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
     fi
 
