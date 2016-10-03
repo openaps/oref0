@@ -172,7 +172,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 echo -n "Checking $directory: "
 mkdir -p $directory
-if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null && echo true ); then
+if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
     echo $directory already exists
 elif openaps init $directory; then
     echo $directory initialized
@@ -288,7 +288,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
 
     mkdir -p $directory-cgm-loop
-    if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null && echo true ); then
+    if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
         echo $directory-cgm-loop already exists
     elif openaps init $directory-cgm-loop; then
         echo $directory-cgm-loop initialized
