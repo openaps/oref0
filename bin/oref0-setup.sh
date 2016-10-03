@@ -321,6 +321,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         BLE_MAC=$REPLY
         echo "$BLE_MAC? Got it."
     fi
+    echo openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC
     openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC || die "Couldn't configure Share serial and MAC"
 
     cd $directory || die "Can't cd $directory"
