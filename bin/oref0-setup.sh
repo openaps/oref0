@@ -68,6 +68,10 @@ case $i in
     BLE_SERIAL="${i#*=}"
     shift # past argument=value
     ;;
+    -a=*|--blemac=*)
+    BLE_MAC="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -92,7 +96,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--enable='autosens meal']"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--enable='autosens meal']"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -311,7 +315,13 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
 
-    openaps use cgm configure --serial $BLE_SERIAL || die "Couldn't configure share serial"
+    if ! [[ -z "BLE_MAC" ]]; then
+        openaps use cgm list_dexcom
+        read -p "What is your G4 Share MAC address? (i.e. FE:DC:BA:98:78:54) " -r
+        BLE_MAC=$REPLY
+        echo "$BLE_MAC? Got it."
+    fi
+    openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC || die "Couldn't configure Share serial and MAC"
 
     cd $directory || die "Can't cd $directory"
 fi
