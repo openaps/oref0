@@ -64,6 +64,10 @@ case $i in
     ENABLE="${i#*=}"
     shift # past argument=value
     ;;
+    -b=*|--bleserial=*)
+    BLE_SERIAL="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -71,8 +75,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), G5, or MDT."
+if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), shareble, G5, or MDT."
     echo "If you'd like to help add Medtronic CGM support, please contact @scottleibrand on Gitter"
     echo
     DIR="" # to force a Usage prompt
@@ -88,7 +92,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|G5|MDT)] [--enable='autosens meal']"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--enable='autosens meal']"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -101,9 +105,14 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What Kind of CGM are you using? (i.e. G4, G5, MDT) " -r
+    read -p "What kind of CGM are you using? (i.e. G4, shareble, G5, MDT) " -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
+    if [[ ${CGM,,} =~ "shareble" ]]; then
+        read -p "What is your G4 Share Serial Number? (i.e. SM12345678) " -r
+        BLE_SERIAL=$REPLY
+        echo "$BLE_SERIAL? Got it."
+    fi
     read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
     ttyport=$REPLY
     echo -n "Ok, "
@@ -139,11 +148,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 fi
 
-#if [[ $# -gt 3 ]]; then
-    #share_serial=$4
-#fi
-
-echo "Setting up oref0 in $directory for pump $serial with $CGM CGM,"
+echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
+if [[ ${CGM,,} =~ "shareble" ]]; then
+    echo -n "G4 Share serial $BLE_SERIAL, "
+fi
+echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
@@ -183,7 +192,7 @@ else
     (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
 fi
 echo Checking oref0 installation
-oref0-get-profile --exportDefaults 2>/dev/null >/dev/null || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+( grep -q oref0_glucose_since `which nightscout` && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
@@ -230,6 +239,43 @@ done
 # add/configure devices
 if [[ ${CGM,,} =~ "g5" ]]; then
     openaps use cgm config --G5
+elif [[ ${CGM,,} =~ "shareble" ]]; then
+    echo Checking Adafruit_BluefruitLE installation
+    if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
+        if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
+            echo "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
+            (cd ~/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+        else
+            echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
+            (cd ~/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+        fi
+        echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
+    fi
+    if [ -d "$HOME/src/openxshareble/" ]; then
+        echo "$HOME/src/openxshareble/ already exists; pulling latest master branch"
+        (cd ~/src/openxshareble && git fetch && git checkout master && git pull) || die "Couldn't pull latest openxshareble master"
+    else
+        echo -n "Cloning openxshareble master: "
+        (cd ~/src && git clone https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble master"
+    fi
+    echo Checking openxshareble installation
+    if ! python -c "import openxshareble" 2>/dev/null; then
+        echo Installing openxshareble && (cd $HOME/src/openxshareble && sudo python setup.py develop) || die "Couldn't install openxshareble"
+    fi
+    sudo apt-get -y install libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
+    echo Checking bluez installation
+    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
+        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
+        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
+        make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+        sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
+        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
+    fi
+    openaps vendor add openxshareble || die "Couldn't add openxshareble vendor"
+    openaps device remove cgm || die "Couldn't remove existing cgm device"
+    openaps device add cgm openxshareble || die "Couldn't add openxshareble device"
+    openaps use cgm configure --serial $BLE_SERIAL || die "Couldn't configure share serial"
+
 fi
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
@@ -244,7 +290,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
             (cd ~/src/915MHzEdisonExplorer_SW && git fetch && git checkout master && git pull) || die "Couldn't pull latest 915MHzEdisonExplorer_SW master"
         else
             echo -n "Cloning 915MHzEdisonExplorer_SW master: "
-            (cd ~/src && git clone -b master https://github.com/scottleibrand/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
+            (cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
         fi
         echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e . || die "Couldn't install spi_serial"
     fi
@@ -277,7 +323,7 @@ if [[ -z "$ttyport" ]]; then
     openaps alias add mmtune 'report invoke monitor/temp_basal.json'
 else
     openaps device add pump mmeowlink subg_rfspy $ttyport $serial || die "Can't add pump"
-    openaps alias add wait-for-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 100`; do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
+    openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in `seq 1 100`; do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 200`; do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
 fi
 
@@ -294,12 +340,10 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
         echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
-#openaps vendor add openapscontrib.glucosetools || die "Couldn't add glucosetools vendor"
-#openaps device add glucose glucosetools || die "Couldn't add glucose device"
-#openaps report add monitor/cgm-mm-glucosedirty.json JSON cgm iter_glucose_hours 24 || die "Can't add cgm-mm-glucosedirty.json"
-#openaps report add cgm/cgm-glucose.json JSON glucose clean monitor/cgm-mm-glucosedirty.json || die "Can't add cgm-glucose.json"
-#openaps alias add monitor-cgm "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose.json" || die "Can't add monitor-cgm"
-
+elif [[ ${CGM,,} =~ "G4" || ${CGM,,} =~ "shareble" ]]; then
+    if [[ $ENABLE =~ "raw" ]]; then
+        openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24" --threshold "100"
+    fi
 fi
 
 # configure optional features
@@ -329,8 +373,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
 (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
+if [[ ${CGM,,} =~ "shareble" ]]; then
+    # cross-platform hack to make sure experimental bluetoothd is running for openxshareble
+    (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sleep 30; sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental') | crontab -
+fi
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
-(crontab -l; crontab -l | grep -q "killall -g --older-than 20m openaps" || echo '* * * * * killall -g --older-than 20m openaps') | crontab -
+(crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
 if ! [[ ${CGM,,} =~ "mdt" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
@@ -344,6 +392,12 @@ if [[ "$ttyport" =~ "spi" ]]; then
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
 crontab -l
+
+if [[ ${CGM,,} =~ "shareble" ]]; then
+    echo
+    echo "To pair your G4 Share receiver, open its Setttings, select Share, Forget Device (if previously paired), then turn sharing On"
+fi
+
 fi
 
 fi
