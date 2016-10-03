@@ -330,7 +330,7 @@
     "type": "alias",
     "name": "monitor-cgm",
     "monitor-cgm": {
-      "command": "! bash -c \"openaps wait-until-expected && time openaps glucose && openaps echo-glucose && (openaps upload-first || echo upload first failed) && (openaps maybe-upload || echo cgm upload failed) && (openaps maybe-extras || echo cgm extras failed)\""
+      "command": "! bash -c \"openaps wait-until-expected && time openaps glucose && openaps echo-glucose && (openaps upload-first || echo upload first failed) && (openaps upload || echo cgm upload failed) && (openaps maybe-extras || echo cgm extras failed)\""
     }
   },
   {
