@@ -295,6 +295,10 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
 
     # import cgm-loop stuff
+    for type in cgm-loop; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
 
     openaps use cgm configure --serial $BLE_SERIAL || die "Couldn't configure share serial"
 
