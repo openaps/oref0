@@ -16,7 +16,7 @@ else
   else
     echo "CGM Data $TIME_SINCE mins ago is fresh (< $OLD), waiting $WAIT_MINS mins for new data"
     sleep ${WAIT_MINS}m
-    echo "finished waiting, lets get some CGM Data"
+    echo "finished waiting, let's get some CGM Data"
   fi
 fi
 
