@@ -284,9 +284,18 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     mkdir -p monitor || die "Can't mkdir monitor"
     mkdir -p nightscout || die "Can't mkdir nightscout"
 
-    openaps vendor add openxshareble || die "Couldn't add openxshareble vendor"
     openaps device remove cgm 2>/dev/null
-    openaps device add cgm openxshareble || die "Couldn't add openxshareble device"
+
+    # configure ns
+    if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
+        echo "Removing any existing ns device: "
+        killall -g openaps 2>/dev/null; openaps device remove ns 2>/dev/null
+        echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
+        nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
+    fi
+
+    # import cgm-loop stuff
+
     openaps use cgm configure --serial $BLE_SERIAL || die "Couldn't configure share serial"
 
     cd $directory || die "Can't cd $directory"
