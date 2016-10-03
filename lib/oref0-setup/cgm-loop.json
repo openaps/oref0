@@ -358,7 +358,7 @@
     "type": "alias",
     "name": "maybe-upload",
     "maybe-upload": {
-      "command": "! bash -c \"if (is-fresh.sh monitor/glucose-zoned.json 3); then openaps upload; else echo \\\"Glucose is not fresh, not doing full upload\\\"; fi\""
+      "command": "! bash -c \"if (is-fresh.sh monitor/glucose-zoned.json 4); then openaps upload; else echo \\\"Glucose is not fresh, not doing full upload\\\"; fi\""
     }
   }
 ]
