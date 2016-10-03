@@ -68,7 +68,7 @@ case $i in
     BLE_SERIAL="${i#*=}"
     shift # past argument=value
     ;;
-    -a=*|--blemac=*)
+    -l=*|--blemac=*)
     BLE_MAC="${i#*=}"
     shift # past argument=value
     ;;
