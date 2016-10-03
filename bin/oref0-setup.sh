@@ -176,12 +176,12 @@ else
     die "Can't init $directory"
 fi
 cd $directory || die "Can't cd $directory"
-ls monitor 2>/dev/null >/dev/null || mkdir monitor || die "Can't mkdir monitor"
-ls raw-cgm 2>/dev/null >/dev/null || mkdir raw-cgm || die "Can't mkdir raw-cgm"
-ls cgm 2>/dev/null >/dev/null || mkdir cgm || die "Can't mkdir cgm"
-ls settings 2>/dev/null >/dev/null || mkdir settings || die "Can't mkdir settings"
-ls enact 2>/dev/null >/dev/null || mkdir enact || die "Can't mkdir enact"
-ls upload 2>/dev/null >/dev/null || mkdir upload || die "Can't mkdir upload"
+mkdir -p monitor || die "Can't mkdir monitor"
+mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
+mkdir -p cgm || die "Can't mkdir cgm"
+mkdir -p settings || die "Can't mkdir settings"
+mkdir -p enact || die "Can't mkdir enact"
+mkdir -p upload || die "Can't mkdir upload"
 
 mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
@@ -192,7 +192,7 @@ else
     (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
 fi
 echo Checking oref0 installation
-( grep -q oref0_glucose_since `which nightscout` && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+( oref0-dex-is-fresh 2>&1 | grep -q mins && grep -q oref0_glucose_since `which nightscout` && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
@@ -271,13 +271,19 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
     fi
-    if [ -d "$HOME/src/opendex-tools/" ]; then
-        echo "$HOME/src/opendex-tools/ already exists; pulling latest master branch"
-        (cd ~/src/opendex-tools && git fetch && git checkout master && git pull) || die "Couldn't pull latest opendex-tools master"
+
+    mkdir -p $directory-cgm-loop
+    if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null && echo true ); then
+        echo $directory-cgm-loop already exists
+    elif openaps init $directory-cgm-loop; then
+        echo $directory-cgm-loop initialized
     else
-        echo -n "Cloning opendex-tools master: "
-        (cd ~/src && git clone https://github.com/jasoncalabrese/opendex-tools.git) || die "Couldn't clone opendex-tools master"
+        die "Can't init $directory-cgm-loop"
     fi
+    cd $directory-cgm-loop || die "Can't cd $directory-cgm-loop"
+    mkdir -p monitor || die "Can't mkdir monitor"
+    mkdir -p nightscout || die "Can't mkdir nightscout"
+
     openaps vendor add openxshareble || die "Couldn't add openxshareble vendor"
     openaps device remove cgm || die "Couldn't remove existing cgm device"
     openaps device add cgm openxshareble || die "Couldn't add openxshareble device"
