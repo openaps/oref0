@@ -262,7 +262,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     if ! python -c "import openxshareble" 2>/dev/null; then
         echo Installing openxshareble && cd $HOME/src/openxshareble && sudo python setup.py develop || die "Couldn't install openxshareble"
     fi
-    sudo apt-get -y install libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
+    sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
     if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
         cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
@@ -270,6 +270,13 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
+    fi
+    if [ -d "$HOME/src/opendex-tools/" ]; then
+        echo "$HOME/src/opendex-tools/ already exists; pulling latest master branch"
+        (cd ~/src/opendex-tools && git fetch && git checkout master && git pull) || die "Couldn't pull latest opendex-tools master"
+    else
+        echo -n "Cloning opendex-tools master: "
+        (cd ~/src && git clone https://github.com/jasoncalabrese/opendex-tools.git) || die "Couldn't clone opendex-tools master"
     fi
     openaps vendor add openxshareble || die "Couldn't add openxshareble vendor"
     openaps device remove cgm || die "Couldn't remove existing cgm device"
