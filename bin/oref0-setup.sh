@@ -25,6 +25,7 @@ CGM="G4"
 DIR=""
 directory=""
 EXTRAS=""
+BLE_MAC=""
 
 for i in "$@"
 do
