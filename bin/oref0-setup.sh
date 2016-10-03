@@ -265,7 +265,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
     echo Checking openxshareble installation
     if ! python -c "import openxshareble" 2>/dev/null; then
-        echo Installing openxshareble && cd $HOME/src/openxshareble && sudo python setup.py develop || die "Couldn't install openxshareble"
+        echo Installing openxshareble && (cd $HOME/src/openxshareble && sudo python setup.py develop) || die "Couldn't install openxshareble"
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation

@@ -19,7 +19,8 @@
     "url": "https://github.com/openaps/oref0/issues"
   },
   "bin": {
-    "clockset": "./bin/clockset.sh",
+    "oref0-set-device-clocks": "./bin/oref0-set-device-clocks.sh",
+    "oref0-set-system-clock": "./bin/oref0-set-system-clock.sh",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-find-insulin-uses": "./bin/oref0-find-insulin-uses.js",
     "oref0-detect-sensitivity": "./bin/oref0-detect-sensitivity.js",

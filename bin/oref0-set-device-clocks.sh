@@ -29,7 +29,7 @@ function usage ( ) {
 
 cat <<EOF
 $self
-$self - Restart NTP, manipulate realtime clock
+$self - Set pump and CGM clocks based on NTP time if avaialble.
 EOF
 }
 
@@ -41,7 +41,6 @@ case "$1" in
 esac
 
 
-#ntp-wait -n 1 -v && die "NTP already synchronized." || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v && die "NTP re-synchronized." )
 checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v ) }
 
 if checkNTP; then
@@ -49,15 +48,4 @@ if checkNTP; then
     echo Setting pump and CGM time to `date`
     openaps use $PUMP set_clock --to now
     openaps use $CGM UpdateTime --to now
-else
-
-( cat $CLOCK; echo ) | sed 's/"//g' | while read line; do date -u -d $line;  done > fake-hwclock.data
-grep : fake-hwclock.data && sudo cp fake-hwclock.data /etc/fake-hwclock.data
-# set system time to pump time if pump time is newer than the system time
-sudo fake-hwclock load || (date +%s; date -d `( cat $CLOCK; echo ) | sed 's/"//g'` +%s) | sort | tail -1 | while read line; do sudo date -s @$line; done;
-#grep -q display_time $GLUCOSE && grep display_time $GLUCOSE | head -1 | awk '{print $2}' | sed "s/,//" | sed 's/"//g' | while read line; do date -u -d $line;  done > fake-hwclock.data
-#grep -q dateString $GLUCOSE && grep dateString $GLUCOSE | head -1 | awk '{print $2}' | sed "s/,//" | sed 's/"//g' |while read line; do date -u -d $line; done > fake-hwclock.data
-#grep : fake-hwclock.data && sudo cp fake-hwclock.data /etc/fake-hwclock.data
-#sudo fake-hwclock load
-
 fi
