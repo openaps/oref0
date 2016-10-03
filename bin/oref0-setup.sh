@@ -197,7 +197,7 @@ if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No modul
     echo Installing latest mmeowlink dev && cd $HOME/src/mmeowlink/ && sudo pip install -e . || die "Couldn't install mmeowlink"
 fi
 
-cd $directory
+cd $directory || die "Can't cd $directory"
 if [[ "$max_iob" -eq 0 ]]; then
     oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
 else
@@ -327,7 +327,7 @@ read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 # add crontab entries
 (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
-(crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=`nightscout hash-api-secret $API_SECRET`) | crontab -
+(crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than 20m openaps" || echo '* * * * * killall -g --older-than 20m openaps') | crontab -
