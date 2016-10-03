@@ -271,6 +271,17 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
     fi
+    echo Checking openaps dev installation
+    if ! openaps use cgm -h | grep -q nightscout_calibrations; then
+        if [ -d "$HOME/src/openaps/" ]; then
+            echo "$HOME/src/openaps/ already exists; pulling latest dev branch"
+            (cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
+        else
+            echo -n "Cloning openaps dev: "
+            (cd ~/src && git clone -b dev git://github.com/openaps/openaps.git) || die "Couldn't clone openaps dev"
+        fi
+        echo Installing latest openaps dev && (cd $HOME/src/openaps/ && sudo python setup.py develop) || die "Couldn't install openaps"
+    fi
 
     mkdir -p $directory-cgm-loop
     if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null && echo true ); then
@@ -367,27 +378,6 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
         echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
-elif [[ ${CGM,,} =~ "G4" || ${CGM,,} =~ "shareble" ]]; then
-    if [[ $ENABLE =~ "raw" ]]; then
-        echo Checking openaps dev installation
-        if ! openaps use cgm -h | grep -q nightscout_calibrations; then
-            if [ -d "$HOME/src/openaps/" ]; then
-                echo "$HOME/src/openaps/ already exists; pulling latest dev branch"
-                (cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
-            else
-                echo -n "Cloning openaps dev: "
-                (cd ~/src && git clone -b dev git://github.com/openaps/openaps.git) || die "Couldn't clone openaps dev"
-            fi
-            echo Installing latest openaps dev && (cd $HOME/src/openaps/ && sudo python setup.py develop) || die "Couldn't install openaps"
-        fi
-        openaps device add raw process --require "glucose cal maxraw" oref0 raw 2>/dev/null
-        openaps report add monitor/cal.json JSON cgm nightscout_calibrations 1 && \
-        openaps report add monitor/cal-zoned.json JSON tz rezone monitor/cal.json --date "display_time system_time dateString" --adjust missing && \
-        openaps report add cgm/cgm-glucose-raw.json JSON raw shell cgm/cgm-glucose.json monitor/cal.json 150 && \
-        openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24" --threshold "100" && \
-        openaps alias add monitor-cgm 'report invoke raw-cgm/raw-entries.json cgm/cgm-glucose.json monitor/cal.json monitor/cal-zoned.json cgm/cgm-glucose-raw.json' && \
-        openaps alias add get-bg '! bash -c "openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose-raw.json && cp -up cgm/cgm-glucose-raw.json cgm/glucose.json; cp -up cgm/glucose.json monitor/glucose.json"' || die "Couldn't set up raw reports and aliases" 
-    fi
 fi
 
 # configure optional features
