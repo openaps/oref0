@@ -315,7 +315,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
 
-    if ! [[ -z "BLE_MAC" ]]; then
+    if [[ -z "BLE_MAC" ]]; then
         openaps use cgm list_dexcom
         read -p "What is your G4 Share MAC address? (i.e. FE:DC:BA:98:78:54) " -r
         BLE_MAC=$REPLY
