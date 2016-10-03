@@ -285,7 +285,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     mkdir -p nightscout || die "Can't mkdir nightscout"
 
     openaps vendor add openxshareble || die "Couldn't add openxshareble vendor"
-    openaps device remove cgm || die "Couldn't remove existing cgm device"
+    openaps device remove cgm 2>/dev/null
     openaps device add cgm openxshareble || die "Couldn't add openxshareble device"
     openaps use cgm configure --serial $BLE_SERIAL || die "Couldn't configure share serial"
 
