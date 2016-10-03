@@ -252,11 +252,11 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
     fi
     if [ -d "$HOME/src/openxshareble/" ]; then
-        echo "$HOME/src/openxshareble/ already exists; pulling latest master branch"
-        (cd ~/src/openxshareble && git fetch && git checkout master && git pull) || die "Couldn't pull latest openxshareble master"
+        echo "$HOME/src/openxshareble/ already exists; pulling latest dev branch"
+        (cd ~/src/openxshareble && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openxshareble dev"
     else
-        echo -n "Cloning openxshareble master: "
-        (cd ~/src && git clone https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble master"
+        echo -n "Cloning openxshareble dev: "
+        (cd ~/src && git clone -b dev https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble dev"
     fi
     echo Checking openxshareble installation
     if ! python -c "import openxshareble" 2>/dev/null; then
