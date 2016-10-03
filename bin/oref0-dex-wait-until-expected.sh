@@ -4,7 +4,7 @@ GLUCOSE=$1
 
 OLD=${2-5}
 MAX_WAIT=${3-1}
-TIME_SINCE=$(time-since.sh $GLUCOSE)
+TIME_SINCE=$(oref0-dex-time-since $GLUCOSE)
 
 if (( $(bc <<< "$TIME_SINCE >= $OLD") )); then
   echo "CGM Data $TIME_SINCE mins ago is old (>=$OLD), not waiting"
