@@ -289,6 +289,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     openaps device add cgm openxshareble || die "Couldn't add openxshareble device"
     openaps use cgm configure --serial $BLE_SERIAL || die "Couldn't configure share serial"
 
+    cd $directory || die "Can't cd $directory"
 fi
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
