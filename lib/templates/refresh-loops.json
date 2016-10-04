@@ -498,19 +498,19 @@
     "type": "alias",
     "name": "mmtune",
     "mmtune": {
-      "command": "! bash -c \"echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json 2>/dev/null >/dev/null; grep -v setFreq monitor/mmtune.json | grep -A2 `json -a setFreq -f monitor/mmtune.json` | while read line; do echo -n \\\"$line \\\"; done\""
+      "command": "! bash -c \"echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json 2>/dev/null >/dev/null; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \\\"$line \\\"; done\""
     }
   },
   {
     "type": "alias",
     "name": "wait-for-silence",
     "wait-for-silence": {
-      "command": "! bash -c \"echo -n \\\"Listening: \\\"; for i in `seq 1 100`; do echo -n .; ~/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port /dev/mmeowlink --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done\""
+      "command": "! bash -c \"echo -n \\\"Listening: \\\"; for i in $(seq 1 100); do echo -n .; ~/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port /dev/mmeowlink --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done\""
     }
   },
   {
     "wait-for-long-silence": {
-      "command": "! bash -c \"echo -n \\\"Listening: \\\"; for i in `seq 1 100`; do echo -n .; ~/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port /dev/mmeowlink --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done\""
+      "command": "! bash -c \"echo -n \\\"Listening: \\\"; for i in $(seq 1 100); do echo -n .; ~/src/mmeowlink/bin/mmeowlink-any-pump-comms.py --port /dev/mmeowlink --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done\""
     },
     "type": "alias",
     "name": "wait-for-long-silence"
@@ -539,7 +539,7 @@
   {
     "type": "alias",
     "ns-temptargets": {
-      "command": "! bash -c \"curl -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[created_at\\]\\[\\$gte\\]=`date -d \\\"6 hours ago\\\" -Iminutes`&find\\[eventType\\]\\[\\$regex\\]=Target\\\" > settings/temptargets.json; openaps report invoke settings/profile.json 2>/dev/null >/dev/null; exit 0 \""
+      "command": "! bash -c \"curl -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[created_at\\]\\[\\$gte\\]=$(date -d \\\"6 hours ago\\\" -Iminutes)&find\\[eventType\\]\\[\\$regex\\]=Target\\\" > settings/temptargets.json; openaps report invoke settings/profile.json 2>/dev/null >/dev/null; exit 0 \""
     },
     "name": "ns-temptargets"
   },
@@ -659,12 +659,12 @@
     "type": "alias",
     "name": "ns-loop",
     "ns-loop": {
-      "command": "! bash -c \"echo Starting ns-loop at `date`: && openaps get-ns-bg; openaps autosens; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps upload\""
+      "command": "! bash -c \"echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps autosens; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps upload\""
     }
   },
   {
     "pump-loop": {
-      "command": "! bash -c \"sleep $[ ( $RANDOM / 2048 ) ]s; until(echo Starting pump-loop at `date`: && openaps wait-for-silence && openaps refresh-old-pumphistory && openaps refresh-old-pumphistory-24h && openaps refresh-old-profile && openaps refresh-temp-and-enact && openaps refresh-pumphistory-and-enact && openaps refresh-profile && openaps refresh-pumphistory-24h && echo Completed pump-loop at `date` && echo); do echo Error, retrying && [[ $RANDOM > 30000 ]] && openaps wait-for-long-silence && openaps mmtune; sleep 5; done\""
+      "command": "! bash -c \"sleep $[ ( $RANDOM / 2048 ) ]s; until(echo Starting pump-loop at $(date): && openaps wait-for-silence && openaps refresh-old-pumphistory && openaps refresh-old-pumphistory-24h && openaps refresh-old-profile && openaps refresh-temp-and-enact && openaps refresh-pumphistory-and-enact && openaps refresh-profile && openaps refresh-pumphistory-24h && echo Completed pump-loop at $(date) && echo); do echo Error, retrying && [[ $RANDOM > 30000 ]] && openaps wait-for-long-silence && openaps mmtune; sleep 5; done\""
     },
     "type": "alias",
     "name": "pump-loop"
