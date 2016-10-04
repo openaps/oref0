@@ -201,7 +201,7 @@ else
     (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
 fi
 echo Checking oref0 installation
-( oref0-dex-is-fresh 2>&1 | grep -q mins && grep -q oref0_glucose_since `which nightscout` && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+( cat $(which oref0-dex-is-fresh) | grep mins && grep -q oref0_glucose_since `which nightscout` && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
