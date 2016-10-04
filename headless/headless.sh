@@ -25,10 +25,10 @@ Interface='wlan0'
 HostAPDIP='10.29.29.1'
 echo "-----------------------------------"
 echo "Checking for DHCP leases"
-clients=`cat /var/lib/misc/dnsmasq.leases | wc -l`
+clients=$(cat /var/lib/misc/dnsmasq.leases | wc -l)
 echo "$clients DHCP clients found"
 if [[ $clients -eq 0 ]]; then
-    hostapd=`pidof hostapd`
+    hostapd=$(pidof hostapd)
     if [[ ! -z $hostapd ]]; then
         echo "Activating client config"
         cp /etc/network/interfaces.client /etc/network/interfaces
@@ -40,7 +40,7 @@ if [[ $clients -eq 0 ]]; then
         /etc/init.d/networking stop
         echo "Starting networking"
         /etc/init.d/networking start
-        wpasup=`pidof wpa_supplicant`
+        wpasup=$(pidof wpa_supplicant)
         if [[ -z $wpasup ]]; then
             echo "Attempting to start wpa_supplicant"
             sudo wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
@@ -49,13 +49,13 @@ if [[ $clients -eq 0 ]]; then
         /sbin/dhclient wlan0
     else
         echo "Checking connectivity of $Interface"
-        NetworkUp=`/sbin/ifconfig $Interface`
-        IP=`echo "$NetworkUp" | grep inet | wc -l`
+        NetworkUp=$(/sbin/ifconfig $Interface)
+        IP=$(echo "$NetworkUp" | grep inet | wc -l)
         if [[ $IP -eq 0 || $NetworkUp =~ $HostAPDIP ]]; then
         #if [[ $IP -eq 0 ]]; then
             #echo "Connection is down"
 
-            hostapd=`pidof hostapd`
+            hostapd=$(pidof hostapd)
             if [[ -z $hostapd ]]; then
                 # If there are any more actions required when the interface goes down, add them here
                 echo "Killing wpa_supplicant"

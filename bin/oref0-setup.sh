@@ -192,7 +192,7 @@ else
     (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
 fi
 echo Checking oref0 installation
-( grep -q oref0_glucose_since `which nightscout` && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+( grep -q oref0_glucose_since $(which nightscout) && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
@@ -206,7 +206,7 @@ if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No modul
     echo Installing latest mmeowlink dev && cd $HOME/src/mmeowlink/ && sudo pip install -e . || die "Couldn't install mmeowlink"
 fi
 
-cd $directory
+cd $directory || die "Can't cd $directory"
 if [[ "$max_iob" -eq 0 ]]; then
     oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
 else
@@ -323,8 +323,8 @@ if [[ -z "$ttyport" ]]; then
     openaps alias add mmtune 'report invoke monitor/temp_basal.json'
 else
     openaps device add pump mmeowlink subg_rfspy $ttyport $serial || die "Can't add pump"
-    openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in `seq 1 100`; do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
-    openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in `seq 1 200`; do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
+    openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
+    openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
 fi
 
 # Medtronic CGM
@@ -371,7 +371,7 @@ read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 # add crontab entries
 (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
-(crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=`nightscout hash-api-secret $API_SECRET`) | crontab -
+(crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
 if [[ ${CGM,,} =~ "shareble" ]]; then
     # cross-platform hack to make sure experimental bluetoothd is running for openxshareble
