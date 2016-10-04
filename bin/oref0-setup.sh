@@ -423,9 +423,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
 (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=`nightscout hash-api-secret $API_SECRET`) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-if ! [[ -z "BT_MAC" ]]; then
-    (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' > /var/log/openaps/network.log' ) | crontab -
-fi
+(crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' > /var/log/openaps/network.log' ) | crontab -
 if [[ ${CGM,,} =~ "shareble" ]]; then
     # cross-platform hack to make sure experimental bluetoothd is running for openxshareble
     (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sleep 15; sudo killall bluetoothd; sleep 15; sudo /usr/local/bin/bluetoothd --experimental') | crontab -
