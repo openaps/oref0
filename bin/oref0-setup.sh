@@ -105,7 +105,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
+    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes)? " -r
     ttyport=$REPLY
     echo -n "Ok, "
     if [[ -z "$ttyport" ]]; then
