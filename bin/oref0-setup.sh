@@ -113,7 +113,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
     fi
-    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
+    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes)? " -r
     ttyport=$REPLY
     echo -n "Ok, "
     if [[ -z "$ttyport" ]]; then
