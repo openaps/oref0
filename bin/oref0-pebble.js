@@ -114,16 +114,23 @@ if (!module.parent) {
     } else { 
         reqtempstring = requestedtemp.duration + "m@" + requestedtemp.rate.toFixed(1) + "U";
     }
-    var enactedtemp = require(cwd + '/' + enactedtemp_input);
-    if (enactedtemp.duration < 1) {
-        enactedstring = "Cancel";
-    } else { 
-        enactedstring = enactedtemp.duration + "m@" + enactedtemp.rate.toFixed(1) + "U";
-    }
-    tz = new Date().toString().match(/([-\+][0-9]+)\s/)[1]
-    enactedDate = new Date(enactedtemp.timestamp.concat(tz));
-    enactedHMS = enactedDate.toLocaleTimeString().split(":")
-    enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
+	try {
+		var enactedtemp = require(cwd + '/' + enactedtemp_input);
+		if (enactedtemp.duration < 1) {
+			enactedstring = "Cancel";
+		} else { 
+			enactedstring = enactedtemp.duration + "m@" + enactedtemp.rate.toFixed(1) + "U";
+		}
+	    tz = new Date().toString().match(/([-\+][0-9]+)\s/)[1]
+		enactedDate = new Date(enactedtemp.timestamp.concat(tz));
+		enactedHMS = enactedDate.toLocaleTimeString().split(":")
+		enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
+
+	} catch (e) {
+		console.error("error parsing enact");
+		enactedstring = "X";
+		enactedat="?";
+	}
 
     var mealCOB = "???";
     if (typeof meal_input != 'undefined') {
