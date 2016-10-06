@@ -239,6 +239,7 @@ done
 # add/configure devices
 if [[ ${CGM,,} =~ "g5" ]]; then
     openaps use cgm config --G5
+    openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
 elif [[ ${CGM,,} =~ "shareble" ]]; then
     echo Checking Adafruit_BluefruitLE installation
     if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
