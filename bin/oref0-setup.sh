@@ -316,7 +316,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     # import cgm-loop stuff
     for type in cgm-loop; do
         echo importing $type file
-        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+        cat ../src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
 
     if [[ -z "$BLE_MAC" ]]; then
