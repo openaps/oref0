@@ -102,7 +102,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     if [[ -z $DIR ]]; then DIR="myopenaps"; fi
     echo "Ok, $DIR it is."
     directory="$(readlink -m $DIR)"
-    read -p "What is your pump serial number? " -r
+    read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
     read -p "What kind of CGM are you using? (i.e. G4, shareble, G5, MDT) " -r
