@@ -164,7 +164,7 @@
     "type": "alias",
     "name": "enact",
     "enact": {
-      "command": "! bash -c \"rm enact/suggested.json; openaps invoke enact/suggested.json && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then ( rm enact/enacted.json; openaps invoke enact/enacted.json ; grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \\\"^  |subg_rfspy|handler\\\" ; grep incorrectly enact/suggested.json && ~/src/oref0/bin/clockset.sh 2>/dev/null; cat enact/enacted.json | json -0; fi\""
+      "command": "! bash -c \"rm enact/suggested.json; openaps invoke enact/suggested.json && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then ( rm enact/enacted.json; openaps invoke enact/enacted.json ; grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \\\"^  |subg_rfspy|handler\\\"; fi; grep incorrectly enact/suggested.json && oref0-set-system-clock 2>/dev/null; cat enact/enacted.json | json -0\""
     }
   },
   {
