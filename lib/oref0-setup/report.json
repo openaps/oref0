@@ -287,7 +287,7 @@
       "json_default": "True",
       "carb_ratios": "settings/carb_ratios.json",
       "device": "get-profile",
-      "remainder": "settings/temptargets.json",
+      "remainder": "settings/temptargets.json --model=settings/model.json",
       "isf": "settings/insulin_sensitivities.json"
     },
     "type": "report",
