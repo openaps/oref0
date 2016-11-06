@@ -50,3 +50,6 @@ fi
 # if git repository is too corrupt to do anything, mv it to /tmp and start over.
 
 (git status && git diff) > /dev/null || (echo "Saving backup to: $BACKUP" > /dev/stderr; mv .git $BACKUP; openaps init . )
+
+#truncate git history to 1000 commits if it has grown past 1500
+oref0-truncate-git-history
