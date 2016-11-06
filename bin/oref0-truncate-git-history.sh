@@ -32,7 +32,7 @@ case "$1" in
 esac
 
 # remove old lockfile if still present
-find .git/index.lock -mmin +5 -exec rm {} \; 2>/dev/null
+find .git/index.lock -mmin +60 -exec rm {} \; 2>/dev/null
 
 commits=$(git log | grep -c commit)
 if (( $commits > 1500 )); then
