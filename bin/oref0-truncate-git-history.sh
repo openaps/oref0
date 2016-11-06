@@ -20,7 +20,7 @@ function usage ( ) {
 
 cat <<EOF
 $self
-$self - Check if git commit history is longer than 1500 commits, and truncate to 1000 if so.
+$self - Check if git commit history is longer than 5000 commits, and truncate to 2000 if so.
 EOF
 }
 
@@ -35,10 +35,10 @@ esac
 find .git/index.lock -mmin +60 -exec rm {} \; 2>/dev/null
 
 commits=$(git log | grep -c commit)
-if (( $commits > 1500 )); then
+if (( $commits > 5000 )); then
     echo "Found $commits commits; truncating git history"
     git commit -m"save unsaved changes" -a 
-    du -sh .git && git rev-parse HEAD~1000 > .git/info/grafts && git filter-branch -- --all
+    du -sh .git && git rev-parse HEAD~2000 > .git/info/grafts && git filter-branch -- --all
     rm .git/info/grafts
     git update-ref -d refs/original/refs/heads/master && git reflog expire --expire=now --all && git gc --prune=now --aggressive 
 fi 
