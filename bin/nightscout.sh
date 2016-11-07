@@ -221,7 +221,7 @@ ns)
         json -E "this.device = 'openaps://medtronic/pump/cgm'" | (
           json -E "$NSONLY"
         )
-      ;;
+    ;;
     format-recent-type)
       ZONE=${1-'tz'}
       TYPE=${2-'entries'}
