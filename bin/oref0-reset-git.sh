@@ -51,5 +51,3 @@ fi
 
 (git status && git diff && ! df | grep 100% && ! df -i | grep 100%) > /dev/null || (echo "Saving backup to: $BACKUP" > /dev/stderr; mv .git $BACKUP; rm -rf .git; openaps init . )
 
-#truncate git history to 1000 commits if it has grown past 1500
-oref0-truncate-git-history
