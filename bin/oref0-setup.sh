@@ -76,8 +76,7 @@ esac
 done
 
 if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), shareble, G5, or MDT."
-    echo "If you'd like to help add Medtronic CGM support, please contact @scottleibrand on Gitter"
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G5, or MDT."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -105,7 +104,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What kind of CGM are you using? (i.e. G4, shareble, G5, MDT) " -r
+    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G5, MDT) " -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
