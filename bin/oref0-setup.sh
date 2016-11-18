@@ -113,7 +113,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
     fi
-    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes)? " -r
+    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? " -r
     ttyport=$REPLY
     echo -n "Ok, "
     if [[ -z "$ttyport" ]]; then
@@ -123,7 +123,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     echo " it is."
     echo Are you using Nightscout? If not, press enter.
-    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
+    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? WARNING: Make sure there is no trailing slash (/) on the URL or it will not work. " -r
     NIGHTSCOUT_HOST=$REPLY
     if [[ -z $NIGHTSCOUT_HOST ]]; then
         echo Ok, no Nightscout for you.
