@@ -158,7 +158,7 @@ if (!module.parent) {
     }
 
     if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
-        var reason = "BG data is too old, or clock set incorrectly.  Your CGM time is "+bgTime+" but your system time is "+systemTime;
+        var reason = "BG data is too old (it's probably this), or clock set incorrectly.  The last BG data was read at "+bgTime+" but your system time currently is "+systemTime;
         console.error(reason);
         var msg = {reason: reason }
 	console.log(JSON.stringify(msg));
