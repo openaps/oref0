@@ -28,8 +28,8 @@
   },
   {
     "type": "report",
-    "name": "cgm/cgm-glucose-unzoned.json",
-    "cgm/cgm-glucose-unzoned.json": {
+    "name": "cgm/cgm-glucose.json",
+    "cgm/cgm-glucose.json": {
       "use": "clean",
       "reporter": "JSON",
       "astimezone": "False",
@@ -43,14 +43,14 @@
   },
   {
     "type": "report",
-    "name": "cgm/cgm-glucose.json",
-    "cgm/cgm-glucose.json": {
+    "name": "cgm/cgm-glucose-zoned.json",
+    "cgm/cgm-glucose-zoned.json": {
       "use": "rezone",
       "reporter": "JSON",
       "astimezone": "False",
       "date": "timestamp dateString start_at end_at created_at display_time",
       "adjust": "missing",
-      "input": "cgm/cgm-glucose-unzoned.json",
+      "input": "cgm/cgm-glucose.json",
       "device": "tz",
       "timezone": ""
     }
@@ -59,7 +59,7 @@
     "type": "alias",
     "name": "monitor-cgm",
     "monitor-cgm": {
-      "command": "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose-unzoned.json cgm/cgm-glucose.json"
+      "command": "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose.json cgm/cgm-glucose-zoned.json"
     }
   },
   {
