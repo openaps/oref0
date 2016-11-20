@@ -54,5 +54,55 @@
     },
     "type": "alias",
     "name": "pump-loop"
+  },
+  {
+    "type": "report",
+    "name": "monitor/glucose.json",
+    "monitor/glucose.json": {
+      "use": "rezone",
+      "reporter": "JSON",
+      "astimezone": "False",
+      "date": "timestamp dateString start_at end_at created_at display_time",
+      "adjust": "missing",
+      "input": "monitor/glucose-unzoned.json",
+      "device": "tz",
+      "timezone": ""
+    }
+  },
+  {
+    "type": "report",
+    "nightscout/recent-missing-entries.json": {
+      "oper": "format-recent-type",
+      "use": "shell",
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "tz entries nightscout/glucose.json",
+      "json_default": "True"
+    },
+    "name": "nightscout/recent-missing-entries.json"
+  },
+  {
+    "type": "report",
+    "nightscout/uploaded-entries.json": {
+      "oper": "upload",
+      "use": "shell",
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "entries.json nightscout/recent-missing-entries.json",
+      "json_default": "True"
+    },
+    "name": "nightscout/uploaded-entries.json"
+  },
+  {
+    "type": "report",
+    "nightscout/glucose.json": {
+      "oper": "mm-format-ns-glucose",
+      "use": "shell",
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "monitor/glucose.json",
+      "json_default": "True"
+    },
+    "name": "nightscout/glucose.json"
   }
 ]
