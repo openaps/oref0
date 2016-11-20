@@ -105,5 +105,25 @@
     },
     "name": "nightscout/glucose.json"
   },
+  {
+     "get-bg": {
+      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose-unzoned.json; openaps report invoke monitor/glucose.json\""
+     },
+    "type": "alias",
+    "name": "get-bg"
+  },
+  {
+    "type": "alias",
+    "upload-bg": {
+      "command": "report invoke nightscout/glucose.json nightscout/recent-missing-entries.json nightscout/uploaded-entries.json"
+    },
+    "name": "upload-bg"
+  },
+  {
+    "type": "alias",
+    "name": "upload",
+    "upload": {
+      "command": "! bash -c \"echo -n Upload && ( openaps upload-bg; openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed\""
+  },
   {"type": "alias", "first-upload": {"command": "! bash -c \"cat nightscout/glucose.json | json 1 > nightscout/recent-missing-entries.json && openaps report invoke nightscout/uploaded-entries.json\""}, "name": "first-upload"}
 ]
