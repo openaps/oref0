@@ -35,6 +35,7 @@
     "oref0-raw": "./bin/oref0-raw.js",
     "oref0-reset-usb": "bin/oref0-reset-usb.sh",
     "oref0-reset-git": "bin/oref0-reset-git.sh",
+    "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",
     "mm-format-ns-profile": "./bin/mm-format-ns-profile.sh",
     "mm-format-ns-treatments": "./bin/mm-format-ns-treatments.sh",

@@ -15,7 +15,6 @@
     "raw-cgm/raw-entries.json": {
       "count": "",
       "use": "oref0_glucose",
-      "no_raw": "False",
       "reporter": "JSON",
       "seconds": "",
       "minutes": "",
