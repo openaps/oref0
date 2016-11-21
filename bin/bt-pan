@@ -100,6 +100,8 @@ def main(args=None):
 
   cmd = cmds.add_parser('client', help='Connect to a PAN network.')
   cmd.add_argument('remote_addr', help='Remote device address to connect to.')
+  cmd.add_argument('-d', '--disconnect', action='store_true',
+    help='Disconnect.')
   cmd.add_argument('-w', '--wait', action='store_true',
     help='Go into an endless wait-loop after connection, terminating it on exit.')
   cmd.add_argument('-c', '--if-not-connected', action='store_true',
@@ -196,6 +198,10 @@ def main(args=None):
         if err.get_dbus_name() != 'org.bluez.Error.Failed': raise
         connected = prop_get(net, 'Connected')
         if not connected: raise
+        if opts.disconnect:
+          net.Disconnect()
+          log.debug('Disconnected from network')
+          return
         if opts.reconnect:
           log.debug( 'Detected pre-established connection'
             ' (iface: %s), reconnecting', prop_get(net, 'Interface') )
