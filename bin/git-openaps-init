@@ -1,0 +1,11 @@
+#! /bin/bash
+
+name=$1
+git init $name
+
+(
+test -n $name && cd $name
+touch openaps.ini
+git add openaps.ini
+git commit -avm "initializing $(openaps --version 2>&1)"
+)

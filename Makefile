@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 TESTS=tests/*.js
 ISTANBUL=./node_modules/.bin/istanbul
 MOCHA=./node_modules/mocha/bin/_mocha
@@ -21,3 +22,19 @@ report:
 	(npm install codacy-coverage && cat ${ANALYZED} | \
 	YOURPACKAGE_COVERAGE=1 ./node_modules/codacy-coverage/bin/codacy-coverage.js) || echo "NO COVERAGE"
 
+=======
+
+TESTS = $(wildcard openaps/*.py openaps/*/*.py)
+
+test:
+	python -m nose
+	openaps -h
+	# python -m doctest discover
+	# do the test dance
+
+ci-test: test
+	# do the travis dance
+
+
+.PHONY: test
+>>>>>>> 43401bc3046ccaf4ec65db282e638bd9be2b760a
