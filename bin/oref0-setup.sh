@@ -177,6 +177,7 @@ else
 fi
 cd $directory || die "Can't cd $directory"
 ls monitor 2>/dev/null >/dev/null || mkdir monitor || die "Can't mkdir monitor"
+ls nightscout 2>/dev/null >/dev/null || mkdir nightscout || die "Can't mkdir nightscout"
 ls raw-cgm 2>/dev/null >/dev/null || mkdir raw-cgm || die "Can't mkdir raw-cgm"
 ls cgm 2>/dev/null >/dev/null || mkdir cgm || die "Can't mkdir cgm"
 ls settings 2>/dev/null >/dev/null || mkdir settings || die "Can't mkdir settings"
