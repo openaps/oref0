@@ -113,7 +113,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
     fi
-    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (i.e. /dev/ttySOMETHING)? " -r
+    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? " -r
     ttyport=$REPLY
     echo -n "Ok, "
     if [[ -z "$ttyport" ]]; then
@@ -123,7 +123,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     echo " it is."
     echo Are you using Nightscout? If not, press enter.
-    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
+    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? WARNING: Make sure there is no trailing slash (/) on the URL or it will not work. " -r
     NIGHTSCOUT_HOST=$REPLY
     if [[ -z $NIGHTSCOUT_HOST ]]; then
         echo Ok, no Nightscout for you.
@@ -192,8 +192,10 @@ else
     echo -n "Cloning oref0 dev: "
     (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
 fi
-echo Checking oref0 installation
-( grep -q oref0_glucose_since $(which nightscout) && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+#TODO: do an oref0 release and don't install if we already have a current version
+#echo Checking oref0 installation
+#( grep -q oref0_glucose_since $(which nightscout) && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) ||
+(echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
@@ -381,7 +383,10 @@ if [[ ${CGM,,} =~ "shareble" ]]; then
 fi
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
+# repair or reset git repository if it's corrupted or disk is full
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
+#truncate git history to 1000 commits if it has grown past 1500
+(crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
 if ! [[ ${CGM,,} =~ "mdt" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
 fi
