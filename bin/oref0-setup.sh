@@ -202,8 +202,8 @@ if [ -d "$HOME/src/oref0/" ]; then
     echo "$HOME/src/oref0/ already exists; pulling latest"
     (cd ~/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
 else
-    echo -n "Cloning oref0 dev: "
-    (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
+    echo -n "Cloning oref0: "
+    (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
 echo Checking oref0 installation
 npm view oref0 version | egrep ^0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
@@ -212,13 +212,13 @@ npm view oref0 version | egrep ^0.3. || (echo Installing latest oref0 && sudo np
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
     if [ -d "$HOME/src/mmeowlink/" ]; then
-        echo "$HOME/src/mmeowlink/ already exists; pulling latest dev branch"
-        (cd ~/src/mmeowlink && git fetch && git checkout dev && git pull) || die "Couldn't pull latest mmeowlink dev"
+        echo "$HOME/src/mmeowlink/ already exists; pulling latest master branch"
+        (cd ~/src/mmeowlink && git fetch && git checkout master && git pull) || die "Couldn't pull latest mmeowlink master"
     else
-        echo -n "Cloning mmeowlink dev: "
-        (cd ~/src && git clone -b dev git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink dev"
+        echo -n "Cloning mmeowlink master: "
+        (cd ~/src && git clone git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink"
     fi
-    echo Installing latest mmeowlink dev && cd $HOME/src/mmeowlink/ && sudo pip install -e . || die "Couldn't install mmeowlink"
+    echo Installing latest mmeowlink && cd $HOME/src/mmeowlink/ && sudo pip install -e . || die "Couldn't install mmeowlink"
 fi
 
 cd $directory || die "Can't cd $directory"
