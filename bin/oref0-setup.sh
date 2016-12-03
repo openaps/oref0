@@ -192,10 +192,9 @@ else
     echo -n "Cloning oref0 dev: "
     (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
 fi
-#TODO: do an oref0 release and don't install if we already have a current version
-#echo Checking oref0 installation
-#( grep -q oref0_glucose_since $(which nightscout) && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) ||
-(echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+echo Checking oref0 installation
+npm view oref0 version | egrep ^0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
+#(echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
