@@ -163,6 +163,19 @@ if [[ "$max_iob" -ne 0 ]]; then echo -n ", max_iob $max_iob"; fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
 
+echo "To run again with these same options, use:"
+echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM"
+if [[ ${CGM,,} =~ "shareble" ]]; then
+    echo -n " --bleserial=$BLE_SERIAL"
+fi
+echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET"
+if [[ ! -z "$ttyport" ]]; then
+    echo -n " --tty=$ttyport"
+fi
+if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob"; fi
+if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
+echo; echo
+
 read -p "Continue? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
