@@ -21,12 +21,73 @@ $self <cmd>
 * dedupe-treatments
 * hash-api-secret
 * status
+* get-status
 * upload-entries
 * autoconfigure-device-crud
 
 EOF
+
+extra_ns_help
+
 }
 
+function extra_ns_help ( ) {
+
+cat <<EOF
+## Nightscout Endpoints
+
+* entries.json - Glucose values, mbgs, sensor data.
+* treatments.json - Pump history, bolus, treatments, temp basals.
+* devicestatus.json - Battery levels, reservoir.
+* profile.json - Planned rates/settings/ratios/sensitivities.
+* status.json  - Server status.
+
+## Examples
+
+
+### Get records from Nightscout
+
+Use the get feature which takes two arguments: the name of the endpoint
+(entries, devicestatus, treatments, profiles) and any query arguments to append
+to the argument string. 'count=10' is a reasonable debugging value.
+The query-params can be used to generate any query Nightscout can respond to.
+
+    openaps use ns shell get \$endpoint \$query-params
+
+### Unifying pump treatments in Nightscout
+
+To upload treatments data to Nightscout, prepare you zoned glucose, and pump
+model reports, and use the following two reports:
+
+    openaps report add nightscout/recent-treatments.json JSON ns shell  format-recent-history-treatments monitor/pump-history.json model.json
+    openaps report add nightscout/uploaded.json JSON  ns shell upload-non-empty-treatments  nightscout/recent-treatments.json
+
+Here are the equivalent uses:
+
+    openaps use ns shell format-recent-history-treatments monitor/pump-history.json model.json
+    openaps use ns shell upload-non-empty-treatments nightscout/recent-treatments.json
+
+The first report runs the format-recent-history-treatments use, which fetches
+data from Nightscout and determines which of the latest deltas from openaps
+need to be sent. The second one uses the upload-non-empty-treatments use to
+upload treatments to Nightscout, if there is any data to upload.
+
+### Uploading glucose values to Nightscout
+
+Format potential entries (glucose values) for Nightscout.
+
+    openaps use ns shell format-recent-type tz entries monitor/glucose.json  | json -a dateString | wc -l
+    # Add it as a report
+    openaps report add nightscout/recent-missing-entries.json JSON ns shell format-recent-type tz entries monitor/glucose.json
+    # fetch data for first time
+    openaps report invoke nightscout/recent-missing-entries.json
+
+    # add report for uploading to NS
+    openaps report add nightscout/uploaded-entries.json JSON  ns shell upload entries.json nightscout/recent-missing-entries.json
+    # upload for fist time.
+    openaps report invoke nightscout/uploaded-entries.json
+EOF
+}
 function setup_help ( ) {
 
 cat <<EOF
@@ -35,12 +96,16 @@ $self autoconfigure-device-crud <NIGHTSCOUT_HOST> <API_SECRET>
 sets up:
 openaps use ns shell get entries.json 'count=10'
 openaps use ns shell upload treatments.json recently/combined-treatments.json
+
+
+
 EOF
+extra_ns_help
 }
 
 function ns_help ( ) {
 cat <<EOF
-TODO: improve help
+
 openaps use ns shell get entries.json 'count=10'
 openaps use ns shell upload treatments.json recently/combined-treatments.json
 
@@ -48,6 +113,25 @@ openaps use ns shell upload treatments.json recently/combined-treatments.json
   get type args                                  Get records of type from
                                                  Nightscout matching args.
 
+  oref0_glucose [tz] [args]                      Get records matching oref0
+                                                 requirements according to args
+                                                 from Nightscout.
+                                                 tz should be the name of the
+                                                 timezones device (default with
+                                                 no args is tz).
+                                                 args are ampersand separated
+                                                 arguments to append to the
+                                                 search query for Nightscout.
+  oref0_glucose_without_zone [args]              Like oref0_glucose but without
+                                                 rezoning.
+  oref0_glucose_since expr [tz] [count]          Get records matching oref0
+                                                 requirements filtered by a date calculated by expr
+                                                 from Nightscout.
+                                                 expr is used with date -d, for example -6hours.
+                                                 tz should be the name of the
+                                                 timezones device (default with
+                                                 no args is tz).
+                                                 count is the max count (needed to overide NS default of 10).
   upload endpoint file                           Upload a file to the Nightscout endpoint.
   latest-treatment-time                          - get latest treatment time from Nightscout
   format-recent-history-treatments history model - Formats medtronic pump
@@ -66,9 +150,15 @@ openaps use ns shell upload treatments.json recently/combined-treatments.json
                                                  to find gaps in a type (entries)
                                                  by default.
   upload-non-empty-type type file
-  status                                         - Retrieve status
+  status                                         - ns-status
+  get-status                                     - status - get NS status
   preflight                                      - NS preflight
+  temp_targets [expr]                            - Get temp target treatments from Nightscout
+                                                 expr is used with date -d, default is -24hours.
+  carb_history [expr]                            - Get treatments with carbs from Nightscout
+                                                 expr is used with date -d, default is -24hours.
 EOF
+extra_ns_help
 }
 case $NAME in
 latest-openaps-treatment)
@@ -101,8 +191,11 @@ ns)
         exit 1
       fi
     ;;
-    status)
+    get-status)
       ns-get host $NIGHTSCOUT_HOST status.json | json
+    ;;
+    status)
+      ns-status $*
     ;;
     lsgaps)
       ZONE=${1-'tz'}
@@ -115,17 +208,31 @@ ns)
 
 
     ;;
+    mm-format-ns-glucose)
+      #Format Medtronic glucose data into something acceptable to Nightscout.
+      HISTORY=$1
+      cat $HISTORY | \
+        json -E "this.sgv = this.sgv ? this.sgv : this.glucose" | \
+        json -E "this.medtronic = this._type;" | \
+        json -E "this.dateString = this.dateString ? this.dateString : this.display_time" | \
+        json -E "this.dateString = this.dateString ? this.dateString : (this.date + '$(date +%z)')" | \
+        json -E "this.date = new Date(this.dateString).getTime();" | \
+        json -E "this.type = (this.name == 'GlucoseSensorData') ? 'sgv' : 'pumpdata'" | \
+        json -E "this.device = 'openaps://medtronic/pump/cgm'" | (
+          json -E "$NSONLY"
+        )
+    ;;
     format-recent-type)
       ZONE=${1-'tz'}
       TYPE=${2-'entries'}
       FILE=${3-''}
       # nightscout ns $NIGHTSCOUT_HOST $API_SECRET
-      test -z ${ZONE} && "Missing first argument, ZONE, usually is set to tz" && exit 1
-      test -z ${TYPE} && "Missing second argument, TYPE, one of: entries, treatments, devicestatus, profiles." && exit 1
-      test ! -e ${FILE} && "Third argument, contents to upload, FILE, does not exist" && exit 1
-      test ! -r ${FILE} && "Third argument, contents to upload, FILE, not readable." && exit 1
+      test -z ${ZONE} && echo "Missing first argument, ZONE, usually is set to tz" && exit 1
+      test -z ${TYPE} && echo "Missing second argument, TYPE, one of: entries, treatments, devicestatus, profiles." && exit 1
+      test ! -e ${FILE} && echo "Third argument, contents to upload, FILE, does not exist" && exit 1
+      test ! -r ${FILE} && echo "Third argument, contents to upload, FILE, not readable." && exit 1
       openaps use ns shell lsgaps ${ZONE} ${TYPE} \
-        |  openaps use ${ZONE} select --current now --gaps - ${FILE}  | json
+        |  openaps use ${ZONE} select --date dateString --current now --gaps - ${FILE}  | json
     ;;
     latest-entries-time)
       PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST entries.json 'find[type]=sgv'  | json 0)
@@ -149,16 +256,47 @@ ns)
     upload-non-empty-type)
       TYPE=${1-entries.json}
       FILE=$2
-      test $(cat $FILE | json -a | wc -l) -lt 1 && echo "Nothing to upload." > /dev/stderr && cat $FILE && exit 0
+      test $(cat $FILE | json -a | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $FILE && exit 0
       exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $TYPE $FILE
     ;;
     upload-non-empty-treatments)
-      test $(cat $1 | json -a | wc -l) -lt 1 && echo "Nothing to upload." > /dev/stderr && cat $1 && exit 0
+      test $(cat $1 | json -a | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $1 && exit 0
     exec ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json $1
 
     ;;
     upload)
     exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $*
+    ;;
+    oref0_glucose)
+    zone=${1-'tz'}
+    shift
+    params=$*
+    params=${params-'count=10'}
+    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
+      | json -e "this.glucose = this.sgv" \
+      | openaps use $zone rezone --astimezone --date dateString -
+    ;;
+    oref0_glucose_without_zone)
+    params=$*
+    params=${params-'count=10'}
+    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
+      | json -e "this.glucose = this.sgv"
+    ;;
+    oref0_glucose_since)
+    expr=$1
+    zone=${2-'tz'}
+    count=${3-1000}
+    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json "find[date][\$gte]=$(date -d $expr +"%s%3N")&count=$count" \
+      | json -e "this.glucose = this.sgv" \
+      | openaps use $zone rezone --astimezone --date dateString -
+    ;;
+    temp_targets)
+    expr=${1--24hours}
+    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes)&find[eventType]=Temporary+Target"
+    ;;
+    carb_history)
+    expr=${1--24hours}
+    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes)&find[carbs][\$exists]=true"
     ;;
     *)
     echo "Unknown request:" $OP

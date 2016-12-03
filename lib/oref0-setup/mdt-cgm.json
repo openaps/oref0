@@ -1,0 +1,130 @@
+[
+  {
+    "type": "vendor",
+    "name": "openapscontrib.glucosetools",
+    "openapscontrib.glucosetools": {
+      "path": ".",
+      "module": "openapscontrib.glucosetools"
+    }
+  },
+  {
+    "extra": {},
+    "type": "device",
+    "name": "glucose",
+    "glucose": {
+      "vendor": "openapscontrib.glucosetools",
+      "extra": "glucose.ini"
+    }
+  },
+  {
+    "monitor/cgm-mm-glucosedirty.json": {
+      "hours": "24.0",
+      "device": "cgm",
+      "use": "iter_glucose_hours",
+      "reporter": "JSON"
+    },
+    "type": "report",
+    "name": "monitor/cgm-mm-glucosedirty.json"
+  },
+  {
+    "type": "report",
+    "name": "cgm/cgm-glucose.json",
+    "cgm/cgm-glucose.json": {
+      "use": "clean",
+      "reporter": "JSON",
+      "astimezone": "False",
+      "date": "display_time dateString",
+      "adjust": "missing",
+      "input": "raw-cgm/raw-entries.json",
+      "device": "glucose",
+      "timezone": "",
+      "infile": "monitor/cgm-mm-glucosedirty.json"
+    }
+  },
+  {
+    "type": "alias",
+    "name": "monitor-cgm",
+    "monitor-cgm": {
+      "command": "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose.json"
+    }
+  },
+  {
+    "pump-loop": {
+      "command": "! bash -c \"sleep $[ ( $RANDOM / 2048 ) ]s; until(echo Starting pump-loop at $(date): && openaps wait-for-silence && openaps get-bg && openaps refresh-old-pumphistory && openaps refresh-old-pumphistory-24h && openaps refresh-old-profile && openaps refresh-temp-and-enact && openaps refresh-pumphistory-and-enact && openaps refresh-profile && openaps refresh-pumphistory-24h && echo Completed pump-loop at $(date) && echo); do echo Error, retrying && [[ $RANDOM > 30000 ]] && openaps wait-for-long-silence && openaps mmtune; sleep 5; done\""
+    },
+    "type": "alias",
+    "name": "pump-loop"
+  },
+  {
+    "type": "report",
+    "name": "monitor/glucose.json",
+    "monitor/glucose.json": {
+      "use": "rezone",
+      "reporter": "JSON",
+      "astimezone": "False",
+      "date": "timestamp dateString start_at end_at created_at display_time",
+      "adjust": "missing",
+      "input": "monitor/glucose-unzoned.json",
+      "device": "tz",
+      "timezone": ""
+    }
+  },
+  {
+    "type": "report",
+    "nightscout/recent-missing-entries.json": {
+      "oper": "format-recent-type",
+      "use": "shell",
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "tz entries nightscout/glucose.json",
+      "json_default": "True"
+    },
+    "name": "nightscout/recent-missing-entries.json"
+  },
+  {
+    "type": "report",
+    "nightscout/uploaded-entries.json": {
+      "oper": "upload",
+      "use": "shell",
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "entries.json nightscout/recent-missing-entries.json",
+      "json_default": "True"
+    },
+    "name": "nightscout/uploaded-entries.json"
+  },
+  {
+    "type": "report",
+    "nightscout/glucose.json": {
+      "oper": "mm-format-ns-glucose",
+      "use": "shell",
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "monitor/glucose.json",
+      "json_default": "True"
+    },
+    "name": "nightscout/glucose.json"
+  },
+  {
+     "get-bg": {
+      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose-unzoned.json; openaps report invoke monitor/glucose.json\""
+     },
+    "type": "alias",
+    "name": "get-bg"
+  },
+  {
+    "type": "alias",
+    "upload-bg": {
+      "command": "report invoke nightscout/glucose.json nightscout/recent-missing-entries.json nightscout/uploaded-entries.json"
+    },
+    "name": "upload-bg"
+  },
+  {
+    "type": "alias",
+    "name": "upload",
+    "upload": {
+      "command": "! bash -c \"echo -n Upload && ( openaps upload-bg; openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed\""
+    }
+  },
+  {"type": "alias", "first-upload": {"command": "! bash -c \"cat nightscout/glucose.json | json 1 > nightscout/recent-missing-entries.json && openaps report invoke nightscout/uploaded-entries.json\""}, "name": "first-upload"}
+]
