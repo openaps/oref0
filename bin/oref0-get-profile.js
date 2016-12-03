@@ -144,8 +144,8 @@ if (!module.parent) {
           errors.push({msg: "Carb ratio data should have an array called schedule with a start and ratio fields.", file: carbratio_input, data: carbratio_data});
         } else {
         }
-        if (carbratio_data.units != 'grams') {
-          errors.push({msg: "Carb ratio should have units field set to 'grams'.", file: carbratio_input, data: carbratio_data});
+        if (carbratio_data.units != 'grams' && carbratio_data.units != 'exchanges')  {
+          errors.push({msg: "Carb ratio should have units field set to 'grams' or 'exchanges'.", file: carbratio_input, data: carbratio_data});
         }
         if (errors.length) {
 
