@@ -219,7 +219,7 @@ npm view oref0 version | egrep ^0.3. || (echo Installing latest oref0 && sudo np
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
     echo Installing latest mmeowlink
-    pip install -U mmeowlink || die "Couldn't install mmeowlink"
+    sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
 fi
 
 cd $directory || die "Can't cd $directory"
