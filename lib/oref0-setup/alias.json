@@ -78,7 +78,7 @@
   },
   {
     "get-bg": {
-      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
+      "command": "! bash -c \"openaps monitor-cgm 2>&1 | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
     },
     "type": "alias",
     "name": "get-bg"

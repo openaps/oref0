@@ -68,6 +68,14 @@ case $i in
     BLE_SERIAL="${i#*=}"
     shift # past argument=value
     ;;
+    -l=*|--blemac=*)
+    BLE_MAC="${i#*=}"
+    shift # past argument=value
+    ;;
+    --btmac=*)
+    BT_MAC="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -91,7 +99,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--enable='autosens meal']"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal']"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -159,7 +167,7 @@ if [[ -z "$ttyport" ]]; then
 else
     echo -n TTY $ttyport
 fi
-if [[ "$max_iob" -ne 0 ]]; then echo -n ", max_iob $max_iob"; fi
+if [[ "$max_iob" != "0" ]]; then echo -n ", max_iob $max_iob"; fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
 
@@ -181,7 +189,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 echo -n "Checking $directory: "
 mkdir -p $directory
-if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null && echo true ); then
+if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
     echo $directory already exists
 elif openaps init $directory; then
     echo $directory initialized
@@ -189,13 +197,12 @@ else
     die "Can't init $directory"
 fi
 cd $directory || die "Can't cd $directory"
-ls monitor 2>/dev/null >/dev/null || mkdir monitor || die "Can't mkdir monitor"
-ls nightscout 2>/dev/null >/dev/null || mkdir nightscout || die "Can't mkdir nightscout"
-ls raw-cgm 2>/dev/null >/dev/null || mkdir raw-cgm || die "Can't mkdir raw-cgm"
-ls cgm 2>/dev/null >/dev/null || mkdir cgm || die "Can't mkdir cgm"
-ls settings 2>/dev/null >/dev/null || mkdir settings || die "Can't mkdir settings"
-ls enact 2>/dev/null >/dev/null || mkdir enact || die "Can't mkdir enact"
-ls upload 2>/dev/null >/dev/null || mkdir upload || die "Can't mkdir upload"
+mkdir -p monitor || die "Can't mkdir monitor"
+mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
+mkdir -p cgm || die "Can't mkdir cgm"
+mkdir -p settings || die "Can't mkdir settings"
+mkdir -p enact || die "Can't mkdir enact"
+mkdir -p upload || die "Can't mkdir upload"
 
 mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
@@ -262,17 +269,17 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
     fi
     if [ -d "$HOME/src/openxshareble/" ]; then
-        echo "$HOME/src/openxshareble/ already exists; pulling latest master branch"
-        (cd ~/src/openxshareble && git fetch && git checkout master && git pull) || die "Couldn't pull latest openxshareble master"
+        echo "$HOME/src/openxshareble/ already exists; pulling latest dev branch"
+        (cd ~/src/openxshareble && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openxshareble dev"
     else
-        echo -n "Cloning openxshareble master: "
-        (cd ~/src && git clone https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble master"
+        echo -n "Cloning openxshareble dev: "
+        (cd ~/src && git clone -b dev https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble dev"
     fi
     echo Checking openxshareble installation
     if ! python -c "import openxshareble" 2>/dev/null; then
         echo Installing openxshareble && (cd $HOME/src/openxshareble && sudo python setup.py develop) || die "Couldn't install openxshareble"
     fi
-    sudo apt-get -y install libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
+    sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
     if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
         cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
@@ -281,11 +288,56 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
     fi
-    openaps vendor add openxshareble || die "Couldn't add openxshareble vendor"
-    openaps device remove cgm || die "Couldn't remove existing cgm device"
-    openaps device add cgm openxshareble || die "Couldn't add openxshareble device"
-    openaps use cgm configure --serial $BLE_SERIAL || die "Couldn't configure share serial"
+    echo Checking openaps dev installation
+    if ! openaps use cgm -h | grep -q nightscout_calibrations; then
+        if [ -d "$HOME/src/openaps/" ]; then
+            echo "$HOME/src/openaps/ already exists; pulling latest dev branch"
+            (cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
+        else
+            echo -n "Cloning openaps dev: "
+            (cd ~/src && git clone -b dev git://github.com/openaps/openaps.git) || die "Couldn't clone openaps dev"
+        fi
+        echo Installing latest openaps dev && (cd $HOME/src/openaps/ && sudo python setup.py develop) || die "Couldn't install openaps"
+    fi
 
+    mkdir -p $directory-cgm-loop
+    if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
+        echo $directory-cgm-loop already exists
+    elif openaps init $directory-cgm-loop; then
+        echo $directory-cgm-loop initialized
+    else
+        die "Can't init $directory-cgm-loop"
+    fi
+    cd $directory-cgm-loop || die "Can't cd $directory-cgm-loop"
+    mkdir -p monitor || die "Can't mkdir monitor"
+    mkdir -p nightscout || die "Can't mkdir nightscout"
+
+    openaps device remove cgm 2>/dev/null
+
+    # configure ns
+    if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
+        echo "Removing any existing ns device: "
+        killall -g openaps 2>/dev/null; openaps device remove ns 2>/dev/null
+        echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
+        nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
+    fi
+
+    # import cgm-loop stuff
+    for type in cgm-loop; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+
+    if [[ -z "$BLE_MAC" ]]; then
+        openaps use cgm list_dexcom
+        read -p "What is your G4 Share MAC address? (i.e. FE:DC:BA:98:78:54) " -r
+        BLE_MAC=$REPLY
+        echo "$BLE_MAC? Got it."
+    fi
+    echo openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC
+    openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC || die "Couldn't configure Share serial and MAC"
+
+    cd $directory || die "Can't cd $directory"
 fi
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
@@ -350,10 +402,6 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
         echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
-elif [[ ${CGM,,} =~ "G4" || ${CGM,,} =~ "shareble" ]]; then
-    if [[ $ENABLE =~ "raw" ]]; then
-        openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24" --threshold "100"
-    fi
 fi
 
 # configure optional features
@@ -383,6 +431,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
 (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
+(crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' > /var/log/openaps/network.log' ) | crontab -
 if [[ ${CGM,,} =~ "shareble" ]]; then
     # cross-platform hack to make sure experimental bluetoothd is running for openxshareble
     (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sleep 30; sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental; bluetooth_rfkill_event > /dev/null 2>&1') | crontab -
@@ -393,7 +442,9 @@ fi
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
 #truncate git history to 1000 commits if it has grown past 1500
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
-if ! [[ ${CGM,,} =~ "mdt" ]]; then
+if [[ ${CGM,,} =~ "shareble" ]]; then
+    (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
+elif ! [[ ${CGM,,} =~ "mdt" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
@@ -401,7 +452,7 @@ if [[ $ENABLE =~ autosens ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens | tee -a /var/log/openaps/autosens-loop.log") | crontab -
 fi
 if [[ "$ttyport" =~ "spi" ]]; then
-    (crontab -l; crontab -l | grep -q "cd $directory && reset_spi_serial.py" || echo "@reboot cd $directory && reset_spi_serial.py") | crontab -
+    (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
 crontab -l

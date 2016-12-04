@@ -1,0 +1,364 @@
+[
+  {
+    "type": "vendor",
+    "name": "openxshareble",
+    "openxshareble": {
+      "path": ".",
+      "module": "openxshareble"
+    }
+  },
+  {
+    "openapscontrib.timezones": {
+      "path": ".",
+      "module": "openapscontrib.timezones"
+    },
+    "type": "vendor",
+    "name": "openapscontrib.timezones"
+  },
+  {
+    "type": "device",
+    "cgm": {
+      "vendor": "openxshareble",
+      "extra": "cgm.ini"
+    },
+    "name": "cgm",
+    "extra": {}
+  },
+  {
+    "type": "device",
+    "tz": {
+      "vendor": "openapscontrib.timezones",
+      "extra": "tz.ini"
+    },
+    "name": "tz",
+    "extra": {}
+  },
+  {
+    "extra": {
+      "fields": "",
+      "cmd": "oref0",
+      "args": ""
+    },
+    "type": "device",
+    "name": "oref0",
+    "oref0": {
+      "vendor": "openaps.vendors.process",
+      "extra": "oref0.ini"
+    }
+  },
+  {
+    "raw": {
+      "vendor": "openaps.vendors.process",
+      "extra": "raw.ini"
+    },
+    "type": "device",
+    "name": "raw",
+    "extra": {
+      "fields": "glucose cal maxraw",
+      "cmd": "oref0",
+      "args": "raw"
+    }
+  },
+  {
+    "merge": {
+      "vendor": "openaps.vendors.process",
+      "extra": "merge.ini"
+    },
+    "type": "device",
+    "name": "merge",
+    "extra": {
+      "fields": "short long",
+      "cmd": "jq -s \".[0] + .[1]|unique|sort_by(.dateString)|reverse|.[0:288]\"",
+      "args": ""
+    }
+  },
+  {
+    "extra": {
+      "fields": "file",
+      "cmd": "jq .[0:2]",
+      "args": ""
+    },
+    "type": "device",
+    "name": "first",
+    "first": {
+      "vendor": "openaps.vendors.process",
+      "extra": "first.ini"
+    }
+  },
+  {
+    "type": "report",
+    "name": "monitor/cal.json",
+    "monitor/cal.json": {
+      "count": "1",
+      "use": "nightscout_calibrations",
+      "reporter": "JSON",
+      "seconds": "",
+      "hours": "",
+      "device": "cgm",
+      "gaps": "",
+      "microseconds": "",
+      "date": "display_time",
+      "minutes": ""
+    }
+  },
+  {
+    "monitor/cal-zoned.json": {
+      "use": "rezone",
+      "reporter": "JSON",
+      "astimezone": "False",
+      "date": "display_time system_time dateString",
+      "adjust": "missing",
+      "input": "monitor/cal.json",
+      "device": "tz",
+      "timezone": ""
+    },
+    "type": "report",
+    "name": "monitor/cal-zoned.json"
+  },
+  {
+    "monitor/glucose-oref0.json": {
+      "count": "",
+      "use": "oref0_glucose",
+      "no_raw": "False",
+      "reporter": "JSON",
+      "seconds": "",
+      "minutes": "30.0",
+      "hours": "",
+      "device": "cgm",
+      "gaps": "",
+      "microseconds": "",
+      "threshold": "100",
+      "sensor": "",
+      "date": "display_time",
+      "glucose": ""
+    },
+    "type": "report",
+    "name": "monitor/glucose-oref0.json"
+  },
+  {
+    "monitor/glucose-zoned.json": {
+      "use": "rezone",
+      "reporter": "JSON",
+      "astimezone": "False",
+      "date": "display_time system_time dateString",
+      "adjust": "missing",
+      "input": "monitor/glucose-oref0.json",
+      "device": "tz",
+      "timezone": ""
+    },
+    "type": "report",
+    "name": "monitor/glucose-zoned.json"
+  },
+  {
+    "monitor/glucose-raw.json": {
+      "use": "shell",
+      "reporter": "JSON",
+      "json_default": "True",
+      "cal": "monitor/cal.json",
+      "device": "raw",
+      "remainder": "",
+      "maxraw": "120",
+      "glucose": "monitor/glucose-zoned.json"
+    },
+    "type": "report",
+    "name": "monitor/glucose-raw.json"
+  },
+  {
+    "type": "report",
+    "nightscout/recent-missing-entries.json": {
+      "oper": "format-recent-type",
+      "use": "shell",
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "tz entries monitor/glucose-zoned-merge.json",
+      "json_default": "True"
+    },
+    "name": "nightscout/recent-missing-entries.json"
+  },
+  {
+    "type": "report",
+    "nightscout/uploaded-entries.json": {
+      "oper": "upload",
+      "use": "shell",
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "entries.json nightscout/recent-missing-entries.json",
+      "json_default": "True"
+    },
+    "name": "nightscout/uploaded-entries.json"
+  },
+  {
+    "nightscout/uploaded-cals.json": {
+      "oper": "upload",
+      "use": "shell",
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "entries.json monitor/cal-zoned.json",
+      "json_default": "True"
+    },
+    "type": "report",
+    "name": "nightscout/uploaded-cals.json"
+  },
+  {
+    "monitor/glucose-oref0-long.json": {
+      "count": "",
+      "use": "oref0_glucose",
+      "no_raw": "False",
+      "reporter": "JSON",
+      "seconds": "",
+      "minutes": "",
+      "hours": "4.5",
+      "device": "cgm",
+      "gaps": "",
+      "microseconds": "",
+      "threshold": "100",
+      "sensor": "",
+      "date": "display_time",
+      "glucose": ""
+    },
+    "type": "report",
+    "name": "monitor/glucose-oref0-long.json"
+  },
+  {
+    "monitor/glucose-zoned-long.json": {
+      "use": "rezone",
+      "reporter": "JSON",
+      "astimezone": "False",
+      "date": "display_time system_time dateString",
+      "adjust": "missing",
+      "input": "monitor/glucose-oref0-long.json",
+      "device": "tz",
+      "timezone": ""
+    },
+    "type": "report",
+    "name": "monitor/glucose-zoned-long.json"
+  },
+  {
+    "monitor/glucose-zoned-merge.json": {
+      "use": "shell",
+      "short": "monitor/glucose-zoned.json",
+      "reporter": "JSON",
+      "device": "merge",
+      "remainder": "",
+      "json_default": "True",
+      "long": "monitor/glucose-zoned-merge.json"
+    },
+    "type": "report",
+    "name": "monitor/glucose-zoned-merge.json"
+  },
+  {
+    "type": "report",
+    "name": "monitor/glucose-raw-merge.json",
+    "monitor/glucose-raw-merge.json": {
+      "use": "shell",
+      "reporter": "JSON",
+      "json_default": "True",
+      "cal": "monitor/cal.json",
+      "device": "raw",
+      "remainder": "",
+      "maxraw": "150",
+      "glucose": "monitor/glucose-zoned-merge.json"
+    }
+  },
+  {
+    "monitor/glucose-zoned-first.json": {
+      "use": "shell",
+      "file": "monitor/glucose-zoned-merge.json",
+      "reporter": "JSON",
+      "device": "first",
+      "remainder": "",
+      "json_default": "True"
+    },
+    "type": "report",
+    "name": "monitor/glucose-zoned-first.json"
+  },
+  {
+    "nightscout/uploaded-first.json": {
+      "oper": "upload",
+      "use": "shell",
+      "reporter": "JSON",
+      "device": "ns",
+      "remainder": "entries.json monitor/glucose-zoned-first.json",
+      "json_default": "True"
+    },
+    "type": "report",
+    "name": "nightscout/uploaded-first.json"
+  },
+  {
+    "wait-until-expected": {
+      "command": "! bash -c \"oref0-dex-wait-until-expected monitor/glucose-zoned.json 5.1\""
+    },
+    "type": "alias",
+    "name": "wait-until-expected"
+  },
+  {
+    "type": "alias",
+    "name": "glucose",
+    "glucose": {
+      "command": "report invoke monitor/glucose-oref0.json monitor/glucose-zoned.json monitor/glucose-zoned-merge.json monitor/glucose-raw-merge.json"
+    }
+  },
+  {
+    "echo-glucose": {
+      "command": "! bash -c \"echo \\\">>>>RESULTS<<<<\\\" && json -f monitor/glucose-raw-merge.json -a sgv raw dateString | head -n 3\""
+    },
+    "type": "alias",
+    "name": "echo-glucose"
+  },
+  {
+    "extras": {
+      "command": "report invoke monitor/cal.json monitor/cal-zoned.json nightscout/uploaded-cals.json"
+    },
+    "type": "alias",
+    "name": "extras"
+  },
+  {
+    "maybe-extras": {
+      "command": "! bash -c \"if (oref0-dex-is-fresh monitor/glucose-zoned.json 3); then openaps extras; else echo \\\"Glucose is not fresh, not pulling extra data\\\"; fi\""
+    },
+    "type": "alias",
+    "name": "maybe-extras"
+  },
+  {
+    "type": "alias",
+    "name": "upload",
+    "upload": {
+      "command": "report invoke nightscout/recent-missing-entries.json nightscout/uploaded-entries.json"
+    }
+  },
+  {
+    "type": "alias",
+    "name": "monitor-cgm",
+    "monitor-cgm": {
+      "command": "! bash -c \"openaps wait-until-expected && time openaps glucose && openaps echo-glucose && (openaps upload-first || echo upload first failed) && (openaps upload || echo cgm upload failed) && (openaps maybe-extras || echo cgm extras failed)\""
+    }
+  },
+  {
+    "type": "alias",
+    "name": "glucose-long",
+    "glucose-long": {
+      "command": "report invoke monitor/glucose-oref0-long.json monitor/glucose-zoned-long.json"
+    }
+  },
+  {
+    "type": "alias",
+    "name": "reset-glucose-merge",
+    "reset-glucose-merge": {
+      "command": "! bash -c \"openaps glucose-long && rm -f monitor/glucose-zoned-merge.json && cp monitor/glucose-zoned-long.json monitor/glucose-zoned-merge.json && openaps report invoke monitor/glucose-raw-merge.json\""
+    }
+  },
+  {
+    "upload-first": {
+      "command": "report invoke monitor/glucose-zoned-first.json nightscout/uploaded-first.json"
+    },
+    "type": "alias",
+    "name": "upload-first"
+  },
+  {
+    "type": "alias",
+    "name": "maybe-upload",
+    "maybe-upload": {
+      "command": "! bash -c \"if (is-fresh.sh monitor/glucose-zoned.json 4); then openaps upload; else echo \\\"Glucose is not fresh, not doing full upload\\\"; fi\""
+    }
+  }
+]
