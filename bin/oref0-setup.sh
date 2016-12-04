@@ -122,8 +122,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     echo " it is."
     echo Are you using Nightscout? If not, press enter.
-    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? WARNING: Make sure there is no trailing slash (/) on the URL or it will not work. " -r
-    NIGHTSCOUT_HOST=$REPLY
+    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
+    # remove any trailing / from NIGHTSCOUT_HOST
+    NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
     if [[ -z $NIGHTSCOUT_HOST ]]; then
         echo Ok, no Nightscout for you.
     else
@@ -162,6 +163,19 @@ if [[ "$max_iob" -ne 0 ]]; then echo -n ", max_iob $max_iob"; fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
 
+echo "To run again with these same options, use:"
+echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM"
+if [[ ${CGM,,} =~ "shareble" ]]; then
+    echo -n " --bleserial=$BLE_SERIAL"
+fi
+echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET"
+if [[ ! -z "$ttyport" ]]; then
+    echo -n " --tty=$ttyport"
+fi
+if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob"; fi
+if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
+echo; echo
+
 read -p "Continue? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
@@ -188,24 +202,17 @@ if [ -d "$HOME/src/oref0/" ]; then
     echo "$HOME/src/oref0/ already exists; pulling latest"
     (cd ~/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
 else
-    echo -n "Cloning oref0 dev: "
-    (cd ~/src && git clone -b dev git://github.com/openaps/oref0.git) || die "Couldn't clone oref0 dev"
+    echo -n "Cloning oref0: "
+    (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
-#TODO: do an oref0 release and don't install if we already have a current version
-#echo Checking oref0 installation
-#( grep -q oref0_glucose_since $(which nightscout) && oref0-get-profile --exportDefaults 2>/dev/null >/dev/null ) ||
-(echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+echo Checking oref0 installation
+npm view oref0 version | egrep ^0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
+#(echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-    if [ -d "$HOME/src/mmeowlink/" ]; then
-        echo "$HOME/src/mmeowlink/ already exists; pulling latest dev branch"
-        (cd ~/src/mmeowlink && git fetch && git checkout dev && git pull) || die "Couldn't pull latest mmeowlink dev"
-    else
-        echo -n "Cloning mmeowlink dev: "
-        (cd ~/src && git clone -b dev git://github.com/oskarpearson/mmeowlink.git) || die "Couldn't clone mmeowlink dev"
-    fi
-    echo Installing latest mmeowlink dev && cd $HOME/src/mmeowlink/ && sudo pip install -e . || die "Couldn't install mmeowlink"
+    echo Installing latest mmeowlink
+    pip install -U mmeowlink || die "Couldn't install mmeowlink"
 fi
 
 cd $directory || die "Can't cd $directory"
