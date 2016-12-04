@@ -204,23 +204,22 @@ describe('IOB', function ( ) {
 
   it('should not report negative IOB with Temp Basals and a basal profile with drastic changes', function() {
 
-    var now = Date.now();
-    var nowDate = new Date();
     var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 0.1, 'minutes': 0},
-      {'i': 1, 'start': nowDate.getHours() + ':' + nowDate.getMinutes() + ':00', 'rate': 1, 'minutes': nowDate.getHours() * 60 + nowDate.getMinutes() }];
+        {'i': 1, 'start': '00:30:00', 'rate': 2, 'minutes': 30 }];
 
-    var timestamp = new Date(now).toISOString()
-      , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
-      , inputs = {clock: timestamp,
-        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
-        , {_type: 'TempBasal', rate: 0.1, date: timestampEarly, timestamp: timestampEarly}
-        , {_type: 'TempBasal', rate: 1, date: timestamp, timestamp: timestamp}
-        , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
-        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2, 'basalprofile': basalprofile}
+	var startingPoint = new Date('2016-06-13 00:00:00.000');
+	var startingPoint2 = new Date('2016-06-13 00:30:00.000');
+	var endPoint = new Date('2016-06-13 01:00:00.000');
+
+    var inputs = {clock: endPoint,
+        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: startingPoint}
+        , {_type: 'TempBasal', rate: 0.1, date: startingPoint, timestamp: startingPoint}
+        , {_type: 'TempBasal', rate: 2, date: startingPoint2, timestamp: startingPoint2}
+        , {_type: 'TempBasalDuration','duration (min)': 30, date: startingPoint2}]
+        , profile: { dia: 3, current_basal: 2, bolussnooze_dia_divisor: 2, 'basalprofile': basalprofile}
       };
 
     var hourLaterInputs = inputs;
-    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
     var hourLater = require('../lib/iob')(hourLaterInputs)[0];
     hourLater.iob.should.equal(0);
   });

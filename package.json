@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -19,7 +19,9 @@
     "url": "https://github.com/openaps/oref0/issues"
   },
   "bin": {
-    "clockset": "./bin/clockset.sh",
+    "oref0-setup": "./bin/oref0-setup.sh",
+    "oref0-set-device-clocks": "./bin/oref0-set-device-clocks.sh",
+    "oref0-set-system-clock": "./bin/oref0-set-system-clock.sh",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-find-insulin-uses": "./bin/oref0-find-insulin-uses.js",
     "oref0-detect-sensitivity": "./bin/oref0-detect-sensitivity.js",
@@ -34,6 +36,7 @@
     "oref0-raw": "./bin/oref0-raw.js",
     "oref0-reset-usb": "bin/oref0-reset-usb.sh",
     "oref0-reset-git": "bin/oref0-reset-git.sh",
+    "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",
     "mm-format-ns-profile": "./bin/mm-format-ns-profile.sh",
     "mm-format-ns-treatments": "./bin/mm-format-ns-treatments.sh",
