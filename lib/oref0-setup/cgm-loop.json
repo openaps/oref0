@@ -157,7 +157,7 @@
       "cal": "monitor/cal.json",
       "device": "raw",
       "remainder": "",
-      "maxraw": "150",
+      "maxraw": "120",
       "glucose": "monitor/glucose-zoned.json"
     },
     "type": "report",
