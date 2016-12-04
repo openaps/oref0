@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -19,6 +19,7 @@
     "url": "https://github.com/openaps/oref0/issues"
   },
   "bin": {
+    "oref0-setup": "./bin/oref0-setup.sh",
     "oref0-set-device-clocks": "./bin/oref0-set-device-clocks.sh",
     "oref0-set-system-clock": "./bin/oref0-set-system-clock.sh",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
