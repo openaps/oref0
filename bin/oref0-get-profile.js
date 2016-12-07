@@ -94,15 +94,34 @@ if (!module.parent) {
     var cwd = process.cwd()
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
+
+    if (bgtargets_data.units == 'mmol/L') {
+      /* Convert to mg/dL */
+      bgtargets_data.units = 'mg/dL'
+      for (a in bgtargets_data.targets) {
+         var targetarea = bgtargets_data.targets[a];
+         targetarea.high = Math.round(targetarea.high*18.0);
+         targetarea.low = Math.round(targetarea.low*18.0);
+      }
+    }
+
     if (bgtargets_data.units !== 'mg/dL') {
-      console.log('BG Target data is expected to be expressed in mg/dL.'
-                 , 'Found', bgtargets_data.units, 'in', bgtargets_input, '.');
+      console.log('BG Target data was expected to be expressed in mg/dL.',
+                  'Found', bgtargets_data.units, 'in', bgtargets_input, '.');
       process.exit(2);
     }
+
     var isf_data = require(cwd + '/' + isf_input);
+    if (isf_data.units == 'mmol/L') {
+       /* Convert to mg/dL */
+       isf_data.units = 'mg/dL'
+       for (a in isf_data.sensitivities) {
+         isf_data.sensitivities[a].sensitivity = Math.round(isf_data.sensitivities[a].sensitivity*18.0);
+       }
+    }
     if (isf_data.units !== 'mg/dL') {
-      console.log('ISF is expected to be expressed in mg/dL.'
-                 , 'Found', isf_data.units, 'in', isf_input, '.');
+      console.log('Insulin sensitivity data was expected to be expressed in mg/dL.',
+                  'Found', isf_data.units, 'in', isf_input, '.');
       process.exit(2);
     }
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
