@@ -143,6 +143,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         API_SECRET=$REPLY
         echo "Ok, $API_SECRET it is."
     fi
+    read -p "Do you want to use mmhistorytools? y/[N] " -r
     read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Enable automatic sensitivity adjustment? y/[N] " -r
@@ -220,6 +221,12 @@ echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
     echo Installing latest mmeowlink
     sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
+fi
+
+echo Checking mmhistorytools installation
+if openaps vendor add openapscontrib.mmhistorytools 2>&1 | grep "No module"; then
+    echo Installing latest mmhistorytools
+    sudo pip install -U openapscontrib.mmhistorytools || die "Couldn't install mmhistorytools"
 fi
 
 cd $directory || die "Can't cd $directory"
