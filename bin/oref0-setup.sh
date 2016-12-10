@@ -75,14 +75,6 @@ case $i in
     --btmac=*)
     BT_MAC="${i#*=}"
     shift # past argument=value
-    # Install Bluez for BT Tethering
-    echo Checking bluez installation
-    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
-        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
-        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
-        make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
-        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
-    fi
     ;;
     *)
             # unknown option
@@ -259,7 +251,16 @@ for type in vendor device report alias; do
     echo importing $type file
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
-
+if [[ ${BT_MAC,,} =~ "^([a-zA-Z0-9]{2}:){5}[a-zA-Z0-9]{2}$" ]]; then
+    # Install Bluez for BT Tethering
+    echo Checking bluez installation
+    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
+        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
+        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
+        make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
+    fi
+fi
 # add/configure devices
 if [[ ${CGM,,} =~ "g5" ]]; then
     openaps use cgm config --G5
