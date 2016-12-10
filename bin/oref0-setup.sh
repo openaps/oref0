@@ -221,6 +221,14 @@ if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No modul
     echo Installing latest mmeowlink
     sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
 fi
+# Install Bluez for BT Tethering
+echo Checking bluez installation
+    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
+        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
+        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
+        make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
+    fi
 
 cd $directory || die "Can't cd $directory"
 if [[ "$max_iob" -eq 0 ]]; then
