@@ -143,7 +143,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         API_SECRET=$REPLY
         echo "Ok, $API_SECRET it is."
     fi
-    read -p "Do you want to use mmhistorytools? y/[N] " -r
     read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Enable automatic sensitivity adjustment? y/[N] " -r
