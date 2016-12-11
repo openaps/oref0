@@ -252,7 +252,7 @@ for type in vendor device report alias; do
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
 echo Checking for BT Mac or Shareble
-if [[ ${BT_MAC,,} != "" || ${CGM,,} =~ "shareble" ]]; then
+if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     # Install Bluez for BT Tethering
     echo Checking bluez installation
     if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
@@ -260,6 +260,8 @@ if [[ ${BT_MAC,,} != "" || ${CGM,,} =~ "shareble" ]]; then
         cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
+    else
+        echo bluez v 5.37 already installed
     fi
 fi
 # add/configure devices
