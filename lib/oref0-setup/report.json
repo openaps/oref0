@@ -159,8 +159,6 @@
       "use": "prepare",
       "infile": "monitor/pumphistory.json",
       "basal_profile": "settings/basal_profile.json",
-      "end": "monitor/clock.json",
-      "duration": "5.0",
       "reporter": "JSON"
     }
   },
