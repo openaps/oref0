@@ -152,6 +152,19 @@
     "name": "settings/pumphistory-24h.json"
   },
   {
+    "type": "report",
+    "name": "monitor/pumphistory-prepared.json",
+    "monitor/pumphistory-prepared.json": {
+      "device": "history",
+      "use": "prepare",
+      "infile": "monitor/pumphistory.json",
+      "basal_profile": "settings/basal_profile.json",
+      "end": "monitor/clock.json",
+      "duration": "5.0",
+      "reporter": "JSON"
+    }
+  },
+  {
     "monitor/pumphistory-zoned.json": {
       "use": "rezone",
       "reporter": "JSON",
@@ -163,7 +176,7 @@
       "timezone": ""
     },
     "type": "report",
-    "name": "monitor/pumphistory-zoned.json"
+    "name": "monitor/pumphistory-prepared.json"
   },
   {
     "type": "report",
@@ -190,7 +203,7 @@
       "json_default": "True",
       "pumphistory": "monitor/pumphistory-zoned.json",
       "device": "iob",
-      "remainder": ""
+      "remainder": "--prepared"
     }
   },
   {
@@ -206,8 +219,8 @@
       "pumphistory": "monitor/pumphistory-zoned.json",
       "carbs": "monitor/carbhistory.json",
       "device": "meal",
-      "remainder": "",
-      "basal": "settings/basal_profile.json"
+      "remainder": "--prepared",
+      "basal": "settings/basal_profile.json",
     }
   },
   {

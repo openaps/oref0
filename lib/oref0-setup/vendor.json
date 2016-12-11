@@ -14,5 +14,13 @@
       "path": ".",
       "module": "mmeowlink.vendors.mmeowlink"
     }
+  },
+  {
+    "openapscontrib.mmhistorytools": {
+      "path": ".",
+      "module": "openapscontrib.mmhistorytools"
+    },
+    "type": "vendor",
+    "name": "openapscontrib.mmhistorytools"
   }
 ]

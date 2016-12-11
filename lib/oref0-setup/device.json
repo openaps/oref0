@@ -140,5 +140,14 @@
     "type": "device",
     "name": "units",
     "extra": {}
+  },
+  {
+    "type": "device",
+    "history": {
+      "vendor": "openapscontrib.mmhistorytools",
+      "extra": "history.ini"
+    },
+    "name": "history",
+    "extra": {}
   }
 ]
