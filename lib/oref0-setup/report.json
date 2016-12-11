@@ -159,6 +159,8 @@
       "use": "prepare",
       "infile": "monitor/pumphistory.json",
       "basal_profile": "settings/basal_profile.json",
+      "end": "monitor/clock.json",
+      "duration": "5.0",
       "reporter": "JSON"
     }
   },
@@ -169,12 +171,12 @@
       "astimezone": "False",
       "date": "timestamp dateString start_at end_at created_at",
       "adjust": "missing",
-      "input": "monitor/pumphistory.json",
+      "input": "monitor/pumphistory-prepared.json",
       "device": "tz",
       "timezone": ""
     },
     "type": "report",
-    "name": "monitor/pumphistory-prepared.json"
+    "name": "monitor/pumphistory-zoned.json"
   },
   {
     "type": "report",
