@@ -220,7 +220,7 @@
       "carbs": "monitor/carbhistory.json",
       "device": "meal",
       "remainder": "--prepared",
-      "basal": "settings/basal_profile.json",
+      "basal": "settings/basal_profile.json"
     }
   },
   {
