@@ -54,6 +54,7 @@
     "oref0-copy-fresher": "./bin/oref0-copy-fresher",
     "oref0-pebble": "./bin/oref0-pebble.js",
     "oref0-crun": "./bin/oref0-conditional-run.sh"
+    "oref0-ed-battery": "./bin/oref0-ed-battery.sh"
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
