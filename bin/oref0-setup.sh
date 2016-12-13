@@ -365,7 +365,7 @@ elif [[ $ENABLE =~ meal ]]; then
     EXTRAS='"" monitor/meal.json'
 fi
 # Install EdisonVoltage
-if [[ egrep -i "edison" /etc/passwd | grep "edison" ]]; then
+if egrep -i "edison" /etc/passwd | grep "edison" 2>/dev/null; then
 	echo Installing EdisonVoltage
 	cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
 
@@ -408,7 +408,7 @@ fi
 #truncate git history to 1000 commits if it has grown past 1500
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
 # Install EdisonVoltage
-if [[ egrep -i "edison" /etc/passwd | grep "edison" ]]; then
+if egrep -i "edison" /etc/passwd | grep "edison" 2>/dev/null; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps BatteryStatus'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps BatteryStatus' || openaps BatteryStatus | tee -a /var/log/openaps/BatteryStatus-loop.log") | crontab -
 fi
 if ! [[ ${CGM,,} =~ "mdt" ]]; then
