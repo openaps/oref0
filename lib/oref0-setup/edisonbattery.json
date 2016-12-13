@@ -8,7 +8,7 @@
 },
 {
     "type": "alias",
-    "name": "BatteryStatus",
+    "name": "battery-status",
     "BatteryStatus": {
       "command": "! bash -c \"~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json""
     }
