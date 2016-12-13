@@ -40,6 +40,10 @@ case $i in
     serial="${i#*=}"
     shift # past argument=value
     ;;
+    -rl=*|--radio_locale=*)
+    radio_locale="${i#*=}"
+    shift # past argument=value
+    ;;
     -t=*|--tty=*)
     ttyport="${i#*=}"
     shift # past argument=value
@@ -99,7 +103,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal']"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal'] [--radio_locale=WW]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -129,6 +133,28 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo -n TTY $ttyport
     fi
     echo " it is."
+
+    if [[ ! -z "${ttyport}" ]]; then
+      echo "Medtronic pumps come in two types: WW (Worldwide) pumps, and NA (North America) pumps."
+      echo "Confusingly, North America pumps may also be used outside of North America."
+      echo ""
+      echo "USA pumps have a serial number / model number that has 'NA' in it."
+      echo "Non-USA pumps have a serial number / model number that 'WW' in it."
+      echo ""
+      echo "When using MMeowlink, we need to know which frequency we should use:"
+      read -p "Are you using a USA/North American pump? If so, just hit enter. Otherwise enter WW: " -r
+      radio_locale=$REPLY
+      echo -n "Ok, "
+      # Force uppercase, just in case the user entered ww
+      radio_locale=${radio_locale^^}
+
+      if [[ -z "${radio_locale}" ]]; then
+          radio_locale='US'
+      fi
+
+      echo "-n ${radio_locale} it is"
+    fi
+
     echo Are you using Nightscout? If not, press enter.
     read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
     # remove any trailing / from NIGHTSCOUT_HOST
@@ -182,6 +208,7 @@ if [[ ! -z "$ttyport" ]]; then
 fi
 if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob"; fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
+if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'"; fi
 echo; echo
 
 read -p "Continue? y/[N] " -r
@@ -384,7 +411,7 @@ if [[ -z "$ttyport" ]]; then
     openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
     openaps alias add mmtune 'report invoke monitor/temp_basal.json'
 else
-    openaps device add pump mmeowlink subg_rfspy $ttyport $serial || die "Can't add pump"
+    openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
     openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
 fi
@@ -396,7 +423,7 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
     if [[ -z "$ttyport" ]]; then
         openaps device add cgm medtronic $serial || die "Can't add cgm"
     else
-        openaps device add cgm mmeowlink subg_rfspy $ttyport $serial || die "Can't add cgm"
+        openaps device add cgm mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add cgm"
     fi
     for type in mdt-cgm; do
         echo importing $type file
