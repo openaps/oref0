@@ -374,7 +374,7 @@ if egrep -i "edison" /etc/passwd | grep "edison" 2>/dev/null; then
 	sudo ./voltage_server &
 	echo 1 > /tmp/battery_trigger
 	cd && cd $directory || die "Can't cd $directory"
-  for type in EdisonBattery; do
+  for type in edisonbattery; do
         echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done  
