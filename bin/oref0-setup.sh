@@ -373,6 +373,7 @@ if egrep -i "edison" /etc/passwd | grep "edison" 2>/dev/null; then
 	make voltage_server
 	sudo ./voltage_server &
 	echo 1 > /tmp/battery_trigger
+	sudo make install
 	cd && cd $directory || die "Can't cd $directory"
   for type in edisonbattery; do
         echo importing $type file
