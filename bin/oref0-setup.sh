@@ -365,7 +365,7 @@ elif [[ $ENABLE =~ meal ]]; then
     EXTRAS='"" monitor/meal.json'
 fi
 # Install EdisonVoltage
-if egrep -i "edison" /etc/passwd | grep "edison" 2>/dev/null; then
+if egrep -i "edison" /etc/passwd 2>/dev/null; then
    echo "Checking if EdisonVoltage is already installed"
    if [ -d "$HOME/src/EdisonVoltage/" ]; then
       echo "EdisonVoltage already installed"
@@ -378,7 +378,7 @@ if egrep -i "edison" /etc/passwd | grep "edison" 2>/dev/null; then
       echo 1 > /tmp/battery_trigger
       sudo make install
    fi
-   cd && cd $directory || die "Can't cd $directory"
+   cd $directory || die "Can't cd $directory"
    for type in edisonbattery; do
      echo importing $type file
      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
@@ -414,7 +414,7 @@ fi
 #truncate git history to 1000 commits if it has grown past 1500
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
 # Install EdisonVoltage
-if egrep -i "edison" /etc/passwd | grep "edison" 2>/dev/null; then
+if egrep -i "edison" /etc/passwd 2>/dev/null; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps battery-status'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ed-battery && openaps battery-status' || oref0-ed-battery && openaps battery-status | tee -a /var/log/openaps/batterystatus-loop.log") | crontab -
 fi
 if ! [[ ${CGM,,} =~ "mdt" ]]; then
