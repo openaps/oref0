@@ -373,10 +373,7 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
       echo "Installing EdisonVoltage"
       cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
       cd ~/src/EdisonVoltage
-      make voltage_server
-      sudo ./voltage_server &
-      echo 1 > /tmp/battery_trigger
-      sudo make install
+      make voltage
    fi
    cd $directory || die "Can't cd $directory"
    for type in edisonbattery; do
