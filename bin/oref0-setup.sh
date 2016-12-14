@@ -356,6 +356,32 @@ elif [[ ${CGM,,} =~ "G4" || ${CGM,,} =~ "shareble" ]]; then
     fi
 fi
 
+# Install EdisonVoltage
+if egrep -i "edison" /etc/passwd 2>/dev/null; then
+   echo "Checking if EdisonVoltage is already installed"
+   if [ -d "$HOME/src/EdisonVoltage/" ]; then
+      echo "EdisonVoltage already installed"
+   else
+      echo "Installing EdisonVoltage"
+      cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+      cd ~/src/EdisonVoltage
+      make voltage
+   fi
+ 
+    
+   echo Adding Edison battery device
+   openaps device add edison-battery process sudo $HOME/EdisonVoltage/voltage || die "Can't add edison battery"
+   
+   echo Replacing monitor-pump alias
+   #replace alias with one that has the voltage added
+   openaps alias add monitor-pump 'report invoke monitor/edison-battery.json monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/meal.json monitor/reservoir.json monitor/battery.json monitor/status.json'
+
+   echo Replacing monitor-pump alias
+   #replace alias with one that has voltage
+   openaps alias add format-ns-status '! bash -c \"ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --uploader monitor/edison-battery.json > upload/ns-status.json'
+
+fi
+
 # configure optional features
 if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
     EXTRAS="settings/autosens.json monitor/meal.json"
