@@ -366,19 +366,20 @@ elif [[ $ENABLE =~ meal ]]; then
 fi
 # Install EdisonVoltage
 if egrep -i "edison" /etc/passwd | grep "edison" 2>/dev/null; then
-	echo Installing EdisonVoltage
-	cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
-
-	cd ~/src/EdisonVoltage
-	make voltage_server
-	sudo ./voltage_server &
-	echo 1 > /tmp/battery_trigger
-	sudo make install
-	cd && cd $directory || die "Can't cd $directory"
-  for type in edisonbattery; do
-        echo importing $type file
-        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-    done  
+   echo Installing EdisonVoltage
+   if  ! [ -d "~/src/EdisonVoltage" ] then
+      cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+      cd ~/src/EdisonVoltage
+      make voltage_server
+      sudo ./voltage_server &
+      echo 1 > /tmp/battery_trigger
+      sudo make install
+   fi
+   cd && cd $directory || die "Can't cd $directory"
+   for type in edisonbattery; do
+     echo importing $type file
+     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+  done  
 fi
 
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
