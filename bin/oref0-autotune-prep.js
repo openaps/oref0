@@ -19,7 +19,7 @@
 
 */
 
-var generate = require('oref0/autotune/prep');
+var generate = require('oref0/lib/autotune-prep');
 function usage ( ) {
         console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [carbhistory.json]');
 }
