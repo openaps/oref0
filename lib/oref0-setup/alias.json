@@ -243,5 +243,12 @@
     "upload": {
       "command": "! bash -c \"echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed\""
     }
+  },
+  {
+    "type": "alias",
+    "name": "monitor-xdrip",
+    "monitor-xdrip": {
+      "command": "report invoke xdrip/glucose.json"
   }
+}
 ]
