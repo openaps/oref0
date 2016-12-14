@@ -367,7 +367,7 @@ fi
 # Install EdisonVoltage
 if egrep -i "edison" /etc/passwd | grep "edison" 2>/dev/null; then
    echo "Checking if EdisonVoltage is already installed"
-   if   [[ -d "~/src/EdisonVoltage" ]]; then
+   if [ -d "$HOME/src/EdisonVoltage/" ]; then
       echo "EdisonVoltage already installed"
    else
       echo "Installing EdisonVoltage"
