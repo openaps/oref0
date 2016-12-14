@@ -412,7 +412,7 @@ fi
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
 # Install EdisonVoltage
 if egrep -i "edison" /etc/passwd 2>/dev/null; then
-    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps battery-status'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ed-battery && openaps battery-status' || oref0-ed-battery && openaps battery-status | tee -a /var/log/openaps/batterystatus-loop.log") | crontab -
+    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps battery-status'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps battery-status' || openaps battery-status | tee -a /var/log/openaps/batterystatus-loop.log") | crontab -
 fi
 if ! [[ ${CGM,,} =~ "mdt" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
