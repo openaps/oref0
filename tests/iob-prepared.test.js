@@ -163,10 +163,6 @@ describe('IOB', function ( ) {
 
     });
 
-    // TO DO:
-    // make sure cancelled square boluses are handled correctly
-    // make sure square boluses in progress are handled correctly
-    // make sure suspend/resumes are handled correctly
     it('should calculate IOB with Square Boluses', function() {
 
       var now = Date.now()
