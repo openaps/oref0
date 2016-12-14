@@ -13,6 +13,7 @@ if ! curl -m 15 icanhazip.com; then
     echo -n "At $(date) my IP is: "
     if ! curl -m 15 icanhazip.com; then
         echo -n "Error, connecting BT to $MAC "
+        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
         sudo bt-pan client $MAC
         echo -n "and getting bnep0 IP"
         sudo dhclient bnep0

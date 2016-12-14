@@ -278,7 +278,19 @@ for type in vendor device report alias; do
     echo importing $type file
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
-
+echo Checking for BT Mac or Shareble
+if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
+    # Install Bluez for BT Tethering
+    echo Checking bluez installation
+    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
+        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
+        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
+        make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
+    else
+        echo bluez v 5.37 already installed
+    fi
+fi
 # add/configure devices
 if [[ ${CGM,,} =~ "g5" ]]; then
     openaps use cgm config --G5
@@ -308,12 +320,8 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
-    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
-        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
-        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
-        make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+    if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
-        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
     fi
     echo Checking openaps dev installation
     if ! openaps use cgm -h | grep -q nightscout_calibrations; then
