@@ -10,7 +10,7 @@
     "type": "alias",
     "name": "battery-status",
     "battery-status": {
-      "command": "! bash -c \"echo Edison Battery at $(date): $(~/src/EdisonVoltage/voltage json batteryVoltage battery) && ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json\""
+      "command": "! bash -c \"echo Edison Battery at $(date): $(sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery) && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json\""
     }
   }
 ]
