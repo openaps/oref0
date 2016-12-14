@@ -448,6 +448,7 @@ if [[ ${CGM,,} =~ "xdrip" ]]; then
     sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
     cd $HOME
     git clone https://github.com/colinlennon/xDripAPS.git
+fi
 
 # configure optional features
 if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
