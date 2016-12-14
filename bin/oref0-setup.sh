@@ -367,8 +367,10 @@ fi
 # Install EdisonVoltage
 if egrep -i "edison" /etc/passwd | grep "edison" 2>/dev/null; then
    echo "Checking if EdisonVoltage is already installed"
-   if   [[! -d "~/src/EdisonVoltage" ]]; then
-      echo Installing EdisonVoltage
+   if   [[ -d "~/src/EdisonVoltage" ]]; then
+      echo "EdisonVoltage already installed"
+   else
+      echo "Installing EdisonVoltage"
       cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
       cd ~/src/EdisonVoltage
       make voltage_server
