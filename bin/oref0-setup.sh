@@ -446,7 +446,7 @@ if [[ ${CGM,,} =~ "xdrip" ]]; then
     sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
     sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
     sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
-    git clone https://github.com/colinlennon/xDripAPS.git $HOME/xDripAPS
+    git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
 fi
 
 # configure optional features
