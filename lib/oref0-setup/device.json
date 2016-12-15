@@ -150,7 +150,7 @@
     "name": "xdrip",
     "extra": {
       "fields": "",
-      "cmd": "bash -c "curl -s http://localhost:5000/api/v1/entries?count=288 | json -e \"this.glucose = this.sgv\""",
+      "cmd": "bash -c \"curl -s http://localhost:5000/api/v1/entries?count=288 | json -e \\\"this.glucose = this.sgv\\\"\"",
       "args": ""
     }
   }
