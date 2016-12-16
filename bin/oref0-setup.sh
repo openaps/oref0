@@ -373,7 +373,7 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
    openaps device add edison-battery process sudo $HOME/EdisonVoltage/voltage || die "Can't add edison battery"
    
    echo Adding Edison battery report
-   openaps report add monitor/edison-battery2.json JSON edison-battery shell json batteryVoltage battery
+   openaps report add monitor/edison-battery.json JSON edison-battery shell json batteryVoltage battery
    
    echo Replacing monitor-pump alias
    #replace alias with one that has the voltage added
