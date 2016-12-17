@@ -198,6 +198,7 @@
   {
     "type": "alias",
     "name": "upload-pumphistory-entries",
+    "upload-pumphistory-entries": {
       "command": "! bash -c \"openaps prep-pumphistory-entries && ns-upload-entries upload/pumphistory-entries.json\""
     }
   },
