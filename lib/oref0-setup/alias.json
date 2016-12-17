@@ -155,7 +155,7 @@
   },
   {
     "merge-pumphistory-long": {
-      "command": "! bash -c \"jq -s \\\".[0] + .[1]|unique|sort_by(.timestamp)|reverse\\\" settings/pumphistory-long.json monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > pumphistory-long.json.new && mv pumphistory-long.json.new settings/pumphistory-long.json\""
+      "command": "! bash -c \"jq -s \\\".[0] + .[1]|unique|sort_by(.timestamp)|reverse\\\" settings/pumphistory-long.json monitor/pumphistory-zoned-ns.json settings/pumphistory-24h-zoned.json > pumphistory-long.json.new && mv pumphistory-long.json.new settings/pumphistory-long.json\""
     },
     "type": "alias",
     "name": "merge-pumphistory-long"
