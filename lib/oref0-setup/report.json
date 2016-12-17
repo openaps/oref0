@@ -179,6 +179,20 @@
     "name": "monitor/pumphistory-zoned.json"
   },
   {
+    "monitor/pumphistory-zoned-ns.json": {
+      "use": "rezone",
+      "reporter": "JSON",
+      "astimezone": "False",
+      "date": "timestamp dateString start_at end_at created_at",
+      "adjust": "missing",
+      "input": "monitor/pumphistory.json",
+      "device": "tz",
+      "timezone": ""
+    },
+    "type": "report",
+    "name": "monitor/pumphistory-zoned-ns.json"
+  },
+  {
     "type": "report",
     "name": "settings/pumphistory-24h-zoned.json",
     "settings/pumphistory-24h-zoned.json": {

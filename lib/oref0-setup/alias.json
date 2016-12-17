@@ -43,7 +43,7 @@
   },
   {
     "monitor-pump": {
-      "command": "report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-prepared.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/meal.json monitor/reservoir.json monitor/battery.json monitor/status.json"
+      "command": "report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-prepared.json monitor/pumphistory-zoned.json monitor/pumphistory-zoned-ns.json monitor/clock-zoned.json monitor/iob.json monitor/meal.json monitor/reservoir.json monitor/battery.json monitor/status.json"
     },
     "type": "alias",
     "name": "monitor-pump"
@@ -190,7 +190,7 @@
   },
   {
     "prep-pumphistory-entries": {
-      "command": "! bash -c \"cat monitor/pumphistory-zoned.json | json -e \\\"this.dateString = this.timestamp\\\" | json -e \\\"this.medtronic = this._type\\\" | json -e \\\"this.type = \\\\\\\"medtronic\\\\\\\"\\\" | json -e \\\"this.date = new Date(Date.parse(this.timestamp)).getTime( )\\\" > upload/pumphistory-entries.json\""
+      "command": "! bash -c \"cat monitor/pumphistory-zoned-ns.json | json -e \\\"this.dateString = this.timestamp\\\" | json -e \\\"this.medtronic = this._type\\\" | json -e \\\"this.type = \\\\\\\"medtronic\\\\\\\"\\\" | json -e \\\"this.date = new Date(Date.parse(this.timestamp)).getTime( )\\\" > upload/pumphistory-entries.json\""
     },
     "type": "alias",
     "name": "prep-pumphistory-entries"
@@ -198,7 +198,6 @@
   {
     "type": "alias",
     "name": "upload-pumphistory-entries",
-    "upload-pumphistory-entries": {
       "command": "! bash -c \"openaps prep-pumphistory-entries && ns-upload-entries upload/pumphistory-entries.json\""
     }
   },
@@ -213,7 +212,7 @@
     "type": "alias",
     "name": "format-latest-nightscout-treatments",
     "format-latest-nightscout-treatments": {
-      "command": "! bash -c \"nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json\""
+      "command": "! bash -c \"nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned-ns.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json\""
     }
   },
   {
