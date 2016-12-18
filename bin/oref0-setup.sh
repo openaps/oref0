@@ -286,6 +286,9 @@ if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
         cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+        # add two lines to /etc/rc.local then comment out the existing bluetoothd line
+        sed -i.old 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \& \nbluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
+        sed -i.old 's/^screen -S "brcm_patchram_plus" -d -m/# &/' /etc/rc.local 
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
     else
         echo bluez v 5.37 already installed
