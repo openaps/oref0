@@ -470,7 +470,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
 (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-(crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' > /var/log/openaps/network.log' ) | crontab -
+(crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
 # repair or reset git repository if it's corrupted or disk is full
