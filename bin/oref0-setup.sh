@@ -286,6 +286,9 @@ if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
         cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+        # add two lines to /etc/rc.local then comment out the existing bluetoothd line
+        sed -i.old 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \& \nbluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
+        sed -i.old 's/^screen -S "brcm_patchram_plus" -d -m/# &/' /etc/rc.local 
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
     else
         echo bluez v 5.37 already installed
@@ -467,10 +470,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
 (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' > /var/log/openaps/network.log' ) | crontab -
-if [[ ${CGM,,} =~ "shareble" ]]; then
-    # cross-platform hack to make sure experimental bluetoothd is running for openxshareble
-    (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sleep 30; sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental; bluetooth_rfkill_event > /dev/null 2>&1') | crontab -
-fi
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
 # repair or reset git repository if it's corrupted or disk is full
