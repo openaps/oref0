@@ -169,6 +169,16 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         API_SECRET=$REPLY
         echo "Ok, $API_SECRET it is."
     fi
+    if [[ ! -z $BT_MAC ]]; then
+       read -p "For BT Tethering enter phone mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+       BT_MAC=$REPLY
+       echo "Ok, $BT_MAC it is."
+       if [[ -z $BT_MAC ]]; then
+          echo Ok, no Bluetooth for you.
+          else
+          echo "Ok, $BT_MAC it is."
+       if
+   fi
     read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Enable automatic sensitivity adjustment? y/[N] " -r
