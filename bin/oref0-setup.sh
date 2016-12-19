@@ -177,8 +177,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           echo Ok, no Bluetooth for you.
           else
           echo "Ok, $BT_MAC it is."
-       if
-   fi
+       fi
+    fi
     read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Enable automatic sensitivity adjustment? y/[N] " -r
