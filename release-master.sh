@@ -1,5 +1,5 @@
 git checkout master && \
-git pull master && \
+git pull origin master && \
 npm version patch && \
 git tag -l && \
 npm publish && \

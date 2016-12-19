@@ -1,9 +1,10 @@
 {
   "name": "oref0",
-  "version": "0.2.0",
+  "version": "0.3.3",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
-    "test": "make test"
+    "test": "make test",
+    "global-install": "npm install && sudo npm install -g && sudo npm link && sudo npm link oref0"
   },
   "repository": {
     "type": "git",
@@ -18,6 +19,9 @@
     "url": "https://github.com/openaps/oref0/issues"
   },
   "bin": {
+    "oref0-setup": "./bin/oref0-setup.sh",
+    "oref0-set-device-clocks": "./bin/oref0-set-device-clocks.sh",
+    "oref0-set-system-clock": "./bin/oref0-set-system-clock.sh",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-find-insulin-uses": "./bin/oref0-find-insulin-uses.js",
     "oref0-detect-sensitivity": "./bin/oref0-detect-sensitivity.js",
@@ -32,6 +36,7 @@
     "oref0-raw": "./bin/oref0-raw.js",
     "oref0-reset-usb": "bin/oref0-reset-usb.sh",
     "oref0-reset-git": "bin/oref0-reset-git.sh",
+    "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",
     "mm-format-ns-profile": "./bin/mm-format-ns-profile.sh",
     "mm-format-ns-treatments": "./bin/mm-format-ns-treatments.sh",
@@ -47,16 +52,22 @@
     "oref0-html": "./bin/oref0-html.js",
     "oref0-template": "./bin/oref0-template.js",
     "oref0-copy-fresher": "./bin/oref0-copy-fresher",
-    "oref0-pebble": "./bin/oref0-pebble.js"
+    "oref0-pebble": "./bin/oref0-pebble.js",
+    "oref0-crun": "./bin/oref0-conditional-run.sh"
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
+    "lodash": "^4.15.0",
+    "moment": "^2.14.1",
     "share2nightscout-bridge": "^0.1.5",
     "timezone": "0.0.47",
     "yargs": "~4.3.2"
   },
   "devDependencies": {
+    "coveralls": "^2.11.12",
+    "istanbul": "^0.4.4",
     "mocha": "^2.3.3",
+    "mocha-lcov-reporter": "^1.2.0",
     "should": "^7.1.0"
   },
   "config": {
