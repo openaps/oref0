@@ -375,9 +375,10 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
    echo Adding Edison battery report
    openaps report add monitor/edison-battery.json JSON edison-battery shell json batteryVoltage battery
    
-   echo Replacing monitor-pump alias
+   echo Replacing ns-loop alias
    #replace alias with one that has the voltage added
-   openaps alias add monitor-pump 'report invoke monitor/edison-battery.json monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/meal.json monitor/reservoir.json monitor/battery.json monitor/status.json'
+   openaps alias add ns-loop  '! bash -c "echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \" and meal-carbs\" && openaps report invoke monitor/edison-battery.json && openaps upload"'
+
 
    echo Replacing monitor-pump alias
    #replace alias with one that has voltage
