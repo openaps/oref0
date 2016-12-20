@@ -377,8 +377,7 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
    
    echo Replacing ns-loop alias
    #replace alias with one that has the voltage added
-   openaps alias add ns-loop  '! bash -c "echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \" and meal-carbs\" && openaps report invoke monitor/edison-battery.json && openaps upload"'
-
+   openaps alias add ns-loop '! bash -c "echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \" and meal-carbs\" && openaps report invoke monitor/edison-battery.json && cat monitor/edison-battery.json && echo && openaps upload"'
 
    echo Replacing monitor-pump alias
    #replace alias with one that has voltage
