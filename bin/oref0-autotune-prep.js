@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 /*
-  oref0 CSF autotuning data prep tool
+  oref0 autotuning data prep tool
 
-  Collects glucose data for periods dominated by carb absorption
+  Collects and divides up glucose data for periods dominated by carb absorption,
+  correction insulin, or basal insulin, and adds in avgDelta and deviations,
   for use in oref0 autotuning algorithm
 
   Released under MIT license. See the accompanying LICENSE.txt file for
@@ -21,7 +22,7 @@
 
 var generate = require('oref0/lib/autotune-prep');
 function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [carbhistory.json]');
+        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [carbhistory.json] [autotune/glucose.json]');
 }
 
 if (!module.parent) {
@@ -35,6 +36,7 @@ if (!module.parent) {
     var glucose_input = process.argv.slice(5, 6).pop();
     var basalprofile_input = process.argv.slice(6, 7).pop();
     var carb_input = process.argv.slice(7, 8).pop()
+    var prepped_glucose_input = process.argv.slice(8, 9).pop()
 
     if (!pumphistory_input || !profile_input || !clock_input || !glucose_input || !basalprofile_input) {
         usage( );
@@ -73,6 +75,14 @@ if (!module.parent) {
             console.error("Warning: could not parse "+carb_input);
         }
     }
+    var prepped_glucose_data = { };
+    if (typeof prepped_glucose_input != 'undefined') {
+        try {
+            carb_data = JSON.parse(fs.readFileSync(prepped_glucose_input, 'utf8'));
+        } catch (e) {
+            console.error("Warning: could not parse "+prepped_glucose_input);
+        }
+    }
 
     var inputs = {
         history: pumphistory_data
@@ -81,6 +91,7 @@ if (!module.parent) {
     , clock: clock_data
     , carbs: carb_data
     , glucose: glucose_data
+    , prepped_glucose: prepped_glucose_data
     };
 
     var prepped_glucose = generate(inputs);
