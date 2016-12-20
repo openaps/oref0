@@ -1,7 +1,10 @@
 # oref0
 
-
 Javascript plugins for openaps
+
+Master code coverage: [![Coverage Status](https://coveralls.io/repos/github/openaps/oref0/badge.svg?branch=master)](https://coveralls.io/github/openaps/oref0?branch=master)
+
+Dev code coverage: [![Coverage Status](https://coveralls.io/repos/github/openaps/oref0/badge.svg?branch=dev)](https://coveralls.io/github/openaps/oref0?branch=dev)
 
 ## Installing
 

@@ -1,0 +1,18 @@
+[
+  {
+    "openapscontrib.timezones": {
+      "path": ".",
+      "module": "openapscontrib.timezones"
+    },
+    "type": "vendor",
+    "name": "openapscontrib.timezones"
+  },
+  {
+    "type": "vendor",
+    "name": "mmeowlink.vendors.mmeowlink",
+    "mmeowlink.vendors.mmeowlink": {
+      "path": ".",
+      "module": "mmeowlink.vendors.mmeowlink"
+    }
+  }
+]

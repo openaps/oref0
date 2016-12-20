@@ -18,15 +18,34 @@
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+CLOCK=${1-monitor/clock-zoned.json}
+GLUCOSE=${2-monitor/glucose.json}
+PUMP=${3-pump}
+CGM=${4-cgm}
+
 die() { echo "$@" ; exit 1; }
+self=$(basename $0)
+function usage ( ) {
 
-ntp-wait -n 1 -v && die "NTP already synchronized." || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v && die "NTP re-synchronized." )
+cat <<EOF
+$self
+$self - If NTP is unavailable, set system time to match pump time if it's later
+EOF
+}
 
-cd ~/openaps-dev
-( cat clock.json; echo ) | sed 's/"//g' | sed "s/$/`date +%z`/" | while read line; do date -u -d $line +"%F %R:%S"; done > fake-hwclock.data
-grep : fake-hwclock.data && sudo cp fake-hwclock.data /etc/fake-hwclock.data
-sudo fake-hwclock load
-grep -q display_time glucose.json && grep display_time glucose.json | head -1 | awk '{print $2}' | sed "s/,//" | sed 's/"//g' | sed "s/$/`date +%z`/" | while read line; do date -u -d $line +"%F %R:%S"; done > fake-hwclock.data
-grep -q dateString glucose.json && grep dateString glucose.json | head -1 | awk '{print $2}' | sed "s/,//" | sed 's/"//g' |while read line; do date -u -d $line +"%F %R:%S"; done > fake-hwclock.data
-grep : fake-hwclock.data && sudo cp fake-hwclock.data /etc/fake-hwclock.data
-sudo fake-hwclock load
+case "$1" in
+  --help|help|-h)
+    usage
+    exit 0
+    ;;
+esac
+
+
+checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v ) }
+
+if ! checkNTP; then
+# set system time to pump time if pump time is newer than the system time (by printing out the current epoch, and the epoch generated from the $CLOCK file, and using the most recent)
+    echo Setting system time to later of `date` or `cat $CLOCK`:
+    echo "(date +%s; date -d `( cat $CLOCK; echo ) | sed 's/\"//g'` +%s) | sort -g | tail -1 | while read line; do sudo date -s @\$line; done;"
+    (date +%s; date -d `( cat $CLOCK; echo ) | sed 's/"//g'` +%s) | sort -g | tail -1 | while read line; do sudo date -s @$line; done;
+fi

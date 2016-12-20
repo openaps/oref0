@@ -1,0 +1,144 @@
+[
+  {
+    "type": "device",
+    "cgm": {
+      "vendor": "openaps.vendors.dexcom",
+      "extra": "cgm.ini"
+    },
+    "name": "cgm",
+    "extra": {}
+  },
+  {
+    "ns-glucose": {
+      "vendor": "openaps.vendors.process",
+      "extra": "ns-glucose.ini"
+    },
+    "type": "device",
+    "name": "ns-glucose",
+    "extra": {
+      "fields": "",
+      "cmd": "bash -c \"curl -m 30 -s $NIGHTSCOUT_HOST/api/v1/entries/sgv.json?count=1000 | json -e \\\"this.glucose = this.sgv\\\"\"",
+      "args": ""
+    }
+  },
+  {
+    "extra": {
+      "fields": "",
+      "cmd": "oref0",
+      "args": ""
+    },
+    "type": "device",
+    "name": "oref0",
+    "oref0": {
+      "vendor": "openaps.vendors.process",
+      "extra": "oref0.ini"
+    }
+  },
+  {
+    "extra": {
+      "fields": "pumphistory profile clock",
+      "cmd": "oref0",
+      "args": "calculate-iob"
+    },
+    "type": "device",
+    "name": "iob",
+    "iob": {
+      "vendor": "openaps.vendors.process",
+      "extra": "iob.ini"
+    }
+  },
+  {
+    "extra": {
+      "fields": "pumphistory profile clock glucose basal carbs",
+      "cmd": "oref0",
+      "args": "meal"
+    },
+    "type": "device",
+    "name": "meal",
+    "meal": {
+      "vendor": "openaps.vendors.process",
+      "extra": "meal.ini"
+    }
+  },
+  {
+    "extra": {
+      "fields": "settings bg_targets isf basal_profile preferences carb_ratios",
+      "cmd": "oref0",
+      "args": "get-profile"
+    },
+    "type": "device",
+    "name": "get-profile",
+    "get-profile": {
+      "vendor": "openaps.vendors.process",
+      "extra": "get-profile.ini"
+    }
+  },
+  {
+    "extra": {
+      "fields": "glucose pumphistory isf basal_profile profile",
+      "cmd": "oref0",
+      "args": "detect-sensitivity"
+    },
+    "type": "device",
+    "name": "detect-sensitivity",
+    "detect-sensitivity": {
+      "vendor": "openaps.vendors.process",
+      "extra": "detect-sensitivity.ini"
+    }
+  },
+  {
+    "determine-basal": {
+      "vendor": "openaps.vendors.process",
+      "extra": "determine-basal.ini"
+    },
+    "type": "device",
+    "name": "determine-basal",
+    "extra": {
+      "fields": "iob temp_basal glucose profile",
+      "cmd": "oref0",
+      "args": "determine-basal"
+    }
+  },
+  {
+    "pebble": {
+      "vendor": "openaps.vendors.process",
+      "extra": "pebble.ini"
+    },
+    "type": "device",
+    "name": "pebble",
+    "extra": {
+      "fields": "glucose iob basal_profile temp_basal suggested enacted meal",
+      "cmd": "oref0",
+      "args": "pebble"
+    }
+  },
+  {
+    "type": "device",
+    "tz": {
+      "vendor": "openapscontrib.timezones",
+      "extra": "tz.ini"
+    },
+    "name": "tz",
+    "extra": {}
+  },
+  {
+    "pump": {
+      "vendor": "openaps.vendors.medtronic",
+      "extra": "pump.ini"
+    },
+    "type": "device",
+    "name": "pump",
+    "extra": {
+      "serial": "123456"
+    }
+  },
+  {
+    "units": {
+      "vendor": "openaps.vendors.units",
+      "extra": "units.ini"
+    },
+    "type": "device",
+    "name": "units",
+    "extra": {}
+  }
+]
