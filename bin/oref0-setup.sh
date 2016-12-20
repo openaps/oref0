@@ -103,7 +103,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal'] [--radio_locale=WW]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=WW|US]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -455,6 +455,16 @@ fi
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
+if ! [[ $ENABLE =~ dexusb ]]; then
+	echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.profile
+	echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`" >> $HOME/.profile
+	echo "#!/bin/sh" > $directory/oref0-cgm-loop.sh
+	echo "cd $directory" >> $directory/oref0-cgm-loop.sh
+	echo ". $HOME/.profile" >> $directory/oref0-cgm-loop.sh
+	echo "$HOME/src/oref0/bin/oref0-dexusb-cgm-loop.py | tee -a /var/log/openaps/cgm-loop-dexusb.log" >> $directory/oref0-cgm-loop.sh
+	chmod +rx $directory/oref0-cgm-loop.sh
+fi
+
 echo
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Resetting spi_serial
@@ -480,7 +490,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 if [[ ${CGM,,} =~ "shareble" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then
+  if ! [[ $ENABLE =~ dexusb ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
+  else
+    (crontab -l; crontab -l | grep -q "@reboot $directory/oref0-cgm-loop.sh" || echo "@reboot $directory/oref0-cgm-loop.sh" ) | crontab -
+  fi
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
 if [[ $ENABLE =~ autosens ]]; then
