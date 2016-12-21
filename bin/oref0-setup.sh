@@ -286,9 +286,6 @@ if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
         cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
-        # add two lines to /etc/rc.local then comment out the existing bluetoothd line
-        sed -i.old 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \& \nbluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
-        sed -i.old 's/^screen -S "brcm_patchram_plus" -d -m/# &/' /etc/rc.local 
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
     else
         echo bluez v 5.37 already installed
@@ -326,6 +323,15 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
     fi
+     # add two lines to /etc/rc.local if they are missing. 
+    if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
+        sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
+    fi
+    if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
+        sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
+    fi
+    # comment out existing line if it exists and isn't already commented out
+    sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     echo Checking openaps dev installation
     if ! openaps use cgm -h | grep -q nightscout_calibrations; then
         if [ -d "$HOME/src/openaps/" ]; then
