@@ -10,14 +10,14 @@
     "type": "alias",
     "name": "battery-status",
     "battery-status": {
-      "command": "! bash -c \"echo Edison Battery at $(date): $(sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery) && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json\""
+      "command": "! bash -c \"sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json\""
     }
   },
   {
     "type": "alias",
     "name": "ns-loop",
     "ns-loop": {
-      "command": "! bash -c \"echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps battery-status; openaps upload\""
+      "command": "! bash -c \"echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps report invoke monitor/edison-battery.json && cat monitor/edison-battery.json && echo && openaps upload""
     }
   }    
 ]
