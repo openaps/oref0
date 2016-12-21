@@ -2,7 +2,7 @@
 
 # Set this to the serial port that your device is on: eg /dev/ttyACM0 or /dev/ttyMFD1
 # use oref0-find-ti-usb-device.sh to autodetect the ACM device of the TI USB stick
-SERIAL_PORT=`/usr/local/bin/oref0-find-ti-usb-device.sh`
+SERIAL_PORT=`/usr/local/bin/oref0-find-ti`
 #SERIAL_PORT="/dev/ttyS0"
 echo Your TI-stick is located at $SERIAL_PORT
 
@@ -10,7 +10,7 @@ echo Your TI-stick is located at $SERIAL_PORT
 #     cd ~
 #     git clone https://github.com/ps2/subg_rfspy.git
 #
-SUBG_RFSPY_DIR=/home/pi/src/subg_rfspy
+SUBG_RFSPY_DIR=$HOME/src/subg_rfspy
 
 # If you're on an ERF, set this to 0:
 # export RFSPY_RTSCTS=0
