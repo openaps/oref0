@@ -17,7 +17,7 @@
     "type": "alias",
     "name": "ns-loop",
     "ns-loop": {
-      "command": "! bash -c \"echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps battery-status && cat monitor/edison-battery.json && echo && openaps upload""
+      "command": "! bash -c \"echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps battery-status && cat monitor/edison-battery.json && echo && openaps upload\""
     }
   }    
 ]
