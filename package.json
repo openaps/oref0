@@ -58,8 +58,8 @@
     "oref0-dex-is-fresh": "./bin/oref0-dex-is-fresh.sh",
     "oref0-dex-time-since": "./bin/oref0-dex-time-since.sh",
     "oref0-dex-wait-until-expected": "./bin/oref0-dex-wait-until-expected.sh",
-	"oref0-subg-ww-radio-parameters": "./bin/oref0-subg-ww-radio-parameters.sh"
-	"oref0-subg-ww-radio-parameters-timeout": "./bin/oref0-subg-ww-radio-parameters-timeout.sh"
+	"oref0-subg-ww-radio-parameters": "./bin/oref0-subg-ww-radio-parameters.sh",
+	"oref0-subg-ww-radio-parameters-timeout": "./bin/oref0-subg-ww-radio-parameters-timeout.sh",
     "oref0-online": "./bin/oref0-online.sh",
     "bt-pan": "./bin/bt-pan"
   },
