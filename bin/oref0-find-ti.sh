@@ -1,8 +1,17 @@
 #!/bin/sh
 
 #use this to bypass the automatic detection
+#for example when you have slice of radio/EMF or TI-stick with Intel/Sparx Breakout board with Edison
 #echo /dev/ttyAMA0
 #exit 0
+
+# Assume Explorerboard when /dev/spidev5.1 exists. This is not always true (e.g. Intel Edison with Intel/Sparx breakout board)
+# if there is a better way to detect an Explorer board please fix
+EXPLORER=/dev/spidev5.1
+if [ -c $device ]; then
+	echo $EXPLORER
+	exit 0
+fi
 
 # see if a TI-stick is available
 A=`lsusb -d 1d50:8001 | wc -l`

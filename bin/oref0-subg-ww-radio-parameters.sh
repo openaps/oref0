@@ -13,7 +13,7 @@ echo Your TI-stick is located at $SERIAL_PORT
 SUBG_RFSPY_DIR=/home/pi/src/subg_rfspy
 
 # If you're on an ERF, set this to 0:
-export RFSPY_RTSCTS=0
+# export RFSPY_RTSCTS=0
 
 ################################################################################
 set -e
