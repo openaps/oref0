@@ -88,7 +88,7 @@ esac
 done
 
 if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G5, or MDT."
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), G5, or MDT."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -457,6 +457,35 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
         echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
+fi
+
+# Install EdisonVoltage
+if egrep -i "edison" /etc/passwd 2>/dev/null; then
+   echo "Checking if EdisonVoltage is already installed"
+   if [ -d "$HOME/src/EdisonVoltage/" ]; then
+      echo "EdisonVoltage already installed"
+   else
+      echo "Installing EdisonVoltage"
+      cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+      cd ~/src/EdisonVoltage
+      make voltage
+   fi
+ 
+    
+   echo Adding Edison battery device
+   openaps device add edison-battery process sudo $HOME/EdisonVoltage/voltage || die "Can't add edison battery"
+   
+   echo Adding Edison battery report
+   openaps report add monitor/edison-battery.json JSON edison-battery shell json batteryVoltage battery
+   
+   echo Replacing ns-loop alias
+   #replace alias with one that has the voltage added
+   openaps alias add ns-loop '! bash -c "echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \" and meal-carbs\" && openaps report invoke monitor/edison-battery.json && cat monitor/edison-battery.json && echo && openaps upload"'
+
+   echo Replacing monitor-pump alias
+   #replace alias with one that has voltage
+   openaps alias add format-ns-status '! bash -c \"ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --uploader monitor/edison-battery.json > upload/ns-status.json'
+
 fi
 
 # configure optional features
