@@ -447,6 +447,7 @@ if [[ ${CGM,,} =~ "xdrip" ]]; then
     sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
     sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
     git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
+    mkdir -p $HOME/.xDripAPS_data
 fi
 
 # configure optional features
@@ -491,7 +492,7 @@ if [[ ${CGM,,} =~ "shareble" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
 elif [[ ${CGM,,} =~ "xdrip" ]]; then    
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
-    (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/xDripAPS/xDripAPS.py") | crontab -
+    (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
 fi
