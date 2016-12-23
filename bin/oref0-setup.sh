@@ -259,6 +259,12 @@ if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No modul
     sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
 fi
 
+echo Checking mmhistorytools installation
+if openaps vendor add openapscontrib.mmhistorytools 2>&1 | grep "No module"; then
+    echo Installing latest mmhistorytools
+    sudo pip install -U openapscontrib.mmhistorytools || die "Couldn't install mmhistorytools"
+fi
+
 cd $directory || die "Can't cd $directory"
 if [[ "$max_iob" -eq 0 ]]; then
     oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
