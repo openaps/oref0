@@ -169,6 +169,16 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         API_SECRET=$REPLY
         echo "Ok, $API_SECRET it is."
     fi
+    if [[ ! -z $BT_MAC ]]; then
+       read -p "For BT Tethering enter phone mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+       BT_MAC=$REPLY
+       echo "Ok, $BT_MAC it is."
+       if [[ -z $BT_MAC ]]; then
+          echo Ok, no Bluetooth for you.
+          else
+          echo "Ok, $BT_MAC it is."
+       fi
+    fi
     read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Enable automatic sensitivity adjustment? y/[N] " -r
@@ -324,6 +334,15 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
     fi
+     # add two lines to /etc/rc.local if they are missing. 
+    if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
+        sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
+    fi
+    if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
+        sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
+    fi
+    # comment out existing line if it exists and isn't already commented out
+    sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     echo Checking openaps dev installation
     if ! openaps use cgm -h | grep -q nightscout_calibrations; then
         if [ -d "$HOME/src/openaps/" ]; then
@@ -365,6 +384,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     done
 
     if [[ -z "$BLE_MAC" ]]; then
+        read -p "Please go into your Dexcom's Share settings, forget any existing device, turn Share back on, and press Enter."
         openaps use cgm list_dexcom
         read -p "What is your G4 Share MAC address? (i.e. FE:DC:BA:98:78:54) " -r
         BLE_MAC=$REPLY
@@ -463,7 +483,23 @@ elif [[ $ENABLE =~ autosens ]]; then
 elif [[ $ENABLE =~ meal ]]; then
     EXTRAS='"" monitor/meal.json'
 fi
-
+# Install EdisonVoltage
+if egrep -i "edison" /etc/passwd 2>/dev/null; then
+   echo "Checking if EdisonVoltage is already installed"
+   if [ -d "$HOME/src/EdisonVoltage/" ]; then
+      echo "EdisonVoltage already installed"
+   else
+      echo "Installing EdisonVoltage"
+      cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+      cd ~/src/EdisonVoltage
+      make voltage
+   fi
+   cd $directory || die "Can't cd $directory"
+   for type in edisonbattery; do
+     echo importing $type file
+     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+  done  
+fi
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
@@ -482,11 +518,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
 (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-(crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' > /var/log/openaps/network.log' ) | crontab -
-if [[ ${CGM,,} =~ "shareble" ]]; then
-    # cross-platform hack to make sure experimental bluetoothd is running for openxshareble
-    (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sleep 30; sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental; bluetooth_rfkill_event > /dev/null 2>&1') | crontab -
-fi
+(crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
 # repair or reset git repository if it's corrupted or disk is full
