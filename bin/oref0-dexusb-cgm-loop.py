@@ -63,7 +63,7 @@ def gettimestatusoutput(command):
 	print( "Executing command %s" % command, end="")
 	t1=datetime.datetime.now()
         try:
-                data = subprocess.check_output(command, shell=True, universal_newlines=True, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                data = subprocess.check_output(command, shell=True, universal_newlines=True, stderr=subprocess.STDOUT)
                 status = 0
         except subprocess.CalledProcessError as ex:
                 data = ex.output
