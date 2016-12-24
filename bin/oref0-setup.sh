@@ -462,7 +462,7 @@ fi
 
 # xdrip CGM (xDripAPS)
 if [[ ${CGM,,} =~ "xdrip" ]]; then
-    echo xdrip selected as CGM, so congifuring xDripAPS
+    echo xdrip selected as CGM, so configuring xDripAPS
     sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
     sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
     sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
