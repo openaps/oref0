@@ -103,7 +103,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=WW|US]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=()WW|US)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -237,10 +237,12 @@ cd $directory || die "Can't cd $directory"
 mkdir -p monitor || die "Can't mkdir monitor"
 mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
 mkdir -p cgm || die "Can't mkdir cgm"
-mkdir -p xdrip || die "Can't mkdir xdrip"
 mkdir -p settings || die "Can't mkdir settings"
 mkdir -p enact || die "Can't mkdir enact"
 mkdir -p upload || die "Can't mkdir upload"
+if [[ ${CGM,,} =~ "xdrip" ]]; then
+	mkdir -p xdrip || die "Can't mkdir xdrip"
+fi
 
 mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
@@ -503,7 +505,7 @@ fi
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
-if ! [[ $ENABLE =~ dexusb ]]; then
+if [[ $ENABLE =~ dexusb ]]; then
 	echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.profile
 	echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`" >> $HOME/.profile
 	echo "#!/bin/sh" > $directory/oref0-cgm-loop.sh

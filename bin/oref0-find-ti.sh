@@ -8,7 +8,7 @@
 # Assume Explorerboard when /dev/spidev5.1 exists. This is not always true (e.g. Intel Edison with Intel/Sparx breakout board)
 # if there is a better way to detect an Explorer board please fix
 EXPLORER=/dev/spidev5.1
-if [ -c $device ]; then
+if [ -c $EXPLORER ]; then
 	echo $EXPLORER
 	exit 0
 fi
