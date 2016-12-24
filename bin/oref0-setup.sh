@@ -448,6 +448,11 @@ if [[ ${CGM,,} =~ "xdrip" ]]; then
     sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
     git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
     mkdir -p $HOME/.xDripAPS_data
+    for type in xdrip-cgm; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+    touch /tmp/reboot-required
 fi
 
 # configure optional features
