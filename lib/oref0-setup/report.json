@@ -354,5 +354,16 @@
     },
     "type": "report",
     "name": "settings/insulin_sensitivities_raw.json"
+  },
+  {
+    "type": "report",
+    "name": "xdrip/glucose.json",
+    "xdrip/glucose.json": {      
+      "device": "xdrip",
+	    "remainder": "",	  
+      "use": "shell",
+	    "json_default": "True",
+      "reporter": "text"
+    }
   }
 ]

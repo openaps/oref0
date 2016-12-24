@@ -87,8 +87,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G5, or MDT."
+if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G5, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -116,7 +116,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G5, MDT) " -r
+    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G5, MDT, xdrip) " -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
@@ -237,6 +237,7 @@ cd $directory || die "Can't cd $directory"
 mkdir -p monitor || die "Can't mkdir monitor"
 mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
 mkdir -p cgm || die "Can't mkdir cgm"
+mkdir -p xdrip || die "Can't mkdir xdrip"
 mkdir -p settings || die "Can't mkdir settings"
 mkdir -p enact || die "Can't mkdir enact"
 mkdir -p upload || die "Can't mkdir upload"
@@ -459,6 +460,21 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
     done
 fi
 
+# xdrip CGM (xDripAPS)
+if [[ ${CGM,,} =~ "xdrip" ]]; then
+    echo xdrip selected as CGM, so configuring xDripAPS
+    sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
+    sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
+    sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
+    git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
+    mkdir -p $HOME/.xDripAPS_data
+    for type in xdrip-cgm; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+    touch /tmp/reboot-required
+fi
+
 # configure optional features
 if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
     EXTRAS="settings/autosens.json monitor/meal.json"
@@ -511,6 +527,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
 if [[ ${CGM,,} =~ "shareble" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
+elif [[ ${CGM,,} =~ "xdrip" ]]; then    
+    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
+    (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
 fi
