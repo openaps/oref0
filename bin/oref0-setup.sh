@@ -87,8 +87,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G5, or MDT."
+if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G5, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -116,7 +116,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G5, MDT) " -r
+    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G5, MDT, xdrip) " -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
@@ -168,6 +168,16 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         read -p "And what is your Nightscout api secret (i.e. myplaintextsecret)? " -r
         API_SECRET=$REPLY
         echo "Ok, $API_SECRET it is."
+    fi
+    if [[ ! -z $BT_MAC ]]; then
+       read -p "For BT Tethering enter phone mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+       BT_MAC=$REPLY
+       echo "Ok, $BT_MAC it is."
+       if [[ -z $BT_MAC ]]; then
+          echo Ok, no Bluetooth for you.
+          else
+          echo "Ok, $BT_MAC it is."
+       fi
     fi
     read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -227,6 +237,7 @@ cd $directory || die "Can't cd $directory"
 mkdir -p monitor || die "Can't mkdir monitor"
 mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
 mkdir -p cgm || die "Can't mkdir cgm"
+mkdir -p xdrip || die "Can't mkdir xdrip"
 mkdir -p settings || die "Can't mkdir settings"
 mkdir -p enact || die "Can't mkdir enact"
 mkdir -p upload || die "Can't mkdir upload"
@@ -286,9 +297,6 @@ if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
         cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
-        # add two lines to /etc/rc.local then comment out the existing bluetoothd line
-        sed -i.old 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \& \nbluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
-        sed -i.old 's/^screen -S "brcm_patchram_plus" -d -m/# &/' /etc/rc.local 
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
     else
         echo bluez v 5.37 already installed
@@ -326,6 +334,15 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
     fi
+     # add two lines to /etc/rc.local if they are missing. 
+    if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
+        sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
+    fi
+    if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
+        sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
+    fi
+    # comment out existing line if it exists and isn't already commented out
+    sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     echo Checking openaps dev installation
     if ! openaps use cgm -h | grep -q nightscout_calibrations; then
         if [ -d "$HOME/src/openaps/" ]; then
@@ -443,6 +460,21 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
     done
 fi
 
+# xdrip CGM (xDripAPS)
+if [[ ${CGM,,} =~ "xdrip" ]]; then
+    echo xdrip selected as CGM, so configuring xDripAPS
+    sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
+    sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
+    sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
+    git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
+    mkdir -p $HOME/.xDripAPS_data
+    for type in xdrip-cgm; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+    touch /tmp/reboot-required
+fi
+
 # configure optional features
 if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
     EXTRAS="settings/autosens.json monitor/meal.json"
@@ -451,7 +483,23 @@ elif [[ $ENABLE =~ autosens ]]; then
 elif [[ $ENABLE =~ meal ]]; then
     EXTRAS='"" monitor/meal.json'
 fi
-
+# Install EdisonVoltage
+if egrep -i "edison" /etc/passwd 2>/dev/null; then
+   echo "Checking if EdisonVoltage is already installed"
+   if [ -d "$HOME/src/EdisonVoltage/" ]; then
+      echo "EdisonVoltage already installed"
+   else
+      echo "Installing EdisonVoltage"
+      cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+      cd ~/src/EdisonVoltage
+      make voltage
+   fi
+   cd $directory || die "Can't cd $directory"
+   for type in edisonbattery; do
+     echo importing $type file
+     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+  done  
+fi
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
@@ -489,6 +537,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
 if [[ ${CGM,,} =~ "shareble" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
+elif [[ ${CGM,,} =~ "xdrip" ]]; then    
+    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
+    (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then
   if ! [[ $ENABLE =~ dexusb ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
