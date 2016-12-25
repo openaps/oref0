@@ -505,15 +505,9 @@ fi
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
-if [[ $ENABLE =~ dexusb ]]; then
-	echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.profile
-	echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`" >> $HOME/.profile
-	echo "#!/bin/sh" > $directory/oref0-cgm-loop.sh
-	echo "cd $directory" >> $directory/oref0-cgm-loop.sh
-	echo ". $HOME/.profile" >> $directory/oref0-cgm-loop.sh
-	echo "$HOME/src/oref0/bin/oref0-dexusb-cgm-loop.py | tee -a /var/log/openaps/cgm-loop-dexusb.log" >> $directory/oref0-cgm-loop.sh
-	chmod +rx $directory/oref0-cgm-loop.sh
-fi
+# create .profile so that openaps commands can be executed from the command line
+echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.profile
+echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`" >> $HOME/.profile
 
 echo
 if [[ "$ttyport" =~ "spi" ]]; then
@@ -546,7 +540,7 @@ elif ! [[ ${CGM,,} =~ "mdt" ]]; then
   if ! [[ $ENABLE =~ dexusb ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
   else
-    (crontab -l; crontab -l | grep -q "@reboot $directory/oref0-cgm-loop.sh" || echo "@reboot $directory/oref0-cgm-loop.sh" ) | crontab -
+    (crontab -l; crontab -l | grep -q "@reboot	/usr/bin/python" || echo "@reboot	/usr/bin/python /usr/local/bin/oref0-dexusb-cgm-loop.py >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
   fi
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
