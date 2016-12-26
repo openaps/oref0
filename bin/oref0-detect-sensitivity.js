@@ -45,19 +45,24 @@ if (!module.parent) {
 
         var pumphistory_data = require(cwd + '/' + pumphistory_input);
         var profile = require(cwd + '/' + profile_input);
-        //console.log(profile);
-        //var glucose_status = detectsensitivity.getLastGlucose(glucose_data);
+
         var isf_data = require(cwd + '/' + isf_input);
         if (isf_data.units !== 'mg/dL') {
-            console.log('ISF is expected to be expressed in mg/dL.'
-                    , 'Found', isf_data.units, 'in', isf_input, '.');
-            process.exit(2);
+            if (isf_data.units == 'mmol/L') {
+                for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
+                    isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
+                }
+            } else {
+                console.log('ISF is expected to be expressed in mg/dL or mmol/L.'
+                        , 'Found', isf_data.units, 'in', isf_input, '.');
+                process.exit(2);
+            }
         }
         var basalprofile = require(cwd + '/' + basalprofile_input);
 
         var iob_inputs = {
             history: pumphistory_data
-        , profile: profile
+            , profile: profile
         //, clock: clock_data
         };
     } catch (e) {
