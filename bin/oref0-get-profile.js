@@ -96,13 +96,13 @@ if (!module.parent) {
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
     if (bgtargets_data.units !== 'mg/dL') {
         if (bgtargets_data.units == 'mmol/L') {
-            for (var i = 0, len = bgtargets_data.sensitivities.length; i < len; i++) {
+            for (var i = 0, len = bgtargets_data.targets.length; i < len; i++) {
                 isf_data.targets[i].high = bgtargets_data.targets[i].high * 18;
                 isf_data.targets[i].low = bgtargets_data.targets[i].low * 18;
             }
             bgtargets_data.units = 'mg/dL';
         } else {
-            console.log('BG Target data is expected to be expressed in mg/dL.'
+            console.log('BG Target data is expected to be expressed in mg/dL or mmol/L.'
                  , 'Found', bgtargets_data.units, 'in', bgtargets_input, '.');
             process.exit(2);
         }
