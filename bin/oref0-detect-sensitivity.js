@@ -52,6 +52,7 @@ if (!module.parent) {
                 for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                     isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
                 }
+               isf_data.units = 'mg/dL';
             } else {
                 console.log('ISF is expected to be expressed in mg/dL or mmol/L.'
                         , 'Found', isf_data.units, 'in', isf_input, '.');
