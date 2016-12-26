@@ -97,8 +97,8 @@ if (!module.parent) {
     if (bgtargets_data.units !== 'mg/dL') {
         if (bgtargets_data.units == 'mmol/L') {
             for (var i = 0, len = bgtargets_data.targets.length; i < len; i++) {
-                isf_data.targets[i].high = bgtargets_data.targets[i].high * 18;
-                isf_data.targets[i].low = bgtargets_data.targets[i].low * 18;
+                bgtargets_data.targets[i].high = bgtargets_data.targets[i].high * 18;
+                bgtargets_data.targets[i].low = bgtargets_data.targets[i].low * 18;
             }
             bgtargets_data.units = 'mg/dL';
         } else {
