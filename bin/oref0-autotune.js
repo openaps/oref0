@@ -22,7 +22,7 @@
 
 var autotune = require('oref0/lib/autotune');
 function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<autotune/glucose.json> <autotune/autotune.json');
+        console.error('usage: ', process.argv.slice(0, 2), '<autotune/glucose.json> <autotune/autotune.json [settings/profile.json]');
 }
 
 if (!module.parent) {
@@ -32,6 +32,7 @@ if (!module.parent) {
       process.exit(0)
     }
     var previous_autotune_input = process.argv.slice(3, 4).pop();
+    var pumpprofile_input = process.argv.slice(4, 5).pop();
 
     if (!prepped_glucose_input || !previous_autotune_input) {
         usage( );
@@ -48,10 +49,19 @@ if (!module.parent) {
         return console.error("Could not parse input data: ", e);
     }
 
+    var pumpprofile_data = { };
+    if (typeof pumpprofile_input != 'undefined') {
+        try {
+            pumpprofile_data = JSON.parse(fs.readFileSync(pumpprofile_input, 'utf8'));
+        } catch (e) {
+            console.error("Warning: could not parse "+pumpprofile_input);
+        }
+    }
 
     var inputs = {
         prepped_glucose: prepped_glucose_data
       , previous_autotune: previous_autotune_data
+      , pumpprofile: pumpprofile_data
     };
 
     var autotune_output = autotune(inputs);
