@@ -22,7 +22,7 @@
 
 var autotune = require('oref0/lib/autotune');
 function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<autotune/glucose.json> <autotune/autotune.json [settings/profile.json]');
+        console.error('usage: ', process.argv.slice(0, 2), '<autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>');
 }
 
 if (!module.parent) {
@@ -34,7 +34,7 @@ if (!module.parent) {
     var previous_autotune_input = process.argv.slice(3, 4).pop();
     var pumpprofile_input = process.argv.slice(4, 5).pop();
 
-    if (!prepped_glucose_input || !previous_autotune_input) {
+    if (!prepped_glucose_input || !previous_autotune_input || !pumpprofile_input ) {
         usage( );
         console.log('{ "error": "Insufficient arguments" }');
         process.exit(1);
@@ -44,18 +44,10 @@ if (!module.parent) {
     try {
         var prepped_glucose_data = JSON.parse(fs.readFileSync(prepped_glucose_input, 'utf8'));
         var previous_autotune_data = JSON.parse(fs.readFileSync(previous_autotune_input, 'utf8'));
+        var pumpprofile__data = JSON.parse(fs.readFileSync(pumpprofile_input, 'utf8'));
     } catch (e) {
         console.log('{ "error": "Could not parse input data" }');
         return console.error("Could not parse input data: ", e);
-    }
-
-    var pumpprofile_data = { };
-    if (typeof pumpprofile_input != 'undefined') {
-        try {
-            pumpprofile_data = JSON.parse(fs.readFileSync(pumpprofile_input, 'utf8'));
-        } catch (e) {
-            console.error("Warning: could not parse "+pumpprofile_input);
-        }
     }
 
     var inputs = {
