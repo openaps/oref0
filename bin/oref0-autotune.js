@@ -44,7 +44,7 @@ if (!module.parent) {
     try {
         var prepped_glucose_data = JSON.parse(fs.readFileSync(prepped_glucose_input, 'utf8'));
         var previous_autotune_data = JSON.parse(fs.readFileSync(previous_autotune_input, 'utf8'));
-        var pumpprofile__data = JSON.parse(fs.readFileSync(pumpprofile_input, 'utf8'));
+        var pumpprofile_data = JSON.parse(fs.readFileSync(pumpprofile_input, 'utf8'));
     } catch (e) {
         console.log('{ "error": "Could not parse input data" }');
         return console.error("Could not parse input data: ", e);
