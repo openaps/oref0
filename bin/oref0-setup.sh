@@ -247,17 +247,19 @@ fi
 mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
     echo "$HOME/src/oref0/ already exists; pulling latest"
-    (cd ~/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
-    echo (Re)installing oref0 installation from ~/src/oref0
-    cd $HOME/src/oref0/ && npm run global-install
+    cd ~/src/oref0
+    (git fetch && git pull) || die "Couldn't pull latest oref0"
+    #  only reinstall if repository has changed
+    if [[ ! -f .oref0_version_installed || `cat .oref0_version_installed` eq `git show | head -n 1 `]]; 
+       echo "(Re)installing oref0 installation from ~/src/oref0"
+       npm run global-install && (git show | head -n 1 > .oref0_version_installed)
+    fi
 else
-    echo -n "Cloning oref0: "
+   echo -n "Cloning oref0: "
     (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
     echo Checking oref0 installation
     npm list -g oref0 | egrep oref0@0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
 fi
-
-#(echo Installing latest oref0 dev && 
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
@@ -455,7 +457,7 @@ else
 
        # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
        # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-       grep -q radio_locale pump.ini &&  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+       grep -q radio_locale pump.ini || (echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini)
     fi
 fi
 
