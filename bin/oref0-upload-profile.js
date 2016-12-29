@@ -50,9 +50,11 @@ if (!module.parent) {
     var nsurl = params._.slice(1, 2).pop();
     var apisecret = params._.slice(2, 3).pop();
     
-    var shasum = crypto.createHash('sha1');
-    shasum.update(apisecret);
-    apisecret = shasum.digest('hex');
+    if (apisecret.length != 40) {
+        var shasum = crypto.createHash('sha1');
+        shasum.update(apisecret);
+        apisecret = shasum.digest('hex');
+    };
 
     if (!profile_input || !nsurl || !apisecret) {
         usage( );
