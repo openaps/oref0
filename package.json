@@ -62,6 +62,7 @@
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
+    "crypto": "0.0.3",
     "lodash": "^4.15.0",
     "moment": "^2.14.1",
     "request": "^2.79.0",

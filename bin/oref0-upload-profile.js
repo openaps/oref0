@@ -19,6 +19,7 @@
 
 */
 
+var crypto = require('crypto');
 var request = require('request');
 var _ = require('lodash');
 
@@ -43,11 +44,15 @@ if (!module.parent) {
     
     if ([null, '--help', '-h', 'help'].indexOf(profile_input) > 0) {
       usage( );
-      process.exit(0)
+      process.exit(0);
     }
     
     var nsurl = params._.slice(1, 2).pop();
     var apisecret = params._.slice(2, 3).pop();
+    
+    var shasum = crypto.createHash('sha1');
+    shasum.update(apisecret);
+    apisecret = shasum.digest('hex');
 
     if (!profile_input || !nsurl || !apisecret) {
         usage( );
@@ -58,7 +63,7 @@ if (!module.parent) {
         var cwd = process.cwd();
         var profiledata = require(cwd + '/' + profile_input);
     } catch (e) {
-        return console.error("Could not parse input data: ", e);
+        return console.error('Could not parse input data: ', e);
     }
 
 
@@ -90,7 +95,7 @@ if (!module.parent) {
           
           var newEntry = {
             time : '' + basalentry.start.substring(0,5)
-            , value : '' + +(Math.round(basalentry.rate + "e+3")  + "e-3")
+            , value : '' + +(Math.round(basalentry.rate + 'e+3')  + 'e-3')
             , timeAsSeconds : '' + basalentry.minutes * 60
           };
           
@@ -113,8 +118,8 @@ if (!module.parent) {
         var high_value = Math.round(target_entry.high);
         
         if (new_profile.units == 'mmol' && profiledata.bg_targets.units == 'mg/dL') {
-            low_value = +(Math.round(target_entry.low / 18 + "e+1")  + "e-1");
-            high_value = +(Math.round(target_entry.high / 18 + "e+1")  + "e-1");
+            low_value = +(Math.round(target_entry.low / 18 + 'e+1')  + 'e-1');
+            high_value = +(Math.round(target_entry.high / 18 + 'e+1')  + 'e-1');
         }
         
         var new_low_entry = {
@@ -146,7 +151,7 @@ if (!module.parent) {
         var value = Math.round(isf_entry.sensitivity);
                 
         if (new_profile.units == 'mmol' && profiledata.isfProfile.units == 'mg/dL') {
-            value = +(Math.round(isf_entry.sensitivity / 18 + "e+1")  + "e-1");
+            value = +(Math.round(isf_entry.sensitivity / 18 + 'e+1')  + 'e-1');
         }
     
         var new_isf_entry = {
