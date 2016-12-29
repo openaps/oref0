@@ -449,6 +449,10 @@ else
     if [[ ${radio_locale,,} =~ "WW" ]]; then
       # add subg-ww-radio-parameters script to mmtune for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
       sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; \/usr\/local\/bin\/oref0-subg-ww-radio-parameters-timeout; \2/g' openaps.ini
+
+       # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
+       # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+       grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
     fi
 fi
 
