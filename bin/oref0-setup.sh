@@ -248,13 +248,16 @@ mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
     echo "$HOME/src/oref0/ already exists; pulling latest"
     (cd ~/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
+    echo (Re)installing oref0 installation from ~/src/oref0
+    cd $HOME/src/oref0/ && npm run global-install
 else
     echo -n "Cloning oref0: "
     (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
+    echo Checking oref0 installation
+    npm list -g oref0 | egrep oref0@0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
 fi
-echo Checking oref0 installation
-npm list -g oref0 | egrep oref0@0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
-#(echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+
+#(echo Installing latest oref0 dev && 
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
