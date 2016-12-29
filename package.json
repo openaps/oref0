@@ -58,7 +58,8 @@
     "oref0-dex-time-since": "./bin/oref0-dex-time-since.sh",
     "oref0-dex-wait-until-expected": "./bin/oref0-dex-wait-until-expected.sh",
     "oref0-online": "./bin/oref0-online.sh",
-    "bt-pan": "./bin/bt-pan"
+    "bt-pan": "./bin/bt-pan",
+    "oref0-upload-profile": "./bin/oref0-upload-profile.js"
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
