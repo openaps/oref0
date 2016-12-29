@@ -248,11 +248,14 @@ mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
     echo "$HOME/src/oref0/ already exists; pulling latest"
     cd ~/src/oref0
+    OLD_HEAD=$(git rev-parse HEAD)
     (git fetch && git pull) || die "Couldn't pull latest oref0"
-    #  only reinstall if repository has changed
-    if [[ ! -f .oref0_version_installed || `cat .oref0_version_installed` eq `git show | head -n 1 `]]; 
-       echo "(Re)installing oref0 installation from ~/src/oref0"
-       npm run global-install && (git show | head -n 1 > .oref0_version_installed)
+    NEW_HEAD=$(git rev-parse HEAD)
+    if [ $OLD_HEAD -eq $NEW_HEAD ];  then
+       echo "(Re)installing oref0 installation from ~/src/oref0. version=$NEW_HEAD"
+       npm run global-install
+    else 
+       echo "Not need to reinstall. version=$NEW_HEAD is still current"
     fi
 else
    echo -n "Cloning oref0: "
