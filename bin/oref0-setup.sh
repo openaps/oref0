@@ -103,7 +103,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=()WW|US)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -505,9 +505,12 @@ fi
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
-# create .profile so that openaps commands can be executed from the command line
-echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.profile
-echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`" >> $HOME/.profile
+# Create ~/.profile so that openaps commands can be executed from the command line
+# as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
+# TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299)
+echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
+(cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
+(cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
 
 echo
 if [[ "$ttyport" =~ "spi" ]]; then
@@ -536,12 +539,10 @@ if [[ ${CGM,,} =~ "shareble" ]]; then
 elif [[ ${CGM,,} =~ "xdrip" ]]; then    
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
     (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
-elif ! [[ ${CGM,,} =~ "mdt" ]]; then
-  if ! [[ $ENABLE =~ dexusb ]]; then
-    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
-  else
+elif [[ $ENABLE =~ dexusb ]]; then
     (crontab -l; crontab -l | grep -q "@reboot	/usr/bin/python" || echo "@reboot	/usr/bin/python /usr/local/bin/oref0-dexusb-cgm-loop.py >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
-  fi
+elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
+    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
 if [[ $ENABLE =~ autosens ]]; then
