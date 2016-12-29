@@ -251,7 +251,7 @@ if [ -d "$HOME/src/oref0/" ]; then
     OLD_HEAD=$(git rev-parse HEAD)
     (git fetch && git pull) || die "Couldn't pull latest oref0"
     NEW_HEAD=$(git rev-parse HEAD)
-    if [ $OLD_HEAD -eq $NEW_HEAD ];  then
+    if [["$OLD_HEAD" == "$NEW_HEAD"]];  then
        echo "(Re)installing oref0 installation from ~/src/oref0. version=$NEW_HEAD"
        npm run global-install
     else 
