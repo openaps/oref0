@@ -4,7 +4,7 @@
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
-    "deprecated-global-install : "npm install && sudo npm install -g && sudo npm link && sudo npm link oref0",
+    "deprecated-global-install" : "npm install && sudo npm install -g && sudo npm link && sudo npm link oref0",
     "global-install": "Error: global-install is deprecated. Please use 'npm install -g oref0' for a packaged version, or 'npm install -g .' for a git checkout. See https://github.com/openaps/oref0/pull/302",
     "postinstall" : "echo Installing logrotate scripts; (sudo cp -v logrotate.openaps /etc/logrotate.d/openaps ; sudo cp -v logrotate.rsyslog /etc/logrotate.d/rsyslog ) || die 'Could not install logrotate scripts'"
   },
