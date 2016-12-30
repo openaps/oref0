@@ -2,6 +2,9 @@
 
 # Author: Ben West @bewest
 
+# Exit when variables are unset or functions fail
+set -eu
+
 # Written for decocare v0.0.17.
 self=$(basename $0)
 OUTPUT=/dev/fd/1
