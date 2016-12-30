@@ -2,6 +2,9 @@
 
 # Author: Ben West
 
+# Exit when variables are unset or functions fail
+set -eu
+
 self=$(basename $0)
 SETTINGS=${1-monitor/settings.json}
 CARBS=${2-monitor/carb-ratios.json}
