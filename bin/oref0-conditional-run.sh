@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Exit when variables are unset or functions fail
+set -eu
+
 export GENERATE=false
 export FILE=$1
 export FILE2=$2
