@@ -35,6 +35,7 @@ NIGHTSCOUT_HOST=""
 START_DATE=""
 END_DATE=""
 NUMBER_OF_RUNS=5
+TERMIINAL_LOGGING=false
 
 # handle input arguments
 for i in "$@"
@@ -65,21 +66,25 @@ case $i in
     NUMBER_OF_RUNS="${i#*=}"
     shift # past argument=value
     ;;
+    -l=*|--log=*)
+    TERMINAL_LOGGING="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
     # unknown option
     echo "Option ${i#*=} unknown"
-    ;;
+  ;;
 esac
 done
 
-if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" || -z "$START_DATE" || -z "$NUMBER_OF_RUNS" ]]; then
-    echo "Usage: oref0-autotune-test.sh <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> <--start-date=YYYY-MM-DD> <--runs=number_of_runs> [--end-date=YYYY-MM-DD]"
+if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" || -z "$START_DATE" ]]; then
+  echo "Usage: oref0-autotune-test.sh <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> <--start-date=YYYY-MM-DD> [--runs=number_of_runs] [--end-date=YYYY-MM-DD] [--log=true|false]"
 exit 1
 fi
 if [[ -z "$END_DATE" ]]; then
-    # Define end-date as 1 day ago in order to not get partial day samples for now (ISF/CSF 
-# recommends are still single values across each day)
-END_DATE=`date --date="1 day ago" +%Y-%m-%d`
+  # Define end-date as 1 day ago in order to not get partial day samples for now (ISF/CSF 
+  # recommends are still single values across each day)
+  END_DATE=`date --date="1 day ago" +%Y-%m-%d`
 fi
 
 # Get profile for testing copied to home directory. "openaps" is my loop directory name.
@@ -88,8 +93,16 @@ cp settings/profile.json autotune/profile.pump.json; cp settings/profile.json au
 cd autotune
 # TODO: Need to think through what to remove in the autotune folder...
 
+# Turn on stdout/stderr logging, if enabled
+if [ $TERMINAL_LOGGING == "true" ]; then
+  exec &> >(tee -a autotune.$(date +%Y-%m-%d-%H%M%S).log) # send stdout to a file as well as the terminal
+fi
+
 # Pull Nightscout Data
+echo
 echo "Grabbing NIGHTSCOUT treatments.json for date range..."
+echo "------------------------------------------------------"
+echo
 
 # Get Nightscout carb and insulin Treatments
 curl "$NIGHTSCOUT_HOST/api/v1/treatments.json?find\[created_at\]\[\$gte\]=`date -d $START_DATE -Iminutes`&\[\$lte\]=`date -d $END_DATE -Iminutes`" > ns-treatments.json
@@ -107,13 +120,21 @@ do
   fi
 done
 
+echo
 echo "Grabbing NIGHTSCOUT entries/sgv.json for date range..."
+echo "-------------------------------------------------------"
+echo
 
 # Get Nightscout BG (sgv.json) Entries
 for i in "${date_list[@]}"
 do 
   curl "$NIGHTSCOUT_HOST/api/v1/entries/sgv.json?find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000" > ns-entries.$i.json
 done
+
+echo
+echo "Running Autotune..."
+echo "-------------------------------------------------------"
+echo
 
 # Do iterative runs over date range, save autotune.json (prepped data) and input/output 
 # profile.json
