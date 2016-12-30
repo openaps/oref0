@@ -53,16 +53,16 @@ if (!module.parent) {
     var nsurl = params._.slice(1, 2).pop();
     var apisecret = params._.slice(2, 3).pop();
 
+    if (!profile_input || !nsurl || !apisecret) {
+        usage();
+        process.exit(1);
+    }
+
     if (apisecret.length != 40) {
         var shasum = crypto.createHash('sha1');
         shasum.update(apisecret);
         apisecret = shasum.digest('hex');
     };
-
-    if (!profile_input || !nsurl || !apisecret) {
-        usage();
-        process.exit(1);
-    }
 
     try {
         var cwd = process.cwd();
@@ -239,7 +239,7 @@ if (!module.parent) {
 
         if (do_upload) {
 
-            console.log('Uploading changed profile to Nightscout');
+            console.log('Profile changed, uploading to Nightscout');
 
             options = {
                 uri: nsurl + '/api/v1/profile/'
@@ -252,9 +252,9 @@ if (!module.parent) {
             };
 
             request(options, function(error, res, data) {
-                console.log(res.body);
-                if (error) {
+                if (error || res.statusCode != 200) {
                     console.log(error);
+                    console.log(res.body);
                 } else {
                     console.log('Profile uploaded to Nightscout');
                 }
