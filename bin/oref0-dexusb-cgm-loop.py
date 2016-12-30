@@ -37,7 +37,6 @@ import sys
 # Step 3. Disable the default cgm loop in crontab, because this script will invoke openaps get-bg
 #
 # Step 4. Reboot
-
 HOURS=24
 CMD_GET_GLUCOSE="openaps use cgm oref0_glucose --hours %d --threshold 100"
 CMD_DESCRIBE_CLOCKS="openaps use cgm DescribeClocks"
@@ -48,7 +47,7 @@ WAIT=5*60+1 # wait 5 minutes and 1 second
 CGMPER24H=288*2 # 24 hours = 288 * 5 minutes. For raw values multiply by 2
 
 # Redirect stdin file descriptor. Otherwise it will not start without a terminal
-sys.stdin = open('/dev/null', 'r')
+#sys.stdin = open('/dev/null', 'r')
 
 # limit list to maxlen items
 def limitlist(l,maxlen):

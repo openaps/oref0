@@ -241,20 +241,29 @@ mkdir -p settings || die "Can't mkdir settings"
 mkdir -p enact || die "Can't mkdir enact"
 mkdir -p upload || die "Can't mkdir upload"
 if [[ ${CGM,,} =~ "xdrip" ]]; then
-	mkdir -p xdrip || die "Can't mkdir xdrip"
+    mkdir -p xdrip || die "Can't mkdir xdrip"
 fi
 
 mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
     echo "$HOME/src/oref0/ already exists; pulling latest"
-    (cd ~/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
+    cd ~/src/oref0
+    OLD_HEAD=$(git rev-parse HEAD)
+    (git fetch && git pull) || die "Couldn't pull latest oref0"
+    NEW_HEAD=$(git rev-parse HEAD)
+    if [ "$OLD_HEAD" != "$NEW_HEAD" ];  then
+       echo "(Re)installing oref0 installation from ~/src/oref0. version=$NEW_HEAD"
+       sudo npm install -g .
+       #npm run global-install
+    else 
+       echo "Not need to reinstall. version=$NEW_HEAD is still current"
+    fi
 else
-    echo -n "Cloning oref0: "
-    (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
+   echo -n "Cloning oref0: "
+   (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
+   echo Checking oref0 installation
+   npm list -g oref0 | egrep oref0@0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
 fi
-echo Checking oref0 installation
-npm list -g oref0 | egrep oref0@0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
-#(echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
@@ -272,9 +281,10 @@ fi
 cat preferences.json
 git add preferences.json
 
-# enable log rotation
-sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps || die "Could not cp /etc/logrotate.d/openaps"
-sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
+#enable log rotation
+#DEPRECATED: See https://github.com/openaps/oref0/pull/302
+#sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps || die "Could not cp /etc/logrotate.d/openaps"
+#sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
 
 test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
 
@@ -452,7 +462,7 @@ else
 
        # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
        # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-       grep -q radio_locale pump.ini &&  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+       grep -q radio_locale pump.ini || (echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini)
     fi
 fi
 
@@ -549,7 +559,7 @@ elif [[ ${CGM,,} =~ "xdrip" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
     (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
 elif [[ $ENABLE =~ dexusb ]]; then
-    (crontab -l; crontab -l | grep -q "@reboot	/usr/bin/python" || echo "@reboot	/usr/bin/python /usr/local/bin/oref0-dexusb-cgm-loop.py >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
+    (crontab -l; crontab -l | grep -q "@reboot.*/usr/bin/python" || echo "@reboot cd $directory && /usr/bin/python /usr/local/bin/oref0-dexusb-cgm-loop.py >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
 fi
