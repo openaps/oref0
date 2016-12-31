@@ -549,7 +549,7 @@ elif [[ ${CGM,,} =~ "xdrip" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
     (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
 elif [[ $ENABLE =~ dexusb ]]; then
-    (crontab -l; crontab -l | grep -q "@reboot	/usr/bin/python" || echo "@reboot	/usr/bin/python /usr/local/bin/oref0-dexusb-cgm-loop.py >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
+    (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
 fi

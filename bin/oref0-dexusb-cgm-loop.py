@@ -22,16 +22,16 @@ import time
 import subprocess
 import datetime
 import dateutil.parser
-import sys
 
 # How to integrate with openaps.
+# Easiest way is to use oref0-setup.sh. This wil:
 # Step 1. Add the following lines to your ~/.profile
 # export NIGHTSCOUT_HOST="<<url>>"
 # export API_SECRET=<<apisecret>>
-# use a new shell, or use source ~/.profile
+# Use a new shell, or use source ~/.profile
 #
 # Step 2. Edit your crontab with `crontab -e` and append the following line:
-# @reboot echo cgm-loop ; cd /home/pi/openapsdir && python oref0-dexusb-cgm-loop.py >> /var/log/openaps/cgm-loop2.log
+# @reboot cd /home/pi/openapsdir && python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-loop2.log
 # this will start this python script at reboot, and log to /var/log/openaps/cgm-loop2.log
 #
 # Step 3. Disable the default cgm loop in crontab, because this script will invoke openaps get-bg
@@ -47,10 +47,7 @@ CMD_OPENAPS_GET_BG="openaps get-bg"
 WAIT=5*60+1 # wait 5 minutes and 1 second
 CGMPER24H=288*2 # 24 hours = 288 * 5 minutes. For raw values multiply by 2
 
-# Redirect stdin file descriptor. Otherwise it will not start without a terminal
-sys.stdin = open('/dev/null', 'r')
-
-# limit list to maxlen items
+# limit the list to maxlen items
 def limitlist(l,maxlen):
 	if len(l)<maxlen:
 		return l
@@ -155,7 +152,7 @@ while (True):
 				most_recent_cgm=dt
 
 	if len(new)>0: # only do stuff if we have new cgm records
-		new=limitlist(new+sliding24h, CGMPER24H)
+		new=limitlist(new+sliding24h, CGMPER24H) # limit json to 24h of cgm values
 		sliding24h=new
 		f = open(DEST, 'w')
 		f.write(json.dumps(sliding24h, sort_keys=True, indent=4, separators=(',', ': ')))
