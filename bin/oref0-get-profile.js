@@ -101,15 +101,31 @@ if (!module.parent) {
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
     if (bgtargets_data.units !== 'mg/dL') {
-      console.log('BG Target data is expected to be expressed in mg/dL.'
+        if (bgtargets_data.units == 'mmol/L') {
+            for (var i = 0, len = bgtargets_data.targets.length; i < len; i++) {
+                bgtargets_data.targets[i].high = bgtargets_data.targets[i].high * 18;
+                bgtargets_data.targets[i].low = bgtargets_data.targets[i].low * 18;
+            }
+            bgtargets_data.units = 'mg/dL';
+        } else {
+            console.log('BG Target data is expected to be expressed in mg/dL or mmol/L.'
                  , 'Found', bgtargets_data.units, 'in', bgtargets_input, '.');
-      process.exit(2);
+            process.exit(2);
+        }
     }
+    
     var isf_data = require(cwd + '/' + isf_input);
     if (isf_data.units !== 'mg/dL') {
-      console.log('ISF is expected to be expressed in mg/dL.'
-                 , 'Found', isf_data.units, 'in', isf_input, '.');
-      process.exit(2);
+        if (isf_data.units == 'mmol/L') {
+            for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
+                isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
+            }
+            isf_data.units = 'mg/dL';
+        } else {
+            console.log('ISF is expected to be expressed in mg/dL or mmol/L.'
+                    , 'Found', isf_data.units, 'in', isf_input, '.');
+            process.exit(2);
+        }
     }
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
 

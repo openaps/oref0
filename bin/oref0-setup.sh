@@ -40,6 +40,10 @@ case $i in
     serial="${i#*=}"
     shift # past argument=value
     ;;
+    -rl=*|--radio_locale=*)
+    radio_locale="${i#*=}"
+    shift # past argument=value
+    ;;
     -t=*|--tty=*)
     ttyport="${i#*=}"
     shift # past argument=value
@@ -83,8 +87,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G5, or MDT."
+if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G5, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -99,7 +103,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal']"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -112,7 +116,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G5, MDT) " -r
+    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G5, MDT, xdrip) " -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
@@ -129,6 +133,28 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo -n TTY $ttyport
     fi
     echo " it is."
+
+    if [[ ! -z "${ttyport}" ]]; then
+      echo "Medtronic pumps come in two types: WW (Worldwide) pumps, and NA (North America) pumps."
+      echo "Confusingly, North America pumps may also be used outside of North America."
+      echo ""
+      echo "USA pumps have a serial number / model number that has 'NA' in it."
+      echo "Non-USA pumps have a serial number / model number that 'WW' in it."
+      echo ""
+      echo "When using MMeowlink, we need to know which frequency we should use:"
+      read -p "Are you using a USA/North American pump? If so, just hit enter. Otherwise enter WW: " -r
+      radio_locale=$REPLY
+      echo -n "Ok, "
+      # Force uppercase, just in case the user entered ww
+      radio_locale=${radio_locale^^}
+
+      if [[ -z "${radio_locale}" ]]; then
+          radio_locale='US'
+      fi
+
+      echo "-n ${radio_locale} it is"
+    fi
+
     echo Are you using Nightscout? If not, press enter.
     read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
     # remove any trailing / from NIGHTSCOUT_HOST
@@ -142,6 +168,16 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         read -p "And what is your Nightscout api secret (i.e. myplaintextsecret)? " -r
         API_SECRET=$REPLY
         echo "Ok, $API_SECRET it is."
+    fi
+    if [[ ! -z $BT_MAC ]]; then
+       read -p "For BT Tethering enter phone mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+       BT_MAC=$REPLY
+       echo "Ok, $BT_MAC it is."
+       if [[ -z $BT_MAC ]]; then
+          echo Ok, no Bluetooth for you.
+          else
+          echo "Ok, $BT_MAC it is."
+       fi
     fi
     read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -182,6 +218,7 @@ if [[ ! -z "$ttyport" ]]; then
 fi
 if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob"; fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
+if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'"; fi
 echo; echo
 
 read -p "Continue? y/[N] " -r
@@ -203,6 +240,9 @@ mkdir -p cgm || die "Can't mkdir cgm"
 mkdir -p settings || die "Can't mkdir settings"
 mkdir -p enact || die "Can't mkdir enact"
 mkdir -p upload || die "Can't mkdir upload"
+if [[ ${CGM,,} =~ "xdrip" ]]; then
+	mkdir -p xdrip || die "Can't mkdir xdrip"
+fi
 
 mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
@@ -213,7 +253,7 @@ else
     (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
 echo Checking oref0 installation
-npm view oref0 version | egrep ^0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
+npm list -g oref0 | egrep oref0@0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
 #(echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
@@ -251,7 +291,19 @@ for type in vendor device report alias; do
     echo importing $type file
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
-
+echo Checking for BT Mac or Shareble
+if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
+    # Install Bluez for BT Tethering
+    echo Checking bluez installation
+    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
+        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
+        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
+        make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
+    else
+        echo bluez v 5.37 already installed
+    fi
+fi
 # add/configure devices
 if [[ ${CGM,,} =~ "g5" ]]; then
     openaps use cgm config --G5
@@ -281,13 +333,18 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
-    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
-        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
-        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
-        make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+    if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
-        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
     fi
+     # add two lines to /etc/rc.local if they are missing. 
+    if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
+        sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
+    fi
+    if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
+        sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
+    fi
+    # comment out existing line if it exists and isn't already commented out
+    sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     echo Checking openaps dev installation
     if ! openaps use cgm -h | grep -q nightscout_calibrations; then
         if [ -d "$HOME/src/openaps/" ]; then
@@ -329,6 +386,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     done
 
     if [[ -z "$BLE_MAC" ]]; then
+        read -p "Please go into your Dexcom's Share settings, forget any existing device, turn Share back on, and press Enter."
         openaps use cgm list_dexcom
         read -p "What is your G4 Share MAC address? (i.e. FE:DC:BA:98:78:54) " -r
         BLE_MAC=$REPLY
@@ -370,7 +428,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
             (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
         fi
         ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
-        make && sudo make install && echo && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
+        make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
         sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
     fi
 
@@ -384,9 +442,18 @@ if [[ -z "$ttyport" ]]; then
     openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
     openaps alias add mmtune 'report invoke monitor/temp_basal.json'
 else
-    openaps device add pump mmeowlink subg_rfspy $ttyport $serial || die "Can't add pump"
+    # radio_locale requires openaps 0.1.6-dev or later
+    openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
     openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
+    if [[ ${radio_locale,,} =~ "WW" ]]; then
+      # add subg-ww-radio-parameters script to mmtune for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
+      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; \/usr\/local\/bin\/oref0-subg-ww-radio-parameters-timeout; \2/g' openaps.ini
+
+       # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
+       # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+       grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+    fi
 fi
 
 # Medtronic CGM
@@ -396,12 +463,27 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
     if [[ -z "$ttyport" ]]; then
         openaps device add cgm medtronic $serial || die "Can't add cgm"
     else
-        openaps device add cgm mmeowlink subg_rfspy $ttyport $serial || die "Can't add cgm"
+        openaps device add cgm mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add cgm"
     fi
     for type in mdt-cgm; do
         echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
+fi
+
+# xdrip CGM (xDripAPS)
+if [[ ${CGM,,} =~ "xdrip" ]]; then
+    echo xdrip selected as CGM, so configuring xDripAPS
+    sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
+    sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
+    sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
+    git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
+    mkdir -p $HOME/.xDripAPS_data
+    for type in xdrip-cgm; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+    touch /tmp/reboot-required
 fi
 
 # configure optional features
@@ -412,9 +494,32 @@ elif [[ $ENABLE =~ autosens ]]; then
 elif [[ $ENABLE =~ meal ]]; then
     EXTRAS='"" monitor/meal.json'
 fi
-
+# Install EdisonVoltage
+if egrep -i "edison" /etc/passwd 2>/dev/null; then
+   echo "Checking if EdisonVoltage is already installed"
+   if [ -d "$HOME/src/EdisonVoltage/" ]; then
+      echo "EdisonVoltage already installed"
+   else
+      echo "Installing EdisonVoltage"
+      cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+      cd ~/src/EdisonVoltage
+      make voltage
+   fi
+   cd $directory || die "Can't cd $directory"
+   for type in edisonbattery; do
+     echo importing $type file
+     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+  done  
+fi
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
+
+# Create ~/.profile so that openaps commands can be executed from the command line
+# as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
+# TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299)
+echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
+(cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
+(cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
 
 echo
 if [[ "$ttyport" =~ "spi" ]]; then
@@ -431,11 +536,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
 (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
 (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-(crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' > /var/log/openaps/network.log' ) | crontab -
-if [[ ${CGM,,} =~ "shareble" ]]; then
-    # cross-platform hack to make sure experimental bluetoothd is running for openxshareble
-    (crontab -l; crontab -l | grep -q "killall bluetoothd" || echo '@reboot sleep 30; sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental; bluetooth_rfkill_event > /dev/null 2>&1') | crontab -
-fi
+(crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
 (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
 (crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
 # repair or reset git repository if it's corrupted or disk is full
@@ -444,7 +545,12 @@ fi
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
 if [[ ${CGM,,} =~ "shareble" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
-elif ! [[ ${CGM,,} =~ "mdt" ]]; then
+elif [[ ${CGM,,} =~ "xdrip" ]]; then    
+    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
+    (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
+elif [[ $ENABLE =~ dexusb ]]; then
+    (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
+elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
@@ -466,3 +572,7 @@ fi
 
 fi
 
+if [ -e /tmp/reboot-required ]; then
+  read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
+  sudo reboot
+fi
