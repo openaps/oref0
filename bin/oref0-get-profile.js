@@ -18,7 +18,7 @@
 
 var generate = require('oref0/lib/profile/');
 function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>] [<temptargets.json>] [--model model.json]');
+        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>] [<temptargets.json>] [--model model.json] [--autotune autotune.json]');
 }
 
 function exportDefaults () {
@@ -43,10 +43,15 @@ function updatePreferences (prefs) {
 if (!module.parent) {
     
     var argv = require('yargs')
-      .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [<carb_ratios.json>] [<temptargets.json>] [--model model.json]")
+      .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [<carb_ratios.json>] [<temptargets.json>] [--model model.json] [--autotune autotune.json]")
       .option('model', {
         alias: 'm',
         describe: "Pump model response",
+        default: false
+      })
+      .option('autotune', {
+        alias: 'a',
+        describe: "Autotuned profile.json",
         default: false
       })
       .strict(true)
@@ -85,6 +90,7 @@ if (!module.parent) {
     var carbratio_input = params._.slice(5, 6).pop()
     var temptargets_input = params._.slice(6, 7).pop()
     var model_input = params.model;
+    var autotune_input = params.autotune;
 
     if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
         usage( );
@@ -120,6 +126,18 @@ if (!module.parent) {
         model_data = model_string.replace(/\"/gi, '');
       } catch (e) {
         var msg = { error: e, msg: "Could not parse model_data", file: model_input};
+        console.error(msg.msg);
+        console.log(JSON.stringify(msg));
+        process.exit(1);
+      }
+    }
+    var autotune_data = { }
+    if (params.autotune) {
+      try {
+        autotune_data = JSON.parse(fs.readFileSync(autotune_input, 'utf8'));
+
+      } catch (e) {
+        var msg = { error: e, msg: "Could not parse autotune_data", file: autotune_input};
         console.error(msg.msg);
         console.log(JSON.stringify(msg));
         process.exit(1);
@@ -186,7 +204,13 @@ if (!module.parent) {
     inputs.carbratio = carbratio_data;
     inputs.temptargets = temptargets_data;
     inputs.model = model_data;
+    inputs.autotune = autotune_data;
 
+    if (autotune_data) {
+        if (autotune_data.basalprofile) { inputs.basals = autotune_data.basalprofile; }
+        if (autotune_data.isfProfile) { inputs.isf = autotune_data.isfProfile; }
+        if (autotune_data.carb_ratio) { inputs.carbratio.schedule[0].ratio = autotune_data.carb_ratio; }
+    }
     var profile = generate(inputs);
 
     console.log(JSON.stringify(profile));
