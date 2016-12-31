@@ -81,14 +81,16 @@ if [[ -z "$START_DATE" ]]; then
     START_DATE=`date --date="1 day ago" +%Y-%m-%d`
 fi
 if [[ -z "$END_DATE" ]]; then
-    # Default end-date as 1 day ago in order to not get partial day samples for now (ISF/CSF 
-    # recommends are still single values across each day)
+    # Default end-date as this morning at midnight in order to not get partial day samples for now
+    # (ISF/CSF adjustments are still single values across each day)
     END_DATE=`date --date="1 day ago" +%Y-%m-%d`
 fi
 
 # Get profile for testing copied to home directory. "openaps" is my loop directory name.
 cd $directory && mkdir -p autotune
-cp settings/profile.json autotune/profile.pump.json; cp settings/profile.json autotune/profile.json
+cp settings/profile.json autotune/profile.pump.json
+# If a previous settings/autotune.json exists, use that; otherwise start from settings/profile.json
+cp settings/autotune.json autotune/profile.json || cp autotune/profile.pump.json autotune/profile.json
 cd autotune
 # TODO: Need to think through what to remove in the autotune folder...
 
