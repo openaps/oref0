@@ -34,7 +34,7 @@ DIR=""
 NIGHTSCOUT_HOST=""
 START_DATE=""
 END_DATE=""
-NUMBER_OF_RUNS=5
+NUMBER_OF_RUNS=1  # Default to a single run if not otherwise specified
 
 # handle input arguments
 for i in "$@"
@@ -72,14 +72,18 @@ case $i in
 esac
 done
 
-if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" || -z "$START_DATE" || -z "$NUMBER_OF_RUNS" ]]; then
-    echo "Usage: oref0-autotune-test.sh <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> <--start-date=YYYY-MM-DD> <--runs=number_of_runs> [--end-date=YYYY-MM-DD]"
+if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" ]]; then
+    echo "Usage: oref0-autotune-test.sh <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-date=YYYY-MM-DD] [--runs=number_of_runs] [--end-date=YYYY-MM-DD]"
 exit 1
 fi
+if [[ -z "$START_DATE" ]]; then
+    # Default start date of yesterday
+    START_DATE=`date --date="1 day ago" +%Y-%m-%d`
+fi
 if [[ -z "$END_DATE" ]]; then
-    # Define end-date as 1 day ago in order to not get partial day samples for now (ISF/CSF 
-# recommends are still single values across each day)
-END_DATE=`date --date="1 day ago" +%Y-%m-%d`
+    # Default end-date as 1 day ago in order to not get partial day samples for now (ISF/CSF 
+    # recommends are still single values across each day)
+    END_DATE=`date --date="1 day ago" +%Y-%m-%d`
 fi
 
 # Get profile for testing copied to home directory. "openaps" is my loop directory name.
@@ -115,9 +119,12 @@ do
   curl "$NIGHTSCOUT_HOST/api/v1/entries/sgv.json?find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000" > ns-entries.$i.json
 done
 
+echo "Running $NUMBER_OF_RUNS runs from $START_DATE to $END_DATE"
+sleep 2
+
 # Do iterative runs over date range, save autotune.json (prepped data) and input/output 
 # profile.json
-# Loop 1: Run 1 to Number of Runs specified by user or by default (5)
+# Loop 1: Run 1 to Number of Runs specified by user or by default (1)
 for run_number in $(seq 1 $NUMBER_OF_RUNS)
 do
   # Loop 2: Iterate through Date Range
