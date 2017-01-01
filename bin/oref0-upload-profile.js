@@ -78,7 +78,6 @@ if (!module.parent) {
           
     } catch (e) {
         return console.error('Could not parse input data: ', e);
-        process.exit(1);
     }
 
 
@@ -98,6 +97,11 @@ if (!module.parent) {
 
         var original_profile = data;
         var new_profile = _.cloneDeep(data);
+
+        if (!data.defaultProfile) {
+            console.error('Nightscout profile missing data');
+            process.exit(1);
+        }
 
         var profile_id = data.defaultProfile;
         var profile_store = new_profile.store[profile_id];
