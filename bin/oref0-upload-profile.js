@@ -67,8 +67,18 @@ if (!module.parent) {
     try {
         var cwd = process.cwd();
         var profiledata = require(cwd + '/' + profile_input);
+        
+        // Rudimentary check that the profile is valid
+        
+        if (!profiledata.dia
+          || profiledata.basalprofile.length < 1
+          || profiledata.bg_targets.length < 1
+          || profiledata.isfProfile.length < 1 )
+          { throw "Profile JSON missing data"; }
+          
     } catch (e) {
         return console.error('Could not parse input data: ', e);
+        process.exit(1);
     }
 
 
