@@ -6,9 +6,9 @@
 # Required Inputs: 
 #   DIR, (--dir <OpenAPS Directory>)
 #   NIGHTSCOUT_HOST, (--ns-host <NIGHTSCOUT SITE URL)
-#   START_DATE, (--start <YYYY-MM-DD>)
+#   START_DATE, (--start-date <YYYY-MM-DD>)
 # Optional Inputs:
-#   END_DATE, (--end <YYYY-MM-DD>) 
+#   END_DATE, (--end-date <YYYY-MM-DD>) 
 #     if no end date supplied, assume we want a months worth or until day before current day
 #   NUMBER_OF_RUNS (--runs <integer, number of runs desired>)
 #     if no number of runs designated, then default to 5
@@ -35,6 +35,7 @@ NIGHTSCOUT_HOST=""
 START_DATE=""
 END_DATE=""
 NUMBER_OF_RUNS=1  # Default to a single run if not otherwise specified
+UNKNOWN_OPTION=""
 
 # handle input arguments
 for i in "$@"
@@ -68,6 +69,7 @@ case $i in
     *)
     # unknown option
     echo "Option ${i#*=} unknown"
+    UNKNOWN_OPTION="yes"
     ;;
 esac
 done
@@ -85,6 +87,14 @@ if [[ -z "$END_DATE" ]]; then
     # (ISF/CSF adjustments are still single values across each day)
     END_DATE=`date --date="1 day ago" +%Y-%m-%d`
 fi
+
+if [[ -z "$UNKNOWN_OPTION" ]] ; then # everything is ok
+  echo "Running oref0-autotune-test.sh --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --runs=$NUMBER_OF_RUNS --end-date=$END_DATE"
+else
+  echo "Unknown options. Exiting"
+  exit 1
+fi
+
 
 # Get profile for testing copied to home directory. "openaps" is my loop directory name.
 cd $directory && mkdir -p autotune
