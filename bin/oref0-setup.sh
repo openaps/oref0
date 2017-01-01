@@ -300,6 +300,7 @@ if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
+	sudo hciconfig hci0 name $HOSTNAME
     else
         echo bluez v 5.37 already installed
     fi
