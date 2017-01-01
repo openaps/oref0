@@ -11,7 +11,6 @@ if ! curl -m 15 icanhazip.com; then
     ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
     sudo dhclient wlan0 -r
     sudo dhclient wlan0
-
     echo
     echo -n "At $(date) my IP is: "
     if ! curl -m 15 icanhazip.com; then
