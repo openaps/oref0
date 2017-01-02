@@ -14,8 +14,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Exit when variables are unset or functions fail
-set -eu
+# Exit when functions fail
+set -u
 
 die() {
   echo "$@"
@@ -28,7 +28,6 @@ CGM="G4"
 DIR=""
 directory=""
 EXTRAS=""
-radio_locale="US"
 
 for i in "$@"
 do
