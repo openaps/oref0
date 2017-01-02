@@ -70,8 +70,8 @@ def write_excel_profile(worksheet, row, expandedList, excel_number_format):
 def excel_init_workbook(workbook):
   #see http://xlsxwriter.readthedocs.io/format.html#format for documentation on the Excel format's
   excel_hour_format = workbook.add_format({'num_format': 'hh:mm', 'bold': True, 'font_color': 'black'})
-  excel_2decimals_format = workbook.add_format({'num_format': '0.00'})
-  excel_integer_format = workbook.add_format({'num_format': '0'})
+  excel_2decimals_format = workbook.add_format({'num_format': '0.00', 'font_size': '16'})
+  excel_integer_format = workbook.add_format({'num_format': '0', 'font_size': '16'})
   headerFormat = workbook.add_format({'bold': True, 'font_color': 'black'})
   worksheetIsf = workbook.add_worksheet('isfProfile')
   worksheetBasal = workbook.add_worksheet('basalProfile') 
@@ -79,6 +79,8 @@ def excel_init_workbook(workbook):
   writeExcelHeader(worksheetIsf, excel_hour_format,headerFormat)
   worksheetBasal.autofilter('A1:C999')
   worksheetIsf.autofilter('A1:C999')
+  worksheetBasal.set_column(3, 50, 6) # set columns starting from 3 to width 6
+  worksheetIsf.set_column(3, 50, 5) # set columns starting from 3 to width 5
   return (worksheetBasal, worksheetIsf, excel_2decimals_format, excel_integer_format)
 
 if __name__ == '__main__':
