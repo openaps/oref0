@@ -355,7 +355,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     # comment out existing line if it exists and isn't already commented out
     sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     echo Checking openaps dev installation
-    if ! openaps use cgm -h | grep -q nightscout_calibrations; then
+    if ! openaps --version | egrep "0.1.[6-9]"; then
         if [ -d "$HOME/src/openaps/" ]; then
             echo "$HOME/src/openaps/ already exists; pulling latest dev branch"
             (cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
