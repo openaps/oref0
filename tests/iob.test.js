@@ -84,43 +84,38 @@ describe('IOB', function ( ) {
     var hourLater = require('../lib/iob')(hourLaterInputs)[0];
 
     hourLater.iob.should.be.lessThan(1);
-    hourLater.iob.should.be.greaterThan(0);
+    hourLater.iob.should.be.greaterThan(0.5);
   });
-
 
   it('should calculate IOB with Temp Basals and a basal profile', function() {
 
-    var nowDate = new Date();
-    var now = Date.now();
+    var startingPoint = moment('2016-06-13 01:00:00.000');
+    var timestamp = startingPoint.format();
+    var timestampEarly = startingPoint.subtract(30,'minutes').format();
 
     var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 2, 'minutes': 0},
-        {'i': 1, 'start': nowDate.getHours() + ':' + nowDate.getMinutes() + ':00', 'rate': 1, 'minutes': nowDate.getHours() * 60 + nowDate.getMinutes() }];
+        {'i': 1, 'start': '01:00:00', 'rate': 1, 'minutes': 60 }];
 
-    var timestamp = new Date(now).toISOString()
-      , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
-      , inputs = {clock: timestamp,
+    var inputs = {clock: timestamp,
         history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
         , {_type: 'TempBasal', rate: 2, date: timestampEarly, timestamp: timestampEarly}
         , {_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
         , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
-        , profile: { dia: 3, current_basal: 0.1, bolussnooze_dia_divisor: 2, basalprofile: basalprofile}
+        , profile: { dia: 3, bolussnooze_dia_divisor: 2, basalprofile: basalprofile}
       };
 
     var hourLaterInputs = inputs;
-    hourLaterInputs.clock = new Date(now + (30 * 60 * 1000)).toISOString();
+    hourLaterInputs.clock = moment('2016-06-13 01:30:00.000');
     var hourLater = require('../lib/iob')(hourLaterInputs)[0];
     hourLater.iob.should.be.lessThan(0.5);
-    hourLater.iob.should.be.greaterThan(0);
+    hourLater.iob.should.be.greaterThan(0.4);
   });
 
   it('should calculate IOB with Temp Basals that overlap midnight and a basal profile', function() {
 
-    var nowDate = new Date();
-    var now = Date.now();
-
     var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 2, 'minutes': 0},
         {'i': 1, 'start': '00:15:00', 'rate': 1, 'minutes': 15 },
-        {'i': 1, 'start': '00:45:00', 'rate': 0.5, 'minutes': 45 }];
+        {'i': 2, 'start': '00:45:00', 'rate': 0.5, 'minutes': 45 }];
 
     var startingPoint = moment('2016-06-13 00:15:00.000');
     var timestamp = startingPoint.format();

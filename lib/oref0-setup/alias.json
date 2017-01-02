@@ -73,12 +73,12 @@
     "type": "alias",
     "name": "bg-fresh-check",
     "bg-fresh-check": {
-      "command": "! bash -c \"cat cgm/glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 6 && minAgo > 0 && this.glucose > 30\\\" | grep -q glucose\""
+      "command": "! bash -c \"cat cgm/glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 6 && minAgo > 0 && this.glucose > 38\\\" | grep -q glucose\""
     }
   },
   {
     "get-bg": {
-      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
+      "command": "! bash -c \"openaps monitor-cgm 2>&1 | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
     },
     "type": "alias",
     "name": "get-bg"
@@ -87,7 +87,7 @@
     "type": "alias",
     "name": "get-ns-bg",
     "get-ns-bg": {
-      "command": "! bash -c \"openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 30\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
+      "command": "! bash -c \"openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
     }
   },
   {
@@ -189,20 +189,6 @@
     "name": "pebble"
   },
   {
-    "prep-pumphistory-entries": {
-      "command": "! bash -c \"cat monitor/pumphistory-zoned.json | json -e \\\"this.dateString = this.timestamp\\\" | json -e \\\"this.medtronic = this._type\\\" | json -e \\\"this.type = \\\\\\\"medtronic\\\\\\\"\\\" | json -e \\\"this.date = new Date(Date.parse(this.timestamp)).getTime( )\\\" > upload/pumphistory-entries.json\""
-    },
-    "type": "alias",
-    "name": "prep-pumphistory-entries"
-  },
-  {
-    "type": "alias",
-    "name": "upload-pumphistory-entries",
-    "upload-pumphistory-entries": {
-      "command": "! bash -c \"openaps prep-pumphistory-entries && ns-upload-entries upload/pumphistory-entries.json\""
-    }
-  },
-  {
     "type": "alias",
     "name": "latest-ns-treatment-time",
     "latest-ns-treatment-time": {
@@ -243,5 +229,12 @@
     "upload": {
       "command": "! bash -c \"echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed\""
     }
+  },
+  {
+    "type": "alias",
+    "name": "monitor-xdrip",
+    "monitor-xdrip": {
+      "command": "report invoke xdrip/glucose.json"
   }
+}
 ]
