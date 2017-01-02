@@ -28,6 +28,7 @@ CGM="G4"
 DIR=""
 directory=""
 EXTRAS=""
+radio_locale="US"
 
 for i in "$@"
 do
