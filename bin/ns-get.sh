@@ -13,8 +13,8 @@ OUTPUT=${4-/dev/fd/1}
 
 CURL_FLAGS="-g -s"
 NIGHTSCOUT_FORMAT=${NIGHTSCOUT_FORMAT-json}
-if "$NIGHTSCOUT_DEBUG" = "1"; then CURL_FLAGS="${CURL_FLAGS} -iv"; fi
-if "$NIGHTSCOUT_DEBUG" = "1"; then set -x; fi
+test "$NIGHTSCOUT_DEBUG" = "1" && CURL_FLAGS="${CURL_FLAGS} -iv"
+test "$NIGHTSCOUT_DEBUG" = "1" && set -x
 
 function usage ( ) {
 cat <<EOF
