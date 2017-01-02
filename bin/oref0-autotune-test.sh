@@ -12,7 +12,7 @@
 #     if no end date supplied, assume we want a months worth or until day before current day
 #   NUMBER_OF_RUNS (--runs=<integer, number of runs desired>)
 #     if no number of runs designated, then default to 5
-#   EXPORT_EXCEL (--xls=<filenameofexcel>)
+#   EXPORT_EXCEL (--xlsx=<filenameofexcel>)
 #     export to excel. Disabled by default
 #
 # Released under MIT license. See the accompanying LICENSE.txt file for
@@ -70,7 +70,7 @@ case $i in
     NUMBER_OF_RUNS="${i#*=}"
     shift # past argument=value
     ;;
-    -x=*|--xls|--xlsx=*)
+    -x=*|--xlsx=*)
     EXPORT_EXCEL="${i#*=}"
     shift # past argument=value
     ;;
@@ -167,5 +167,5 @@ done # End Number of Runs Loop
 
 if ! [[ -z "$EXPORT_EXCEL" ]]; then
   echo Exporting to $EXPORT_EXCEL
-  oref0_autotune_export_to_xls --dir $DIR/autotune --output $EXPORT_EXCEL
+  oref0_autotune_export_to_xlsx --dir $DIR/autotune --output $EXPORT_EXCEL
 fi
