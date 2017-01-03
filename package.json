@@ -34,6 +34,7 @@
     "oref0": "./bin/oref0.sh",
     "oref0-autotune-prep": "./bin/oref0-autotune-prep.js",
     "oref0-autotune": "./bin/oref0-autotune.js",
+    "oref0_autotune_export_to_xlsx": "./bin/oref0_autotune_export_to_xlsx.py",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-copy-fresher": "./bin/oref0-copy-fresher",
     "oref0-crun": "./bin/oref0-conditional-run.sh",

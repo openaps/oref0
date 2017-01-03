@@ -4,14 +4,16 @@
 # like start/end date and number of runs.
 # 
 # Required Inputs: 
-#   DIR, (--dir <OpenAPS Directory>)
-#   NIGHTSCOUT_HOST, (--ns-host <NIGHTSCOUT SITE URL)
-#   START_DATE, (--start-date <YYYY-MM-DD>)
+#   DIR, (--dir=<OpenAPS Directory>)
+#   NIGHTSCOUT_HOST, (--ns-host=<NIGHTSCOUT SITE URL)
+#   START_DATE, (--start-date=<YYYY-MM-DD>)
 # Optional Inputs:
-#   END_DATE, (--end-date <YYYY-MM-DD>) 
+#   END_DATE, (--end-date=<YYYY-MM-DD>) 
 #     if no end date supplied, assume we want a months worth or until day before current day
-#   NUMBER_OF_RUNS (--runs <integer, number of runs desired>)
+#   NUMBER_OF_RUNS (--runs=<integer, number of runs desired>)
 #     if no number of runs designated, then default to 5
+#   EXPORT_EXCEL (--xlsx=<filenameofexcel>)
+#     export to excel. Disabled by default
 #
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
@@ -35,7 +37,9 @@ NIGHTSCOUT_HOST=""
 START_DATE=""
 END_DATE=""
 NUMBER_OF_RUNS=1  # Default to a single run if not otherwise specified
+EXPORT_EXCEL="" # Default is to not export to Microsoft Excel
 UNKNOWN_OPTION=""
+
 
 # handle input arguments
 for i in "$@"
@@ -66,6 +70,10 @@ case $i in
     NUMBER_OF_RUNS="${i#*=}"
     shift # past argument=value
     ;;
+    -x=*|--xlsx=*)
+    EXPORT_EXCEL="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
     # unknown option
     echo "Option ${i#*=} unknown"
@@ -75,7 +83,7 @@ esac
 done
 
 if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" ]]; then
-    echo "Usage: oref0-ns-autotune <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-date=YYYY-MM-DD] [--runs=number_of_runs] [--end-date=YYYY-MM-DD]"
+    echo "Usage: oref0-ns-autotune <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--runs=number_of_runs] [--xlsx=autotune.xlsx]"
 exit 1
 fi
 if [[ -z "$START_DATE" ]]; then
@@ -158,3 +166,8 @@ do
 
   done # End Date Range Iteration
 done # End Number of Runs Loop
+
+if ! [[ -z "$EXPORT_EXCEL" ]]; then
+  echo Exporting to $EXPORT_EXCEL
+  oref0_autotune_export_to_xlsx --dir $DIR/autotune --output $EXPORT_EXCEL
+fi
