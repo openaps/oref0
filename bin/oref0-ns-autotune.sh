@@ -98,7 +98,7 @@ fi
 
 # Get profile for testing copied to home directory. "openaps" is my loop directory name.
 cd $directory && mkdir -p autotune
-cp settings/profile.json autotune/profile.pump.json
+cp settings/pumpprofile.json autotune/profile.pump.json
 # If a previous valid settings/autotune.json exists, use that; otherwise start from settings/profile.json
 cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json
 cd autotune
