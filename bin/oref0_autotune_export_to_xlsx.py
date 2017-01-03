@@ -1,21 +1,38 @@
 #!/usr/bin/python
-import json
+# This script converts the json files in the autotune directory
+# to a Microsoft Excel file
+#
+# Released under MIT license. See the accompanying LICENSE.txt file for
+# full terms and conditions
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
-# requires xlsxwriter, install with 'sudo pip install XlsxWriter', see http://xlsxwriter.readthedocs.io/
-import xlsxwriter
-import datetime
+import json
 import glob, os, sys
+
+# 
+try:
+    import xlsxwriter
+except:
+    print "This software requires XlsxWriter package. Install it with 'sudo pip install XlsxWriter', see http://xlsxwriter.readthedocs.io/"
+    sys.exit(1)
+
+import datetime
 import argparse
 import re
-
 
 def parseDateAndRun(filename):
     m=re.match( r'profile.(?P<run>.*).(?P<date>20[0-9][0-9]-[01][0-9]-[0-3][0-9]).json', filename)
     if m:
-         return (m.group('run'), m.group('date'))
+         return (m.group('date'), m.group('run'))
     else: # not found
         return ('-','-')
-
 
 def calc_minutes(timestr):
     # returns the number of minutes from midnight. seconds are ignored
@@ -66,28 +83,40 @@ def write_excel_profile(worksheet, row, expandedList, excel_number_format):
         worksheet.write_number(row, col, expandedList[i], excel_number_format)
         col=col+1
 
-
 def excel_init_workbook(workbook):
-  #see http://xlsxwriter.readthedocs.io/format.html#format for documentation on the Excel format's
-  excel_hour_format = workbook.add_format({'num_format': 'hh:mm', 'bold': True, 'font_color': 'black'})
-  excel_2decimals_format = workbook.add_format({'num_format': '0.00', 'font_size': '16'})
-  excel_integer_format = workbook.add_format({'num_format': '0', 'font_size': '16'})
-  headerFormat = workbook.add_format({'bold': True, 'font_color': 'black'})
-  worksheetIsf = workbook.add_worksheet('isfProfile')
-  worksheetBasal = workbook.add_worksheet('basalProfile') 
-  writeExcelHeader(worksheetBasal, excel_hour_format,headerFormat)
-  writeExcelHeader(worksheetIsf, excel_hour_format,headerFormat)
-  worksheetBasal.autofilter('A1:C999')
-  worksheetIsf.autofilter('A1:C999')
-  worksheetBasal.set_column(3, 50, 6) # set columns starting from 3 to width 6
-  worksheetIsf.set_column(3, 50, 5) # set columns starting from 3 to width 5
-  return (worksheetBasal, worksheetIsf, excel_2decimals_format, excel_integer_format)
+    #see http://xlsxwriter.readthedocs.io/format.html#format for documentation on the Excel format's
+    excel_hour_format = workbook.add_format({'num_format': 'hh:mm', 'bold': True, 'font_color': 'black'})
+    excel_2decimals_format = workbook.add_format({'num_format': '0.00', 'font_size': '16'})
+    excel_integer_format = workbook.add_format({'num_format': '0', 'font_size': '16'})
+    headerFormat = workbook.add_format({'bold': True, 'font_color': 'black'})
+    worksheetInfo = workbook.add_worksheet('Read this first')
+    worksheetIsf = workbook.add_worksheet('isfProfile')
+    worksheetBasal = workbook.add_worksheet('basalProfile') 
+    writeExcelHeader(worksheetBasal, excel_hour_format,headerFormat)
+    writeExcelHeader(worksheetIsf, excel_hour_format,headerFormat)
+    worksheetBasal.autofilter('A1:C999')
+    worksheetIsf.autofilter('A1:C999')
+    worksheetBasal.set_column(3, 50, 6) # set columns starting from 3 to width 6
+    worksheetIsf.set_column(3, 50, 5) # set columns starting from 3 to width 5
+    infoText=['Released under MIT license. See the accompanying LICENSE.txt file for', 'full terms and conditions', '']
+    infoText.append('THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR')
+    infoText.append('IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,')
+    infoText.append('FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE')
+    infoText.append('AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER')
+    infoText.append('LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,')
+    infoText.append('OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN')
+    infoText.append('THE SOFTWARE.')
+    row=1
+    for i in range(len(infoText)):
+        worksheetInfo.write_string(row, 1, infoText[i])
+        row=row+1
+    return (worksheetBasal, worksheetIsf, excel_2decimals_format, excel_integer_format)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Export oref0 autotune files to Microsoft Excel')
     parser.add_argument('-d', '--dir', help='autotune directory', default='.')
     parser.add_argument('-o', '--output', help='default autotune.xlsx', default='autotune.xlsx')
-    parser.add_argument('--version', action='version', version='%(prog)s 0.0.1-alpha')
+    parser.add_argument('--version', action='version', version='%(prog)s 0.0.2-dev')
     args = parser.parse_args()
 
     # change to autotune directory
