@@ -3,9 +3,6 @@
 # Author: Ben West @bewest
 # Maintainer: @tghoward
 
-# Exit when variables are unset or functions fail
-set -eu
-
 # Written for decocare v0.0.18. Will need updating the the decocare json format changes.
 self=$(basename $0)
 HISTORY=${1-glucosehistory.json}
