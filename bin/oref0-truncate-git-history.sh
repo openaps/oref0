@@ -13,9 +13,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Exit when variables are unset or functions fail
-set -eu
-
 # must be run from within a git repo to do anything useful
 self=$(basename $0)
 #BACKUP_AREA=${1-${BACKUP_AREA-/var/cache/openaps-ruination}}

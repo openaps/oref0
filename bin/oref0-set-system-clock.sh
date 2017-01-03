@@ -16,9 +16,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Exit when variables are unset or functions fail
-set -eu
-
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 CLOCK=${1-monitor/clock-zoned.json}
