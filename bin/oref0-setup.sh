@@ -25,6 +25,7 @@ CGM="G4"
 DIR=""
 directory=""
 EXTRAS=""
+radio_locale="US"
 
 for i in "$@"
 do
@@ -185,6 +186,10 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             ENABLE+=" autosens "
         fi
+        read -p "Enable autotuning of basals and ratios? y/[N] " -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            ENABLE+=" autotune "
+        fi
         read -p "Enable advanced meal assist? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             ENABLE+=" meal "
@@ -300,6 +305,7 @@ if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
+	sudo hciconfig hci0 name $HOSTNAME
     else
         echo bluez v 5.37 already installed
     fi
@@ -336,7 +342,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
     fi
-     # add two lines to /etc/rc.local if they are missing. 
+     # add two lines to /etc/rc.local if they are missing.
     if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
         sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
     fi
@@ -346,7 +352,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     # comment out existing line if it exists and isn't already commented out
     sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     echo Checking openaps dev installation
-    if ! openaps use cgm -h | grep -q nightscout_calibrations; then
+    if ! openaps --version | egrep "0.[2-9].[0-9]"; then
         if [ -d "$HOME/src/openaps/" ]; then
             echo "$HOME/src/openaps/ already exists; pulling latest dev branch"
             (cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
@@ -442,7 +448,7 @@ if [[ -z "$ttyport" ]]; then
     openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
     openaps alias add mmtune 'report invoke monitor/temp_basal.json'
 else
-    # radio_locale requires openaps 0.1.6-dev or later
+    # radio_locale requires openaps 0.2.0-dev or later
     openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
     openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
@@ -486,14 +492,6 @@ if [[ ${CGM,,} =~ "xdrip" ]]; then
     touch /tmp/reboot-required
 fi
 
-# configure optional features
-if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
-    EXTRAS="settings/autosens.json monitor/meal.json"
-elif [[ $ENABLE =~ autosens ]]; then
-    EXTRAS="settings/autosens.json"
-elif [[ $ENABLE =~ meal ]]; then
-    EXTRAS='"" monitor/meal.json'
-fi
 # Install EdisonVoltage
 if egrep -i "edison" /etc/passwd 2>/dev/null; then
    echo "Checking if EdisonVoltage is already installed"
@@ -509,10 +507,28 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
    for type in edisonbattery; do
      echo importing $type file
      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-  done  
+  done
+fi
+
+# configure optional features passed to enact/suggested.json report
+if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
+    EXTRAS="settings/autosens.json monitor/meal.json"
+elif [[ $ENABLE =~ autosens ]]; then
+    EXTRAS="settings/autosens.json"
+elif [[ $ENABLE =~ meal ]]; then
+    EXTRAS='"" monitor/meal.json'
 fi
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
+
+# configure autotune if enabled
+if [[ $ENABLE =~ autotune ]]; then
+   cd $directory || die "Can't cd $directory"
+   for type in autotune; do
+     echo importing $type file
+     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+  done
+fi
 
 # Create ~/.profile so that openaps commands can be executed from the command line
 # as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
@@ -533,44 +549,48 @@ echo
 read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 # add crontab entries
-(crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
-(crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
-(crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-(crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
-(crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
-(crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
-# repair or reset git repository if it's corrupted or disk is full
-(crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
-#truncate git history to 1000 commits if it has grown past 1500
-(crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
-if [[ ${CGM,,} =~ "shareble" ]]; then
-    (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
-elif [[ ${CGM,,} =~ "xdrip" ]]; then    
-    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
-    (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
-elif [[ $ENABLE =~ dexusb ]]; then
-    (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
-elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
-    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
+    (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
+    (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
+    (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
+    (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
+    (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
+    (crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
+    # repair or reset git repository if it's corrupted or disk is full
+    (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
+    # truncate git history to 1000 commits if it has grown past 1500
+    (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
+    if [[ ${CGM,,} =~ "shareble" ]]; then
+        (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
+    elif [[ ${CGM,,} =~ "xdrip" ]]; then
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
+        (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
+    elif [[ $ENABLE =~ dexusb ]]; then
+        (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
+    elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
+    fi
+    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+    if [[ $ENABLE =~ autosens ]]; then
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens | tee -a /var/log/openaps/autosens-loop.log") | crontab -
+    fi
+    if [[ $ENABLE =~ autotune ]]; then
+        # autotune nightly at 12:05am using data from NS
+        (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 0 * * * ( oref0-ns-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
+    fi
+    if [[ "$ttyport" =~ "spi" ]]; then
+        (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
+    fi
+    (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+    crontab -l
 fi
-(crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
-if [[ $ENABLE =~ autosens ]]; then
-    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens | tee -a /var/log/openaps/autosens-loop.log") | crontab -
-fi
-if [[ "$ttyport" =~ "spi" ]]; then
-    (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
-fi
-(crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-crontab -l
 
 if [[ ${CGM,,} =~ "shareble" ]]; then
     echo
     echo "To pair your G4 Share receiver, open its Setttings, select Share, Forget Device (if previously paired), then turn sharing On"
 fi
 
-fi
 
-fi
+fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
 
 if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
