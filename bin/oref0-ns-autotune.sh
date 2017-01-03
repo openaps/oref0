@@ -100,7 +100,7 @@ fi
 cd $directory && mkdir -p autotune
 cp settings/profile.json autotune/profile.pump.json
 # If a previous valid settings/autotune.json exists, use that; otherwise start from settings/profile.json
-cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | json | grep start || cp autotune/profile.pump.json autotune/profile.json
+cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json
 cd autotune
 # TODO: Need to think through what to remove in the autotune folder...
 
