@@ -12,6 +12,8 @@
 #     if no end date supplied, assume we want a months worth or until day before current day
 #   NUMBER_OF_RUNS (--runs <integer, number of runs desired>)
 #     if no number of runs designated, then default to 5
+#   TERMINAL_LOGGING, (--log <true/false(true)>
+#     logs terminal output to autotune.<date stamp>.log in the autotune directory, default to true
 #
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
@@ -35,7 +37,8 @@ NIGHTSCOUT_HOST=""
 START_DATE=""
 END_DATE=""
 NUMBER_OF_RUNS=5
-TERMIINAL_LOGGING=false
+TERMIINAL_LOGGING=true
+RECOMMENDS_REPORT=true
 
 # handle input arguments
 for i in "$@"
@@ -78,7 +81,7 @@ esac
 done
 
 if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" || -z "$START_DATE" ]]; then
-  echo "Usage: oref0-autotune-test.sh <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> <--start-date=YYYY-MM-DD> [--runs=number_of_runs] [--end-date=YYYY-MM-DD] [--log=true|false]"
+  echo "Usage: oref0-autotune-test.sh <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> <--start-date=YYYY-MM-DD> [--runs=number_of_runs(5)] [--end-date=YYYY-MM-DD(1 day ago)] [--log=true|false(true)]"
 exit 1
 fi
 if [[ -z "$END_DATE" ]]; then
@@ -94,13 +97,13 @@ cd autotune
 # TODO: Need to think through what to remove in the autotune folder...
 
 # Turn on stdout/stderr logging, if enabled
-if [ $TERMINAL_LOGGING == "true" ]; then
+if [[ $TERMINAL_LOGGING = "true" ]]; then
   exec &> >(tee -a autotune.$(date +%Y-%m-%d-%H%M%S).log) # send stdout to a file as well as the terminal
 fi
 
 # Pull Nightscout Data
 echo
-echo "Grabbing NIGHTSCOUT treatments.json for date range..."
+echo "Getting Nightscout treatments.json for date range..."
 echo "------------------------------------------------------"
 echo
 
@@ -121,7 +124,7 @@ do
 done
 
 echo
-echo "Grabbing NIGHTSCOUT entries/sgv.json for date range..."
+echo "Getting Nightscout entries/sgv.json for date range..."
 echo "-------------------------------------------------------"
 echo
 
@@ -158,3 +161,24 @@ do
 
   done # End Date Range Iteration
 done # End Number of Runs Loop
+
+# Create Summary Report of Autotune Recommendations and display in the terminal
+if [[ $RECOMMENDS_REPORT == "true" ]]; then
+  # Set the report file name, so we can let the user know where it is and cat
+  # it to the screen
+  report_file=$directory/autotune/autotune_recommendations.log
+
+  echo
+  echo "Autotune pump profile recommendations:"
+  echo "---------------------------------------------------------"
+
+  # Let the user know where the Autotune Recommendations are logged
+  echo "Recommendations Log File: $report_file"
+  echo
+
+  # Run the Autotune Recommends Report
+  ~/src/oref0/bin/oref0-autotune-recommends-report.sh $directory
+
+  # Go ahead and echo autotune_recommendations.log to the terminal
+  cat $report_file
+fi
