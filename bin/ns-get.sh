@@ -2,9 +2,6 @@
 
 # Author: Ben West
 
-# Exit when variables are unset or functions fail
-set -eu
-
 self=$(basename $0)
 REPORT=${1-entries.json}
 NIGHTSCOUT_HOST=${NIGHTSCOUT_HOST-${2-localhost:1337}}

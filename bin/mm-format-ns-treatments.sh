@@ -2,9 +2,6 @@
 
 # Author: Ben West
 
-# Exit when variables are unset or functions fail
-set -eu
-
 HISTORY=${1-monitor/pump-history-zoned.json}
 MODEL=${2-model.json}
 OUTPUT=${3-/dev/fd/1}
