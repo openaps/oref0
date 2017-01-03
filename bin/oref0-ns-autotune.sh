@@ -75,7 +75,7 @@ esac
 done
 
 if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" ]]; then
-    echo "Usage: oref0-autotune-test.sh <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-date=YYYY-MM-DD] [--runs=number_of_runs] [--end-date=YYYY-MM-DD]"
+    echo "Usage: oref0-ns-autotune <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-date=YYYY-MM-DD] [--runs=number_of_runs] [--end-date=YYYY-MM-DD]"
 exit 1
 fi
 if [[ -z "$START_DATE" ]]; then
