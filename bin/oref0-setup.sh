@@ -80,7 +80,6 @@ case $i in
     BT_MAC="${i#*=}"
     shift # past argument=value
     ;;
-    ;;
     --btpeb=*)
     BT_PEB="${i#*=}"
     shift # past argument=value
