@@ -575,7 +575,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     if [[ $ENABLE =~ autotune ]]; then
         # autotune nightly at 12:05am using data from NS
-        (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 0 * * * ( oref0-ns-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
+        (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 0 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
     fi
     if [[ "$ttyport" =~ "spi" ]]; then
         (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
