@@ -119,9 +119,9 @@ cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | j
 cd autotune
 # TODO: Need to think through what to remove in the autotune folder...
 
-# Turn on stdout logging, if enabled (default to true)
+# Turn on stderr logging, if enabled (default to true)
 if [[ $TERMINAL_LOGGING = "true" ]]; then
-  # send stdout to a file as well as the terminal
+  # send stderr to a file as well as the terminal
   exec &> >(tee -a autotune.$(date +%Y-%m-%d-%H%M%S).log)
 fi
 
