@@ -14,6 +14,8 @@
 #     if no number of runs designated, then default to 5
 #   EXPORT_EXCEL (--xlsx=<filenameofexcel>)
 #     export to excel. Disabled by default
+#   TERMINAL_LOGGING (--log <true/false(true)>
+#     logs terminal output to autotune.<date stamp>.log in the autotune directory, default to true
 #
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
@@ -38,8 +40,9 @@ START_DATE=""
 END_DATE=""
 NUMBER_OF_RUNS=1  # Default to a single run if not otherwise specified
 EXPORT_EXCEL="" # Default is to not export to Microsoft Excel
+TERMINAL_LOGGING=true
+RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
-
 
 # handle input arguments
 for i in "$@"
@@ -74,6 +77,10 @@ case $i in
     EXPORT_EXCEL="${i#*=}"
     shift # past argument=value
     ;;
+    -l=*|--log=*)
+    TERMINAL_LOGGING="${i#*=}"
+    shift
+    ;;
     *)
     # unknown option
     echo "Option ${i#*=} unknown"
@@ -83,7 +90,7 @@ esac
 done
 
 if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" ]]; then
-    echo "Usage: oref0-ns-autotune <--dir=openaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--runs=number_of_runs] [--xlsx=autotune.xlsx]"
+    echo "Usage: oref0-autotune <--dir=myopenaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--runs=number_of_runs] [--xlsx=autotune.xlsx] [--log=(true)|false]"
 exit 1
 fi
 if [[ -z "$START_DATE" ]]; then
@@ -97,7 +104,7 @@ if [[ -z "$END_DATE" ]]; then
 fi
 
 if [[ -z "$UNKNOWN_OPTION" ]] ; then # everything is ok
-  echo "Running oref0-autotune-test.sh --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --runs=$NUMBER_OF_RUNS --end-date=$END_DATE"
+  echo "Running oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --runs=$NUMBER_OF_RUNS --end-date=$END_DATE"
 else
   echo "Unknown options. Exiting"
   exit 1
@@ -111,6 +118,12 @@ cp settings/pumpprofile.json autotune/profile.pump.json
 cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json
 cd autotune
 # TODO: Need to think through what to remove in the autotune folder...
+
+# Turn on stderr logging, if enabled (default to true)
+if [[ $TERMINAL_LOGGING = "true" ]]; then
+  # send stderr to a file as well as the terminal
+  exec &> >(tee -a autotune.$(date +%Y-%m-%d-%H%M%S).log)
+fi
 
 # Pull Nightscout Data
 echo "Grabbing NIGHTSCOUT treatments.json for date range..."
@@ -158,8 +171,8 @@ do
     
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 
     # output autotuned profile or what will be used as <autotune/autotune.json> in the next iteration
-    echo "~/src/oref0/bin/oref0-autotune.js autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json"
-    ~/src/oref0/bin/oref0-autotune.js autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json
+    echo "~/src/oref0/bin/oref0-autotune-core.js autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json"
+    ~/src/oref0/bin/oref0-autotune-core.js autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json
     
     # Copy tuned profile produced by autotune to profile.json for use with next day of data
     cp newprofile.$run_number.$i.json profile.json
@@ -170,4 +183,25 @@ done # End Number of Runs Loop
 if ! [[ -z "$EXPORT_EXCEL" ]]; then
   echo Exporting to $EXPORT_EXCEL
   oref0_autotune_export_to_xlsx --dir $DIR/autotune --output $EXPORT_EXCEL
+fi
+
+# Create Summary Report of Autotune Recommendations and display in the terminal
+if [[ $RECOMMENDS_REPORT == "true" ]]; then
+  # Set the report file name, so we can let the user know where it is and cat
+  # it to the screen
+  report_file=$directory/autotune/autotune_recommendations.log
+
+  echo
+  echo "Autotune pump profile recommendations:"
+  echo "---------------------------------------------------------"
+
+  # Let the user know where the Autotune Recommendations are logged
+  echo "Recommendations Log File: $report_file"
+  echo
+
+  # Run the Autotune Recommends Report
+  ~/src/oref0/bin/oref0-autotune-recommends-report.sh $directory
+
+  # Go ahead and echo autotune_recommendations.log to the terminal
+  cat $report_file
 fi
