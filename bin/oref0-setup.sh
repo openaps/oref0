@@ -527,9 +527,9 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
 fi
 # Install Pancreabble
 echo Checking for BT Pebble Mac 
-if [[ ! -z "$BT_PEB"]]; then
+if [[ ! -z "$BT_PEB" ]]; then
    sudo pip install libpebble2
-   pip install --user git+git://github.com/mddub/pancreabble.git
+   sudo pip install --user git+git://github.com/mddub/pancreabble.git
    sudo hciconfig hci0 up
    sudo rfcomm bind hci0 $BT_PEB
    for type in pancreabble; do
@@ -590,7 +590,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
 crontab -l
-if [[ ! -z "$BT_PEB"]]; then
+if [[ ! -z "$BT_PEB" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop' || peb-urchin-status $BT_PEB ; openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
 fi
 
