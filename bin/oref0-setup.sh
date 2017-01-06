@@ -592,7 +592,7 @@ fi
 (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
 crontab -l
 if [[ ! -z "$BT_PEB"]]; then
-    (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'pan-urchin-status $BT_PEB ; openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'pan-urchin-status $BT_PEB ; openaps urchin-loop' || pan-urchin-status $BT_PEB ; openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
+    (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop' || peb-urchin-status $BT_PEB ; openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
 fi
 
 if [[ ${CGM,,} =~ "shareble" ]]; then
