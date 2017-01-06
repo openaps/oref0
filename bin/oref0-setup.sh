@@ -80,7 +80,7 @@ case $i in
     BT_MAC="${i#*=}"
     shift # past argument=value
     ;;
-    --btpeb=*)
+    -p=*|--btpeb=*)
     BT_PEB="${i#*=}"
     shift # past argument=value
     ;;
@@ -305,7 +305,7 @@ for type in vendor device report alias; do
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
 echo Checking for BT Mac, BT Peb or Shareble
-if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
+if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     # Install Bluez for BT Tethering
     echo Checking bluez installation
     if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
