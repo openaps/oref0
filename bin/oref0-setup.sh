@@ -80,6 +80,11 @@ case $i in
     BT_MAC="${i#*=}"
     shift # past argument=value
     ;;
+    ;;
+    --btpeb=*)
+    BT_PEB="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -177,6 +182,15 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           echo Ok, no Bluetooth for you.
           else
           echo "Ok, $BT_MAC it is."
+       fi
+       if [[ ! -z $BT_PEB ]]; then
+       read -p "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+       BT_PEB=$REPLY
+       echo "Ok, $BT_MAC it is."
+       if [[ -z $BT_PEB ]]; then
+          echo Ok, no Pancreabble for you.
+          else
+          echo "Ok, $BT_PEB it is."
        fi
     fi
     read -p "Do you need any advanced features? y/[N] " -r
@@ -291,8 +305,8 @@ for type in vendor device report alias; do
     echo importing $type file
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
-echo Checking for BT Mac or Shareble
-if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
+echo Checking for BT Mac, BT Peb or Shareble
+if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     # Install Bluez for BT Tethering
     echo Checking bluez installation
     if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
@@ -512,6 +526,20 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
   done  
 fi
+# Install Pancreabble
+echo Checking for BT Pebble Mac 
+if [[ ! -z "$BT_PEB"]]; then
+   sudo pip install libpebble2
+   pip install --user git+git://github.com/mddub/pancreabble.git
+   sudo hciconfig hci0 up
+   sudo rfcomm bind hci0 $BT_PEB
+   for type in pancreabble; do
+     echo importing $type file
+     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+  done  
+ fi  
+
+
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
@@ -563,6 +591,9 @@ if [[ "$ttyport" =~ "spi" ]]; then
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
 crontab -l
+if [[ ! -z "$BT_PEB"]]; then
+    (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'pan-urchin-status $BT_PEB ; openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'pan-urchin-status $BT_PEB ; openaps urchin-loop' || pan-urchin-status $BT_PEB ; openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
+fi
 
 if [[ ${CGM,,} =~ "shareble" ]]; then
     echo
