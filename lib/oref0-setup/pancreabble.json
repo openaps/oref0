@@ -16,6 +16,7 @@
     "name": "pbbl",
     "extra": {
       "port": "/dev/rfcomm0"
+    }    
     },
   {
     "type": "report",
