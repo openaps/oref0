@@ -182,7 +182,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           else
           echo "Ok, $BT_MAC it is."
        fi
-       if [[ ! -z $BT_PEB ]]; then
+     fi  
+     if [[ ! -z $BT_PEB ]]; then
        read -p "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
        BT_PEB=$REPLY
        echo "Ok, $BT_MAC it is."
@@ -536,7 +537,7 @@ if [[ ! -z "$BT_PEB" ]]; then
      echo importing $type file
      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
   done  
- fi  
+fi  
 
 
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
@@ -590,9 +591,9 @@ if [[ "$ttyport" =~ "spi" ]]; then
 fi
 (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
 crontab -l
-#if [[ ! -z "$BT_PEB" ]]; then
-#    (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop' || peb-urchin-status $BT_PEB ; openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
-#fi
+if [[ ! -z "$BT_PEB" ]]; then
+    (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop' || peb-urchin-status $BT_PEB ; openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
+fi
 
 if [[ ${CGM,,} =~ "shareble" ]]; then
     echo
