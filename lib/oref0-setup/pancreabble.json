@@ -41,7 +41,7 @@
   },
   {
     "urchin-loop": {
-      "command": "! bash -c \"openaps invoke upload/urchin-data.json; openaps upload-pbbl\""
+      "command": "! bash -c \"openaps invoke upload/urchin-data.json && openaps upload-pbbl\""
     },
     "type": "alias",
     "name": "urchin-loop"
