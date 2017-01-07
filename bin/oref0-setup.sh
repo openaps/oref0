@@ -531,6 +531,7 @@ echo Checking for BT Pebble Mac
 if [[ ! -z "$BT_PEB" ]]; then
    sudo pip install libpebble2
    sudo pip install --user git+git://github.com/mddub/pancreabble.git
+   sudo apt-get install jq
    sudo hciconfig hci0 up
    sudo rfcomm bind hci0 $BT_PEB
    for type in pancreabble; do
@@ -593,6 +594,7 @@ fi
 crontab -l
 if [[ ! -z "$BT_PEB" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop' || peb-urchin-status $BT_PEB ; openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
+    (crontab -l; crontab -l | grep -q "sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental & " || echo "@reboot sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental & ") | crontab -
 fi
 
 if [[ ${CGM,,} =~ "shareble" ]]; then
