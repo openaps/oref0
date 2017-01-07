@@ -2,9 +2,6 @@
 
 # Author: Ben West
 
-# Exit when variables are unset or functions fail
-set -eu
-
 self=$(basename $0)
 NIGHTSCOUT_HOST=${NIGHTSCOUT_HOST-${1-localhost:1337}}
 API_SECRET=${2-${API_SECRET}}

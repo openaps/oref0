@@ -5,9 +5,6 @@
 
 # Written for decocare v0.0.17. Will need updating the the decocare json format changes.
 
-# Exit script when variables are unset or functions fail
-set -eu
-
 NSONLY=""
 test "$1" = "--oref0" && NSONLY="this.glucose = this.sgv" && shift
 
@@ -35,7 +32,7 @@ cat $HISTORY | \
   json -E "this.medtronic = this._type;" | \
   json -E "this.dateString = this.dateString ? this.dateString : (this.date + '$(date +%z)')" | \
   json -E "this.date = new Date(this.dateString).getTime();" | \
-  json -E "this.type = (this.name == 'GlucoseSensorData') ? 'sgv' : 'pumpdata'" | \
+  json -E "this.type = (this.name && this.name.indexOf('GlucoseSensorData') > -1) ? 'sgv' : 'pumpdata'" | \
   json -E "this.device = 'openaps://medtronic/pump/cgm'" | (
     json -E "$NSONLY"
   ) > $OUTPUT

@@ -13,9 +13,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Exit when variables are unset or functions fail
-set -eu
-
 self=$(basename $0)
 function usage ( ) {
 
