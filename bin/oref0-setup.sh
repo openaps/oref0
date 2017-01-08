@@ -322,20 +322,21 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
             (cd ~/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         else
             echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
+            # TODO: get this moved over to openaps and install with pip
             (cd ~/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         fi
         echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
     fi
-    if [ -d "$HOME/src/openxshareble/" ]; then
-        echo "$HOME/src/openxshareble/ already exists; pulling latest dev branch"
-        (cd ~/src/openxshareble && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openxshareble dev"
-    else
-        echo -n "Cloning openxshareble dev: "
-        (cd ~/src && git clone -b dev https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble dev"
-    fi
+    #if [ -d "$HOME/src/openxshareble/" ]; then
+        #echo "$HOME/src/openxshareble/ already exists; pulling latest dev branch"
+        #(cd ~/src/openxshareble && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openxshareble dev"
+    #else
+        #echo -n "Cloning openxshareble dev: "
+        #(cd ~/src && git clone -b dev https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble dev"
+    #fi
     echo Checking openxshareble installation
     if ! python -c "import openxshareble" 2>/dev/null; then
-        echo Installing openxshareble && (cd $HOME/src/openxshareble && sudo python setup.py develop) || die "Couldn't install openxshareble"
+        echo Installing openxshareble && pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
@@ -353,14 +354,14 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     echo Checking openaps dev installation
     if ! openaps --version | egrep "0.[2-9].[0-9]"; then
-        if [ -d "$HOME/src/openaps/" ]; then
-            echo "$HOME/src/openaps/ already exists; pulling latest dev branch"
-            (cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
-        else
-            echo -n "Cloning openaps dev: "
-            (cd ~/src && git clone -b dev git://github.com/openaps/openaps.git) || die "Couldn't clone openaps dev"
-        fi
-        echo Installing latest openaps dev && (cd $HOME/src/openaps/ && sudo python setup.py develop) || die "Couldn't install openaps"
+        #if [ -d "$HOME/src/openaps/" ]; then
+            #echo "$HOME/src/openaps/ already exists; pulling latest dev branch"
+            #(cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
+        #else
+            #echo -n "Cloning openaps dev: "
+            #(cd ~/src && git clone -b dev git://github.com/openaps/openaps.git) || die "Couldn't clone openaps dev"
+        #fi
+        echo Installing latest openaps dev && pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
     fi
 
     mkdir -p $directory-cgm-loop
@@ -411,14 +412,15 @@ killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
-        if [ -d "$HOME/src/915MHzEdisonExplorer_SW/" ]; then
-            echo "$HOME/src/915MHzEdisonExplorer_SW/ already exists; pulling latest master branch"
-            (cd ~/src/915MHzEdisonExplorer_SW && git fetch && git checkout master && git pull) || die "Couldn't pull latest 915MHzEdisonExplorer_SW master"
-        else
-            echo -n "Cloning 915MHzEdisonExplorer_SW master: "
-            (cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
-        fi
-        echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e . || die "Couldn't install spi_serial"
+        #if [ -d "$HOME/src/915MHzEdisonExplorer_SW/" ]; then
+            #echo "$HOME/src/915MHzEdisonExplorer_SW/ already exists; pulling latest master branch"
+            #(cd ~/src/915MHzEdisonExplorer_SW && git fetch && git checkout master && git pull) || die "Couldn't pull latest 915MHzEdisonExplorer_SW master"
+        #else
+            #echo -n "Cloning 915MHzEdisonExplorer_SW master: "
+            #(cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
+        #fi
+        #echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e . || die "Couldn't install spi_serial"
+        echo Installing spi_serial && pip install git+https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git@master || die "Couldn't install spi_serial"
     fi
 
     echo Checking mraa installation
