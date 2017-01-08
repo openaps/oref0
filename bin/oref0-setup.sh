@@ -42,7 +42,8 @@ case $i in
     shift # past argument=value
     ;;
     -rl=*|--radio_locale=*)
-    radio_locale="${i#*=}"
+    # Force uppercase, just in case the user entered ww
+    radio_locale="${i#*=^^}"
     shift # past argument=value
     ;;
     -t=*|--tty=*)
