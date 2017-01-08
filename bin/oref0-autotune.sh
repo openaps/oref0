@@ -129,7 +129,10 @@ fi
 echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 
 # Get Nightscout carb and insulin Treatments
-curl "$NIGHTSCOUT_HOST/api/v1/treatments.json?find\[created_at\]\[\$gte\]=`date -d $START_DATE -Iminutes`&\[\$lte\]=`date -d $END_DATE -Iminutes`" > ns-treatments.json
+url="$NIGHTSCOUT_HOST/api/v1/treatments.json?find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
+echo $url
+curl -s $url > ns-treatments.json
+ls -la ns-treatments.json
 
 # Build date list for autotune iteration
 date_list=()
@@ -149,7 +152,10 @@ echo "Grabbing NIGHTSCOUT entries/sgv.json for date range..."
 # Get Nightscout BG (sgv.json) Entries
 for i in "${date_list[@]}"
 do 
-  curl "$NIGHTSCOUT_HOST/api/v1/entries/sgv.json?find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000" > ns-entries.$i.json
+  url="$NIGHTSCOUT_HOST/api/v1/entries/sgv.json?find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
+  echo $url
+  curl -s $url > ns-entries.$i.json
+  ls -la ns-entries.$i.json
 done
 
 echo "Running $NUMBER_OF_RUNS runs from $START_DATE to $END_DATE"
