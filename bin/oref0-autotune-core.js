@@ -53,7 +53,7 @@ if (!module.parent) {
     var inputs = {
         prepped_glucose: prepped_glucose_data
       , previous_autotune: previous_autotune_data
-      , pumpprofile: pumpprofile_data
+      , pumpProfile: pumpprofile_data
     };
 
     var autotune_output = autotune(inputs);
