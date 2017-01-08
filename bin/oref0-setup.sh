@@ -313,8 +313,7 @@ if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
         cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
-        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
-	sudo hciconfig hci0 name $HOSTNAME
+        oref0-bluetoothup
     else
         echo bluez v 5.37 already installed
     fi
@@ -532,7 +531,7 @@ if [[ ! -z "$BT_PEB" ]]; then
    sudo pip install libpebble2
    sudo pip install --user git+git://github.com/mddub/pancreabble.git
    sudo apt-get install jq
-   sudo hciconfig hci0 up
+   oref0-bluetoothup
    sudo rfcomm bind hci0 $BT_PEB
    for type in pancreabble; do
      echo importing $type file
@@ -594,7 +593,8 @@ fi
 crontab -l
 if [[ ! -z "$BT_PEB" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB && openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB ; openaps urchin-loop' || peb-urchin-status $BT_PEB ; openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
-    (crontab -l; crontab -l | grep -q "sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental & " || echo "@reboot sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental & ") | crontab -
+    (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
+
 fi
 
 if [[ ${CGM,,} =~ "shareble" ]]; then
