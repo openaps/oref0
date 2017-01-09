@@ -155,8 +155,9 @@ if (!module.parent) {
       } catch (e) {
         var msg = { error: e, msg: "Could not parse autotune_data", file: autotune_input};
         console.error(msg.msg);
-        console.log(JSON.stringify(msg));
-        process.exit(1);
+        // Continue and output a non-autotuned profile if we don't have autotune_data
+        //console.log(JSON.stringify(msg));
+        //process.exit(1);
       }
     }
 
