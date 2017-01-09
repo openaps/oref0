@@ -1,0 +1,9 @@
+{
+	"urchin_loop_status": false,
+	"urchin_iob": true,
+	"urchin_Temp_Rate": false,
+	"Notify_Temp_Basal": true,
+	"Notify_Battery": true,
+	"Notify_Battery_Alarm": 80,
+	"Notify_Battery_Alarm_Silence": 5
+}
