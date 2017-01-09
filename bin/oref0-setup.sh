@@ -417,7 +417,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
 fi
 
 echo Checking openaps dev installation
-if ! openaps --version | egrep "0.[2-9].[0-9]"; then
+if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
     echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
 fi
 
