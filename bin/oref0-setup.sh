@@ -327,13 +327,6 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         fi
         echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
     fi
-    #if [ -d "$HOME/src/openxshareble/" ]; then
-        #echo "$HOME/src/openxshareble/ already exists; pulling latest dev branch"
-        #(cd ~/src/openxshareble && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openxshareble dev"
-    #else
-        #echo -n "Cloning openxshareble dev: "
-        #(cd ~/src && git clone -b dev https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble dev"
-    #fi
     echo Checking openxshareble installation
     if ! python -c "import openxshareble" 2>/dev/null; then
         echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
@@ -401,14 +394,6 @@ killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
-        #if [ -d "$HOME/src/915MHzEdisonExplorer_SW/" ]; then
-            #echo "$HOME/src/915MHzEdisonExplorer_SW/ already exists; pulling latest master branch"
-            #(cd ~/src/915MHzEdisonExplorer_SW && git fetch && git checkout master && git pull) || die "Couldn't pull latest 915MHzEdisonExplorer_SW master"
-        #else
-            #echo -n "Cloning 915MHzEdisonExplorer_SW master: "
-            #(cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
-        #fi
-        #echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e . || die "Couldn't install spi_serial"
         echo Installing spi_serial && sudo pip install git+https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git@master || die "Couldn't install spi_serial"
     fi
 
