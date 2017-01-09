@@ -336,7 +336,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     #fi
     echo Checking openxshareble installation
     if ! python -c "import openxshareble" 2>/dev/null; then
-        echo Installing openxshareble && pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
+        echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
@@ -361,7 +361,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
             #echo -n "Cloning openaps dev: "
             #(cd ~/src && git clone -b dev git://github.com/openaps/openaps.git) || die "Couldn't clone openaps dev"
         #fi
-        echo Installing latest openaps dev && pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
+        echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
     fi
 
     mkdir -p $directory-cgm-loop
@@ -420,7 +420,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
             #(cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
         #fi
         #echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e . || die "Couldn't install spi_serial"
-        echo Installing spi_serial && pip install git+https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git@master || die "Couldn't install spi_serial"
+        echo Installing spi_serial && sudo pip install git+https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git@master || die "Couldn't install spi_serial"
     fi
 
     echo Checking mraa installation
