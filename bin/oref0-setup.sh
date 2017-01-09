@@ -523,11 +523,12 @@ openaps report add enact/suggested.json text determine-basal shell monitor/iob.j
 
 # configure autotune if enabled
 if [[ $ENABLE =~ autotune ]]; then
-   cd $directory || die "Can't cd $directory"
-   for type in autotune; do
-     echo importing $type file
-     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-  done
+    sudo apt-get -y install jq
+    cd $directory || die "Can't cd $directory"
+    for type in autotune; do
+      echo importing $type file
+      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
 fi
 
 # Create ~/.profile so that openaps commands can be executed from the command line
