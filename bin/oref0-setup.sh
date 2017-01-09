@@ -352,17 +352,6 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
     # comment out existing line if it exists and isn't already commented out
     sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
-    echo Checking openaps dev installation
-    if ! openaps --version | egrep "0.[2-9].[0-9]"; then
-        #if [ -d "$HOME/src/openaps/" ]; then
-            #echo "$HOME/src/openaps/ already exists; pulling latest dev branch"
-            #(cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
-        #else
-            #echo -n "Cloning openaps dev: "
-            #(cd ~/src && git clone -b dev git://github.com/openaps/openaps.git) || die "Couldn't clone openaps dev"
-        #fi
-        echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
-    fi
 
     mkdir -p $directory-cgm-loop
     if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
@@ -440,6 +429,11 @@ if [[ "$ttyport" =~ "spi" ]]; then
         sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
     fi
 
+fi
+
+echo Checking openaps dev installation
+if ! openaps --version | egrep "0.[2-9].[0-9]"; then
+    echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
 fi
 
 cd $directory || die "Can't cd $directory"
