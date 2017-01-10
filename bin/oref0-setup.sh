@@ -189,7 +189,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        BT_PEB=$REPLY
        echo "Ok, $BT_PEB it is."
     else
-       echo echo Ok, no Pancreabble for you.
+       echo Ok, no Pancreabble for you.
     fi
     read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
