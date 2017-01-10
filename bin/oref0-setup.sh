@@ -536,7 +536,7 @@ if [[ ! -z "$BT_PEB" ]]; then
      echo importing $type file
      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
   done 
-  sudo cp $HOME/lib/oref0-setup/pancreoptions.json $HOME/$directory/pancreoptions.json 
+  sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $HOME/$directory/pancreoptions.json 
 fi  
 
 
