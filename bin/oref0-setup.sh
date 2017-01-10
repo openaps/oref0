@@ -25,6 +25,7 @@ CGM="G4"
 DIR=""
 directory=""
 EXTRAS=""
+radio_locale="US"
 
 for i in "$@"
 do
@@ -185,6 +186,10 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             ENABLE+=" autosens "
         fi
+        read -p "Enable autotuning of basals and ratios? y/[N] " -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            ENABLE+=" autotune "
+        fi
         read -p "Enable advanced meal assist? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             ENABLE+=" meal "
@@ -253,7 +258,7 @@ else
     (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
 echo Checking oref0 installation
-npm list -g oref0 | egrep oref0@0.3. || (echo Installing latest oref0 && sudo npm install -g oref0)
+npm list -g oref0 | egrep oref0@0.3.[6-9] || (echo Installing latest oref0 && sudo npm install -g oref0)
 #(echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
@@ -317,27 +322,21 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
             (cd ~/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         else
             echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
+            # TODO: get this moved over to openaps and install with pip
             (cd ~/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         fi
         echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
     fi
-    if [ -d "$HOME/src/openxshareble/" ]; then
-        echo "$HOME/src/openxshareble/ already exists; pulling latest dev branch"
-        (cd ~/src/openxshareble && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openxshareble dev"
-    else
-        echo -n "Cloning openxshareble dev: "
-        (cd ~/src && git clone -b dev https://github.com/openaps/openxshareble.git) || die "Couldn't clone openxshareble dev"
-    fi
     echo Checking openxshareble installation
     if ! python -c "import openxshareble" 2>/dev/null; then
-        echo Installing openxshareble && (cd $HOME/src/openxshareble && sudo python setup.py develop) || die "Couldn't install openxshareble"
+        echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
     if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
     fi
-     # add two lines to /etc/rc.local if they are missing. 
+     # add two lines to /etc/rc.local if they are missing.
     if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
         sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
     fi
@@ -346,17 +345,6 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
     # comment out existing line if it exists and isn't already commented out
     sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
-    echo Checking openaps dev installation
-    if ! openaps use cgm -h | grep -q nightscout_calibrations; then
-        if [ -d "$HOME/src/openaps/" ]; then
-            echo "$HOME/src/openaps/ already exists; pulling latest dev branch"
-            (cd ~/src/openaps && git fetch && git checkout dev && git pull) || die "Couldn't pull latest openaps dev"
-        else
-            echo -n "Cloning openaps dev: "
-            (cd ~/src && git clone -b dev git://github.com/openaps/openaps.git) || die "Couldn't clone openaps dev"
-        fi
-        echo Installing latest openaps dev && (cd $HOME/src/openaps/ && sudo python setup.py develop) || die "Couldn't install openaps"
-    fi
 
     mkdir -p $directory-cgm-loop
     if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
@@ -406,14 +394,7 @@ killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
-        if [ -d "$HOME/src/915MHzEdisonExplorer_SW/" ]; then
-            echo "$HOME/src/915MHzEdisonExplorer_SW/ already exists; pulling latest master branch"
-            (cd ~/src/915MHzEdisonExplorer_SW && git fetch && git checkout master && git pull) || die "Couldn't pull latest 915MHzEdisonExplorer_SW master"
-        else
-            echo -n "Cloning 915MHzEdisonExplorer_SW master: "
-            (cd ~/src && git clone -b master https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git) || die "Couldn't clone 915MHzEdisonExplorer_SW master"
-        fi
-        echo Installing spi_serial && cd $HOME/src/915MHzEdisonExplorer_SW/spi_serial && sudo pip install -e . || die "Couldn't install spi_serial"
+        echo Installing spi_serial && sudo pip install git+https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git@master || die "Couldn't install spi_serial"
     fi
 
     echo Checking mraa installation
@@ -435,6 +416,11 @@ if [[ "$ttyport" =~ "spi" ]]; then
 
 fi
 
+echo Checking openaps dev installation
+if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
+    echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
+fi
+
 cd $directory || die "Can't cd $directory"
 if [[ -z "$ttyport" ]]; then
     openaps device add pump medtronic $serial || die "Can't add pump"
@@ -443,11 +429,11 @@ if [[ -z "$ttyport" ]]; then
     openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
     openaps alias add mmtune 'report invoke monitor/temp_basal.json'
 else
-    # radio_locale requires openaps 0.1.6-dev or later
+    # radio_locale requires openaps 0.2.0-dev or later
     openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
     openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
-    if [[ ${radio_locale,,} =~ "WW" ]]; then
+    if [[ ${radio_locale,,} =~ "ww" ]]; then
       # add subg-ww-radio-parameters script to mmtune for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
       sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; \/usr\/local\/bin\/oref0-subg-ww-radio-parameters-timeout; \2/g' openaps.ini
 
@@ -487,14 +473,6 @@ if [[ ${CGM,,} =~ "xdrip" ]]; then
     touch /tmp/reboot-required
 fi
 
-# configure optional features
-if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
-    EXTRAS="settings/autosens.json monitor/meal.json"
-elif [[ $ENABLE =~ autosens ]]; then
-    EXTRAS="settings/autosens.json"
-elif [[ $ENABLE =~ meal ]]; then
-    EXTRAS='"" monitor/meal.json'
-fi
 # Install EdisonVoltage
 if egrep -i "edison" /etc/passwd 2>/dev/null; then
    echo "Checking if EdisonVoltage is already installed"
@@ -510,10 +488,29 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
    for type in edisonbattery; do
      echo importing $type file
      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-  done  
+  done
+fi
+
+# configure optional features passed to enact/suggested.json report
+if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
+    EXTRAS="settings/autosens.json monitor/meal.json"
+elif [[ $ENABLE =~ autosens ]]; then
+    EXTRAS="settings/autosens.json"
+elif [[ $ENABLE =~ meal ]]; then
+    EXTRAS='"" monitor/meal.json'
 fi
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
+
+# configure autotune if enabled
+if [[ $ENABLE =~ autotune ]]; then
+    sudo apt-get -y install jq
+    cd $directory || die "Can't cd $directory"
+    for type in autotune; do
+      echo importing $type file
+      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+fi
 
 # Create ~/.profile so that openaps commands can be executed from the command line
 # as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
@@ -534,44 +531,48 @@ echo
 read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 # add crontab entries
-(crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
-(crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
-(crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-(crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
-(crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
-(crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
-# repair or reset git repository if it's corrupted or disk is full
-(crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
-#truncate git history to 1000 commits if it has grown past 1500
-(crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
-if [[ ${CGM,,} =~ "shareble" ]]; then
-    (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
-elif [[ ${CGM,,} =~ "xdrip" ]]; then    
-    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
-    (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
-elif [[ $ENABLE =~ dexusb ]]; then
-    (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
-elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
-    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
+    (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
+    (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
+    (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
+    (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
+    (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
+    (crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
+    # repair or reset git repository if it's corrupted or disk is full
+    (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
+    # truncate git history to 1000 commits if it has grown past 1500
+    (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
+    if [[ ${CGM,,} =~ "shareble" ]]; then
+        (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
+    elif [[ ${CGM,,} =~ "xdrip" ]]; then
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
+        (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
+    elif [[ $ENABLE =~ dexusb ]]; then
+        (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot cd $directory && /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
+    elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
+    fi
+    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+    if [[ $ENABLE =~ autosens ]]; then
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens | tee -a /var/log/openaps/autosens-loop.log") | crontab -
+    fi
+    if [[ $ENABLE =~ autotune ]]; then
+        # autotune nightly at 12:05am using data from NS
+        (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 0 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | json | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
+    fi
+    if [[ "$ttyport" =~ "spi" ]]; then
+        (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
+    fi
+    (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+    crontab -l
 fi
-(crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
-if [[ $ENABLE =~ autosens ]]; then
-    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens | tee -a /var/log/openaps/autosens-loop.log") | crontab -
-fi
-if [[ "$ttyport" =~ "spi" ]]; then
-    (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
-fi
-(crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-crontab -l
 
 if [[ ${CGM,,} =~ "shareble" ]]; then
     echo
     echo "To pair your G4 Share receiver, open its Setttings, select Share, Forget Device (if previously paired), then turn sharing On"
 fi
 
-fi
 
-fi
+fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
 
 if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
