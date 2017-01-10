@@ -187,12 +187,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     if [[ ! -z $BT_PEB ]]; then
        read -p "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
        BT_PEB=$REPLY
-       echo "Ok, $BT_MAC it is."
-       if [[ -z $BT_PEB ]]; then
-          echo Ok, no Pancreabble for you.
-          else
-          echo "Ok, $BT_PEB it is."
-       fi
+       echo "Ok, $BT_PEB it is."
+    else
+       echo echo Ok, no Pancreabble for you.
     fi
     read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
