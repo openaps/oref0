@@ -66,7 +66,9 @@
     "oref0-subg-ww-radio-parameters-timeout": "./bin/oref0-subg-ww-radio-parameters-timeout.sh",
     "oref0-template": "./bin/oref0-template.js",
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
-    "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js"
+    "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
+    "peb-urchin-status": "./bin/peb-urchin-status.sh",
+    "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh"    
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
