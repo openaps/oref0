@@ -217,7 +217,7 @@ ns)
         json -E "this.dateString = this.dateString ? this.dateString : this.display_time" | \
         json -E "this.dateString = this.dateString ? this.dateString : (this.date + '$(date +%z)')" | \
         json -E "this.date = new Date(this.dateString).getTime();" | \
-        json -E "this.type = (this.name == 'GlucoseSensorData') ? 'sgv' : 'pumpdata'" | \
+        json -E "this.type = (this.name && this.name.indexOf('GlucoseSensorData') > -1) ? 'sgv' : 'pumpdata'" | \
         json -E "this.device = 'openaps://medtronic/pump/cgm'" | (
           json -E "$NSONLY"
         )
