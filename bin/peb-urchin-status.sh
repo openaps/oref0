@@ -14,7 +14,7 @@ if [[ $(jq .urchin_iob pancreoptions.json) = "true" ]]; then
 fi
 
 #Notification Status
-if [[ $(jq .Notify_Temp_Basal pancreoptions.json) = "true" ]]; then
+if [[ $(jq .notify_temp_basal pancreoptions.json) = "true" ]]; then
    if [[ $(jq .rate enact/suggested.json) != null ]]; then
       openaps use pbbl notify "Set Temp Basal" "at $(date +%-I:%M%P): $(jq .rate enact/suggested.json) for $(jq .duration enact/suggested.json) minutes"
    fi
