@@ -76,7 +76,7 @@ esac
 done
 
 if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), G5, or MDT."
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G5, or MDT."
     echo
     DIR="" # to force a Usage prompt
 fi
