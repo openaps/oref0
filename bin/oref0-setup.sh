@@ -81,6 +81,10 @@ case $i in
     BT_MAC="${i#*=}"
     shift # past argument=value
     ;;
+    -p=*|--btpeb=*)
+    BT_PEB="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -179,6 +183,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           else
           echo "Ok, $BT_MAC it is."
        fi
+    fi
+    if [[ ! -z $BT_PEB ]]; then
+       read -p "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+       BT_PEB=$REPLY
+       echo "Ok, $BT_PEB it is."
     fi
     read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -296,16 +305,15 @@ for type in vendor device report alias; do
     echo importing $type file
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
-echo Checking for BT Mac or Shareble
-if [[ ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
+echo Checking for BT Mac, BT Peb or Shareble
+if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     # Install Bluez for BT Tethering
     echo Checking bluez installation
     if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
         cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
         cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
-        sudo killall bluetoothd; sudo /usr/local/bin/bluetoothd --experimental &
-	sudo hciconfig hci0 name $HOSTNAME
+        oref0-bluetoothup
     else
         echo bluez v 5.37 already installed
     fi
@@ -490,7 +498,19 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
   done
 fi
-
+# Install Pancreabble
+echo Checking for BT Pebble Mac 
+if [[ ! -z "$BT_PEB" ]]; then
+   sudo pip install libpebble2
+   sudo pip install --user git+git://github.com/mddub/pancreabble.git
+   oref0-bluetoothup
+   sudo rfcomm bind hci0 $BT_PEB
+   for type in pancreabble; do
+     echo importing $type file
+     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+  done 
+  sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json 
+fi  
 # configure optional features passed to enact/suggested.json report
 if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
     EXTRAS="settings/autosens.json monitor/meal.json"
@@ -563,6 +583,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
     fi
     (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+    if [[ ! -z "$BT_PEB" ]]; then
+       (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB && openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB && openaps urchin-loop' || peb-urchin-status $BT_PEB && openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
+    fi
+    if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
+       (crontab -l; crontab -l | grep -q "oref0-bluetoothup $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup '$BT_MAC'" || oref0-bluetoothup '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
+    fi
     crontab -l
 fi
 
