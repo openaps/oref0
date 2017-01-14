@@ -188,7 +188,7 @@ done # End Number of Runs Loop
 
 if ! [[ -z "$EXPORT_EXCEL" ]]; then
   echo Exporting to $EXPORT_EXCEL
-  oref0_autotune_export_to_xlsx --dir $DIR/autotune --output $EXPORT_EXCEL
+  oref0-autotune-export-to-xlsx --dir $DIR --output $EXPORT_EXCEL
 fi
 
 # Create Summary Report of Autotune Recommendations and display in the terminal
@@ -206,7 +206,7 @@ if [[ $RECOMMENDS_REPORT == "true" ]]; then
   echo
 
   # Run the Autotune Recommends Report
-  ~/src/oref0/bin/oref0-autotune-recommends-report.sh $directory
+  oref0-autotune-recommends-report $directory
 
   # Go ahead and echo autotune_recommendations.log to the terminal
   cat $report_file
