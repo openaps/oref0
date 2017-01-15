@@ -1,0 +1,19 @@
+[
+  {
+    "type": "vendor",
+    "name": "openxshareble",
+    "openxshareble": {
+      "path": ".",
+      "module": "openxshareble"
+    }
+  },
+  {
+    "type": "device",
+    "cgm": {
+      "vendor": "openxshareble",
+      "extra": "cgm.ini"
+    },
+    "name": "cgm",
+    "extra": {}
+  }
+]

@@ -1,28 +1,11 @@
 [
   {
-    "type": "vendor",
-    "name": "openxshareble",
-    "openxshareble": {
-      "path": ".",
-      "module": "openxshareble"
-    }
-  },
-  {
     "openapscontrib.timezones": {
       "path": ".",
       "module": "openapscontrib.timezones"
     },
     "type": "vendor",
     "name": "openapscontrib.timezones"
-  },
-  {
-    "type": "device",
-    "cgm": {
-      "vendor": "openxshareble",
-      "extra": "cgm.ini"
-    },
-    "name": "cgm",
-    "extra": {}
   },
   {
     "type": "device",
