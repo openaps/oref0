@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.3.4-dev",
+  "version": "0.3.6-dev",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -32,11 +32,16 @@
     "ns-upload": "./bin/ns-upload.sh",
     "ns-upload-entries": "./bin/ns-upload-entries.sh",
     "oref0": "./bin/oref0.sh",
+    "oref0-autotune": "./bin/oref0-autotune.sh",
+    "oref0-autotune-prep": "./bin/oref0-autotune-prep.js",
+    "oref0-autotune-core": "./bin/oref0-autotune-core.js",
+    "oref0_autotune_export_to_xlsx": "./bin/oref0_autotune_export_to_xlsx.py",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-copy-fresher": "./bin/oref0-copy-fresher",
     "oref0-crun": "./bin/oref0-conditional-run.sh",
     "oref0-detect-sensitivity": "./bin/oref0-detect-sensitivity.js",
     "oref0-determine-basal": "./bin/oref0-determine-basal.js",
+    "oref0-dexusb-cgm-loop": "./bin/oref0-dexusb-cgm-loop.py",
     "oref0-dex-is-fresh": "./bin/oref0-dex-is-fresh.sh",
     "oref0-dex-time-since": "./bin/oref0-dex-time-since.sh",
     "oref0-dex-wait-until-expected": "./bin/oref0-dex-wait-until-expected.sh",
@@ -63,7 +68,9 @@
     "oref0-subg-ww-radio-parameters-timeout": "./bin/oref0-subg-ww-radio-parameters-timeout.sh",
     "oref0-template": "./bin/oref0-template.js",
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
-    "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js"
+    "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
+    "peb-urchin-status": "./bin/peb-urchin-status.sh",
+    "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh"    
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {

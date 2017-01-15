@@ -1,0 +1,43 @@
+[
+  {
+    "settings/pumpprofile.json": {
+      "use": "shell",
+      "bg_targets": "settings/bg_targets.json",
+      "preferences": "preferences.json",
+      "settings": "settings/settings.json",
+      "basal_profile": "settings/basal_profile.json",
+      "reporter": "text",
+      "json_default": "True",
+      "carb_ratios": "settings/carb_ratios.json",
+      "device": "get-profile",
+      "remainder": "--model=settings/model.json",
+      "isf": "settings/insulin_sensitivities.json"
+    },
+    "type": "report",
+    "name": "settings/pumpprofile.json"
+  },
+  {
+    "settings/profile.json": {
+      "use": "shell",
+      "bg_targets": "settings/bg_targets.json",
+      "preferences": "preferences.json",
+      "settings": "settings/settings.json",
+      "basal_profile": "settings/basal_profile.json",
+      "reporter": "text",
+      "json_default": "True",
+      "carb_ratios": "settings/carb_ratios.json",
+      "device": "get-profile",
+      "remainder": "settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json",
+      "isf": "settings/insulin_sensitivities.json"
+    },
+    "type": "report",
+    "name": "settings/profile.json"
+  },
+  {
+    "type": "alias",
+    "name": "get-settings",
+    "get-settings": {
+      "command": "report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json"
+    }
+  }
+]

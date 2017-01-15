@@ -26,7 +26,7 @@ cat $HISTORY | \
   json -e "this.medtronic = this._type;" | \
   json -e "this.dateString = this.date + '$(date +%z)'" | \
   json -e "this.date = new Date(this.dateString).getTime();" | \
-  json -e "this.type = (this.name == 'GlucoseSensorData') ? 'sgv' : 'pumpdata'" | \
+  json -E "this.type = (this.name && this.name.indexOf('GlucoseSensorData') > -1) ? 'sgv' : 'pumpdata'" | \
   json -e "this.device = 'openaps://medtronic/pump/cgm'" \
   > $OUTPUT
 

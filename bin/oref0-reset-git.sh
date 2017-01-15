@@ -49,5 +49,5 @@ if [ $status -lt 128 ]; then
 fi
 # if git repository is too corrupt to do anything, mv it to /tmp and start over.
 
-(git status && git diff && ! df | grep 100% && ! df -i | grep 100%) > /dev/null || (echo "Saving backup to: $BACKUP" > /dev/stderr; mv .git $BACKUP; rm -rf .git; openaps init . )
+(git status && git diff && git symbolic-ref HEAD && ! df | grep 100% && ! df -i | grep 100%) > /dev/null || (echo "Saving backup to: $BACKUP" > /dev/stderr; mv .git $BACKUP; rm -rf .git; openaps init . )
 
