@@ -90,7 +90,6 @@ def write_timebased_profile(worksheet, row, expandedList, excel_number_format):
     date, run = parseDateAndRun(filename)
     worksheet.write_string(row, 1, date)
     worksheet.write_string(row, 2, run)
-    #print "len(el)=%d" % len(expandedList)
     col=3
     for i in range(len(expandedList)):
         worksheet.write_number(row, col, expandedList[i], excel_number_format)
@@ -119,8 +118,8 @@ def excel_init_workbook(workbook):
     writeExcelHeader(worksheetIsf, excel_hour_format,headerFormat)
     worksheetBasal.autofilter('A1:C999')
     worksheetIsf.autofilter('A1:C999')
-    worksheetBasal.set_column(3, 50, 6) # set columns starting from 3 to width 6
-    worksheetIsf.set_column(3, 50, 6) # set columns starting from 3 to width 5
+    worksheetBasal.set_column(3, 50, 6) # set columns starting from 3 to same width
+    worksheetIsf.set_column(3, 50, 6) # set columns starting from 3 to same width
     infoText=['Released under MIT license. See the accompanying LICENSE.txt file for', 'full terms and conditions', '']
     infoText.append('THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR')
     infoText.append('IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,')
@@ -158,10 +157,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Export oref0 autotune files to Microsoft Excel')
     parser.add_argument('-d', '--dir', help='autotune directory', default='.')
     parser.add_argument('-o', '--output', help='default autotune.xlsx', default='autotune.xlsx')
-    parser.add_argument('--version', action='version', version='%(prog)s 0.0.2-dev')
+    parser.add_argument('--version', action='version', version='%(prog)s 0.0.3-dev')
     args = parser.parse_args()
 
-    # change to autotune directory
+    # change to openaps directory
     os.chdir(args.dir)
 
     print "Writing headers to Microsoft Excel file %s" % args.output
