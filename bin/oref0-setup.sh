@@ -378,6 +378,7 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
     fi
 
     if [[ ${CGM,,} =~ "g4-raw" ]]; then
+        sudo apt-get -y install bc
         openaps device add cgm dexcom || die "Can't add CGM"
         for type in cgm-loop; do
             echo importing $type file
