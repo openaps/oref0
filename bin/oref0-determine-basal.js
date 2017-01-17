@@ -42,6 +42,11 @@ if (!module.parent) {
         default: true
 
       })
+      .option('microbolus', {
+        describe: "Enable SuperMicroBolus mode (oref1)",
+        default: false
+
+      })
       // error and show help if some other args given
       .strict(true)
       .help('help')
@@ -179,7 +184,7 @@ if (!module.parent) {
 
     var tempBasalFunctions = require('oref0/lib/basal-set-temp');
 
-    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions);
+    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus']);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));
