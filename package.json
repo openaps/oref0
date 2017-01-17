@@ -33,9 +33,10 @@
     "ns-upload-entries": "./bin/ns-upload-entries.sh",
     "oref0": "./bin/oref0.sh",
     "oref0-autotune": "./bin/oref0-autotune.sh",
-    "oref0-autotune-prep": "./bin/oref0-autotune-prep.js",
     "oref0-autotune-core": "./bin/oref0-autotune-core.js",
-    "oref0_autotune_export_to_xlsx": "./bin/oref0_autotune_export_to_xlsx.py",
+    "oref0-autotune-export-to-xlsx": "./bin/oref0-autotune-export-to-xlsx.py",
+    "oref0-autotune-prep": "./bin/oref0-autotune-prep.js",
+    "oref0-autotune-recommends-report": "./bin/oref0-autotune-recommends-report.sh",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-copy-fresher": "./bin/oref0-copy-fresher",
     "oref0-crun": "./bin/oref0-conditional-run.sh",
@@ -66,7 +67,9 @@
     "oref0-subg-ww-radio-parameters-timeout": "./bin/oref0-subg-ww-radio-parameters-timeout.sh",
     "oref0-template": "./bin/oref0-template.js",
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
-    "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js"
+    "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
+    "peb-urchin-status": "./bin/peb-urchin-status.sh",
+    "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh"    
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
