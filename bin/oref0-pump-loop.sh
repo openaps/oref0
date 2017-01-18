@@ -7,6 +7,30 @@ if [ -z $port ]; then
     port=/dev/spidev5.1
 fi
 
+# main pump-loop
+main() {
+    sleep $[ ( $RANDOM / 2048 ) ]s
+    until( \
+        echo Starting pump-loop at $(date): \
+        && wait_for_silence \
+        && refresh_old_pumphistory \
+        && refresh_old_pumphistory_24h \
+        && refresh_old_profile \
+        && refresh_temp_and_enact \
+        && refresh_pumphistory_and_enact \
+        && refresh_profile \
+        && refresh_pumphistory_24h \
+        && echo Completed pump-loop at $(date) \
+        && echo); do
+
+    echo Error, retrying \
+    && [[ $RANDOM > 30000 ]] \
+    && wait_for_silence 45 \
+    && mmtune
+    sleep 5
+    done
+}
+
 function mmtune {
     reset_spi_serial.py 2>/dev/null
     echo {} > monitor/mmtune.json
@@ -19,12 +43,12 @@ function mmtune {
 function wait_for_silence {
     if [ -z $1 ]; then
         waitfor=30
-    else 
+    else
         waitfor=$1
     fi
     (mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms && echo -n Radio ok, || mmtune) \
     && echo -n \" Listening: \"
-    for i in $(seq 1 100); do 
+    for i in $(seq 1 100); do
         echo -n .
         mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
         && break
@@ -43,7 +67,7 @@ function gather {
 function enact {
     rm enact/suggested.json
     openaps report invoke enact/suggested.json \
-    && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then ( 
+    && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
         openaps report invoke enact/enacted.json
         grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \"^  |subg_rfspy|handler\"
@@ -54,7 +78,7 @@ function enact {
 
 function refresh_old_pumphistory {
     find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
-    || ( echo -n \"Old pumphistory: \" && gather && enact ) 
+    || ( echo -n \"Old pumphistory: \" && gather && enact )
 }
 
 function refresh_old_pumphistory_24h {
@@ -101,23 +125,4 @@ function refresh_pumphistory_24h {
         && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>/dev/null >/dev/null && echo ed)
 }
 
-sleep $[ ( $RANDOM / 2048 ) ]s
-until( \
-    echo Starting pump-loop at $(date): \
-    && wait_for_silence \
-    && refresh_old_pumphistory \
-    && refresh_old_pumphistory_24h \
-    && refresh_old_profile \
-    && refresh_temp_and_enact \
-    && refresh_pumphistory_and_enact \
-    && refresh_profile \
-    && refresh_pumphistory_24h \
-    && echo Completed pump-loop at $(date) \
-    && echo); do 
-
-echo Error, retrying \
-&& [[ $RANDOM > 30000 ]] \
-&& wait_for_silence 45 \
-&& mmtune
-sleep 5
-done
+main "$@"
