@@ -2,11 +2,11 @@
 
 # main pump-loop
 main() {
-    config
-    sleep $[ ( $RANDOM / 2048 ) ]s
+    prep
+    # TODO: change wait_for_silence back to default (30s)
     until( \
         echo Starting pump-loop at $(date): \
-        && wait_for_silence \
+        && wait_for_silence 10 \
         && refresh_old_pumphistory \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
@@ -17,30 +17,139 @@ main() {
         && echo Completed pump-loop at $(date) \
         && echo); do
 
-    echo Error, retrying \
-    && [[ $RANDOM > 30000 ]] \
-    && wait_for_silence 45 \
-    && mmtune
-    sleep 5
+            # On a random subset of failures, wait 45s and mmtune
+            echo Error, retrying \
+            && maybe_mmtune
+            sleep 5
     done
 }
 
-function config {
+# main supermicrobolus loop
+smb_main() {
+    prep
+    # TODO: change wait_for_silence back to default (30s)
+    # TODO: add smb_refresh_temp_and_enact before gather to set low temps quickly
+    until ( \
+        echo Starting supermicrobolus pump-loop at $(date): \
+        && wait_for_silence 10 \
+        && mmtune \
+        && refresh_old_pumphistory \
+        && refresh_old_pumphistory_24h \
+        && refresh_old_profile \
+        && ( smb_reservoir_before \
+            && smb_enact_temp \
+            && smb_verify_enacted \
+            && smb_verify_reservoir \
+            && smb_verify_status \
+            && smb_bolus \
+            && echo Completed supermicrobolus pump-loop at $(date): \
+            && echo \
+            || ( \
+                echo "Could not supermicrobolus; falling back to normal pump-loop" \
+                && refresh_temp_and_enact \
+                && refresh_pumphistory_and_enact \
+                && refresh_profile \
+                && refresh_pumphistory_24h \
+                && echo Completed pump-loop at $(date) \
+                )
+            )
+        ); do
+            echo Error, retrying && maybe_mmtune
+            sleep 5
+    done
+}
+
+function smb_reservoir_before {
+    # Refresh reservoir.json and pumphistory.json
+    gather
+    cp monitor/reservoir.json monitor/lastreservoir.json
+    cat monitor/reservoir.json
+    cat monitor/pumphistory.json | jq .[0]
+}
+
+function smb_enact_temp {
+    rm -rf enact/smb-suggested.json
+    ls enact/smb-suggested.json 2>/dev/null && die "enact/suggested.json present"
+    # Run determine-basal
+    # TODO: Add reports:
+    # openaps report add enact/smb-suggested.json JSON determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus
+    # openaps report add enact/smb-enacted.json JSON pump set_temp_basal enact/smb-suggested.json
+    openaps report invoke enact/smb-suggested.json \
+    && if (cat enact/smb-suggested.json | jq -c . && grep -q duration enact/smb-suggested.json); then (
+        rm enact/smb-enacted.json
+        openaps report invoke enact/smb-enacted.json
+        grep -q duration enact/smb-enacted.json || openaps invoke enact/smb-enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
+    fi \
+    && cat enact/smb-enacted.json | jq -c .
+}
+
+function smb_verify_enacted {
+    # Read the currently running temp and TODO: verify it matches the recommended
+    rm -rf monitor/temp_basal.json
+    ( echo -n Temp refresh \
+    && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
+        2>/dev/null >/dev/null && echo ed \
+    ) && grep '"rate": 0.0,' monitor/temp_basal.json \
+    || echo "WARNING: zero temp not running; continuing anyway"
+
+}
+
+function smb_verify_reservoir {
+    # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
+    rm -rf monitor/reservoir.json
+    (openaps invoke monitor/reservoir.json || openaps invoke monitor/reservoir.json) 2>&1 | tail -1 \
+    && diff -u monitor/lastreservoir.json monitor/reservoir.json \
+    && echo -n "Reservoir level unchanged at " \
+    && cat monitor/reservoir.json && echo
+}
+
+function smb_verify_status {
+    # Read the pump status and verify it is not bolusing
+    rm -rf monitor/status.json
+    ( openaps invoke monitor/status.json || openaps invoke monitor/status.json ) 2>&1 | tail -1 \
+    && grep '"status": "normal"' monitor/status.json \
+    && grep '"bolusing": false' monitor/status.json \
+    && grep '"suspended": false' monitor/status.json
+}
+
+function smb_bolus {
+    # TODO: Verify that the suggested.json is less than 5 minutes old, and that the current time is prior to the timestamp by which the microbolus needs to be sent
+    # Administer the supermicrobolus
+    #TODO: Make a bolused.json report
+    if (grep '"units":' enact/smb-suggested.json); then
+        echo 'Time to SMB' \
+        && openaps use pump bolus enact/smb-suggested.json > enact/bolused.json \
+        && cat enact/bolused.json | jq -c . \
+        && rm -rf enact/smb-suggested.json
+    else
+        echo "No bolus needed (yet)"
+    fi
+}
+
+function prep {
     # read tty port from pump.ini
     eval $(grep port pump.ini | sed "s/ //g")
     # if that fails, try the Explorer board default port
     if [ -z $port ]; then
         port=/dev/spidev5.1
     fi
+    # sleep a few seconds to avoid wait_for_silence synchronization
+    sleep $[ ( $RANDOM / 2048 ) ]s
 }
 
 function mmtune {
     reset_spi_serial.py 2>/dev/null
     echo {} > monitor/mmtune.json
-    echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json 2>/dev/null >/dev/null
+    echo -n "mmtune: " && openaps report invoke monitor/mmtune.json 2>/dev/null >/dev/null
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
-        do echo -n \"$line \"
+        do echo -n "$line "
     done
+}
+
+function maybe_mmtune {
+    [[ $RANDOM > 30000 ]] \
+    && wait_for_silence 45 \
+    && mmtune
 }
 
 function wait_for_silence {
@@ -50,7 +159,7 @@ function wait_for_silence {
         waitfor=$1
     fi
     (mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms && echo -n Radio ok, || mmtune) \
-    && echo -n \" Listening: \"
+    && echo -n " Listening: "
     for i in $(seq 1 100); do
         echo -n .
         mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
@@ -73,15 +182,15 @@ function enact {
     && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
         openaps report invoke enact/enacted.json
-        grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \"^  |subg_rfspy|handler\"
+        grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>/dev/null
-    cat enact/enacted.json | json -0
+    cat enact/enacted.json | jq -c .
 }
 
 function refresh_old_pumphistory {
     find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
-    || ( echo -n \"Old pumphistory: \" && gather && enact )
+    || ( echo -n "Old pumphistory: " && gather && enact )
 }
 
 function refresh_old_pumphistory_24h {
@@ -99,7 +208,7 @@ function refresh_temp_and_enact {
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
             (echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>/dev/null >/dev/null && echo ed \
-            && if (cat monitor/temp_basal.json | json -c \"this.duration < 27\" | grep -q duration); then
+            && if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi)
     else
@@ -111,7 +220,7 @@ function refresh_pumphistory_and_enact {
     if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n glucose.json newer than pumphistory) \
         || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n enacted.json newer than pumphistory) \
         || (! find monitor/ -mmin -5 | grep -q pumphistory-zoned && echo -n pumphistory more than 5m old) ); then
-            (echo -n \": \" && gather && enact )
+            (echo -n ": " && gather && enact )
     else
         echo Pumphistory less than 5m old
     fi
@@ -128,4 +237,13 @@ function refresh_pumphistory_24h {
         && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>/dev/null >/dev/null && echo ed)
 }
 
-main "$@"
+die() {
+    echo "$@"
+    exit 1
+}
+
+if [[ $1 == *"microbolus"* ]]; then
+    smb_main "$@"
+else
+    main "$@"
+fi
