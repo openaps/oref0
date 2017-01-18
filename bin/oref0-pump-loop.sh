@@ -22,7 +22,7 @@ function wait_for_silence {
     else 
         waitfor=$1
     fi
-    (mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) \
+    (mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms && echo -n Radio ok, || mmtune) \
     && echo -n \" Listening: \"
     for i in $(seq 1 100); do 
         echo -n .
@@ -73,7 +73,7 @@ function refresh_temp_and_enact {
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
             (echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>/dev/null >/dev/null && echo ed \
             && if (cat monitor/temp_basal.json | json -c \"this.duration < 27\" | grep -q duration); then
-                openaps enact; else echo Temp duration 27m or more
+                enact; else echo Temp duration 27m or more
             fi)
     else
         echo temp_basal.json less than 5m old
@@ -84,7 +84,7 @@ function refresh_pumphistory_and_enact {
     if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n glucose.json newer than pumphistory) \
         || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n enacted.json newer than pumphistory) \
         || (! find monitor/ -mmin -5 | grep -q pumphistory-zoned && echo -n pumphistory more than 5m old) ); then
-            (echo -n \": \" && openaps gather && openaps enact )
+            (echo -n \": \" && gather && enact )
     else
         echo Pumphistory less than 5m old
     fi
