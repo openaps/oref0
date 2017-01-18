@@ -80,7 +80,7 @@ function smb_enact_temp {
         openaps report invoke enact/smb-enacted.json
         grep -q duration enact/smb-enacted.json || openaps invoke enact/smb-enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi \
-    && cp enact/smb-enacted.json enact/enacted.json \
+    && cp -up enact/smb-enacted.json enact/enacted.json \
     && cat enact/smb-enacted.json | jq -c .
 }
 
@@ -90,8 +90,8 @@ function smb_verify_enacted {
     ( echo -n Temp refresh \
     && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
         2>/dev/null >/dev/null && echo ed \
-    ) && grep '"rate": 0.0,' monitor/temp_basal.json \
-    || echo "WARNING: zero temp not running; continuing anyway"
+    ) && grep '"rate": 0.0,' monitor/temp_basal.json
+    #|| echo "WARNING: zero temp not running; continuing anyway"
 
 }
 
