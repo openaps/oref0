@@ -1,14 +1,8 @@
 #!/bin/bash
 
-# read tty port from pump.ini
-eval $(grep port pump.ini | sed "s/ //g")
-# if that fails, try the Explorer board default port
-if [ -z $port ]; then
-    port=/dev/spidev5.1
-fi
-
 # main pump-loop
 main() {
+    config
     sleep $[ ( $RANDOM / 2048 ) ]s
     until( \
         echo Starting pump-loop at $(date): \
@@ -29,6 +23,15 @@ main() {
     && mmtune
     sleep 5
     done
+}
+
+function config {
+    # read tty port from pump.ini
+    eval $(grep port pump.ini | sed "s/ //g")
+    # if that fails, try the Explorer board default port
+    if [ -z $port ]; then
+        port=/dev/spidev5.1
+    fi
 }
 
 function mmtune {
