@@ -80,6 +80,7 @@ function smb_enact_temp {
         openaps report invoke enact/smb-enacted.json
         grep -q duration enact/smb-enacted.json || openaps invoke enact/smb-enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi \
+    && cp enact/smb-enacted.json enact/enacted.json \
     && cat enact/smb-enacted.json | jq -c .
 }
 
