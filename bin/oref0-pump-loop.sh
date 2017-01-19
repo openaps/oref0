@@ -44,7 +44,7 @@ smb_main() {
             && echo Completed supermicrobolus pump-loop at $(date): \
             && echo \
             || ( \
-                echo "Could not supermicrobolus; falling back to normal pump-loop" \
+                echo "Not supermicrobolusing; falling back to normal pump-loop" \
                 && refresh_temp_and_enact \
                 && refresh_pumphistory_and_enact \
                 && refresh_profile \
@@ -70,27 +70,30 @@ function smb_enact_temp {
     rm -rf enact/smb-suggested.json
     ls enact/smb-suggested.json 2>/dev/null && die "enact/suggested.json present"
     # Run determine-basal
-    # TODO: Add reports:
+    # TODO: Add reports to oref0-setup:
     # openaps report add enact/smb-suggested.json JSON determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus
     # openaps report add enact/smb-enacted.json JSON pump set_temp_basal enact/smb-suggested.json
     openaps report invoke enact/smb-suggested.json \
-    && if (cat enact/smb-suggested.json | jq -c . && grep -q duration enact/smb-suggested.json); then (
+    && if (cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json
         grep -q duration enact/smb-enacted.json || openaps invoke enact/smb-enacted.json
-        cat enact/smb-enacted.json | jq -c .
+        cat enact/smb-enacted.json | jq -C -c .
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi \
     && cp -up enact/smb-enacted.json enact/enacted.json
 }
 
 function smb_verify_enacted {
-    # Read the currently running temp and TODO: verify it matches the recommended
+    # Read the currently running temp and
+    # verify rate matches and duration is > 5m less than smb-suggested.json
     rm -rf monitor/temp_basal.json
     ( echo -n Temp refresh \
     && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
-        2>/dev/null >/dev/null && echo ed \
-    ) && grep '"rate": 0.0,' monitor/temp_basal.json
+        2>/dev/null >/dev/null && echo -n "ed: " \
+    ) && cat monitor/temp_basal.json | jq -C -c . \
+    && jq --slurp --exit-status '.[0].rate == .[1].rate and .[0].duration > .[1].duration - 5' monitor/temp_basal.json enact/smb-suggested.json
+    #) && grep '"rate": 0.0,' monitor/temp_basal.json
     #|| echo "WARNING: zero temp not running; continuing anyway"
 
 }
@@ -120,7 +123,7 @@ function smb_bolus {
     if (grep '"units":' enact/smb-suggested.json); then
         echo 'Time to SMB' \
         && openaps use pump bolus enact/smb-suggested.json > enact/bolused.json \
-        && cat enact/bolused.json | jq -c . \
+        && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
         echo "No bolus needed (yet)"
@@ -186,7 +189,7 @@ function enact {
         grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>/dev/null
-    cat enact/enacted.json | jq -c .
+    cat enact/enacted.json | jq -C -c .
 }
 
 function refresh_old_pumphistory {
