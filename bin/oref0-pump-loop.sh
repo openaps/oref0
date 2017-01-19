@@ -3,10 +3,9 @@
 # main pump-loop
 main() {
     prep
-    # TODO: change wait_for_silence back to default (30s)
     until( \
         echo Starting pump-loop at $(date): \
-        && wait_for_silence 10 \
+        && wait_for_silence \
         && refresh_old_pumphistory \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
@@ -73,6 +72,7 @@ function smb_enact_temp {
     # TODO: Add reports to oref0-setup:
     # openaps report add enact/smb-suggested.json JSON determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus
     # openaps report add enact/smb-enacted.json JSON pump set_temp_basal enact/smb-suggested.json
+    # openaps report add enact/bolused.json JSON pump bolus enact/smb-suggested.json
     openaps report invoke enact/smb-suggested.json \
     && if (echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json); then (
         rm enact/smb-enacted.json
@@ -102,8 +102,10 @@ function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
     (openaps invoke monitor/reservoir.json || openaps invoke monitor/reservoir.json) 2>&1 | tail -1 \
-    && diff -u monitor/lastreservoir.json monitor/reservoir.json \
-    && echo -n "Reservoir level unchanged at " \
+    && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") )) \
+    && echo -n "Reservoir level before: " \
+    && cat monitor/lastreservoir.json \
+    && echo -n " and after: " \
     && cat monitor/reservoir.json && echo
 }
 
@@ -117,12 +119,12 @@ function smb_verify_status {
 }
 
 function smb_bolus {
-    # TODO: Verify that the suggested.json is less than 5 minutes old, and that the current time is prior to the timestamp by which the microbolus needs to be sent
+    # Verify that the suggested.json is less than 5 minutes old, and TODO: that the current time is prior to the timestamp by which the microbolus needs to be sent
     # Administer the supermicrobolus
-    #TODO: Make a bolused.json report
-    if (grep '"units":' enact/smb-suggested.json); then
+    find enact/ -mmin -5 | grep smb-suggested.json \
+    && if (grep '"units":' enact/smb-suggested.json); then
         echo 'Time to SMB' \
-        && openaps use pump bolus enact/smb-suggested.json > enact/bolused.json \
+        && openaps report invoke enact/bolused.json \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
