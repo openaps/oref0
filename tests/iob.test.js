@@ -8,6 +8,8 @@ describe('IOB', function ( ) {
 
   it('should calculate IOB', function() {
 
+    var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 1, 'minutes': 0}];
+
     var now = Date.now()
       , timestamp = new Date(now).toISOString()
       , inputs = {
@@ -18,9 +20,8 @@ describe('IOB', function ( ) {
         , timestamp: timestamp
         }]
         , profile: {
-          dia: 3
-          , bolussnooze_dia_divisor: 2
-        }
+          dia: 3, bolussnooze_dia_divisor: 2, basalprofile: basalprofile, current_basal: 1 }
+
       };
 
     var rightAfterBolus = require('../lib/iob')(inputs)[0];
@@ -175,9 +176,9 @@ describe('IOB', function ( ) {
     var now = Date.now();
 
     var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 2, 'minutes': 0},
-        {'i': 1, 'start': '00:15:00', 'rate': 0, 'minutes': 15 },
+        {'i': 1, 'start': '00:15:00', 'rate': 0.1, 'minutes': 15 },
         {'i': 1, 'start': '00:30:00', 'rate': 2, 'minutes': 30 },
-        {'i': 1, 'start': '00:45:00', 'rate': 0, 'minutes': 45 }];
+        {'i': 1, 'start': '00:45:00', 'rate': 0.1, 'minutes': 45 }];
 
     var startingPoint = moment('2016-06-13 23:45:00.000');
     var timestamp = startingPoint.format();
@@ -308,6 +309,8 @@ describe('IOB', function ( ) {
 
   it('should calculate IOB using a 4 hour duration', function() {
 
+    var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 1, 'minutes': 0}];
+
     var now = Date.now()
       , timestamp = new Date(now).toISOString()
       , inputs = {
@@ -320,7 +323,10 @@ describe('IOB', function ( ) {
         , profile: {
           dia: 4
           , bolussnooze_dia_divisor: 2
+		  , basalprofile: basalprofile
+		  , current_basal: 1
         }
+
       };
 
     var rightAfterBolus = require('../lib/iob')(inputs)[0];
