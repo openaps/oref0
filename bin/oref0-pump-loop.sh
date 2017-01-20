@@ -32,7 +32,7 @@ smb_main() {
         echo \
         && echo Starting supermicrobolus pump-loop at $(date): \
         && wait_for_silence 30 \
-        && ( preflight || mmtune ) \
+        && preflight \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
         && ( smb_reservoir_before \
