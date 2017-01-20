@@ -36,10 +36,6 @@ smb_main() {
         && refresh_old_profile \
         && ( smb_check_everything \
             && smb_bolus \
-            && refresh_profile \
-            && refresh_pumphistory_24h \
-            && echo Completed supermicrobolus pump-loop at $(date): \
-            && echo \
             || ( \
                 echo "Not supermicrobolusing; falling back to normal pump-loop" \
                 && refresh_temp_and_enact \
@@ -50,6 +46,10 @@ smb_main() {
                 && echo \
                 )
             )
+            && refresh_profile \
+            && refresh_pumphistory_24h \
+            && echo Completed supermicrobolus pump-loop at $(date): \
+            && echo \
         ); do
             echo Error, retrying && maybe_mmtune
             sleep 5
