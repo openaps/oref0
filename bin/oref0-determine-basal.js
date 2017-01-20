@@ -20,10 +20,16 @@ if (!module.parent) {
     var determinebasal = init();
 
     var argv = require('yargs')
-      .usage("$0 iob.json currenttemp.json glucose.json profile.json [[--auto-sens] autosens.json] [meal.json]")
+      .usage("$0 iob.json currenttemp.json glucose.json profile.json [[--auto-sens] autosens.json] [meal.json] [--reservoir reservoir.json]")
       .option('auto-sens', {
         alias: 'a',
         describe: "Auto-sensitivity configuration",
+        default: true
+
+      })
+      .option('reservoir', {
+        alias: 'r',
+        describe: "Reservoir status file for SuperMicroBolus mode (oref1)",
         default: true
 
       })
@@ -77,6 +83,7 @@ if (!module.parent) {
     if (params.meal && params.meal !== true && !meal_input) {
       meal_input = params.meal;
     }
+    var reservoir_input = params.reservoir;
 
     if (!iob_input || !currenttemp_input || !glucose_input || !profile_input) {
         usage( );
@@ -142,6 +149,20 @@ if (!module.parent) {
         }
       }
     }
+    if (reservoir_input && typeof reservoir_input != 'undefined') {
+        try {
+            reservoir_data = JSON.parse(fs.readFileSync(reservoir_input, 'utf8'));
+            console.error(JSON.stringify(reservoir_data));
+        } catch (e) {
+            var msg = {
+              msg: "Optional feature SuperMicroBolus (oref1) enabled, but could not read required reservoir data."
+            , file: reservoir_input
+            , error: e
+            };
+            console.error(msg.msg);
+        }
+    }
+
     //if old reading from Dexcom do nothing
 
     var systemTime = new Date();
@@ -184,7 +205,7 @@ if (!module.parent) {
 
     var tempBasalFunctions = require('oref0/lib/basal-set-temp');
 
-    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus']);
+    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus'], reservoir_data);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));
