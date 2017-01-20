@@ -36,6 +36,8 @@ smb_main() {
         && refresh_old_profile \
         && ( smb_check_everything \
             && smb_bolus \
+            && refresh_profile \
+            && refresh_pumphistory_24h \
             && echo Completed supermicrobolus pump-loop at $(date): \
             && echo \
             || ( \
