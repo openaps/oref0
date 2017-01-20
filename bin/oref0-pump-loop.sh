@@ -98,7 +98,7 @@ function smb_enact_temp {
         cp -up enact/smb-enacted.json enact/enacted.json
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c .
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
-    fi \
+    fi
 }
 
 function smb_verify_enacted {
