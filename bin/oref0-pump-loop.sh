@@ -28,6 +28,7 @@ smb_main() {
     prep
     # TODO: change wait_for_silence back to default (30s)
     # TODO: add smb_refresh_temp_and_enact before gather (smb_reservoir_before) to set low temps quickly
+    # TODO: only fall back to pump-loop if more than 10m since last bolus
     until ( \
         echo && echo Starting supermicrobolus pump-loop at $(date): \
         && wait_for_silence 30 \
