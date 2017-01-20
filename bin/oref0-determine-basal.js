@@ -156,7 +156,7 @@ if (!module.parent) {
             console.error(reservoir_data);
         } catch (e) {
             var msg = {
-              msg: "Optional feature SuperMicroBolus (oref1) enabled, but could not read required reservoir data."
+              msg: "Warning: Could not read required reservoir data from "+reservoir_input+"."
             , file: reservoir_input
             , error: e
             };
