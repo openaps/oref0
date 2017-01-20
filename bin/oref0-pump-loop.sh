@@ -4,7 +4,7 @@
 main() {
     prep
     until( \
-        echo Starting pump-loop at $(date): \
+        echo && echo Starting pump-loop at $(date): \
         && wait_for_silence \
         && refresh_old_pumphistory \
         && refresh_old_pumphistory_24h \
@@ -29,8 +29,7 @@ smb_main() {
     # TODO: change wait_for_silence back to default (30s)
     # TODO: add smb_refresh_temp_and_enact before gather (smb_reservoir_before) to set low temps quickly
     until ( \
-        echo \
-        && echo Starting supermicrobolus pump-loop at $(date): \
+        echo && echo Starting supermicrobolus pump-loop at $(date): \
         && wait_for_silence 30 \
         && preflight \
         && refresh_old_pumphistory_24h \
