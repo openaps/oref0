@@ -63,13 +63,13 @@ function smb_reservoir_before {
 }
 
 function smb_check_everything {
-    # wait-for-silence and retry if first attempt fails
+    # wait_for_silence and retry if first attempt fails
     smb_reservoir_before \
     && smb_enact_temp \
     && smb_verify_enacted \
     && smb_verify_reservoir \
     && smb_verify_status \
-    || ( wait-for-silence 10 \
+    || ( wait_for_silence 10 \
         && smb_reservoir_before \
         && smb_enact_temp \
         && smb_verify_enacted \
