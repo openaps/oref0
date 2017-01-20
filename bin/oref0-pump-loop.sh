@@ -45,7 +45,7 @@ smb_main() {
                 && echo Completed pump-loop at $(date) \
                 && echo \
                 )
-            )
+            ) \
             && refresh_profile \
             && refresh_pumphistory_24h \
             && echo Completed supermicrobolus pump-loop at $(date): \
