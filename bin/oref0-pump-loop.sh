@@ -34,11 +34,7 @@ smb_main() {
         && preflight \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
-        && ( smb_reservoir_before \
-            && smb_enact_temp \
-            && smb_verify_enacted \
-            && smb_verify_reservoir \
-            && smb_verify_status \
+        && ( smb_check_everything \
             && smb_bolus \
             && echo Completed supermicrobolus pump-loop at $(date): \
             && echo \
@@ -64,6 +60,21 @@ function smb_reservoir_before {
     && cp monitor/reservoir.json monitor/lastreservoir.json \
     && cat monitor/reservoir.json \
     && echo -n "monitor/pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description
+}
+
+function smb_check_everything {
+    # retry if first attempt fails
+    smb_reservoir_before \
+    && smb_enact_temp \
+    && smb_verify_enacted \
+    && smb_verify_reservoir \
+    && smb_verify_status
+    || ( smb_reservoir_before \
+        && smb_enact_temp \
+        && smb_verify_enacted \
+        && smb_verify_reservoir \
+        && smb_verify_status
+        )
 }
 
 function smb_enact_temp {
