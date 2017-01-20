@@ -29,9 +29,10 @@ smb_main() {
     # TODO: change wait_for_silence back to default (30s)
     # TODO: add smb_refresh_temp_and_enact before gather to set low temps quickly
     until ( \
-        echo Starting supermicrobolus pump-loop at $(date): \
-        && wait_for_silence 10 \
-        && mmtune \
+        echo \
+        && echo Starting supermicrobolus pump-loop at $(date): \
+        && wait_for_silence 30 \
+        && ( preflight || mmtune ) \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
         && ( smb_reservoir_before \
@@ -49,6 +50,7 @@ smb_main() {
                 && refresh_profile \
                 && refresh_pumphistory_24h \
                 && echo Completed pump-loop at $(date) \
+                && echo \
                 )
             )
         ); do
@@ -59,10 +61,10 @@ smb_main() {
 
 function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
-    gather
-    cp monitor/reservoir.json monitor/lastreservoir.json
-    cat monitor/reservoir.json
-    echo -n "monitor/pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description
+    gather \
+    && cp monitor/reservoir.json monitor/lastreservoir.json \
+    && cat monitor/reservoir.json \
+    && echo -n "monitor/pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description
 }
 
 function smb_enact_temp {
@@ -81,6 +83,7 @@ function smb_enact_temp {
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c .
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi \
+    && cp -up enact/smb-suggested.json enact/suggested.json \
     && cp -up enact/smb-enacted.json enact/enacted.json
 }
 
@@ -113,9 +116,9 @@ function smb_verify_status {
     # Read the pump status and verify it is not bolusing
     rm -rf monitor/status.json
     ( openaps invoke monitor/status.json || openaps invoke monitor/status.json ) 2>&1 | tail -1 \
-    && grep '"status": "normal"' monitor/status.json \
-    && grep '"bolusing": false' monitor/status.json \
-    && grep '"suspended": false' monitor/status.json
+    && grep -q '"status": "normal"' monitor/status.json \
+    && grep -q '"bolusing": false' monitor/status.json \
+    && grep -q '"suspended": false' monitor/status.json
 }
 
 function smb_bolus {
@@ -124,7 +127,7 @@ function smb_bolus {
     find enact/ -mmin -5 | grep smb-suggested.json \
     && if (grep '"units":' enact/smb-suggested.json); then
         echo 'Time to SMB' \
-        && openaps report invoke enact/bolused.json \
+        && openaps report invoke enact/bolused.json 2>&1 | tail -1 \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
@@ -141,6 +144,12 @@ function prep {
     fi
     # sleep a few seconds to avoid wait_for_silence synchronization
     sleep $[ ( $RANDOM / 2048 ) ]s
+}
+
+function preflight {
+    openaps report invoke settings/model.json 2>/dev/null >/dev/null \
+    && egrep -q "[57][23]" settings/model.json \
+    && echo -n "Preflight OK, "
 }
 
 function mmtune {
