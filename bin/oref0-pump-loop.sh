@@ -27,7 +27,7 @@ main() {
 smb_main() {
     prep
     # TODO: change wait_for_silence back to default (30s)
-    # TODO: add smb_refresh_temp_and_enact before gather to set low temps quickly
+    # TODO: add smb_refresh_temp_and_enact before gather (smb_reservoir_before) to set low temps quickly
     until ( \
         echo \
         && echo Starting supermicrobolus pump-loop at $(date): \
@@ -75,7 +75,8 @@ function smb_enact_temp {
     # openaps report add enact/smb-suggested.json JSON determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus
     # openaps report add enact/smb-enacted.json JSON pump set_temp_basal enact/smb-suggested.json
     # openaps report add enact/bolused.json JSON pump bolus enact/smb-suggested.json
-    openaps report invoke enact/smb-suggested.json \
+    echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>/dev/null >/dev/null && echo ed \
+    && openaps report invoke enact/smb-suggested.json \
     && if (echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json
