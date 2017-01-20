@@ -152,8 +152,8 @@ if (!module.parent) {
     var reservoir_data = null;
     if (reservoir_input && typeof reservoir_input != 'undefined') {
         try {
-            reservoir_data = JSON.parse(fs.readFileSync(reservoir_input, 'utf8'));
-            console.error(JSON.stringify(reservoir_data));
+            reservoir_data = fs.readFileSync(reservoir_input, 'utf8');
+            console.error(reservoir_data);
         } catch (e) {
             var msg = {
               msg: "Optional feature SuperMicroBolus (oref1) enabled, but could not read required reservoir data."
