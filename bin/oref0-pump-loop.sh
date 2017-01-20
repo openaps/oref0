@@ -90,15 +90,15 @@ function smb_enact_temp {
     # openaps report add enact/bolused.json JSON pump bolus enact/smb-suggested.json
     echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>/dev/null >/dev/null && echo ed \
     && openaps report invoke enact/smb-suggested.json \
+    && cp -up enact/smb-suggested.json enact/suggested.json \
     && if (echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json
         grep -q duration enact/smb-enacted.json || openaps invoke enact/smb-enacted.json
+        cp -up enact/smb-enacted.json enact/enacted.json
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c .
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi \
-    && cp -up enact/smb-suggested.json enact/suggested.json \
-    && cp -up enact/smb-enacted.json enact/enacted.json
 }
 
 function smb_verify_enacted {
