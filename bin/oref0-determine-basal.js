@@ -149,6 +149,7 @@ if (!module.parent) {
         }
       }
     }
+    var reservoir_data = null;
     if (reservoir_input && typeof reservoir_input != 'undefined') {
         try {
             reservoir_data = JSON.parse(fs.readFileSync(reservoir_input, 'utf8'));
