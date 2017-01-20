@@ -30,7 +30,7 @@ if (!module.parent) {
       .option('reservoir', {
         alias: 'r',
         describe: "Reservoir status file for SuperMicroBolus mode (oref1)",
-        default: true
+        default: false
 
       })
       .option('meal', {
