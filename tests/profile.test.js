@@ -57,4 +57,44 @@ describe('Profile', function ( ) {
 
     });
 
+
+	var currentTime = new Date();
+	var creationDate = new Date(currentTime.getTime() - (5 * 60 * 1000));
+
+    it('should create a profile with temptarget set', function() {
+        var profile = require('../lib/profile')(_.merge({}, baseInputs, { temptargets: [{'eventType':'Temporary Target', 'reason':'Eating Soon', 'targetTop':80, 'targetBottom':80, 'duration':20, 'created_at': creationDate}]}));
+        profile.max_iob.should.equal(0);
+        profile.dia.should.equal(3);
+        profile.sens.should.equal(100);
+        profile.current_basal.should.equal(1);
+        profile.max_bg.should.equal(80);
+        profile.min_bg.should.equal(80);
+        profile.carb_ratio.should.equal(20);
+		profile.temptargetSet.should.equal(true);
+    });
+
+
+	var pastDate = new Date(currentTime.getTime() - 90*60*1000);
+    it('should create a profile ignoring an out of date temptarget', function() {
+        var profile = require('../lib/profile')(_.merge({}, baseInputs, { temptargets: [{'eventType':'Temporary Target', 'reason':'Eating Soon', 'targetTop':80, 'targetBottom':80, 'duration':20, 'created_at': pastDate}]}));
+        profile.max_iob.should.equal(0);
+        profile.dia.should.equal(3);
+        profile.sens.should.equal(100);
+        profile.current_basal.should.equal(1);
+        profile.max_bg.should.equal(120);
+        profile.min_bg.should.equal(100);
+        profile.carb_ratio.should.equal(20);
+    });
+
+    it('should create a profile ignoring a temptarget with 0 duration', function() {
+        var profile = require('../lib/profile')(_.merge({}, baseInputs, { temptargets: [{'eventType':'Temporary Target', 'reason':'Eating Soon', 'targetTop':80, 'targetBottom':80, 'duration':0, 'created_at': creationDate}]}));
+        profile.max_iob.should.equal(0);
+        profile.dia.should.equal(3);
+        profile.sens.should.equal(100);
+        profile.current_basal.should.equal(1);
+        profile.max_bg.should.equal(120);
+        profile.min_bg.should.equal(100);
+        profile.carb_ratio.should.equal(20);
+    });
+
 });
