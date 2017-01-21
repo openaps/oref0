@@ -23,7 +23,7 @@ describe('Profile', function ( ) {
         , isf: {
             sensitivities: [
                 { offset: 0, i: 0, x: 0, start: '00:00:00', sensitivity: 100 },
-				{ offset: 480, i: 16, x: 1, start: '08:00:00', sensitivity: 80 },
+                { offset: 480, i: 16, x: 1, start: '08:00:00', sensitivity: 80 }
             ]
         }
         , carbratio: {
@@ -108,5 +108,23 @@ describe('Profile', function ( ) {
         profile.min_bg.should.equal(100);
         profile.carb_ratio.should.equal(20);
     });
+
+
+    it('should error with invalid DIA', function () {
+        var profile = require('../lib/profile')(_.merge({}, baseInputs, {settings: {insulin_action_curve: 1}}));
+        profile.should.equal(-1);
+    });
+
+    it('should error with a current basal of 0', function () {
+        var profile = require('../lib/profile')(_.merge({}, baseInputs, {basals: [{minutes: 0, rate: 0}]}));
+        profile.should.equal(-1);
+    });
+
+
+    it('should set the profile model from input', function () {
+        var profile = require('../lib/profile')(_.merge({}, baseInputs, {model: 554}));
+        profile.model.should.equal(554);
+    });
+
 
 });
