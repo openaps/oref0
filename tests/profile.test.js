@@ -58,6 +58,18 @@ describe('Profile', function ( ) {
     });
 
 
+    it('should should honour override_high_target_with_low', function () {
+        var profile = require('../lib/profile')(_.merge({}, baseInputs, {override_high_target_with_low: true}));
+        profile.max_iob.should.equal(0);
+        profile.dia.should.equal(3);
+        profile.sens.should.equal(100);
+        profile.current_basal.should.equal(1);
+        profile.max_bg.should.equal(100);
+        profile.min_bg.should.equal(100);
+        profile.carb_ratio.should.equal(20);
+    });
+
+
 	var currentTime = new Date();
 	var creationDate = new Date(currentTime.getTime() - (5 * 60 * 1000));
 
