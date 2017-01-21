@@ -28,7 +28,7 @@ smb_main() {
     prep
     # TODO: change wait_for_silence back to default (30s)
     # TODO: add smb_refresh_temp_and_enact before gather (smb_reservoir_before) to set low temps quickly
-    # TODO: only fall back to pump-loop if more than 10m since last bolus
+    # TODO: only fall back to pump-loop if more than 10m since last SMB
     until ( \
         echo && echo Starting supermicrobolus pump-loop at $(date): \
         && wait_for_silence 30 \
@@ -37,8 +37,8 @@ smb_main() {
         && refresh_old_profile \
         && ( smb_check_everything \
             && smb_bolus \
-            || ( \
-                echo "Not supermicrobolusing; falling back to normal pump-loop" \
+            || smb_old_temp && ( \
+                echo "; falling back to normal pump-loop" \
                 && refresh_temp_and_enact \
                 && refresh_pumphistory_and_enact \
                 && refresh_profile \
@@ -63,6 +63,13 @@ function smb_reservoir_before {
     && cp monitor/reservoir.json monitor/lastreservoir.json \
     && cat monitor/reservoir.json \
     && echo -n "monitor/pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description
+}
+
+function smb_old_temp {
+    (find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old) \
+    || ( jq ".duration, (.duration-1) % 30 < 20" monitor/temp_basal.json \
+        && echo Temp basal set more than 10m ago: && jq .duration monitor/temp_basal.json
+        )
 }
 
 function smb_check_everything {
