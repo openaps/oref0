@@ -114,8 +114,8 @@ function smb_verify_enacted {
     && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
         2>/dev/null >/dev/null && echo -n "ed: " \
     ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
-    && jq --slurp --exit-status '.[1].rate, .[1].duration, .[0].rate, .[0].duration' monitor/temp_basal.json enact/smb-suggested.json \
     && jq --slurp --exit-status 'if .[1].rate then (.[0].rate == .[1].rate and .[0].duration > .[1].duration - 5) else true end' monitor/temp_basal.json enact/smb-suggested.json
+    #&& jq --slurp --exit-status '.[1].rate, .[1].duration, .[0].rate, .[0].duration' monitor/temp_basal.json enact/smb-suggested.json \
     #) && grep '"rate": 0.0,' monitor/temp_basal.json
     #|| echo "WARNING: zero temp not running; continuing anyway"
 
