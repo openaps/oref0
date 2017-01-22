@@ -167,7 +167,7 @@ function prep {
         port=/dev/spidev5.1
     fi
     # sleep up to 30 seconds to avoid wait_for_silence synchronization
-    echo "Sleeping $upto30s; "
+    #echo "Sleeping $upto30s; "
     sleep $upto30s
 }
 
