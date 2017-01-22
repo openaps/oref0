@@ -144,9 +144,8 @@ function smb_bolus {
     # Verify that the suggested.json is less than 5 minutes old, and TODO: that the current time is prior to the timestamp by which the microbolus needs to be sent
     # Administer the supermicrobolus
     find enact/ -mmin -5 | grep smb-suggested.json \
-    && if (grep '"units":' enact/smb-suggested.json); then
-        echo 'Time to SMB' \
-        && openaps report invoke enact/bolused.json 2>&1 | tail -1 | grep -v reporting \
+    && if (grep -q '"units":' enact/smb-suggested.json); then
+        openaps report invoke enact/bolused.json 2>&1 | tail -1 | grep -v reporting \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else

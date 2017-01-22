@@ -153,7 +153,7 @@ if (!module.parent) {
     if (reservoir_input && typeof reservoir_input != 'undefined') {
         try {
             reservoir_data = fs.readFileSync(reservoir_input, 'utf8');
-            console.error(reservoir_data);
+            //console.error(reservoir_data);
         } catch (e) {
             var msg = {
               msg: "Warning: Could not read required reservoir data from "+reservoir_input+"."
