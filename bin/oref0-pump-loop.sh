@@ -124,12 +124,13 @@ function smb_verify_enacted {
 function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
-    (openaps invoke monitor/reservoir.json || openaps invoke monitor/reservoir.json) 2>&1 | tail -1 | grep -v reporting \
-    && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") )) \
-    && echo -n "Reservoir level before: " \
+    echo -n "Checking reservoir: " \
+    && (openaps invoke monitor/reservoir.json || openaps invoke monitor/reservoir.json) 2>&1 | tail -1 | grep -v reporting \
+    && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
     && echo -n " and after: " \
-    && cat monitor/reservoir.json && echo
+    && cat monitor/reservoir.json && echo \
+    && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") ))
 }
 
 function smb_verify_status {
