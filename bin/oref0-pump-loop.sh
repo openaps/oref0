@@ -27,7 +27,7 @@ main() {
 smb_main() {
     prep
     until ( \
-        echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s wait_for_silence: \
+        echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_silence $upto30s \
         && preflight \
         && refresh_old_pumphistory_24h \
@@ -157,9 +157,9 @@ function smb_bolus {
 }
 
 function prep {
-    upto10s=$[ ( $RANDOM / 3277 ) ]
-    upto20s=$[ ( $RANDOM / 1638 ) ]
-    upto30s=$[ ( $RANDOM / 1092 ) ]
+    upto10s=$[ ( $RANDOM / 3277 + 1) ]
+    upto20s=$[ ( $RANDOM / 1638 + 1) ]
+    upto30s=$[ ( $RANDOM / 1092 + 1) ]
     # read tty port from pump.ini
     eval $(grep port pump.ini | sed "s/ //g")
     # if that fails, try the Explorer board default port
