@@ -6,6 +6,7 @@ DOW=$(date +%u)
 
 if [ -z $myopenaps ] || [ -z $nsurl ]; then
   echo "Usage: $0 ~/myopenaps http://mynightscouthost.herokuapp.com"
+  exit
 fi
 
 # if we have a day of week profile file, copy that over before autotuning
