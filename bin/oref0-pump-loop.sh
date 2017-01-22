@@ -58,7 +58,6 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     gather \
     && cp monitor/reservoir.json monitor/lastreservoir.json \
-    && cat monitor/reservoir.json \
     && echo -n "monitor/pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description
 }
 
@@ -124,7 +123,7 @@ function smb_verify_enacted {
 function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
-    (openaps invoke monitor/reservoir.json || openaps invoke monitor/reservoir.json) 2>&1 | tail -1 \
+    (openaps invoke monitor/reservoir.json || openaps invoke monitor/reservoir.json) 2>&1 | tail -1 | grep -v reporting \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") )) \
     && echo -n "Reservoir level before: " \
     && cat monitor/lastreservoir.json \
@@ -135,7 +134,7 @@ function smb_verify_reservoir {
 function smb_verify_status {
     # Read the pump status and verify it is not bolusing
     rm -rf monitor/status.json
-    ( openaps invoke monitor/status.json || openaps invoke monitor/status.json ) 2>&1 | tail -1 \
+    ( openaps invoke monitor/status.json || openaps invoke monitor/status.json ) 2>&1 | tail -1 | grep -v reporting\
     && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
     && grep -q '"suspended": false' monitor/status.json
@@ -147,7 +146,7 @@ function smb_bolus {
     find enact/ -mmin -5 | grep smb-suggested.json \
     && if (grep '"units":' enact/smb-suggested.json); then
         echo 'Time to SMB' \
-        && openaps report invoke enact/bolused.json 2>&1 | tail -1 \
+        && openaps report invoke enact/bolused.json 2>&1 | tail -1 | grep -v reporting \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
