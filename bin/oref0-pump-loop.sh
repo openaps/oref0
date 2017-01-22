@@ -125,7 +125,7 @@ function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
     echo -n "Checking reservoir: " \
-    && (openaps invoke monitor/reservoir.json || openaps invoke monitor/reservoir.json) 2>&1 | tail -1 | grep -v reporting \
+    && (openaps invoke monitor/reservoir.json || openaps invoke monitor/reservoir.json) 2>&1 >/dev/null | tail -1 \
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
     && echo -n " and after: " \
@@ -136,7 +136,7 @@ function smb_verify_reservoir {
 function smb_verify_status {
     # Read the pump status and verify it is not bolusing
     rm -rf monitor/status.json
-    ( openaps invoke monitor/status.json || openaps invoke monitor/status.json ) 2>&1 | tail -1 | grep -v reporting\
+    ( openaps invoke monitor/status.json || openaps invoke monitor/status.json ) 2>&1 >/dev/null | tail -1 \
     && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
     && grep -q '"suspended": false' monitor/status.json
@@ -147,7 +147,7 @@ function smb_bolus {
     # Administer the supermicrobolus
     find enact/ -mmin -5 | grep smb-suggested.json \
     && if (grep -q '"units":' enact/smb-suggested.json); then
-        openaps report invoke enact/bolused.json 2>&1 | tail -1 | grep -v reporting \
+        openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
@@ -162,8 +162,8 @@ function prep {
     if [ -z $port ]; then
         port=/dev/spidev5.1
     fi
-    # sleep a few seconds to avoid wait_for_silence synchronization
-    sleep $[ ( $RANDOM / 2048 ) ]s
+    # sleep up to 20 seconds to avoid wait_for_silence synchronization
+    sleep $[ ( $RANDOM / 1638 ) ]s
 }
 
 function preflight {
