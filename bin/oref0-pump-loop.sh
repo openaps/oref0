@@ -99,8 +99,8 @@ function smb_enact_temp {
     && cp -up enact/smb-suggested.json enact/suggested.json \
     && if (echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json); then (
         rm enact/smb-enacted.json
-        openaps report invoke enact/smb-enacted.json
-        grep -q duration enact/smb-enacted.json || openaps invoke enact/smb-enacted.json
+        openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
+        grep -q duration enact/smb-enacted.json || openaps invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
         cp -up enact/smb-enacted.json enact/enacted.json
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c .
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
@@ -217,7 +217,7 @@ function gather {
 
 function enact {
     rm enact/suggested.json
-    openaps report invoke enact/suggested.json \
+    openaps report invoke enact/suggested.json 2>&1 >/dev/null | tail -1 \
     && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
         openaps report invoke enact/enacted.json
