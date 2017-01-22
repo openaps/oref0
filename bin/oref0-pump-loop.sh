@@ -34,7 +34,7 @@ smb_main() {
         && refresh_old_profile \
         && ( smb_check_everything \
             && smb_bolus \
-            || ! ( smb_old_temp && ( \
+            || ( smb_old_temp && ( \
                 echo "Falling back to normal pump-loop" \
                 && refresh_temp_and_enact \
                 && refresh_pumphistory_and_enact \
@@ -65,7 +65,7 @@ function smb_reservoir_before {
 function smb_old_temp {
     (find monitor/ -mmin +5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old) \
     || ( jq --exit-status "(.duration-1) % 30 < 20" monitor/temp_basal.json > /dev/null \
-        && echo -n Temp basal set more than 10m ago: && jq .duration monitor/temp_basal.json
+        && echo -n "Temp basal set more than 10m ago: " && jq .duration monitor/temp_basal.json
         )
 }
 
