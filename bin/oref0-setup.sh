@@ -404,7 +404,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
         # TODO: figure out best way to do this from https://github.com/EnhancedRadioDevices/ URL
-        echo Installing spi_serial && sudo pip install git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install spi_serial"
+        echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install spi_serial"
     fi
 
     echo Checking mraa installation
