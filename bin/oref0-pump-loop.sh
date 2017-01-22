@@ -63,8 +63,8 @@ function smb_reservoir_before {
 
 function smb_old_temp {
     (find monitor/ -mmin +5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old) \
-    || ( jq "(.duration-1) % 30 < 20" monitor/temp_basal.json \
-        && echo Temp basal set more than 10m ago: && jq .duration monitor/temp_basal.json
+    || ( jq "(.duration-1) % 30 < 20" monitor/temp_basal.json > /dev/null \
+        && echo -n Temp basal set more than 10m ago: && jq .duration monitor/temp_basal.json
         )
 }
 
