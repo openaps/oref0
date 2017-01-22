@@ -27,8 +27,8 @@ main() {
 smb_main() {
     prep
     until ( \
-        echo && echo Starting supermicrobolus pump-loop at $(date): \
-        && wait_for_silence 30 \
+        echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s wait_for_silence: \
+        && wait_for_silence $upto30s \
         && preflight \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
@@ -50,7 +50,8 @@ smb_main() {
             && echo \
     ); do
         echo Error, retrying && maybe_mmtune
-        sleep 5
+        echo "Sleeping $upto10s; "
+        sleep $upto10s
     done
 }
 
@@ -156,14 +157,18 @@ function smb_bolus {
 }
 
 function prep {
+    upto10s=[ ( $RANDOM / 3277 ) ]
+    upto20s=[ ( $RANDOM / 1638 ) ]
+    upto30s=[ ( $RANDOM / 1092 ) ]
     # read tty port from pump.ini
     eval $(grep port pump.ini | sed "s/ //g")
     # if that fails, try the Explorer board default port
     if [ -z $port ]; then
         port=/dev/spidev5.1
     fi
-    # sleep up to 20 seconds to avoid wait_for_silence synchronization
-    sleep $[ ( $RANDOM / 1638 ) ]s
+    # sleep up to 30 seconds to avoid wait_for_silence synchronization
+    echo "Sleeping $upto30s; "
+    sleep $upto30s
 }
 
 function preflight {
