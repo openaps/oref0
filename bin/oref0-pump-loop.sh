@@ -94,7 +94,7 @@ function smb_enact_temp {
     # openaps report add enact/smb-suggested.json JSON determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json
     # openaps report add enact/smb-enacted.json JSON pump set_temp_basal enact/smb-suggested.json
     # openaps report add enact/bolused.json JSON pump bolus enact/smb-suggested.json
-    echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>/dev/null >/dev/null && echo ed \
+    echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
     && openaps report invoke enact/smb-suggested.json 2>&1 >/dev/null | tail -1 \
     && cp -up enact/smb-suggested.json enact/suggested.json \
     && if (echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json); then (
@@ -113,7 +113,7 @@ function smb_verify_enacted {
     rm -rf monitor/temp_basal.json
     ( echo -n Temp refresh \
     && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
-        2>/dev/null >/dev/null && echo -n "ed: " \
+        2>&1 >/dev/null | tail -1 && echo -n "ed: " \
     ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
     && jq --slurp --exit-status 'if .[1].rate then (.[0].rate == .[1].rate and .[0].duration > .[1].duration - 5) else true end' monitor/temp_basal.json enact/smb-suggested.json > /dev/null
     #&& jq --slurp --exit-status '.[1].rate, .[1].duration, .[0].rate, .[0].duration' monitor/temp_basal.json enact/smb-suggested.json \
@@ -171,7 +171,7 @@ function prep {
 }
 
 function preflight {
-    openaps report invoke settings/model.json 2>/dev/null >/dev/null \
+    openaps report invoke settings/model.json 2>&1 >/dev/null | tail -1 \
     && egrep -q "[57][23]" settings/model.json \
     && echo -n "Preflight OK, "
 }
@@ -179,7 +179,7 @@ function preflight {
 function mmtune {
     reset_spi_serial.py 2>/dev/null
     echo {} > monitor/mmtune.json
-    echo -n "mmtune: " && openaps report invoke monitor/mmtune.json 2>/dev/null >/dev/null
+    echo -n "mmtune: " && openaps report invoke monitor/mmtune.json 2>&1 >/dev/null | tail -1
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
     done
@@ -209,11 +209,11 @@ function wait_for_silence {
 }
 
 function gather {
-    openaps report invoke monitor/status.json 2>/dev/null >/dev/null \
+    openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1 \
     && echo -n Ref \
     && test $(cat monitor/status.json | json bolusing) == false \
     && echo -n resh \
-    && ( openaps monitor-pump || openaps monitor-pump ) 2>/dev/null >/dev/null \
+    && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 | tail -1 \
     && echo ed pumphistory || (echo; exit 1) 2>/dev/null
 }
 
@@ -222,7 +222,7 @@ function enact {
     openaps report invoke enact/suggested.json 2>&1 >/dev/null | tail -1 \
     && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
-        openaps report invoke enact/enacted.json
+        openaps report invoke enact/enacted.json 2>&1 >/dev/null | tail -1
         grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>/dev/null
@@ -237,18 +237,18 @@ function refresh_old_pumphistory {
 function refresh_old_pumphistory_24h {
     find settings/ -mmin -120 -size +100c | grep -q pumphistory-24h-zoned \
     || ( echo -n Old pumphistory-24h refresh \
-        && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>/dev/null >/dev/null && echo ed )
+        && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed )
 }
 
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo Profile less than 60m old \
-    || (echo -n Old settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed )
+    || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo ed )
 }
 
 function refresh_temp_and_enact {
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
-            (echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>/dev/null >/dev/null && echo ed \
+            (echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
             && if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi)
@@ -269,13 +269,13 @@ function refresh_pumphistory_and_enact {
 
 function refresh_profile {
     find settings/ -mmin -10 -size +5c | grep -q settings.json && echo Settings less than 10m old \
-    || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed)
+    || (echo -n Settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo ed)
 }
 
 function refresh_pumphistory_24h {
     find settings/ -mmin -20 -size +100c | grep -q pumphistory-24h-zoned && echo Pumphistory-24 less than 20m old \
     || (echo -n pumphistory-24h refresh \
-        && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>/dev/null >/dev/null && echo ed)
+        && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed)
 }
 
 die() {
