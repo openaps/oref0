@@ -157,9 +157,9 @@ function smb_bolus {
 }
 
 function prep {
-    upto10s=[ ( $RANDOM / 3277 ) ]
-    upto20s=[ ( $RANDOM / 1638 ) ]
-    upto30s=[ ( $RANDOM / 1092 ) ]
+    upto10s=$[ ( $RANDOM / 3277 ) ]
+    upto20s=$[ ( $RANDOM / 1638 ) ]
+    upto30s=$[ ( $RANDOM / 1092 ) ]
     # read tty port from pump.ini
     eval $(grep port pump.ini | sed "s/ //g")
     # if that fails, try the Explorer board default port
