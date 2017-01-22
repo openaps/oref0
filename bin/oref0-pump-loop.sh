@@ -137,6 +137,8 @@ function smb_verify_reservoir {
 function smb_verify_status {
     # Read the pump status and verify it is not bolusing
     rm -rf monitor/status.json
+    echo -n "Checking pump status (suspended/bolusing): "
+    cat monitor/status.json | jq -C -c .
     ( openaps invoke monitor/status.json || openaps invoke monitor/status.json ) 2>&1 >/dev/null | tail -1 \
     && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
