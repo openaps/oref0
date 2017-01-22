@@ -34,7 +34,7 @@ smb_main() {
         && refresh_old_profile \
         && ( smb_check_everything \
             && smb_bolus \
-            || ( smb_old_temp && ( \
+            || ! ( smb_old_temp && ( \
                 echo "Falling back to normal pump-loop" \
                 && refresh_temp_and_enact \
                 && refresh_pumphistory_and_enact \
