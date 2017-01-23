@@ -95,7 +95,7 @@ function smb_enact_temp {
     # openaps report add enact/smb-enacted.json JSON pump set_temp_basal enact/smb-suggested.json
     # openaps report add enact/bolused.json JSON pump bolus enact/smb-suggested.json
     echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
-    && openaps report invoke enact/smb-suggested.json 2>&1 >/dev/null | tail -1 \
+    && openaps report invoke enact/smb-suggested.json \
     && cp -up enact/smb-suggested.json enact/suggested.json \
     && if (echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json); then (
         rm enact/smb-enacted.json
@@ -219,7 +219,7 @@ function gather {
 
 function enact {
     rm enact/suggested.json
-    openaps report invoke enact/suggested.json 2>&1 >/dev/null | tail -1 \
+    openaps report invoke enact/suggested.json \
     && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
         openaps report invoke enact/enacted.json 2>&1 >/dev/null | tail -1
