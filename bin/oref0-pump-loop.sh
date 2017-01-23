@@ -269,7 +269,7 @@ function refresh_pumphistory_and_enact {
 
 function refresh_profile {
     find settings/ -mmin -10 -size +5c | grep -q settings.json && echo Settings less than 10m old \
-    || (echo -n Settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo ed)
+    || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed)
 }
 
 function refresh_pumphistory_24h {
