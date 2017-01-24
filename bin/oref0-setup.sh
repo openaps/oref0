@@ -124,7 +124,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--max_daily_safety_multiplier=3] [--current_basal_safety_multiplier=4] [--bolussnooze_dia_divisor=4] [--min_5m_carbimpact=3] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--max_daily_safety_multiplier=3] [--current_basal_safety_multiplier=4] [--bolussnooze_dia_divisor=2] [--min_5m_carbimpact=3] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -321,23 +321,24 @@ cd $directory || die "Can't cd $directory"
 if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
     oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
 else
-    echo "{ " > preferences_from_args.json
+    preferences_from_args=()
     if [[ $max_iob -ne 0 ]]; then
-	echo -e "\"max_iob\": $max_iob,\n" >> preferences_from_args.json
+	preferences_from_args+="\"max_iob\": $max_iob"
     fi
     if [[ ! -z "$max_daily_safety_multiplier" ]]; then
-	echo -e "\"max_daily_safety_multiplier\": $max_daily_safety_multiplier,\n" >> preferences_from_args.json
+        preferences_from_args+="\"max_daily_safety_multiplier\": $max_daily_safety_multiplier"
     fi
     if [[ ! -z "$current_basal_safety_multiplier" ]]; then
-	echo -e "\"current_basal_safety_multiplier\": $current_basal_safety_multiplier,\n" >> preferences_from_args.json
+        preferences_from_args+="\"current_basal_safety_multiplier\": $current_basal_safety_multiplier"
     fi
     if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-	echo -e "\"bolussnooze_dia_divisor\": $bolussnooze_dia_divisor,\n" >> preferences_from_args.json
+        preferences_from_args+="\"bolussnooze_dia_divisor\": $bolussnooze_dia_divisor"
     fi
     if [[ ! -z "$min_5m_carbimpact" ]]; then
-	echo -e "\"min_5m_carbimpact\": $min_5m_carbimpact,\n" >> preferences_from_args.json
+        preferences_from_args+="\"min_5m_carbimpact\": $min_5m_carbimpact"
     fi
-    echo } >> preferences_from_args.json
+    function join_by { local IFS="$1"; shift; echo "$*"; }
+    echo "{ $(join_by , ${preferences_from_args[@]}) }" > preferences_from_args.json
     oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
 fi
 
