@@ -323,19 +323,19 @@ if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basa
 else
     preferences_from_args=()
     if [[ $max_iob -ne 0 ]]; then
-	preferences_from_args+="\"max_iob\": $max_iob"
+	preferences_from_args+="\"max_iob\":$max_iob "
     fi
     if [[ ! -z "$max_daily_safety_multiplier" ]]; then
-        preferences_from_args+="\"max_daily_safety_multiplier\": $max_daily_safety_multiplier"
+        preferences_from_args+="\"max_daily_safety_multiplier\":$max_daily_safety_multiplier "
     fi
     if [[ ! -z "$current_basal_safety_multiplier" ]]; then
-        preferences_from_args+="\"current_basal_safety_multiplier\": $current_basal_safety_multiplier"
+        preferences_from_args+="\"current_basal_safety_multiplier\":$current_basal_safety_multiplier "
     fi
     if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-        preferences_from_args+="\"bolussnooze_dia_divisor\": $bolussnooze_dia_divisor"
+        preferences_from_args+="\"bolussnooze_dia_divisor\":$bolussnooze_dia_divisor "
     fi
     if [[ ! -z "$min_5m_carbimpact" ]]; then
-        preferences_from_args+="\"min_5m_carbimpact\": $min_5m_carbimpact"
+        preferences_from_args+="\"min_5m_carbimpact\":$min_5m_carbimpact "
     fi
     function join_by { local IFS="$1"; shift; echo "$*"; }
     echo "{ $(join_by , ${preferences_from_args[@]}) }" > preferences_from_args.json
