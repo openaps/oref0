@@ -226,10 +226,10 @@ else
     echo -n TTY $ttyport
 fi
 if [[ "$max_iob" != "0" ]]; then echo -n ", max_iob $max_iob"; fi
-if [[ -z "$max_daily_safety_multiplier" ]]; then
+if [[ ! -z "$max_daily_safety_multiplier" ]]; then
     echo -n ", max_daily_safety_multiplier $max_daily_safety_multiplier";
 fi
-if [[ -z "$current_basal_safety_multiplier" ]]; then
+if [[ ! -z "$current_basal_safety_multiplier" ]]; then
     echo -n ", current_basal_safety_multiplier $current_basal_safety_multiplier";
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
@@ -245,10 +245,10 @@ if [[ ! -z "$ttyport" ]]; then
     echo -n " --tty=$ttyport"
 fi
 if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob"; fi
-if [[ "$max_daily_safety_multiplier" -ne 0 ]]; then
+if [[ ! -z "$max_daily_safety_multiplier" ]]; then
     echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier";
 fi
-if [[ "$current_basal_safety_multiplier" -ne 0 ]]; then
+if [[ ! -z "$current_basal_safety_multiplier" ]]; then
     echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier";
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
@@ -305,10 +305,10 @@ else
     if [[ $max_iob -ne 0 ]]; then
 	echo "{ \"max_iob\": $max_iob }" >> preferences_from_args.json
     fi
-    if [[ $max_daily_safety_multiplier -ne 0 ]]; then
+    if [[ ! -z "$max_daily_safety_multiplier" ]]; then
 	echo "{ \"max_daily_safety_multiplier\": $max_daily_safety_multiplier }" >> preferences_from_args.json
     fi
-    if [[ $current_basal_safety_multiplier -ne 0 ]]; then
+    if [[ ! -z "$current_basal_safety_multiplier" ]]; then
 	echo "{ \"current_basal_safety_multiplier\": $current_basal_safety_multiplier }" >> preferences_from_args.json
     fi
     oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
