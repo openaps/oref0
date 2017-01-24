@@ -61,6 +61,14 @@ case $i in
     current_basal_safety_multiplier="${i#*=}"
     shift # past argument=value
     ;;
+    -bdd=*|--bolussnooze_dia_divisor=*)
+    bolussnooze_dia_divisor="${i#*=}"
+    shift # past argument=value
+    ;;
+    -m5c=*|--min_5m_carbimpact=*)
+    min_5m_carbimpact="${i#*=}"
+    shift # past argument=value
+    ;;
     -c=*|--cgm=*)
     CGM="${i#*=}"
     shift # past argument=value
@@ -116,7 +124,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--max_daily_safety_multiplier=3] [--current_basal_safety_multiplier=4] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--max_daily_safety_multiplier=3] [--current_basal_safety_multiplier=4] [--bolussnooze_dia_divisor=4] [--min_5m_carbimpact=3] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -232,6 +240,12 @@ fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
     echo -n ", current_basal_safety_multiplier $current_basal_safety_multiplier";
 fi
+if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+    echo -n ", bolussnooze_dia_divisor $bolussnooze_dia_divisor";
+fi
+if [[ ! -z "$min_5m_carbimpact" ]]; then
+    echo -n ", min_5m_carbimpact $min_5m_carbimpact";
+fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
 
@@ -251,6 +265,10 @@ fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
     echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier";
 fi
+if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor";
+fi
+
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'"; fi
 echo; echo
@@ -298,7 +316,7 @@ if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No modul
 fi
 
 cd $directory || die "Can't cd $directory"
-if [[ "$max_iob" -eq 0 && ! -z "$max_daily_safety_multiplier" && ! -z "&current_basal_safety_multiplier" ]]; then
+if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
     oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
 else
     rm -f preferences_from_args.json
@@ -310,6 +328,12 @@ else
     fi
     if [[ ! -z "$current_basal_safety_multiplier" ]]; then
 	echo "{ \"current_basal_safety_multiplier\": $current_basal_safety_multiplier }" >> preferences_from_args.json
+    fi
+    if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+	echo "{ \"bolussnooze_dia_divisor\": $bolussnooze_dia_divisor }" >> preferences_from_args.json
+    fi
+    if [[ ! -z "$min_5m_carbimpact" ]]; then
+	echo "{ \"min_5m_carbimpact\": $min_5m_carbimpact }" >> preferences_from_args.json
     fi
     oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
 fi
