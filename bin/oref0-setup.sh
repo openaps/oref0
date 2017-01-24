@@ -53,6 +53,14 @@ case $i in
     max_iob="${i#*=}"
     shift # past argument=value
     ;;
+    -mdsm=*|--max_daily_safety_multiplier=*)
+    max_daily_safety_multiplier="${i#*=}"
+    shift # past argument=value
+    ;;
+    -cbsm=*|--current_basal_safety_multiplier=*)
+    current_basal_safety_multiplier="${i#*=}"
+    shift # past argument=value
+    ;;
     -c=*|--cgm=*)
     CGM="${i#*=}"
     shift # past argument=value
@@ -108,7 +116,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--max_daily_safety_multiplier=3] [--current_basal_safety_multiplier=4] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -218,6 +226,12 @@ else
     echo -n TTY $ttyport
 fi
 if [[ "$max_iob" != "0" ]]; then echo -n ", max_iob $max_iob"; fi
+if [[ "$max_daily_safety_multiplier" != "0" ]]; then
+    echo -n ", max_daily_safety_multiplier $max_daily_safety_multiplier";
+fi
+if [[ "$current_basal_safety_multiplier" != "0" ]]; then
+    echo -n ", current_basal_safety_multiplier $current_basal_safety_multiplier";
+fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
 
@@ -231,6 +245,12 @@ if [[ ! -z "$ttyport" ]]; then
     echo -n " --tty=$ttyport"
 fi
 if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob"; fi
+if [[ "$max_daily_safety_multiplier" -ne 0 ]]; then
+    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier";
+fi
+if [[ "$current_basal_safety_multiplier" -ne 0 ]]; then
+    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier";
+fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'"; fi
 echo; echo
@@ -278,10 +298,20 @@ if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No modul
 fi
 
 cd $directory || die "Can't cd $directory"
-if [[ "$max_iob" -eq 0 ]]; then
+if [[ "$max_iob" -eq 0 && ! -z "$max_daily_safety_multiplier" && ! -z "&current_basal_safety_multiplier" ]]; then
     oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
 else
-    echo "{ \"max_iob\": $max_iob }" > max_iob.json && oref0-get-profile --updatePreferences max_iob.json > preferences.json && rm max_iob.json || die "Could not run oref0-get-profile"
+    rm -f preferences_from_args.json
+    if [[ $max_iob -ne 0 ]]; then
+	echo "{ \"max_iob\": $max_iob }" >> preferences_from_args.json
+    fi
+    if [[ $max_daily_safety_multiplier -ne 0 ]]; then
+	echo "{ \"max_daily_safety_multiplier\": $max_daily_safety_multiplier }" >> preferences_from_args.json
+    fi
+    if [[ $current_basal_safety_multiplier -ne 0 ]]; then
+	echo "{ \"current_basal_safety_multiplier\": $current_basal_safety_multiplier }" >> preferences_from_args.json
+    fi
+    oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
 fi
 
 cat preferences.json
