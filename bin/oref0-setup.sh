@@ -268,7 +268,9 @@ fi
 if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
     echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor";
 fi
-
+if [[ ! -z "$min_5m_carbimpact" ]]; then
+    echo -n " --min_5m_carbimpact=$min_5m_carbimpact";
+fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'"; fi
 echo; echo
