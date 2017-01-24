@@ -323,19 +323,19 @@ if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basa
 else
     echo "{ " > preferences_from_args.json
     if [[ $max_iob -ne 0 ]]; then
-	echo "\"max_iob\": $max_iob,\n" >> preferences_from_args.json
+	echo -e "\"max_iob\": $max_iob,\n" >> preferences_from_args.json
     fi
     if [[ ! -z "$max_daily_safety_multiplier" ]]; then
-	echo "\"max_daily_safety_multiplier\": $max_daily_safety_multiplier,\n" >> preferences_from_args.json
+	echo -e "\"max_daily_safety_multiplier\": $max_daily_safety_multiplier,\n" >> preferences_from_args.json
     fi
     if [[ ! -z "$current_basal_safety_multiplier" ]]; then
-	echo "\"current_basal_safety_multiplier\": $current_basal_safety_multiplier,\n" >> preferences_from_args.json
+	echo -e "\"current_basal_safety_multiplier\": $current_basal_safety_multiplier,\n" >> preferences_from_args.json
     fi
     if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-	echo "\"bolussnooze_dia_divisor\": $bolussnooze_dia_divisor,\n" >> preferences_from_args.json
+	echo -e "\"bolussnooze_dia_divisor\": $bolussnooze_dia_divisor,\n" >> preferences_from_args.json
     fi
     if [[ ! -z "$min_5m_carbimpact" ]]; then
-	echo "\"min_5m_carbimpact\": $min_5m_carbimpact,\n" >> preferences_from_args.json
+	echo -e "\"min_5m_carbimpact\": $min_5m_carbimpact,\n" >> preferences_from_args.json
     fi
     echo } >> preferences_from_args.json
     oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
