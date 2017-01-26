@@ -59,7 +59,10 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     gather \
     && cp monitor/reservoir.json monitor/lastreservoir.json \
-    && echo -n "monitor/pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description
+    && echo -n "monitor/pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description \
+    && echo "Checking pump clock: " && cat monitor/clock-zoned.json \
+    && echo "is within 2m of current time: " && date \
+    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 120 ))
 }
 
 function smb_old_temp {
