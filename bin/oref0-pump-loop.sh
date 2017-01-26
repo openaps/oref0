@@ -137,11 +137,13 @@ function smb_verify_reservoir {
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
     && echo -n ", suggested: " \
-    && jq -C -c .reservoir enact/smb-suggested.json | while read i; do echo -n $i; done \
+    && jq -r -C -c .reservoir enact/smb-suggested.json | while read i; do echo -n $i; done \
     && echo -n " and after: " \
     && cat monitor/reservoir.json && echo \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") )) \
-    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) <= 0.1") ))
+    && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) >= 0") )) \
+    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) <= 0.1") )) \
+    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) >= 0") ))
 }
 
 function smb_verify_status {
