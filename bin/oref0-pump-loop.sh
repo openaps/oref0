@@ -136,6 +136,8 @@ function smb_verify_reservoir {
     && (openaps invoke monitor/reservoir.json || openaps invoke monitor/reservoir.json) 2>&1 >/dev/null | tail -1 \
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
+    && echo -n ", suggested: " \
+    && cat enact/smb-suggested.json | jq -C -c .reservoir \
     && echo -n " and after: " \
     && cat monitor/reservoir.json && echo \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") ))
