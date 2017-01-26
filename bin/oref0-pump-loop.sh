@@ -104,6 +104,7 @@ function smb_enact_temp {
     echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
     && openaps report invoke enact/smb-suggested.json \
     && cp -up enact/smb-suggested.json enact/suggested.json \
+    && smb_verify_suggested \
     && if (echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
@@ -144,6 +145,15 @@ function smb_verify_reservoir {
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) >= 0") )) \
     && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) <= 0.1") )) \
     && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) >= 0") ))
+}
+
+function smb_verify_suggested {
+    echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | tr -d '\n' \
+    && echo -n " is within 1m of current time: " && date \
+    && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") > -60 )) \
+    && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") < 60 )) \
+    && echo "and that smb-suggested.json is less than 1m old" \
+    && (find enact/ -mmin -1 -size +5c | grep -q smb-suggested.json)
 }
 
 function smb_verify_status {
