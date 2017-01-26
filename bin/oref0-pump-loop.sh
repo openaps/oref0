@@ -119,7 +119,7 @@ function smb_verify_enacted {
     # verify rate matches and duration is > 5m less than smb-suggested.json
     rm -rf monitor/temp_basal.json
     ( echo -n Temp refresh \
-    && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
+        && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
         2>&1 >/dev/null | tail -1 && echo -n "ed: " \
     ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
     && jq --slurp --exit-status 'if .[1].rate then (.[0].rate == .[1].rate and .[0].duration > .[1].duration - 5) else true end' monitor/temp_basal.json enact/smb-suggested.json > /dev/null
@@ -137,10 +137,11 @@ function smb_verify_reservoir {
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
     && echo -n ", suggested: " \
-    && cat enact/smb-suggested.json | jq -C -c .reservoir \
+    && jq -C -c .reservoir enact/smb-suggested.json | while read i; do echo -n $i; done \
     && echo -n " and after: " \
     && cat monitor/reservoir.json && echo \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") ))
+    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) <= 0.1") ))
 }
 
 function smb_verify_status {
