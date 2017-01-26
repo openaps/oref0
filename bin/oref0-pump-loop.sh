@@ -60,7 +60,7 @@ function smb_reservoir_before {
     gather \
     && cp monitor/reservoir.json monitor/lastreservoir.json \
     && echo -n "monitor/pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description \
-    && echo -n "Checking pump clock: " && (cat monitor/clock-zoned.json; echo) | while read i; do echo -n $i; done \
+    && echo -n "Checking pump clock: " && (cat monitor/clock-zoned.json; echo) | tr -d '\n' \
     && echo -n " is within 1m of current time: " && date \
     && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -60 )) \
     && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 60 )) \
@@ -137,7 +137,7 @@ function smb_verify_reservoir {
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
     && echo -n ", suggested: " \
-    && jq -r -C -c .reservoir enact/smb-suggested.json | while read i; do echo -n $i; done \
+    && jq -r -C -c .reservoir enact/smb-suggested.json | tr -d '\n' \
     && echo -n " and after: " \
     && cat monitor/reservoir.json && echo \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") )) \
