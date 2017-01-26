@@ -62,6 +62,7 @@ function smb_reservoir_before {
     && echo -n "monitor/pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description \
     && echo "Checking pump clock: " && cat monitor/clock-zoned.json | while read i; do echo -n $i; done \
     && echo -n "is within 2m of current time: " && date | while read i; do echo -n $i; done \
+    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -120 )) \
     && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 120 )) \
     && echo -n "and that pumphistory is less than 1m old" \
     && (find monitor/ -mmin -1 -size +5c | grep -q pumphistory)
