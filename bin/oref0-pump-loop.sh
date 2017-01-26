@@ -140,7 +140,7 @@ function smb_verify_reservoir {
     && jq -C -c .reservoir enact/smb-suggested.json | while read i; do echo -n $i; done \
     && echo -n " and after: " \
     && cat monitor/reservoir.json && echo \
-    && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") ))
+    && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") )) \
     && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) <= 0.1") ))
 }
 
