@@ -97,10 +97,6 @@ function smb_enact_temp {
     rm -rf enact/smb-suggested.json
     ls enact/smb-suggested.json 2>/dev/null && die "enact/suggested.json present"
     # Run determine-basal
-    # TODO: Add reports to oref0-setup:
-    # openaps report add enact/smb-suggested.json JSON determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json
-    # openaps report add enact/smb-enacted.json JSON pump set_temp_basal enact/smb-suggested.json
-    # openaps report add enact/bolused.json JSON pump bolus enact/smb-suggested.json
     echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
     && openaps report invoke enact/smb-suggested.json \
     && cp -up enact/smb-suggested.json enact/suggested.json \

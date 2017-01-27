@@ -542,6 +542,15 @@ if [[ $ENABLE =~ autotune ]]; then
     done
 fi
 
+# configure supermicrobolus if enabled
+if [[ $ENABLE =~ microbolus ]]; then
+    cd $directory || die "Can't cd $directory"
+    for type in supermicrobolus; do
+      echo importing $type file
+      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+fi
+
 # Create ~/.profile so that openaps commands can be executed from the command line
 # as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
 # TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299)
