@@ -210,8 +210,8 @@ function mmtune {
 function maybe_mmtune {
     # mmtune 8% of the time ((32k-30000)/32k)
     [[ $RANDOM > 30000 ]] \
-    && echo "Waiting for 45s silence before mmtuning" \
-    && wait_for_silence 45 \
+    && echo "Waiting for 30s silence before mmtuning" \
+    && wait_for_silence 30 \
     && mmtune
 }
 
@@ -223,7 +223,7 @@ function wait_for_silence {
     fi
     ((mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms) 2>&1 | tail -1 && echo -n Radio ok, || mmtune) \
     && echo -n " Listening: "
-    for i in $(seq 1 100); do
+    for i in $(seq 1 200); do
         echo -n .
         mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
         && break
