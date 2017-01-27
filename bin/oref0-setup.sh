@@ -364,6 +364,23 @@ elif [[ $ENABLE =~ autosens ]]; then
 elif [[ $ENABLE =~ meal ]]; then
     EXTRAS='"" monitor/meal.json'
 fi
+# Install EdisonVoltage
+if egrep -i "edison" /etc/passwd 2>/dev/null; then
+   echo "Checking if EdisonVoltage is already installed"
+   if [ -d "$HOME/src/EdisonVoltage/" ]; then
+      echo "EdisonVoltage already installed"
+   else
+      echo "Installing EdisonVoltage"
+      cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+      cd ~/src/EdisonVoltage
+      make voltage
+   fi
+   cd $directory || die "Can't cd $directory"
+   for type in edisonbattery; do
+     echo importing $type file
+     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+  done  
+fi
 
 echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
@@ -393,6 +410,10 @@ fi
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
 #truncate git history to 1000 commits if it has grown past 1500
 (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
+# Install EdisonVoltage
+if egrep -i "edison" /etc/passwd 2>/dev/null; then
+    (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps battery-status'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps battery-status' || openaps battery-status | tee -a /var/log/openaps/batterystatus-loop.log") | crontab -
+fi
 if ! [[ ${CGM,,} =~ "mdt" ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
 fi
