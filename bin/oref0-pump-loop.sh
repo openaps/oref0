@@ -168,7 +168,7 @@ function smb_verify_status {
 }
 
 function smb_bolus {
-    # Verify that the suggested.json is less than 5 minutes old, and TODO: that the current time is prior to the timestamp by which the microbolus needs to be sent
+    # Verify that the suggested.json is less than 5 minutes old
     # Administer the supermicrobolus
     find enact/ -mmin -5 | grep smb-suggested.json \
     && if (grep -q '"units":' enact/smb-suggested.json); then
