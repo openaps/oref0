@@ -22,12 +22,12 @@ echo -n "Searching for pump device: "
 # If it fails the second time exit with error status code
 loop=0
 until SERIAL_PORT=`oref0-get-pump-device`; do
-   if  [ "$loop" -gt "11" || "$loop" -gt "23" ]; then
+   if  [[ "$loop" -gt "11" || "$loop" -gt "23" ]]; then
       sudo oref0-reset-usb
       # wait a bit more to let everything settle back
       sleep 10
    fi
-   if ["$loop" -gt "30" ]; then
+   if [[ "$loop" -gt "30" ]]; then
       # exit the script with an error status
       exit 1
    fi

@@ -17,8 +17,8 @@ fi
 PORT=`grep port pump.ini | grep -v "^#" | sed -e 's/.*port.*=\(.*\)$/\1/g' | tr -d '[:blank:]'`
 
 echo $PORT
-if [[ ! -c "${PORT}" ]]; then # device exists and is a character device
-  exit 0
+if [[ -c "${PORT}" ]]; then # device exists and is a character device
+   exit 0
 else
    exit -1
 fi
