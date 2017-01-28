@@ -26,10 +26,6 @@ fi
 
 
 #decide to run urchin loop or not
-if [[ $(jq .urchin_loop_onlyoffline pancreoptions.json) = "true" ]]; then
-   if ! ( (curl -Is $NIGHTSCOUT_HOST | head -n 1) | grep -q "HTTP" ); then
-      openaps urchin-loop
-   fi
-else
+if [[ $(jq .urchin_loop_on pancreoptions.json) = "true" ]]; then
    openaps urchin-loop
 fi
