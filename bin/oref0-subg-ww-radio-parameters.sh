@@ -17,7 +17,7 @@ set -x
 # This script must be started from the openaps dir
 echo "Searching for pump device: "
 
-# We'l try to find the TI device
+# We'll try to find the TI device
 # If it does not exist we will use oref0-reset usb each minute (12*5 seconds) to get it back up
 # If it fails the second time exit with error status code
 loop=0
