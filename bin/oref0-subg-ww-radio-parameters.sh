@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# Set this to the serial port that your device is on: eg /dev/ttyACM0 or /dev/ttyMFD1
-# use oref0-find-ti-usb-device.sh to autodetect the ACM device of the TI USB stick
-SERIAL_PORT=`/usr/local/bin/oref0-find-ti`
-#SERIAL_PORT="/dev/ttyS0"
-echo Your TI-stick is located at $SERIAL_PORT
-
 # Set this to the directory where you've run this. By default:
 #     cd ~
 #     git clone https://github.com/ps2/subg_rfspy.git
@@ -18,6 +12,32 @@ SUBG_RFSPY_DIR=$HOME/src/subg_rfspy
 ################################################################################
 set -e
 set -x
+
+# We'll use the device that is set in the pump.ini config file in the openaps directory
+# This script must be started from the openaps dir
+echo -n "Searching for pump device: "
+
+# We'l try to find the TI device
+# If it does not exist we will use oref0-reset usb after a minute (12*5 seconds) to get it back up
+# If it fails the second time exit with error status code
+loop=0
+until SERIAL_PORT=`oref0-get-pump-device`; do
+   if  [ "$loop" -gt "11" || "$loop" -gt "23" ]; then
+      sudo oref0-reset-usb
+      # wait a bit more to let everything settle back
+      sleep 10
+   fi
+   if ["$loop" -gt "30" ]; then
+      # exit the script with an error status
+      exit 1
+   fi
+   echo -n "."
+   sleep 5
+   ((loop=loop+1))
+done
+
+echo
+echo Your TI device is located at $SERIAL_PORT
 
 cd $SUBG_RFSPY_DIR/tools
 
