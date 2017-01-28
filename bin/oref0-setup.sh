@@ -249,31 +249,34 @@ fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
 
-echo "To run again with these same options, use:"
-echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM"
+# This section is echoing (commenting) back the options you gave it during the interactive setup script.
+# The "| tee -a $directory/oref0-runagain.sh" part is also appending it to a file so you can run it again more easily in the future. 
+
+echo "# To run again with these same options, use:" | tee $directory/oref0-runagain.sh
+echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $directory/oref0-runagain.sh
 if [[ ${CGM,,} =~ "shareble" ]]; then
-    echo -n " --bleserial=$BLE_SERIAL"
+    echo -n " --bleserial=$BLE_SERIAL" | tee -a $directory/oref0-runagain.sh
 fi
-echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET"
+echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $directory/oref0-runagain.sh
 if [[ ! -z "$ttyport" ]]; then
-    echo -n " --tty=$ttyport"
+    echo -n " --tty=$ttyport" | tee -a $directory/oref0-runagain.sh
 fi
-if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob"; fi
+if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob" | tee -a $directory/oref0-runagain.sh; fi
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
-    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier";
+    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a $directory/oref0-runagain.sh
 fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
-    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier";
+    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier" | tee -a $directory/oref0-runagain.sh
 fi
 if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor";
+    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a $directory/oref0-runagain.sh
 fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
-    echo -n " --min_5m_carbimpact=$min_5m_carbimpact";
+    echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a $directory/oref0-runagain.sh
 fi
-if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
-if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'"; fi
-echo; echo
+if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a $directory/oref0-runagain.sh; fi
+if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a $directory/oref0-runagain.sh; fi
+echo; echo | tee -a $directory/oref0-runagain.sh
 
 read -p "Continue? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
