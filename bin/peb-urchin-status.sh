@@ -22,3 +22,14 @@ if [[ $(jq .notify_temp_basal pancreoptions.json) = "true" ]]; then
       openaps use pbbl notify "Set Temp Basal" "at $(date +%-I:%M%P): $(jq .rate enact/suggested.json) for $(jq .duration enact/suggested.json) minutes"
    fi
 fi
+
+
+
+#decide to run urchin loop or not
+if [[ $(jq .urchin_loop_onlyoffline pancreoptions.json) = "true" ]]; then
+   if ! ( (curl -Is $NIGHTSCOUT_HOST | head -n 1) | grep -q "HTTP" ); then
+      openaps urchin-loop
+   fi
+else
+   openaps urchin-loop
+fi
