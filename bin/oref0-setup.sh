@@ -296,7 +296,7 @@ test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var
 # configure ns
 if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
     echo "Removing any existing ns device: "
-    killall -g openaps 2>/dev/null; openaps device remove ns 2>/dev/null
+    ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
     echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
     nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
 fi
@@ -373,7 +373,7 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
-        killall -g openaps 2>/dev/null; openaps device remove ns 2>/dev/null
+        ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
         echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
     fi
@@ -408,7 +408,7 @@ fi
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
 echo "Removing any existing pump device:"
-killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
+( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
 
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
@@ -567,7 +567,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
     reset_spi_serial.py
 fi
 echo Attempting to communicate with pump:
-killall -g openaps
+( killall -g openaps; killall -g oref0-pump-loop)
 openaps mmtune
 echo
 
