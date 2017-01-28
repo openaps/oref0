@@ -172,13 +172,13 @@ do
     cp profile.json profile.$run_number.$i.json
     # Autotune Prep (required args, <pumphistory.json> <profile.json> <glucose.json>), output prepped glucose 
     # data or <autotune/glucose.json> below
-    echo "~/src/oref0/bin/oref0-autotune-prep.js ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json"
-    ~/src/oref0/bin/oref0-autotune-prep.js ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json
+    echo "oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json"
+    oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json
     
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 
     # output autotuned profile or what will be used as <autotune/autotune.json> in the next iteration
-    echo "~/src/oref0/bin/oref0-autotune-core.js autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json"
-    ~/src/oref0/bin/oref0-autotune-core.js autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json
+    echo "oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json"
+    oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json
     
     # Copy tuned profile produced by autotune to profile.json for use with next day of data
     cp newprofile.$run_number.$i.json profile.json

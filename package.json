@@ -52,6 +52,7 @@
     "oref0-get-profile": "./bin/oref0-get-profile.js",
     "oref0-html": "./bin/oref0-html.js",
     "oref0-ifttt-notify": "./bin/oref0-ifttt-notify",
+    "oref0-mdt-trend": "./bin/oref0-mdt-trend.js",
     "oref0-meal": "./bin/oref0-meal.js",
     "oref0-mint-max-iob": "./bin/oref0-mint-max-iob.sh",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
