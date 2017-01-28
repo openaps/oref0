@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# This script sets up an openaps environment to work with loop.sh,
-# by defining the required devices, reports, and aliases.
+# This script sets up an openaps environment by defining the required devices,
+# reports, and aliases, and optionally enabling it in cron.
 #
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
@@ -603,7 +603,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
     fi
     if [[ $ENABLE =~ microbolus ]]; then
-        (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'oref0-pump-loop.sh'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'oref0-pump-loop.sh' || ~/src/oref0/bin/oref0-pump-loop.sh --microbolus ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+        (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'oref0-pump-loop' || ~/src/oref0/bin/oref0-pump-loop.sh --microbolus ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
     else
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
     fi
