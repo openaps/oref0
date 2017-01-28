@@ -546,6 +546,7 @@ fi
 
 # configure supermicrobolus if enabled
 if [[ $ENABLE =~ microbolus ]]; then
+    sudo apt-get -y install bc
     cd $directory || die "Can't cd $directory"
     for type in supermicrobolus; do
       echo importing $type file
