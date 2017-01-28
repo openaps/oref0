@@ -455,8 +455,6 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
 fi
 grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
-echo "Removing any existing pump device:"
-killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
 
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
@@ -490,6 +488,8 @@ if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
 fi
 
 cd $directory || die "Can't cd $directory"
+echo "Removing any existing pump device:"
+killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
 if [[ -z "$ttyport" ]]; then
     openaps device add pump medtronic $serial || die "Can't add pump"
     # carelinks can't listen for silence or mmtune, so just do a preflight check instead
