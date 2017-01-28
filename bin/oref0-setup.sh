@@ -267,8 +267,9 @@ else
     (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
 echo Checking oref0 installation
-npm list -g oref0 | egrep oref0@0.3.[6-9] || (echo Installing latest oref0 && sudo npm install -g oref0)
-#(echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+# TODO: change back to packaged install before/when releasing to master
+#npm list -g oref0 | egrep oref0@0.3.[6-9] || (echo Installing latest oref0 && sudo npm install -g oref0)
+npm list -g oref0 | egrep oref0@0.3.[6-9] || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
 if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
@@ -412,7 +413,8 @@ killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
-        echo Installing spi_serial && sudo pip install git+https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW.git@master || die "Couldn't install spi_serial"
+        # TODO: figure out best way to do this from https://github.com/EnhancedRadioDevices/ URL
+        echo Installing spi_serial && sudo pip install git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install spi_serial"
     fi
 
     echo Checking mraa installation
