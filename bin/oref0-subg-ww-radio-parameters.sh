@@ -15,10 +15,10 @@ set -x
 
 # We'll use the device that is set in the pump.ini config file in the openaps directory
 # This script must be started from the openaps dir
-echo -n "Searching for pump device: "
+echo "Searching for pump device: "
 
 # We'l try to find the TI device
-# If it does not exist we will use oref0-reset usb after a minute (12*5 seconds) to get it back up
+# If it does not exist we will use oref0-reset usb each minute (12*5 seconds) to get it back up
 # If it fails the second time exit with error status code
 loop=0
 until SERIAL_PORT=`oref0-get-pump-device`; do
@@ -31,7 +31,6 @@ until SERIAL_PORT=`oref0-get-pump-device`; do
       # exit the script with an error status
       exit 1
    fi
-   echo -n "."
    sleep 5
    ((loop=loop+1))
 done
