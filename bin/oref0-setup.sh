@@ -319,10 +319,10 @@ echo Checking oref0 installation
 npm list -g oref0 | egrep oref0@0.3.[6-9] || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
-if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
+#if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
     echo Installing latest mmeowlink
     sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
-fi
+#fi
 
 cd $directory || die "Can't cd $directory"
 if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
