@@ -7,9 +7,9 @@ echo -n "At $(date) my public IP is: "
 if ! curl -m 15 icanhazip.com; then
     echo -n "Error, cycling networking "
     # simply restart networking completely for stability purposes
-    /etc/init.d/networking stop
+    sudo /etc/init.d/networking stop
     sleep 5
-    /etc/init.d/networking start
+    sudo /etc/init.d/networking start
     echo -n "and getting new wlan0 IP"
     ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
     sudo dhclient wlan0 -r
