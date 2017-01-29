@@ -1,6 +1,9 @@
 #!/bin/bash
 MAC=$1
-echo -n "At $(date) my IP is: "
+echo -n "At $(date) my local IP is: "
+ifconfig wlan0 | grep "inet " | awk '{print $2}' | awk -F : '{print $2}'
+ifconfig bnep0 | grep "inet " | awk '{print $2}' | awk -F : '{print $2}'
+echo -n "At $(date) my public IP is: "
 if ! curl -m 15 icanhazip.com; then
     echo -n "Error, cycling networking "
     # simply restart networking completely for stability purposes
@@ -12,7 +15,7 @@ if ! curl -m 15 icanhazip.com; then
     sudo dhclient wlan0 -r
     sudo dhclient wlan0
     echo
-    echo -n "At $(date) my IP is: "
+    echo -n "At $(date) my public IP is: "
     if ! curl -m 15 icanhazip.com; then
         echo -n "Error, connecting BT to $MAC "
         oref0-bluetoothup
@@ -20,7 +23,7 @@ if ! curl -m 15 icanhazip.com; then
         echo -n "and getting bnep0 IP"
         sudo dhclient bnep0
         echo
-        echo -n "At $(date) my IP is: "
+        echo -n "At $(date) my public IP is: "
         curl -m 15 icanhazip.com
         echo
     fi
