@@ -109,7 +109,7 @@ esac
 done
 
 if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G5, MDT or xdrip."
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G4-raw, G5, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -124,7 +124,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G4-raw|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -137,7 +137,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G5, MDT, xdrip) " -r
+    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G4-raw, G5, MDT, xdrip) " -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
@@ -249,31 +249,34 @@ fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
 
-echo "To run again with these same options, use:"
-echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM"
+# This section is echoing (commenting) back the options you gave it during the interactive setup script.
+# The "| tee -a /tmp/oref0-runagain.sh" part is also appending it to a file so you can run it again more easily in the future. 
+
+echo "# To run again with these same options, use:" | tee /tmp/oref0-runagain.sh
+echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a /tmp/oref0-runagain.sh
 if [[ ${CGM,,} =~ "shareble" ]]; then
-    echo -n " --bleserial=$BLE_SERIAL"
+    echo -n " --bleserial=$BLE_SERIAL" | tee -a /tmp/oref0-runagain.sh
 fi
-echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET"
+echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a /tmp/oref0-runagain.sh
 if [[ ! -z "$ttyport" ]]; then
-    echo -n " --tty=$ttyport"
+    echo -n " --tty=$ttyport" | tee -a /tmp/oref0-runagain.sh
 fi
-if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob"; fi
+if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob" | tee -a /tmp/oref0-runagain.sh; fi
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
-    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier";
+    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a /tmp/oref0-runagain.sh
 fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
-    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier";
+    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier" | tee -a /tmp/oref0-runagain.sh
 fi
 if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor";
+    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a /tmp/oref0-runagain.sh
 fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
-    echo -n " --min_5m_carbimpact=$min_5m_carbimpact";
+    echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a /tmp/oref0-runagain.sh
 fi
-if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
-if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'"; fi
-echo; echo
+if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a /tmp/oref0-runagain.sh; fi
+echo; echo | tee -a /tmp/oref0-runagain.sh
 
 read -p "Continue? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -288,6 +291,10 @@ else
     die "Can't init $directory"
 fi
 cd $directory || die "Can't cd $directory"
+
+# Taking the oref0-runagain.sh from tmp to $directory
+mv /tmp/oref0-runagain.sh ./
+
 mkdir -p monitor || die "Can't mkdir monitor"
 mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
 mkdir -p cgm || die "Can't mkdir cgm"
@@ -412,7 +419,8 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
     # comment out existing line if it exists and isn't already commented out
     sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
-
+fi
+if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
     mkdir -p $directory-cgm-loop
     if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
         echo $directory-cgm-loop already exists
@@ -435,21 +443,30 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
     fi
 
-    # import cgm-loop stuff
-    for type in cgm-loop; do
-        echo importing $type file
-        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-    done
+    if [[ ${CGM,,} =~ "g4-raw" ]]; then
+        sudo apt-get -y install bc
+        openaps device add cgm dexcom || die "Can't add CGM"
+        for type in cgm-loop; do
+            echo importing $type file
+            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+        done
+    elif [[ ${CGM,,} =~ "shareble" ]]; then
+        # import shareble stuff
+        for type in shareble cgm-loop; do
+            echo importing $type file
+            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+        done
 
-    if [[ -z "$BLE_MAC" ]]; then
-        read -p "Please go into your Dexcom's Share settings, forget any existing device, turn Share back on, and press Enter."
-        openaps use cgm list_dexcom
-        read -p "What is your G4 Share MAC address? (i.e. FE:DC:BA:98:78:54) " -r
-        BLE_MAC=$REPLY
-        echo "$BLE_MAC? Got it."
+        if [[ -z "$BLE_MAC" ]]; then
+            read -p "Please go into your Dexcom's Share settings, forget any existing device, turn Share back on, and press Enter."
+            openaps use cgm list_dexcom
+            read -p "What is your G4 Share MAC address? (i.e. FE:DC:BA:98:78:54) " -r
+            BLE_MAC=$REPLY
+            echo "$BLE_MAC? Got it."
+        fi
+        echo openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC
+        openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC || die "Couldn't configure Share serial and MAC"
     fi
-    echo openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC
-    openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC || die "Couldn't configure Share serial and MAC"
 
     cd $directory || die "Can't cd $directory"
 fi
@@ -605,6 +622,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
     reset_spi_serial.py
 fi
 echo Attempting to communicate with pump:
+killall -g openaps
 openaps mmtune
 echo
 
@@ -621,7 +639,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
     # truncate git history to 1000 commits if it has grown past 1500
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
-    if [[ ${CGM,,} =~ "shareble" ]]; then
+    if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
     elif [[ ${CGM,,} =~ "xdrip" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
