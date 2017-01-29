@@ -231,7 +231,7 @@ function gather {
     && echo -n Ref \
     && test $(cat monitor/status.json | json bolusing) == false \
     && echo -n resh \
-    && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 | tail -1 \
+    && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 >/dev/null | tail -1 \
     && echo ed pumphistory || (echo; exit 1) 2>/dev/null
 }
 
