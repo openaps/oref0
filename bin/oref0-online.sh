@@ -1,5 +1,6 @@
 #!/bin/bash
 MAC=$1
+MAC2=$2
 echo -n "At $(date) my local IP is: "
 ifconfig wlan0 | grep "inet " | awk '{print $2}' | awk -F : '{print $2}'
 ifconfig bnep0 | grep "inet " | awk '{print $2}' | awk -F : '{print $2}'
@@ -24,7 +25,17 @@ if ! curl -m 15 icanhazip.com; then
         sudo dhclient bnep0
         echo
         echo -n "At $(date) my public IP is: "
-        curl -m 15 icanhazip.com
+        if ! curl -m 15 icanhazip.com; then
+            if [[ ! -z "${MAC2}" ]]; then
+                echo -n "Error, connecting BT to $MAC2 "
+                oref0-bluetoothup
+                sudo bt-pan client $MAC2
+                echo -n "and getting bnep0 IP"
+                sudo dhclient bnep0
+                echo
+                echo -n "At $(date) my public IP is: "
+            fi
+        fi
         echo
     fi
 fi
