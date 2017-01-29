@@ -15,7 +15,7 @@ describe('Profile', function ( ) {
         , targets: {
             targets: [
                 { offset: 0, high: 120, low: 100 },
-				{ offset: 480, high: 115, low: 95}
+                { offset: 480, high: 115, low: 95}
             ]
         }
         , temptargets: [
