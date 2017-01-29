@@ -114,7 +114,7 @@
   },
   {
      "get-bg": {
-      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose-unzoned.json; openaps report invoke monitor/glucose.json\""
+      "command": "! bash -c \" (echo -n MDT CGM Data retrieve && openaps monitor-cgm 2>/dev/null >/dev/null && echo d) | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json && cp -pu cgm/glucose.json monitor/glucose-unzoned.json && (echo -n MDT CGM Data reformat && openaps report invoke monitor/glucose.json 2>/dev/null >/dev/null && echo ted)\""
      },
     "type": "alias",
     "name": "get-bg"
