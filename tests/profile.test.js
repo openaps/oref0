@@ -70,8 +70,8 @@ describe('Profile', function ( ) {
     });
 
 
-	var currentTime = new Date();
-	var creationDate = new Date(currentTime.getTime() - (5 * 60 * 1000));
+    var currentTime = new Date();
+    var creationDate = new Date(currentTime.getTime() - (5 * 60 * 1000));
 
     it('should create a profile with temptarget set', function() {
         var profile = require('../lib/profile')(_.merge({}, baseInputs, { temptargets: [{'eventType':'Temporary Target', 'reason':'Eating Soon', 'targetTop':80, 'targetBottom':80, 'duration':20, 'created_at': creationDate}]}));
@@ -82,11 +82,11 @@ describe('Profile', function ( ) {
         profile.max_bg.should.equal(80);
         profile.min_bg.should.equal(80);
         profile.carb_ratio.should.equal(20);
-		profile.temptargetSet.should.equal(true);
+        profile.temptargetSet.should.equal(true);
     });
 
 
-	var pastDate = new Date(currentTime.getTime() - 90*60*1000);
+    var pastDate = new Date(currentTime.getTime() - 90*60*1000);
     it('should create a profile ignoring an out of date temptarget', function() {
         var profile = require('../lib/profile')(_.merge({}, baseInputs, { temptargets: [{'eventType':'Temporary Target', 'reason':'Eating Soon', 'targetTop':80, 'targetBottom':80, 'duration':20, 'created_at': pastDate}]}));
         profile.max_iob.should.equal(0);
