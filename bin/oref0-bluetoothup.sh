@@ -1,5 +1,4 @@
 #!/bin/bash
-MAC=$1
 
 if ! ( hciconfig -a | grep -q "PSCAN" ) ; then
    sudo killall bluetoothd
