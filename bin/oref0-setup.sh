@@ -646,7 +646,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
     (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
     (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
-    (crontab -l; crontab -l | grep -q "killall -g --older-than 15m oref0" || echo '* * * * * ( killall -g --older-than 15m openaps; killall -g --older-than 15m oref0-pump-loop )') | crontab -
+    (crontab -l; crontab -l | grep -q "killall -g --older-than 15m oref0" || echo '* * * * * ( killall -g --older-than 15m openaps; killall -g --older-than 15m oref0-pump-loop; killall -g --older-than 15m openaps-report )') | crontab -
     # repair or reset git repository if it's corrupted or disk is full
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
     # truncate git history to 1000 commits if it has grown past 1500
