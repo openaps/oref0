@@ -343,10 +343,12 @@ echo Checking oref0 installation
 npm list -g oref0 | egrep oref0@0.3.[6-9] || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
 
 echo Checking mmeowlink installation
-if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
+#if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
+pip show mmeowlink | egrep "Version: 0.11." || (
     echo Installing latest mmeowlink
     sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
-fi
+)
+#fi
 
 cd $directory || die "Can't cd $directory"
 if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
@@ -501,6 +503,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
         # TODO: figure out best way to do this from https://github.com/EnhancedRadioDevices/ URL
+        # Opened https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW/issues/11 to discuss
         echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install spi_serial"
     fi
 
@@ -525,6 +528,7 @@ fi
 
 echo Checking openaps dev installation
 if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
+    # TODO: switch this back to master once https://github.com/openaps/openaps/pull/116 is merged/released
     echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
 fi
 
@@ -670,6 +674,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # truncate git history to 1000 commits if it has grown past 1500
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
     if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
+        # repair or reset cgm-loop git repository if it's corrupted or disk is full
+        (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-reset-git" || echo "* * * * * cd $directory-cgm-loop && oref0-reset-git") | crontab -
+        # truncate cgm-loop git history to 1000 commits if it has grown past 1500
+        (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-truncate-git-history" || echo "* * * * * cd $directory-cgm-loop && oref0-truncate-git-history") | crontab -
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
     elif [[ ${CGM,,} =~ "xdrip" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
@@ -695,7 +703,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
        (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB && openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB && openaps urchin-loop' || peb-urchin-status $BT_PEB && openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
     fi
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
-       (crontab -l; crontab -l | grep -q "oref0-bluetoothup $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup '$BT_MAC'" || oref0-bluetoothup '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
+       (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
     fi
     crontab -l
 fi
