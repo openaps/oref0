@@ -53,6 +53,22 @@ case $i in
     max_iob="${i#*=}"
     shift # past argument=value
     ;;
+    -mdsm=*|--max_daily_safety_multiplier=*)
+    max_daily_safety_multiplier="${i#*=}"
+    shift # past argument=value
+    ;;
+    -cbsm=*|--current_basal_safety_multiplier=*)
+    current_basal_safety_multiplier="${i#*=}"
+    shift # past argument=value
+    ;;
+    -bdd=*|--bolussnooze_dia_divisor=*)
+    bolussnooze_dia_divisor="${i#*=}"
+    shift # past argument=value
+    ;;
+    -m5c=*|--min_5m_carbimpact=*)
+    min_5m_carbimpact="${i#*=}"
+    shift # past argument=value
+    ;;
     -c=*|--cgm=*)
     CGM="${i#*=}"
     shift # past argument=value
@@ -218,6 +234,18 @@ else
     echo -n TTY $ttyport
 fi
 if [[ "$max_iob" != "0" ]]; then echo -n ", max_iob $max_iob"; fi
+if [[ ! -z "$max_daily_safety_multiplier" ]]; then
+    echo -n ", max_daily_safety_multiplier $max_daily_safety_multiplier";
+fi
+if [[ ! -z "$current_basal_safety_multiplier" ]]; then
+    echo -n ", current_basal_safety_multiplier $current_basal_safety_multiplier";
+fi
+if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+    echo -n ", bolussnooze_dia_divisor $bolussnooze_dia_divisor";
+fi
+if [[ ! -z "$min_5m_carbimpact" ]]; then
+    echo -n ", min_5m_carbimpact $min_5m_carbimpact";
+fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
 
@@ -231,6 +259,18 @@ if [[ ! -z "$ttyport" ]]; then
     echo -n " --tty=$ttyport"
 fi
 if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob"; fi
+if [[ ! -z "$max_daily_safety_multiplier" ]]; then
+    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier";
+fi
+if [[ ! -z "$current_basal_safety_multiplier" ]]; then
+    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier";
+fi
+if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor";
+fi
+if [[ ! -z "$min_5m_carbimpact" ]]; then
+    echo -n " --min_5m_carbimpact=$min_5m_carbimpact";
+fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'"; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'"; fi
 echo; echo
@@ -278,10 +318,28 @@ if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No modul
 fi
 
 cd $directory || die "Can't cd $directory"
-if [[ "$max_iob" -eq 0 ]]; then
+if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
     oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
 else
-    echo "{ \"max_iob\": $max_iob }" > max_iob.json && oref0-get-profile --updatePreferences max_iob.json > preferences.json && rm max_iob.json || die "Could not run oref0-get-profile"
+    preferences_from_args=()
+    if [[ $max_iob -ne 0 ]]; then
+	preferences_from_args+="\"max_iob\":$max_iob "
+    fi
+    if [[ ! -z "$max_daily_safety_multiplier" ]]; then
+        preferences_from_args+="\"max_daily_safety_multiplier\":$max_daily_safety_multiplier "
+    fi
+    if [[ ! -z "$current_basal_safety_multiplier" ]]; then
+        preferences_from_args+="\"current_basal_safety_multiplier\":$current_basal_safety_multiplier "
+    fi
+    if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+        preferences_from_args+="\"bolussnooze_dia_divisor\":$bolussnooze_dia_divisor "
+    fi
+    if [[ ! -z "$min_5m_carbimpact" ]]; then
+        preferences_from_args+="\"min_5m_carbimpact\":$min_5m_carbimpact "
+    fi
+    function join_by { local IFS="$1"; shift; echo "$*"; }
+    echo "{ $(join_by , ${preferences_from_args[@]}) }" > preferences_from_args.json
+    oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
 fi
 
 cat preferences.json
@@ -404,7 +462,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
         # TODO: figure out best way to do this from https://github.com/EnhancedRadioDevices/ URL
-        echo Installing spi_serial && sudo pip install git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install spi_serial"
+        echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install spi_serial"
     fi
 
     echo Checking mraa installation
