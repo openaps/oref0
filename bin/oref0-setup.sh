@@ -101,6 +101,10 @@ case $i in
     BT_PEB="${i#*=}"
     shift # past argument=value
     ;;
+    --ti_usb_ww=*)
+    TI_USB_WW="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -124,7 +128,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G4-raw|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G4-raw|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ti_usb_ww=(yes|no)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -168,6 +172,19 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       echo -n "Ok, "
       # Force uppercase, just in case the user entered ww
       radio_locale=${radio_locale^^}
+
+      # check if user has a TI USB stick and a WorldWide pump and want's to reset the USB subsystem during mmtune if the TI USB fails
+      ti_usb_ww0="no" # assume you don't want it by default
+      ti_usb_ww1=""
+      if [[ $radio_locale =~ ^WW$ ]]; then
+        echo "If you have a TI USB stick and a WW pump, you might want to reset the USB subsystem if it can't be found during a mmtune process"
+        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? Use y if so. Otherwise just hit enter: " -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+          ti_usb_ww="yes"
+        else
+          ti_usb_ww="no" 
+        fi
+      fi
 
       if [[ -z "${radio_locale}" ]]; then
           radio_locale='US'
@@ -220,6 +237,12 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             ENABLE+=" meal "
         fi
     fi
+else 
+   if [[ $TI_USB_WW =~ ^[Yy] ]]; then
+      ti_usb_ww="yes"
+   else
+      ti_usb_ww0"no"
+   fi
 fi
 
 echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
@@ -276,6 +299,7 @@ if [[ ! -z "$min_5m_carbimpact" ]]; then
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a /tmp/oref0-runagain.sh; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ ! -z "$ti_usb_ww" ]]; then echo -n " --ti_usb_ww='$ti_usb_ww'" | tee -a /tmp/oref0-runagain.sh; fi
 echo; echo | tee -a /tmp/oref0-runagain.sh
 
 read -p "Continue? y/[N] " -r
@@ -302,7 +326,7 @@ mkdir -p settings || die "Can't mkdir settings"
 mkdir -p enact || die "Can't mkdir enact"
 mkdir -p upload || die "Can't mkdir upload"
 if [[ ${CGM,,} =~ "xdrip" ]]; then
-	mkdir -p xdrip || die "Can't mkdir xdrip"
+   mkdir -p xdrip || die "Can't mkdir xdrip"
 fi
 
 mkdir -p $HOME/src/
@@ -330,7 +354,7 @@ if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basa
 else
     preferences_from_args=()
     if [[ $max_iob -ne 0 ]]; then
-	preferences_from_args+="\"max_iob\":$max_iob "
+    preferences_from_args+="\"max_iob\":$max_iob "
     fi
     if [[ ! -z "$max_daily_safety_multiplier" ]]; then
         preferences_from_args+="\"max_daily_safety_multiplier\":$max_daily_safety_multiplier "
@@ -520,11 +544,17 @@ else
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
     if [[ ${radio_locale,,} =~ "ww" ]]; then
       # add subg-ww-radio-parameters script to mmtune for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; \/usr\/local\/bin\/oref0-subg-ww-radio-parameters-timeout; \2/g' openaps.ini
+      # append --resetusb if using a TI USB stick
+      if [[ $ti_usb_ww =~ ^[Yy] ]]; then
+        ti_usb_ww1="--resetusb"
+      else  
+        ti_usb_ww1=""
+      fi
+      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; oref0-subg-ww-radio-parameters.py $ti_usb_ww1 ; \2/g' openaps.ini
 
-       # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
-       # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-       grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+      # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowli/issues/55
+      # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+      grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
     fi
 fi
 
