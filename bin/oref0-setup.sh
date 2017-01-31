@@ -479,6 +479,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
         # TODO: figure out best way to do this from https://github.com/EnhancedRadioDevices/ URL
+        # Opened https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW/issues/11 to discuss
         echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install spi_serial"
     fi
 
@@ -503,6 +504,7 @@ fi
 
 echo Checking openaps dev installation
 if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
+    # TODO: switch this back to master once https://github.com/openaps/openaps/pull/116 is merged/released
     echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
 fi
 
