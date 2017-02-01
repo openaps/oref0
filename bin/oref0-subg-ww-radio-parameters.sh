@@ -16,11 +16,6 @@ set -x
 echo
 echo Your TI device is located at $SERIAL_PORT
 
-if [ -c $SERIAL_PORT]; 
-  echo "ERROR: TI device is not found or not a serial device. Make sure you set SERIAL_PORT environment variable to the right file"
-  exit 1 
-fi
-
 # change to subg_rfspy tools directory
 cd $SUBG_RFSPY_DIR/tools
 
