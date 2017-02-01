@@ -2,7 +2,8 @@
 
 # This script is a wrapper for the subg ww script
 # It handles a timeout in case the subg ww script hangs (otherwise it would hold the pump-loop)
-# And it also resets the usb if --resetusb is set (recommended for TI USB stick)
+# It also resets the usb if --resetusb is set (recommended for TI USB stick)
+# It also issues the reset.py script of if --resetpy is set (recommand for all others)
 
 import argparse
 import configparser
@@ -49,6 +50,7 @@ def run_script(args):
            logging.error("port is not set in pump.ini. Please set port to your serial device, e.g. /dev/mmeowlink")
            sys.exit(1)
 
+        # step 3: with a II USB stick the device/symlink can disappear for unknown reasons. Restarting the USB subsystem seems to work
         tries=0   
         while (not os.path.exists(pump_port)) and tries<2:
            logging.error("pump port %s does not exist" % pump_port)
@@ -62,19 +64,27 @@ def run_script(args):
            else: # if not --resetusb then quit the loop
              break
 
+        # step 4: set environment variable
+        os.environ["RFSPY_RTSCTS"]=str(args.rfsypy_rtscts)
+        logging.debug("env RFSPY_RTSCTS=%s" % os.environ["RFSPY_RTSCTS"] )
+
+        # step 5: use reset.py 
+        if args.resetpy:
+           cmd="oref0-subg-ww-radio-parameters %s --resetpy" % pump_port
+           logging.debug("excuting %s" % cmd)
+           exitcode=subprocess.call("reset.py", shell=True, timeout=args.timeout)
+           logging.debug("script exited with %s" % exitcode)
+           logging.debug("sleeping for %s seconds " % args.wait)
+           time.sleep(args.wait)
+
         if not os.path.exists(pump_port):
            logging.error("pump port %s does not exist. Exiting with status code 1" % pump_port")
            sys.exit(1)
 
-
-        # step 3: set environment variables
-        os.environ["RFSPY_RTSCTS"]=str(args.rfsypy_rtscts)
-        logging.debug("env RFSPY_RTSCTS=%s" % os.environ["RFSPY_RTSCTS"] )
-        os.environ["SERIAL_PORT"]=pump_port
-        logging.debug("env SERIAL_PORT=%s" % pump_port)
-
-        # step 4: call the main script and wait for a timeout
-        exitcode=subprocess.call("oref0-subg-ww-radio-parameters", shell=False, timeout=args.timeout)
+        # step 6: now set the subg ww radio parameters
+        cmd="oref0-subg-ww-radio-parameters %s" % pump_port
+        logging.debug("excuting %s" % cmd)
+        exitcode=subprocess.call(cmd, shell=False, timeout=args.timeout)
         logging.debug("script exited with %s" % exitcode)
         sys.exit(exitcode) # propagate exit code from oref0-subg-ww-radio-parameters
         
@@ -90,9 +100,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Wrapper for setting World Wide radio parameters to a Medtronic pump for TI chip')
     parser.add_argument('-d', '--dir', help='openaps dir', default='.')
     parser.add_argument('-t', '--timeout', type=int, help='timeout value for script', default=30)
-    parser.add_argument('-w', '--wait', type=int, help='wait time after command', default=60)
+    parser.add_argument('-w', '--wait', type=int, help='wait time after command', default=30)
     parser.add_argument('--pump_ini', help='filename for pump config file', default='pump.ini')
-    #parser.add_argument('--resetpy', action="store_true", help='use reset.py script from subg_rfspy', default=True)
+    parser.add_argument('--resetpy', action="store_true", help='use reset.py script from subg_rfspy')
     parser.add_argument('--resetusb', action="store_true", help='call oref0_reset_usb command if serial pump device is not found', default=False)
     parser.add_argument('--rfsypy_rtscts', type=int, help='sets the RFSPY_RTSCTS environment variable (set to 0 for ERF and TI USB)', default=0)
     parser.add_argument('-v', '--verbose', action="store_true", help='increase output verbosity')

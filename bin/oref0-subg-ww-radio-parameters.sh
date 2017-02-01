@@ -1,10 +1,13 @@
 #!/bin/bash
 
+# set SERIAL_PORT from environment variable, or first argument, or default to /dev/mmeowlink
+SERIAL_PORT=${SERIAL_PORT-${1-/dev/mmeowlink}}
+
 # It requires subg_rfspy in installed. This can be installated with
 #     cd ~/src
 #     git clone https://github.com/ps2/subg_rfspy.git
-#
-SUBG_RFSPY_DIR=$HOME/src/subg_rfspy
+# set SUBG_RFSPY_DIR to environment variable or default to $HOME/src/subg_rfspy
+SUBG_RFSPY_DIR=${SUBG_RFSPY_DIR-${$HOME/src/subg_rfspy}}
 
 # If you're on an ERF or TI USB, set this to 0:
 #export RFSPY_RTSCTS=0
@@ -25,9 +28,14 @@ cd $SUBG_RFSPY_DIR/tools
 #echo
 
 # Disabled Reset to defaults, because it can hang the pump loop with TI USB stick
-# ./reset.py $SERIAL_PORT
-
-sleep 2
+# Enable it with --resetpy
+case "$2" in
+  --resetpy)
+    ./reset.py $SERIAL_PORT
+    sleep 2
+    exit 0
+    ;;
+esac
 
 ./change_setting.py $SERIAL_PORT 0x06 0x00          # CHANNR
 

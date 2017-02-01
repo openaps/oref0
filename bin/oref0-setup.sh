@@ -552,9 +552,9 @@ else
       if [[ $ti_usb_ww =~ ^[Yy] ]]; then
         ti_usb_ww1="--resetusb"
       else  
-        ti_usb_ww1=""
+        ti_usb_ww1="--resetpy"
       fi
-      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; oref0-subg-ww-radio-parameters.py $ti_usb_ww1 ; \2/g' openaps.ini
+      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; oref0-subg-ww-radio-parameters.py '$ti_usb_ww1' ; \2/g' openaps.ini
 
       # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowli/issues/55
       # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
