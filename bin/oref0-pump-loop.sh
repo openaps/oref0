@@ -177,6 +177,8 @@ function smb_bolus {
 }
 
 function prep {
+    set -o pipefail
+
     upto10s=$[ ( $RANDOM / 3277 + 1) ]
     upto20s=$[ ( $RANDOM / 1638 + 1) ]
     upto30s=$[ ( $RANDOM / 1092 + 1) ]
