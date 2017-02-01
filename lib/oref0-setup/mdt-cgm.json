@@ -38,14 +38,25 @@
       "input": "raw-cgm/raw-entries.json",
       "device": "glucose",
       "timezone": "",
-      "infile": "monitor/cgm-mm-glucosedirty.json"
+      "infile": "monitor/cgm-mm-glucosetrend.json"
+    }
+  },
+  {
+    "type": "report",
+    "name": "monitor/cgm-mm-glucosetrend.json",
+    "monitor/cgm-mm-glucosetrend.json": {
+      "device": "oref0",
+      "remainder": "mdt-trend monitor/cgm-mm-glucosedirty.json",
+      "use": "shell",
+      "json_default": "True",
+      "reporter": "JSON"
     }
   },
   {
     "type": "alias",
     "name": "monitor-cgm",
     "monitor-cgm": {
-      "command": "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose.json"
+      "command": "report invoke monitor/cgm-mm-glucosedirty.json monitor/cgm-mm-glucosetrend.json cgm/cgm-glucose.json"
     }
   },
     {
