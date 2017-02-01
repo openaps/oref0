@@ -76,6 +76,7 @@ def run_script(args):
         # step 4: call the main script and wait for a timeout
         exitcode=subprocess.call("oref0-subg-ww-radio-parameters", shell=False, timeout=args.timeout)
         logging.debug("script exited with %s" % exitcode)
+        sys.exit(exitcode) # propagate exit code from oref0-subg-ww-radio-parameters
         
     except subprocess.TimeoutExpired:
         logging.error("TimeoutExpired. Killing process")
