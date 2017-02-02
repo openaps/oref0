@@ -286,7 +286,7 @@
       "json_default": "True",
       "carb_ratios": "settings/carb_ratios.json",
       "device": "get-profile",
-      "remainder": "settings/temptargets.json",
+      "remainder": "settings/temptargets.json --model=settings/model.json",
       "isf": "settings/insulin_sensitivities.json"
     },
     "type": "report",
@@ -354,5 +354,16 @@
     },
     "type": "report",
     "name": "settings/insulin_sensitivities_raw.json"
+  },
+  {
+    "type": "report",
+    "name": "xdrip/glucose.json",
+    "xdrip/glucose.json": {      
+      "device": "xdrip",
+	    "remainder": "",	  
+      "use": "shell",
+	    "json_default": "True",
+      "reporter": "text"
+    }
   }
 ]

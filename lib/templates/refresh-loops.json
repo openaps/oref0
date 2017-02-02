@@ -561,7 +561,7 @@
     "type": "alias",
     "name": "bg-fresh-check",
     "bg-fresh-check": {
-      "command": "! bash -c \"cat cgm/glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 6 && minAgo > 0 && this.glucose > 30\\\" | grep -q glucose\""
+      "command": "! bash -c \"cat cgm/glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 6 && minAgo > 0 && this.glucose > 38\\\" | grep -q glucose\""
     }
   },
   {
@@ -575,7 +575,7 @@
     "type": "alias",
     "name": "get-ns-bg",
     "get-ns-bg": {
-      "command": "! bash -c \"openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 30\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
+      "command": "! bash -c \"openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
     }
   },
   {
@@ -652,7 +652,7 @@
     "type": "alias",
     "name": "enact",
     "enact": {
-      "command": "! bash -c \"rm enact/suggested.json; openaps invoke enact/suggested.json && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then ( rm enact/enacted.json; openaps invoke enact/enacted.json ; grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \\\"^  |subg_rfspy|handler\\\" ; grep incorrectly enact/suggested.json && ~/src/oref0/bin/clockset.sh 2>/dev/null; cat enact/enacted.json | json -0; fi\""
+      "command": "! bash -c \"rm enact/suggested.json; openaps invoke enact/suggested.json && if (cat enact/suggested.json | json -0 && grep -q duration enact/suggested.json); then ( rm enact/enacted.json; openaps invoke enact/enacted.json ; grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \\\"^  |subg_rfspy|handler\\\" ; grep incorrectly enact/suggested.json && ~/src/oref0/bin/clockset.sh 2>/dev/null; cat enact/enacted.json | json -0; fi\""
     }
   },
   {
@@ -675,20 +675,6 @@
     },
     "type": "alias",
     "name": "pebble"
-  },
-  {
-    "prep-pumphistory-entries": {
-      "command": "! bash -c \"cat monitor/pumphistory-zoned.json | json -e \\\"this.dateString = this.timestamp\\\" | json -e \\\"this.medtronic = this._type\\\" | json -e \\\"this.type = \\\\\\\"medtronic\\\\\\\"\\\" | json -e \\\"this.date = new Date(Date.parse(this.timestamp)).getTime( )\\\" > upload/pumphistory-entries.json\""
-    },
-    "type": "alias",
-    "name": "prep-pumphistory-entries"
-  },
-  {
-    "type": "alias",
-    "name": "upload-pumphistory-entries",
-    "upload-pumphistory-entries": {
-      "command": "! bash -c \"openaps prep-pumphistory-entries && ns-upload-entries upload/pumphistory-entries.json\""
-    }
   },
   {
     "type": "alias",
