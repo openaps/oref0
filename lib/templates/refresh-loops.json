@@ -652,7 +652,7 @@
     "type": "alias",
     "name": "enact",
     "enact": {
-      "command": "! bash -c \"rm enact/suggested.json; openaps invoke enact/suggested.json && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then ( rm enact/enacted.json; openaps invoke enact/enacted.json ; grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \\\"^  |subg_rfspy|handler\\\" ; grep incorrectly enact/suggested.json && ~/src/oref0/bin/clockset.sh 2>/dev/null; cat enact/enacted.json | json -0; fi\""
+      "command": "! bash -c \"rm enact/suggested.json; openaps invoke enact/suggested.json && if (cat enact/suggested.json | json -0 && grep -q duration enact/suggested.json); then ( rm enact/enacted.json; openaps invoke enact/enacted.json ; grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \\\"^  |subg_rfspy|handler\\\" ; grep incorrectly enact/suggested.json && ~/src/oref0/bin/clockset.sh 2>/dev/null; cat enact/enacted.json | json -0; fi\""
     }
   },
   {
@@ -675,20 +675,6 @@
     },
     "type": "alias",
     "name": "pebble"
-  },
-  {
-    "prep-pumphistory-entries": {
-      "command": "! bash -c \"cat monitor/pumphistory-zoned.json | json -e \\\"this.dateString = this.timestamp\\\" | json -e \\\"this.medtronic = this._type\\\" | json -e \\\"this.type = \\\\\\\"medtronic\\\\\\\"\\\" | json -e \\\"this.date = new Date(Date.parse(this.timestamp)).getTime( )\\\" > upload/pumphistory-entries.json\""
-    },
-    "type": "alias",
-    "name": "prep-pumphistory-entries"
-  },
-  {
-    "type": "alias",
-    "name": "upload-pumphistory-entries",
-    "upload-pumphistory-entries": {
-      "command": "! bash -c \"openaps prep-pumphistory-entries && ns-upload-entries upload/pumphistory-entries.json\""
-    }
   },
   {
     "type": "alias",

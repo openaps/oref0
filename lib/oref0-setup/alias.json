@@ -10,7 +10,7 @@
     "type": "alias",
     "name": "mmtune",
     "mmtune": {
-      "command": "! bash -c \"reset_spi_serial.py 2>/dev/null; echo {} > monitor/mmtune.json; echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json 2>/dev/null >/dev/null; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \\\"$line \\\"; done\""
+      "command": "! bash -c \"reset_spi_serial.py 2>/dev/null; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \\\"$line \\\"; done\""
     }
   },
   {
@@ -176,7 +176,7 @@
   },
   {
     "pump-loop": {
-      "command": "! bash -c \"sleep $[ ( $RANDOM / 2048 ) ]s; until(echo Starting pump-loop at $(date): && openaps wait-for-silence && openaps refresh-old-pumphistory && openaps refresh-old-pumphistory-24h && openaps refresh-old-profile && openaps refresh-temp-and-enact && openaps refresh-pumphistory-and-enact && openaps refresh-profile && openaps refresh-pumphistory-24h && echo Completed pump-loop at $(date) && echo); do echo Error, retrying && [[ $RANDOM > 28000 ]] && openaps wait-for-long-silence && openaps mmtune; sleep 5; done\""
+      "command": "! bash -c \"sleep $[ ( $RANDOM / 2048 ) ]s; until(echo Starting pump-loop at $(date): && openaps wait-for-silence && openaps refresh-old-pumphistory && openaps refresh-old-pumphistory-24h && openaps refresh-old-profile && openaps refresh-temp-and-enact && openaps refresh-pumphistory-and-enact && openaps refresh-profile && openaps refresh-pumphistory-24h && echo Completed pump-loop at $(date) && echo); do echo Error, retrying && [[ $RANDOM > 25000 ]] && openaps wait-for-long-silence && openaps mmtune; sleep 5; done\""
     },
     "type": "alias",
     "name": "pump-loop"
@@ -243,5 +243,12 @@
     "upload": {
       "command": "! bash -c \"echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed\""
     }
+  },
+  {
+    "type": "alias",
+    "name": "monitor-xdrip",
+    "monitor-xdrip": {
+      "command": "report invoke xdrip/glucose.json"
   }
+}
 ]

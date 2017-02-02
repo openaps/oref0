@@ -1,0 +1,7 @@
+{
+	"urchin_loop_on": true,
+	"urchin_loop_status": false,	
+	"urchin_iob": true,
+	"urchin_temp_rate": false,
+	"notify_temp_basal": false
+}
