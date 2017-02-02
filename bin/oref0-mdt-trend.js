@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-function findRecord(arr, tell) {
+function findRecord(arr, tell, date) {
 	for (var i = 0; i < arr.length; ++i)
 	{
-		if (arr[i]._tell == tell)
+		if (arr[i]._tell == tell && arr[i].date == date)
 		{
 			return i;
 		}
@@ -45,7 +45,7 @@ if (!module.parent) {
 
   for (var i = 0; i < filtered.length; ++i) {
 	var record = filtered[i];
-	var output_record = glucose_data[findRecord(glucose_data, record._tell)];
+	var output_record = glucose_data[findRecord(glucose_data, record._tell, record.date)];
 	var current_date = Date.parse(record.date);
 
 	var delta = 0; //record.sgv - last_glucose;
