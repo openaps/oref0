@@ -316,9 +316,9 @@ fi
 echo Checking oref0 installation
 
 if git branch | grep "* master"; then
-    npm list -g oref0 | egrep oref0@0.3.[6-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
+    npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
 else
-    npm list -g oref0 | egrep oref0@0.3.[6-9] || (echo Installing latest oref0 from ~/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+    npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 from ~/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
 fi
 
 echo Checking mmeowlink installation
