@@ -209,6 +209,6 @@ if [[ $RECOMMENDS_REPORT == "true" ]]; then
   # Run the Autotune Recommends Report
   oref0-autotune-recommends-report $directory
 
-  # Go ahead and echo autotune_recommendations.log to the terminal
-  cat $report_file
+  # Go ahead and echo autotune_recommendations.log to the terminal, minus blank lines
+  cat $report_file | egrep -v "\| *\| *$"
 fi
