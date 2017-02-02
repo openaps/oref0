@@ -1,0 +1,11 @@
+[
+  {
+    "type": "device",
+    "cgm": {
+      "vendor": "openaps.vendors.dexcom",
+      "extra": "cgm.ini"
+    },
+    "name": "cgm",
+    "extra": {}
+  }
+]

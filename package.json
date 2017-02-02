@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.3.7-dev",
+  "version": "0.4.0",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -72,7 +72,7 @@
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
-    "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh"    
+    "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh"
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
@@ -83,6 +83,7 @@
     "share2nightscout-bridge": "^0.1.5",
     "moment-timezone": "0.5.11",
     "yargs": "~4.3.2"
+    "json": "~9.0.4"
   },
   "devDependencies": {
     "coveralls": "^2.11.12",
