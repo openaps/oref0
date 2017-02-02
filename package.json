@@ -82,7 +82,7 @@
     "request": "^2.79.0",
     "share2nightscout-bridge": "^0.1.5",
     "moment-timezone": "0.5.11",
-    "yargs": "~4.3.2"
+    "yargs": "~4.3.2",
     "json": "~9.0.4"
   },
   "devDependencies": {
