@@ -650,7 +650,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # repair or reset git repository if it's corrupted or disk is full
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
     # truncate git history to 1000 commits if it has grown past 1500
-    (crontab -l; crontab -l | grep -q "oref0-truncate-git-history" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q oref0-truncate-git-history && oref0-truncate-git-history") | crontab -
+    (crontab -l; crontab -l | grep -q "oref0-truncate-git-history" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q oref0-truncate-git-history || oref0-truncate-git-history") | crontab -
     if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
         # repair or reset cgm-loop git repository if it's corrupted or disk is full
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-reset-git" || echo "* * * * * cd $directory-cgm-loop && oref0-reset-git") | crontab -
