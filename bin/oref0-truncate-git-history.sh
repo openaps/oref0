@@ -33,6 +33,7 @@ esac
 
 # remove old lockfile if still present
 find .git/index.lock -mmin +60 -exec rm {} \; 2>/dev/null
+find .git/refs/heads/master.lock -mmin +60 -exec rm {} \; 2>/dev/null
 
 commits=$(git log | grep -c commit)
 if (( $commits > 5000 )); then
