@@ -31,8 +31,10 @@ smb_main() {
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_silence $upto30s \
         && preflight \
+        && refresh_old_pumphistory \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
+        && refresh_smb_temp_and_enact \
         && ( smb_check_everything \
             && smb_bolus \
             || ( smb_old_temp && ( \
@@ -266,6 +268,14 @@ function refresh_old_profile {
     || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo ed )
 }
 
+function refresh_smb_temp_and_enact {
+    if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json ) \
+        || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
+            smb_enact_temp
+    else
+        echo temp_basal.json less than 5m old
+    fi
+}
 function refresh_temp_and_enact {
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
