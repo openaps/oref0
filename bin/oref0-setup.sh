@@ -540,11 +540,6 @@ fi
 if [[ ${CGM,,} =~ "mdt" ]]; then
     sudo pip install -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
     openaps device remove cgm 2>/dev/null
-    if [[ -z "$ttyport" ]]; then
-        openaps device add cgm medtronic $serial || die "Can't add cgm"
-    else
-        openaps device add cgm mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add cgm"
-    fi
     for type in mdt-cgm; do
         echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
