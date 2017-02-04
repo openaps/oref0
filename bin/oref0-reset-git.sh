@@ -51,3 +51,5 @@ fi
 
 (git status && git diff && git symbolic-ref HEAD && ! df | grep 100% && ! df -i | grep 100%) > /dev/null || (echo "Saving backup to: $BACKUP" > /dev/stderr; mv .git $BACKUP; rm -rf .git; openaps init . )
 
+#clean out any tmp_pack_ stuff from $BACKUP
+find $BACKUP -name tmp_pack_* -exec rm {} \;
