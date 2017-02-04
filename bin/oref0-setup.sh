@@ -635,6 +635,14 @@ echo
 
 read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
+
+    echo Saving existing crontab to $HOME/crontab.txt:
+    crontab -l | tee $HOME/crontab.txt
+    read -p "Would you like to remove your existing crontab first? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        crontab -r
+    fi
+
 # add crontab entries
     (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
     (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
