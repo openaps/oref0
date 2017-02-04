@@ -206,6 +206,10 @@ function mmtune {
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
     done
+    if grep '"usedDefault": true' monitor/mmtune.json; then
+        echo "Pump out of range; waiting for 60 second silence before continuing"
+        wait_for_silence 60
+    fi
 }
 
 function maybe_mmtune {
