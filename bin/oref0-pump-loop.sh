@@ -25,8 +25,8 @@ main() {
 
 # main supermicrobolus loop
 smb_main() {
-    prep
     until ( \
+        prep
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_silence $upto30s \
         && preflight \
