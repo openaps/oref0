@@ -10,7 +10,7 @@
     "type": "alias",
     "name": "mmtune",
     "mmtune": {
-      "command": "! bash -c \"echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json 2>/dev/null >/dev/null; grep -v setFreq monitor/mmtune.json | grep -A2 `json -a setFreq -f monitor/mmtune.json` | while read line; do echo -n \\\"$line \\\"; done\""
+      "command": "! bash -c \"reset_spi_serial.py 2>/dev/null; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \\\"$line \\\"; done\""
     }
   },
   {
@@ -51,7 +51,7 @@
   {
     "type": "alias",
     "ns-temptargets": {
-      "command": "! bash -c \"curl -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[created_at\\]\\[\\$gte\\]=`date -d \\\"6 hours ago\\\" -Iminutes`&find\\[eventType\\]\\[\\$regex\\]=Target\\\" > settings/temptargets.json; openaps report invoke settings/profile.json 2>/dev/null >/dev/null; exit 0 \""
+      "command": "! bash -c \"curl -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[created_at\\]\\[\\$gte\\]=$(date -d \\\"6 hours ago\\\" -Iminutes)&find\\[eventType\\]\\[\\$regex\\]=Target\\\" > settings/temptargets.json; openaps report invoke settings/profile.json 2>/dev/null >/dev/null; exit 0 \""
     },
     "name": "ns-temptargets"
   },
@@ -73,12 +73,12 @@
     "type": "alias",
     "name": "bg-fresh-check",
     "bg-fresh-check": {
-      "command": "! bash -c \"cat cgm/glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 6 && minAgo > 0 && this.glucose > 30\\\" | grep -q glucose\""
+      "command": "! bash -c \"cat cgm/glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 6 && minAgo > 0 && this.glucose > 38\\\" | grep -q glucose\""
     }
   },
   {
     "get-bg": {
-      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose.json && rsync -rtu cgm/cgm-glucose.json cgm/glucose.json; rsync -rtu cgm/glucose.json monitor/glucose.json\""
+      "command": "! bash -c \"openaps monitor-cgm 2>&1 | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
     },
     "type": "alias",
     "name": "get-bg"
@@ -87,7 +87,7 @@
     "type": "alias",
     "name": "get-ns-bg",
     "get-ns-bg": {
-      "command": "! bash -c \"openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 30\\\" | grep -q glucose && rsync -rtu cgm/ns-glucose.json cgm/glucose.json; rsync -rtu cgm/glucose.json monitor/glucose.json\""
+      "command": "! bash -c \"openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
     }
   },
   {
@@ -100,7 +100,7 @@
   {
     "type": "alias",
     "autosens": {
-      "command": "! bash -c \"(find settings/ -newer settings/autosens.json | grep -q pumphistory-24h-zoned.json || find settings/ -size -5c | grep -q autosens.json || ! find settings/ | grep -q autosens || ! find settings/autosens.json) && openaps invoke settings/autosens.json\""
+      "command": "! bash -c \"date; (find settings/ -newer settings/autosens.json | grep -q pumphistory-24h-zoned.json || find settings/ -size -5c | grep -q autosens.json || ! find settings/ | grep -q autosens || ! find settings/autosens.json) && openaps invoke settings/autosens.json\""
     },
     "name": "autosens"
   },
@@ -164,19 +164,19 @@
     "type": "alias",
     "name": "enact",
     "enact": {
-      "command": "! bash -c \"rm enact/suggested.json; openaps invoke enact/suggested.json && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then ( rm enact/enacted.json; openaps invoke enact/enacted.json ; grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \\\"^  |subg_rfspy|handler\\\" ; grep incorrectly enact/suggested.json && ~/src/oref0/bin/clockset.sh 2>/dev/null; cat enact/enacted.json | json -0; fi\""
+      "command": "! bash -c \"rm enact/suggested.json; openaps invoke enact/suggested.json && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then ( rm enact/enacted.json; openaps invoke enact/enacted.json ; grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \\\"^  |subg_rfspy|handler\\\"; fi; grep incorrectly enact/suggested.json && oref0-set-system-clock 2>/dev/null; cat enact/enacted.json | json -0\""
     }
   },
   {
     "type": "alias",
     "name": "ns-loop",
     "ns-loop": {
-      "command": "! bash -c \"echo Starting ns-loop at `date`: && openaps get-ns-bg; openaps autosens; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps upload\""
+      "command": "! bash -c \"echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps upload\""
     }
   },
   {
     "pump-loop": {
-      "command": "! bash -c \"sleep $[ ( $RANDOM / 2048 ) ]s; until(echo Starting pump-loop at `date`: && openaps wait-for-silence && openaps refresh-old-pumphistory && openaps refresh-old-pumphistory-24h && openaps refresh-old-profile && openaps refresh-temp-and-enact && openaps refresh-pumphistory-and-enact && openaps refresh-profile && openaps refresh-pumphistory-24h && echo Completed pump-loop at `date` && echo); do echo Error, retrying && [[ $RANDOM > 30000 ]] && openaps wait-for-long-silence && openaps mmtune; sleep 5; done\""
+      "command": "! bash -c \"sleep $[ ( $RANDOM / 2048 ) ]s; until(echo Starting pump-loop at $(date): && openaps wait-for-silence && openaps refresh-old-pumphistory && openaps refresh-old-pumphistory-24h && openaps refresh-old-profile && openaps refresh-temp-and-enact && openaps refresh-pumphistory-and-enact && openaps refresh-profile && openaps refresh-pumphistory-24h && echo Completed pump-loop at $(date) && echo); do echo Error, retrying && [[ $RANDOM > 25000 ]] && openaps wait-for-long-silence && openaps mmtune; sleep 5; done\""
     },
     "type": "alias",
     "name": "pump-loop"
@@ -187,20 +187,6 @@
     },
     "type": "alias",
     "name": "pebble"
-  },
-  {
-    "prep-pumphistory-entries": {
-      "command": "! bash -c \"cat monitor/pumphistory-zoned.json | json -e \\\"this.dateString = this.timestamp\\\" | json -e \\\"this.medtronic = this._type\\\" | json -e \\\"this.type = \\\\\\\"medtronic\\\\\\\"\\\" | json -e \\\"this.date = new Date(Date.parse(this.timestamp)).getTime( )\\\" > upload/pumphistory-entries.json\""
-    },
-    "type": "alias",
-    "name": "prep-pumphistory-entries"
-  },
-  {
-    "type": "alias",
-    "name": "upload-pumphistory-entries",
-    "upload-pumphistory-entries": {
-      "command": "! bash -c \"openaps prep-pumphistory-entries && ns-upload-entries upload/pumphistory-entries.json\""
-    }
   },
   {
     "type": "alias",
@@ -243,5 +229,12 @@
     "upload": {
       "command": "! bash -c \"echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed\""
     }
+  },
+  {
+    "type": "alias",
+    "name": "monitor-xdrip",
+    "monitor-xdrip": {
+      "command": "report invoke xdrip/glucose.json"
   }
+}
 ]

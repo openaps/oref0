@@ -49,7 +49,7 @@
   },
   {
     "extra": {
-      "fields": "pumphistory profile clock carbs glucose basal",
+      "fields": "pumphistory profile clock glucose basal carbs",
       "cmd": "oref0",
       "args": "meal"
     },
@@ -140,5 +140,18 @@
     "type": "device",
     "name": "units",
     "extra": {}
+  },
+  {
+    "xdrip": {
+      "vendor": "openaps.vendors.process",
+      "extra": "xdrip.ini"
+    },
+    "type": "device",
+    "name": "xdrip",
+    "extra": {
+      "fields": "",
+      "cmd": "bash -c \"curl -s http://localhost:5000/api/v1/entries?count=288 | json -e \\\"this.glucose = this.sgv\\\"\"",
+      "args": ""
+    }
   }
 ]

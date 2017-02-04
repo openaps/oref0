@@ -10,7 +10,7 @@ Dev code coverage: [![Coverage Status](https://coveralls.io/repos/github/openaps
 
 Install tools globally:
 
-`sudo npm install -g oref0`
+`npm run global-install`
 
 ## Usage
 
