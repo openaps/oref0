@@ -273,7 +273,7 @@ if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
 
 # This section is echoing (commenting) back the options you gave it during the interactive setup script.
-# The "| tee -a /tmp/oref0-runagain.sh" part is also appending it to a file so you can run it again more easily in the future. 
+# The "| tee -a /tmp/oref0-runagain.sh" part is also appending it to a file so you can run it again more easily in the future.
 
 echo "# To run again with these same options, use:" | tee /tmp/oref0-runagain.sh
 echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a /tmp/oref0-runagain.sh
@@ -338,9 +338,12 @@ else
     (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
 echo Checking oref0 installation
-# TODO: change back to packaged install before/when releasing to master
-#npm list -g oref0 | egrep oref0@0.3.[6-9] || (echo Installing latest oref0 && sudo npm install -g oref0)
-npm list -g oref0 | egrep oref0@0.3.[6-9] || (echo Installing latest oref0 dev && cd $HOME/src/oref0/ && npm run global-install)
+
+if git branch | grep "* master"; then
+    npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
+else
+    npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 from ~/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+fi
 
 echo Checking mmeowlink installation
 #if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
@@ -700,7 +703,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
     if [[ ! -z "$BT_PEB" ]]; then
-       (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB && openaps urchin-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB && openaps urchin-loop' || peb-urchin-status $BT_PEB && openaps urchin-loop ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
+       (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
     fi
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
        (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
