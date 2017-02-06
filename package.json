@@ -73,7 +73,7 @@
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh",
     "wifi": "./bin/oref0-tail-wifi.sh"
-},
+  },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
     "lodash": "^4.15.0",
