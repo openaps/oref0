@@ -285,6 +285,7 @@ if [[ ! -z "$min_5m_carbimpact" ]]; then
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a /tmp/oref0-runagain.sh; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
 echo; echo | tee -a /tmp/oref0-runagain.sh
 
 read -p "Continue? y/[N] " -r
@@ -489,9 +490,7 @@ git add .gitignore
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
-        # TODO: figure out best way to do this from https://github.com/EnhancedRadioDevices/ URL
-        # Opened https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW/issues/11 to discuss
-        echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install spi_serial"
+        echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
     fi
 
     echo Checking mraa installation
@@ -653,6 +652,14 @@ echo
 
 read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
+
+    echo Saving existing crontab to $HOME/crontab.txt:
+    crontab -l | tee $HOME/crontab.old.txt
+    read -p "Would you like to remove your existing crontab first? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        crontab -r
+    fi
+
 # add crontab entries
     (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
     (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
@@ -700,7 +707,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
        (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
     fi
-    crontab -l
+    crontab -l | tee $HOME/crontab.txt
 fi
 
 if [[ ${CGM,,} =~ "shareble" ]]; then
