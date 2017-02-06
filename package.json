@@ -71,8 +71,9 @@
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
-    "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh"
-  },
+    "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh",
+    "wifi": "./bin/oref0-wifi-name.sh"
+},
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
     "lodash": "^4.15.0",
