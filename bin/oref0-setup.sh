@@ -491,9 +491,7 @@ git add .gitignore
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
-        # TODO: figure out best way to do this from https://github.com/EnhancedRadioDevices/ URL
-        # Opened https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW/issues/11 to discuss
-        echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install spi_serial"
+        echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
     fi
 
     echo Checking mraa installation
