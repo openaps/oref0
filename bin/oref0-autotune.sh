@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This sccript sets up an easy test environment for autotune, allowing the user to vary parameters 
+# This script sets up an easy test environment for autotune, allowing the user to vary parameters 
 # like start/end date and number of runs.
 # 
 # Required Inputs: 
@@ -44,6 +44,18 @@ TERMINAL_LOGGING=true
 RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
 
+# If we are running OS X, we need to use a different version
+# of the 'date' command; the built-in 'date' is BSD, which
+# has fewer options than the linux version.  So the user
+# needs to install coreutils, which gives the GNU 'date'
+# command as 'gdate':
+
+shopt -s expand_aliases
+
+if [[ `uname` == 'Darwin' ]] ; then
+    alias date='gdate'
+fi
+
 # handle input arguments
 for i in "$@"
 do
@@ -52,7 +64,12 @@ case $i in
     DIR="${i#*=}"
     # ~/ paths have to be expanded manually
     DIR="${DIR/#\~/$HOME}"
-    directory="$(readlink -m $DIR)"
+    # If DIR is a symlink, get actual path: 
+    if [[ -L $DIR ]] ; then
+        directory="$(readlink $DIR)"
+    else
+        directory="$DIR"
+    fi
     shift # past argument=value
     ;;
     -n=*|--ns-host=*)
