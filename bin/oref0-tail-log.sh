@@ -1,3 +1,3 @@
 #!/bin/bash
 
-tail -F /var/log/openaps/pump-loop.log
+tail -n 100 -F /var/log/openaps/pump-loop.log
