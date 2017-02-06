@@ -82,7 +82,7 @@ def run_script(args):
         while (not os.path.exists(pump_port)) and tries<2:
            logging.error("pump port %s does not exist" % pump_port)
            if args.resetusb:
-               exitcode=execute("sudo oref0-reset-usb", args.timeout, args.wait)
+               exitcode=execute(["sudo", "oref0-reset-usb"], args.timeout, args.wait)
                tries=tries+1
            else: # if not --resetusb then quit the loop
              break
@@ -93,7 +93,7 @@ def run_script(args):
 
         # step 5: use reset.py 
         if args.resetpy:
-           cmd="oref0-subg-ww-radio-parameters %s --resetpy" % pump_port
+           cmd=["oref0-subg-ww-radio-parameters", str(pump_port), "--resetpy"]
            exitcode=execute(cmd, args.timeout, args.wait)
 
         if not os.path.exists(pump_port):

@@ -17,7 +17,7 @@ set -e
 set -x
 
 echo
-echo Your TI device is located at $SERIAL_PORT
+echo The CC111x is located at $SERIAL_PORT
 
 # change to subg_rfspy tools directory
 cd $SUBG_RFSPY_DIR/tools
