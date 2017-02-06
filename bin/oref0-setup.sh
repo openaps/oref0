@@ -550,6 +550,14 @@ else
     openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
     if [[ ${radio_locale,,} =~ "ww" ]]; then
+      if [ -d "$HOME/src/subg_rfspy/" ]; then
+        echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
+        (cd ~/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
+      else
+        echo -n "Cloning subg_rfspy: "
+        (cd ~/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
+      fi
+
       # add subg-ww-radio-parameters script to mmtune for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
       # append --resetusb if using a TI USB stick
       if [[ $ti_usb_ww =~ ^[Yy] ]]; then
@@ -557,7 +565,7 @@ else
       else  
         ti_usb_ww1="--resetpy"
       fi
-      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; oref0-subg-ww-radio-parameters.py '$ti_usb_ww1' ; \2/g' openaps.ini
+      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; oref0-subg-ww-radio-parameters.py '$ti_usb_ww1' -v ; \2/g' openaps.ini
 
       # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowli/issues/55
       # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet

@@ -32,7 +32,33 @@ def get_port_from_pump_ini(filename):
                     radio_locale=config.get(section, option)
     if radio_locale==RADIO_LOCALE_NOT_SET:
        logging.error("radio_locale is not set in pump.ini. Please set radio_locale=WW in your pump.ini")
+       sys.exit(1)
     return port
+
+
+# helper method to execute command cmd and return the returncode
+# use a timeout of to, and wait w seconds after the command
+def execute(cmd, to, w):
+    try:
+        logging.debug("excuting %s" % cmd)
+        proc=subprocess.Popen(cmd, shell=False)
+        outs,errs=proc.communicate(timeout=args.timeout)
+        logging.debug("script exited with %s" % proc.returncode)
+        logging.debug("sleeping for %s seconds " % args.wait)
+        time.sleep(args.wait)
+        return proc.returncode
+    except subprocess.TimeoutExpired:
+        logging.error("TimeoutExpired. Killing process")
+        outs, errs = proc.communicate()
+        if proc.pid:
+            pgrp = os.getpgid(proc.pid)
+            if prgp:
+                logging.debug("Sending SIGINT to process %s" % prgp)
+                os.killpg(pgrp, signal.SIGINT)
+                time.sleep(5) # sleep 5 secons
+                logging.debug("Sending SIGTERM to process %s" % prgp)
+                os.killpg(pgrp, signal.SIGTERM)
+        sys.exit(1)
         
 def run_script(args):
     if args.verbose:
@@ -44,6 +70,7 @@ def run_script(args):
         # step 1: get port device (pump device) from pump.ini
         pump_ini=os.path.join(args.dir, args.pump_ini)
         pump_port=get_port_from_pump_ini(pump_ini)
+        logging.debug("Serial device (port) for pump is: %s" % pump_port)
         
         # step 2: check if port device file exists. If not reset USB if it's requested with the --resetusb parameter
         if pump_port==PORT_NOT_SET:
@@ -55,11 +82,7 @@ def run_script(args):
         while (not os.path.exists(pump_port)) and tries<2:
            logging.error("pump port %s does not exist" % pump_port)
            if args.resetusb:
-               logging.debug("running oref-reset-usb script to recover TI USB stick")
-               exitcode=subprocess.call("sudo oref0-reset-usb", shell=True, timeout=args.timeout)
-               logging.debug("script exited with %s" % exitcode)
-               logging.debug("sleeping for %s seconds " % args.wait)
-               time.sleep(args.wait)
+               exitcode=execute("sudo oref0-reset-usb", args.timeout, args.wait)
                tries=tries+1
            else: # if not --resetusb then quit the loop
              break
@@ -71,30 +94,19 @@ def run_script(args):
         # step 5: use reset.py 
         if args.resetpy:
            cmd="oref0-subg-ww-radio-parameters %s --resetpy" % pump_port
-           logging.debug("excuting %s" % cmd)
-           exitcode=subprocess.call("reset.py", shell=True, timeout=args.timeout)
-           logging.debug("script exited with %s" % exitcode)
-           logging.debug("sleeping for %s seconds " % args.wait)
-           time.sleep(args.wait)
+           exitcode=execute(cmd, args.timeout, args.wait)
 
         if not os.path.exists(pump_port):
-           logging.error("pump port %s does not exist. Exiting with status code 1" % pump_port")
+           logging.error("pump port %s does not exist. Exiting with status code 1" % pump_port)
            sys.exit(1)
 
         # step 6: now set the subg ww radio parameters
-        cmd="oref0-subg-ww-radio-parameters %s" % pump_port
-        logging.debug("excuting %s" % cmd)
-        exitcode=subprocess.call(cmd, shell=False, timeout=args.timeout)
-        logging.debug("script exited with %s" % exitcode)
+        exitcode=execute(['oref0-subg-ww-radio-parameters', pump_port], args.timeout, args.wait)
         sys.exit(exitcode) # propagate exit code from oref0-subg-ww-radio-parameters
-        
-    except subprocess.TimeoutExpired:
-        logging.error("TimeoutExpired. Killing process")
-        proc.kill()
-        sys.exit(1)
     except Exception as ex:
-        logging.error("Exception: %s" % str(ex))
+        logging.error("Exception: %s" % ex)
         sys.exit(1)
+      
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Wrapper for setting World Wide radio parameters to a Medtronic pump for TI chip')

@@ -6,8 +6,8 @@ SERIAL_PORT=${SERIAL_PORT-${1-/dev/mmeowlink}}
 # It requires subg_rfspy in installed. This can be installated with
 #     cd ~/src
 #     git clone https://github.com/ps2/subg_rfspy.git
-# set SUBG_RFSPY_DIR to environment variable or default to $HOME/src/subg_rfspy
-SUBG_RFSPY_DIR=${SUBG_RFSPY_DIR-${$HOME/src/subg_rfspy}}
+# Set SUBG_RFSPY_DIR to your subg_rfspy checkout
+SUBG_RFSPY_DIR=$HOME/src/subg_rfspy
 
 # If you're on an ERF or TI USB, set this to 0:
 #export RFSPY_RTSCTS=0
@@ -27,8 +27,8 @@ cd $SUBG_RFSPY_DIR/tools
 #killall -g openaps
 #echo
 
-# Disabled Reset to defaults, because it can hang the pump loop with TI USB stick
-# Enable it with --resetpy
+# Disabled by default, because it can hang the pump loop with TI USB stick
+# Will reset to default if called with --resetpy as second parameter
 case "$2" in
   --resetpy)
     ./reset.py $SERIAL_PORT
