@@ -5,7 +5,7 @@ ifconfig | grep -A1 wlan0 | grep "inet " | awk '{print $2}' | awk -F : '{print $
 ifconfig | grep -A1 bnep0 | grep "inet " | awk '{print $2}' | awk -F : '{print $2}'
 echo
 echo -n "At $(date), my wifi network name is "
-iwconfig 2>&1 | grep ESSID | awk -F : '{print $2}' | tr -d '  \n'
+iwconfig 2>&1 | grep ESSID | awk -F : '{print $2}' | perl -pe 's/  \n//'
 echo -n ", and my public IP is: "
 if curl -s -m 15 icanhazip.com | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
     # if we are back on wifi (and have connectivity to icanhazip.com), shut down bluetooth
@@ -33,7 +33,7 @@ else
     sudo dhclient wlan0
     echo
     echo -n "At $(date), my wifi network name is "
-    iwconfig 2>&1 | grep ESSID | awk -F : '{print $2}' | tr -d '  \n'
+    iwconfig 2>&1 | grep ESSID | awk -F : '{print $2}' | perl -pe 's/  \n//'
     echo -n ", and my public IP is: "
     # loop over as many MACs as are provided as arguments
     if ! curl -s -m 15 icanhazip.com | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
@@ -57,7 +57,7 @@ else
         echo
     fi
     echo -n "At $(date), my wifi network name is "
-    iwconfig 2>&1 | grep ESSID | awk -F : '{print $2}' | tr -d '  \n'
+    iwconfig 2>&1 | grep ESSID | awk -F : '{print $2}' | perl -pe 's/  \n//'
     echo -n ", and my public IP is: "
     curl -s -m 15 icanhazip.com
 fi
