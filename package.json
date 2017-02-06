@@ -13,7 +13,7 @@
   "keywords": [
     "openaps"
   ],
-  "author": "Scott Leibrand, OpenAPS contributors",
+  "author": "Scott Leibrand, Dana Lewis, OpenAPS contributors",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/openaps/oref0/issues"
@@ -71,6 +71,7 @@
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh"
+    "l": "./bin/oref0-tail-log.sh"
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
