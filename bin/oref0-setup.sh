@@ -145,15 +145,24 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
     fi
-    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? " -r
-    ttyport=$REPLY
-    echo -n "Ok, "
-    if [[ -z "$ttyport" ]]; then
-        echo -n Carelink
+
+
+    read -p "Are you using an Explorer Board? [Y/n] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        ttyport=/dev/spidev5.1
+    echo "Ok, yay for Explorer Board! "
     else
-        echo -n TTY $ttyport
+        read -p 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? ' -r
+        ttyport=$REPLY
+        echo -n "Ok, "
+        if [[ -z "$ttyport" ]]; then
+            echo -n Carelink
+        else
+            echo -n TTY $ttyport
+        fi
+        echo " it is. "
     fi
-    echo " it is."
+
 
     if [[ ! -z "${ttyport}" ]]; then
       echo "Medtronic pumps come in two types: WW (Worldwide) pumps, and NA (North America) pumps."
