@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -58,6 +58,7 @@
     "oref0-mint-max-iob": "./bin/oref0-mint-max-iob.sh",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "oref0-online": "./bin/oref0-online.sh",
+    "oref0-upload-profile": "./bin/oref0-upload-profile.js",
     "oref0-pebble": "./bin/oref0-pebble.js",
     "oref0-raw": "./bin/oref0-raw.js",
     "oref0-reset-git": "bin/oref0-reset-git.sh",
@@ -76,10 +77,12 @@
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
+    "crypto": "0.0.3",
     "lodash": "^4.15.0",
     "moment": "^2.14.1",
+    "request": "^2.79.0",
     "share2nightscout-bridge": "^0.1.5",
-    "timezone": "0.0.47",
+    "moment-timezone": "0.5.11",
     "yargs": "~4.3.2",
     "json": "~9.0.4"
   },
