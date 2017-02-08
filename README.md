@@ -60,7 +60,6 @@ The result is suitable for sending to Nightscout's entries api, eg, using
 `ns-upload-entries`.
 ```
 mm-format-ns-glucose <input> <output>
-
 ```
 
 ### `mm-format-ns-pump-history`
