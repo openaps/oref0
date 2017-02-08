@@ -74,7 +74,7 @@ case $i in
     shift # past argument=value
     ;;
     -n=*|--ns-host=*)
-    NIGHTSCOUT_HOST="${i#*=}"
+    NIGHTSCOUT_HOST=$(echo ${i#*=} | sed 's/\/$//g')
     shift # past argument=value
     ;;
     -a=*|--api-secret=*)
