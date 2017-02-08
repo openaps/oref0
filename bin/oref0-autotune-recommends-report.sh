@@ -23,6 +23,13 @@ die() {
   exit 1
 }
 
+# Use alternate date command if on OS X:
+shopt -s expand_aliases
+
+if [[ `uname` == 'Darwin' ]] ; then
+    alias date='gdate'
+fi
+
 if [ $# -ne 1 ]; then
     echo "Usage: ./oref0-autotune-recommends-report.sh <OpenAPS Loop Directory Path>"
     exit 1
