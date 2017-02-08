@@ -147,7 +147,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
 
-    read -p "Are you using an Explorer Board? [Y/n] " -r
+    read -p "Are you using an Explorer Board? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         ttyport=/dev/spidev5.1
     echo "Ok, yay for Explorer Board! "
