@@ -61,7 +61,6 @@ The result is suitable for sending to Nightscout's entries api, eg, using
 ```
 mm-format-ns-glucose <input> <output>
 
-
 ```
 
 ### `mm-format-ns-pump-history`
@@ -85,7 +84,6 @@ These can be defined in crontab, or in a simple file, eg
 
 ```
 API_SECRET="..." NIGHTSCOUT_HOST=localhost:1337 ns-upload-entries <input> <output>
-
 ```
 
 ## Contributing
