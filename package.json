@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -58,7 +58,6 @@
     "oref0-mint-max-iob": "./bin/oref0-mint-max-iob.sh",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "oref0-online": "./bin/oref0-online.sh",
-    "bt-pan": "./bin/bt-pan",
     "oref0-upload-profile": "./bin/oref0-upload-profile.js",
     "oref0-pebble": "./bin/oref0-pebble.js",
     "oref0-raw": "./bin/oref0-raw.js",
