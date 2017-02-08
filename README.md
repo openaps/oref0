@@ -93,6 +93,7 @@ See the [CONTRIBUTING document](CONTRIBUTING.md)
 
 ```
 git clone git://github.com/openaps/oref0.git
+cd oref0
 git checkout dev
 git checkout -b wip/my-enhancement-fix-or-proposal
 ```
