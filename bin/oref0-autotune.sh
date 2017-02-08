@@ -127,6 +127,9 @@ else
   exit 1
 fi
 
+# Create pumpprofile.json, autotune.json from profile.json
+cp -up profile.json pumpprofile.json
+cp -up profile.json autotune.json
 
 # Get profile for testing copied to home directory. "openaps" is my loop directory name.
 cd $directory && mkdir -p autotune
