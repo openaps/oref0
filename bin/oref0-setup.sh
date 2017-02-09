@@ -694,6 +694,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
        (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
     fi
+
+    # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
+    if egrep -i "edison" /etc/passwd 2>/dev/null; then
+     (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; awk '/batteryVoltage/ {if (\$2<=3050)system(\"sudo shutdown -h now\")}' $directory/monitor/edison-battery.json") | crontab -
+    fi
+    
     crontab -l | tee $HOME/crontab.txt
 fi
 
