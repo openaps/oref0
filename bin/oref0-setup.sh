@@ -697,7 +697,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
     if egrep -i "edison" /etc/passwd 2>/dev/null; then
-     (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; awk '/batteryVoltage/ {if (\$2<=3050)system(\"sudo shutdown -h now\")}' $directory/monitor/edison-battery.json") | crontab -
+     (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
     fi
     
     crontab -l | tee $HOME/crontab.txt
