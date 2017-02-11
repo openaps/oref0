@@ -137,7 +137,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G4-raw, G5, MDT, xdrip) " -r
+    read -p "What kind of CGM are you using? (e.g., G4, G5, MDT, xdrip, G4-raw, or ShareBLE) Note: ShareBLE is an experimental setup, not currently stable" -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
