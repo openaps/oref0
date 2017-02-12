@@ -108,7 +108,7 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "G4-local-only" ]]; then
+if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
     echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
@@ -435,7 +435,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     # comment out existing line if it exists and isn't already commented out
     sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
 fi
-if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4" ]]; then
+if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-local" ]]; then
     mkdir -p $directory-cgm-loop
     if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
         echo $directory-cgm-loop already exists
@@ -458,7 +458,7 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4" ]]; then
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
     fi
 
-    if [[ ${CGM,,} =~ "g4" ]]; then
+    if [[ ${CGM,,} =~ "g4-local" ]]; then
         sudo apt-get -y install bc
         openaps device add cgm dexcom || die "Can't add CGM"
         for type in cgm-loop; do
@@ -662,7 +662,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
     # truncate git history to 1000 commits if it has grown past 1500
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
-    if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
+    if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
         # repair or reset cgm-loop git repository if it's corrupted or disk is full
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-reset-git" || echo "* * * * * cd $directory-cgm-loop && oref0-reset-git") | crontab -
         # truncate cgm-loop git history to 1000 commits if it has grown past 1500
