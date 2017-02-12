@@ -200,7 +200,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo "Ok, $API_SECRET it is."
     fi
     if [[ ! -z $BT_MAC ]]; then
-       read -p "For BT Tethering enter phone mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+       read -p "For BT Tethering enter phone bluetooth mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
        BT_MAC=$REPLY
        echo "Ok, $BT_MAC it is."
        if [[ -z $BT_MAC ]]; then
