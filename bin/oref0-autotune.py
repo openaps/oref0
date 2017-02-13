@@ -150,7 +150,7 @@ def get_nightscout_carb_and_insulin_treatments(nightscout_host, start_date, end_
         f.write(res.text.encode('utf-8'))
 
 def get_nightscout_bg_entries(nightscout_host, start_date, end_date, directory):
-    logging.info('Grabbing NIGHTSCOUT enries/sgv.json for date range: {0} to {1}'.format(start_date, end_date))
+    logging.info('Grabbing NIGHTSCOUT enries/sgv.json for date range: {0} to {1}'.format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
     date_list = [start_date + datetime.timedelta(days=x) for x in range(0, (end_date - start_date).days)]
 
     for date in date_list:
@@ -205,7 +205,7 @@ def run_autotune(start_date, end_date, number_of_runs, directory):
         
             # Copy tuned profile produced by autotune to profile.json for use with next day of data
             # cp newprofile.$RUN_NUMBER.$DATE.json profile.json
-            shutil.copy(os.path.join(autotune_directory, 'newprofile.{0}.{1}.json'.format(run_number, date)),
+            shutil.copy(os.path.join(autotune_directory, 'newprofile.{run_number}.{date}.json'.format(run_number=run_number, date=date.strftime("%Y-%m-%d"))),
                         os.path.join(autotune_directory, 'profile.json'))
 
 def export_to_excel(output_directory, output_excel_filename):
