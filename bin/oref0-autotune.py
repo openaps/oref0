@@ -143,6 +143,7 @@ def get_openaps_profile(directory):
     # cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json'])
 
 def get_nightscout_carb_and_insulin_treatments(nightscout_host, start_date, end_date, directory):
+    logging.info('Grabbing NIGHTSCOUT treatments.json for date range: {0} to {1}'.format(start_date, end_date))
     # TODO: What does 'T20:00-05:00' mean?
     output_file_name = os.path.join(directory, 'autotune', 'ns-treatments.json')
     start_date = start_date.strftime("%Y-%m-%d") + 'T20:00-05:00'
@@ -154,7 +155,7 @@ def get_nightscout_carb_and_insulin_treatments(nightscout_host, start_date, end_
         f.write(res.text.encode('utf-8'))
 
 def get_nightscout_bg_entries(nightscout_host, start_date, end_date, directory):
-    logging.info('Gathering bg entries from {0} to {1}'.format(start_date, end_date))
+    logging.info('Grabbing NIGHTSCOUT enries/sgv.json for date range: {0} to {1}'.format(start_date, end_date))
     date_list = [start_date + datetime.timedelta(days=x) for x in range(0, (end_date - start_date).days)]
 
     for date in date_list:
