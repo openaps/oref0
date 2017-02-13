@@ -74,7 +74,7 @@ case $i in
     shift # past argument=value
     ;;
     -n=*|--ns-host=*)
-    NIGHTSCOUT_HOST="${i#*=}"
+    NIGHTSCOUT_HOST=$(echo ${i#*=} | sed 's/\/$//g')
     shift # past argument=value
     ;;
     -a=*|--api-secret=*)
@@ -147,7 +147,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
 
-    read -p "Are you using an Explorer Board? [Y/n] " -r
+    read -p "Are you using an Explorer Board? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         ttyport=/dev/spidev5.1
     echo "Ok, yay for Explorer Board! "
@@ -200,7 +200,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo "Ok, $API_SECRET it is."
     fi
     if [[ ! -z $BT_MAC ]]; then
-       read -p "For BT Tethering enter phone mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+       read -p "For BT Tethering enter phone Bluetooth MAC address (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
        BT_MAC=$REPLY
        echo "Ok, $BT_MAC it is."
        if [[ -z $BT_MAC ]]; then
