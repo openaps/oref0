@@ -158,7 +158,7 @@ def get_nightscout_bg_entries(nightscout_host, start_date, end_date, directory):
         url = url.format(nightscout_host, date)
         #TODO: Add ability to use API secret for Nightscout.
         res = requests.get(url)
-        with open(os.path.join(directory, 'autotune', 'ns-entries.{date}.json'.format(date=date.strftime("%Y-%m-%d")), 'w')) as f:
+        with open(os.path.join(directory, 'autotune', 'ns-entries.{date}.json'.format(date=date.strftime("%Y-%m-%d"))), 'w') as f:
             f.write(res.text.encode('utf-8'))
 
 def run_autotune(start_date, end_date, number_of_runs, directory):
@@ -169,7 +169,7 @@ def run_autotune(start_date, end_date, number_of_runs, directory):
             # cp profile.json profile.$run_number.$i.json
             shutil.copy(os.path.join(autotune_directory, 'profile.json'),
                         os.path.join(autotune_directory, 'profile.{run_number}.{date}.json'
-                        .format(run_number=run_number, date=date.strftime("%Y-%m-%d")))
+                        .format(run_number=run_number, date=date.strftime("%Y-%m-%d"))))
         
             # Autotune Prep (required args, <pumphistory.json> <profile.json> <glucose.json>), output prepped glucose 
             # data or <autotune/glucose.json> below
@@ -197,7 +197,7 @@ def run_autotune(start_date, end_date, number_of_runs, directory):
             
             # newprofile.$RUN_NUMBER.$DATE.json
             newprofile_run_filename = os.path.join(autotune_directory, 'newprofile.{run_number}.{date}.json'
-                                                   .format(run_number=run_number, date=date.strftime("%Y-%m-%d"))
+                                                   .format(run_number=run_number, date=date.strftime("%Y-%m-%d")))
             with open(newprofile_run_filename, "w+") as output:
                 logging.info('Running {script}'.format(script=autotune_core))
                 call(autotune_core, stdout=output, shell=True)
