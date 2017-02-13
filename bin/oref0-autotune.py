@@ -84,10 +84,10 @@ def get_input_arguments():
 def assign_args_to_variables(args):
     # TODO: Input checking.
     
-    # TODO: Check if directory is a symlink, get actual path.
     global DIR, NIGHTSCOUT_HOST, START_DATE, END_DATE, NUMBER_OF_RUNS, \
            EXPORT_EXCEL, TERMINAL_LOGGING, RECOMMENDS_REPORT
-           
+    
+    # TODO: Check if directory is a symlink, get actual path.  
     DIR = args.dir
     
     try:
@@ -112,7 +112,7 @@ def assign_args_to_variables(args):
         RECOMMENDS_REPORT = args.logs
 
 def get_nightscout_profile(nightscout_host):
-    #TODO: Add ability to use API secret.
+    #TODO: Add ability to use API secret for Nightscout.
     res = requests.get(nightscout_host + '/api/v1/profile.json')
     with open(os.path.join(autotune_directory, 'nightscout.profile.json'), 'w') as f:
         f.write(res.text)
@@ -148,6 +148,7 @@ def get_nightscout_carb_and_insulin_treatments(nightscout_host, start_date, end_
     start_date = start_date.strftime("%Y-%m-%d") + 'T20:00-05:00'
     end_date = end_date.strftime("%Y-%m-%d") + 'T20:00-05:00'
     url='{0}/api/v1/treatments.json?find\[created_at\]\[\$gte\]=`date --date="{1} -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="{2} +1 days" -Iminutes`'.format(nightscout_host, start_date, end_date)
+    #TODO: Add ability to use API secret for Nightscout.
     res = requests.get(url)
     with open(output_file_name, 'w') as f:
         f.write(res.text.encode('utf-8'))
@@ -159,6 +160,7 @@ def get_nightscout_bg_entries(nightscout_host, start_date, end_date, directory):
     for date in date_list:
         url="{0}/api/v1/entries/sgv.json?find\[date\]\[\$gte\]={1}&find\[date\]\[\$lte\]={1}`&count=1000"
         url = url.format(nightscout_host, date)
+        #TODO: Add ability to use API secret for Nightscout.
         res = requests.get(url)
         with open(os.path.join(directory, 'autotune', 'ns-entries.{date}.json'.format(date=date)), 'w') as f:
             f.write(res.text.encode('utf-8'))
@@ -194,13 +196,16 @@ def run_autotune(start_date, end_date, number_of_runs, directory):
             # oref0-autotune-core autotune.$RUN_NUMBER.$DATE.json profile.json profile.pump.json > newprofile.$RUN_NUMBER.$DATE.json
         
             # oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$RUN_NUMBER.$DATE.json
-            autotune_core = 'oref0-autotune-core {0}autotune.{1}.{2}.json {0}profile.json {0}profile.pump.json'.format(autotune_directory, run_number, date)
+            profile_pump = os.path.join(autotune_directory, 'profile.pump.json')
+            autotune_core = 'oref0-autotune-core {autotune_run} {profile} {profile_pump}'.format(profile=profile, profile_pump = profile_pump, autotune_run=autotune_run_filename)
             
             # newprofile.$RUN_NUMBER.$DATE.json
             newprofile_run_filename = os.path.join(autotune_directory, 'newprofile.{run_number}.{date}.json'
                                                    .format(run_number=run_number, date=date))
-            with open(autotune_run_filename, "w+") as output:
+            with open(newprofile_run_filename, "w+") as output:
+                logging.info('Running {script}'.format(script=autotune_core))
                 call(autotune_core, stdout=output, shell=True)
+                logging.info('Writing output to {filename}'.format(filename=autotune_run_filename))
         
             # Copy tuned profile produced by autotune to profile.json for use with next day of data
             # cp newprofile.$RUN_NUMBER.$DATE.json profile.json
@@ -234,8 +239,6 @@ if __name__ == "__main__":
     
     args = get_input_arguments()
     assign_args_to_variables(args)
-    
-    print DIR, NIGHTSCOUT_HOST, START_DATE, END_DATE, NUMBER_OF_RUNS, EXPORT_EXCEL, TERMINAL_LOGGING, RECOMMENDS_REPORT
     
     # TODO: Convert Nightscout profile to OpenAPS profile format.
     #get_nightscout_profile(NIGHTSCOUT_HOST)
