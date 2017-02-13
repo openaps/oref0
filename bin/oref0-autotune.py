@@ -158,7 +158,7 @@ def get_nightscout_bg_entries(nightscout_host, start_date, end_date, directory):
         url = url.format(nightscout_host, date)
         #TODO: Add ability to use API secret for Nightscout.
         res = requests.get(url)
-        with open(os.path.join(directory, 'autotune', 'ns-entries.{date}.json'.format(date=date.strftime("%Y-%m-%d")), 'w') as f:
+        with open(os.path.join(directory, 'autotune', 'ns-entries.{date}.json'.format(date=date.strftime("%Y-%m-%d")), 'w')) as f:
             f.write(res.text.encode('utf-8'))
 
 def run_autotune(start_date, end_date, number_of_runs, directory):
