@@ -87,8 +87,9 @@ def assign_args_to_variables(args):
     global DIR, NIGHTSCOUT_HOST, START_DATE, END_DATE, NUMBER_OF_RUNS, \
            EXPORT_EXCEL, TERMINAL_LOGGING, RECOMMENDS_REPORT
     
-    # TODO: Check if directory is a symlink, get actual path.  
-    DIR = args.dir
+    # On Unix and Windows, return the argument with an initial component of
+    # ~ or ~user replaced by that user‘s home directory.
+    DIR = os.path.expanduser(args.dir)
     
     NIGHTSCOUT_HOST = args.ns_host
 
