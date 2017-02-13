@@ -88,7 +88,7 @@ def assign_args_to_variables(args):
            EXPORT_EXCEL, TERMINAL_LOGGING, RECOMMENDS_REPORT
     
     # On Unix and Windows, return the argument with an initial component of
-    # ~ or ~user replaced by that user‘s home directory.
+    # ~ or ~user replaced by that user's home directory.
     DIR = os.path.expanduser(args.dir)
     
     NIGHTSCOUT_HOST = args.ns_host
