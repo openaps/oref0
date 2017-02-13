@@ -90,13 +90,8 @@ def assign_args_to_variables(args):
     # TODO: Check if directory is a symlink, get actual path.  
     DIR = args.dir
     
-    try:
-        requests.get(args.ns_host)
-        NIGHTSCOUT_HOST = args.ns_host
-    except:
-        #TODO: Use a real error.
-        print "Something's wrong"
-    
+    NIGHTSCOUT_HOST = args.ns_host
+
     START_DATE = args.start_date
     
     if args.end_date is not None:
