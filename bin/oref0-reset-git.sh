@@ -50,8 +50,8 @@ fi
 # if git repository is too corrupt to do anything, mv it to /tmp and start over.
 
 (git status && git diff && git symbolic-ref HEAD && ! df | grep 100% && ! df -i | grep 100%) > /dev/null || (
-    echo Removing largest old git repo from $BACKUP
-    du -sh $BACKUP/git-1* | head -1 | awk '{print $2}' | while read line; do rm -rf $line; done
+    echo Removing largest old git repo from $BACKUP_AREA
+    du -sh $BAKCUP_AREA/git-1* | head -1 | awk '{print $2}' | while read line; do rm -rf $line; done
     echo "Saving backup to: $BACKUP" > /dev/stderr
     mv .git $BACKUP
     rm -rf .git
