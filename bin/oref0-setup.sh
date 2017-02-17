@@ -656,7 +656,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
     (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
     (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
-    grep -q "network" ".bash_profile" || echo "alias network="'"tail -n 100 -F /var/log/openaps/network.log"' >> ".bash_profile"
+    grep -q "network" ".bash_profile" || echo "alias network="'"tail -n 100 -F /var/log/openaps/network.log"' >> ~/.bash_profile 
     (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
     (crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
     # repair or reset git repository if it's corrupted or disk is full
@@ -669,45 +669,44 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # truncate cgm-loop git history to 1000 commits if it has grown past 1500
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-truncate-git-history" || echo "* * * * * cd $directory-cgm-loop && oref0-truncate-git-history") | crontab -
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
-	grep -q "cgm-loop" ".bash_profile" || echo "alias cgm-loop="'"tail -n 100 -F /var/log/openaps/cgm-loop.log"' >> ".bash_profile"
+	grep -q "cgm-loop" ".bash_profile" || echo "alias cgm-loop="'"tail -n 100 -F /var/log/openaps/cgm-loop.log"' >> ~/.bash_profile 
     elif [[ ${CGM,,} =~ "xdrip" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
-	grep -q "xdrip-loop" ".bash_profile" || echo "alias xdrip-loop="'"tail -n 100 -F /var/log/openaps/xdrip-loop.log"' >> ".bash_profile"
+	grep -q "xdrip-loop" ".bash_profile" || echo "alias xdrip-loop="'"tail -n 100 -F /var/log/openaps/xdrip-loop.log"' >> ~/.bash_profile 
         (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
     elif [[ $ENABLE =~ dexusb ]]; then
         (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot cd $directory && /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
 	grep -q "xdrip-loop" ".bash_profile" || echo "alias xdrip-loop="'"tail -n 100 -F /var/log/openaps/xdrip-loop.log"' >> ".bash_profile"
     elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
-	grep -q "cgm-loop" ".bash_profile" || echo "alias cgm-loop="'"tail -n 100 -F /var/log/openaps/cgm-loop.log"' >> ".bash_profile"
+	grep -q "cgm-loop" ".bash_profile" || echo "alias cgm-loop="'"tail -n 100 -F /var/log/openaps/cgm-loop.log"' >> ~/.bash_profile 
     fi
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
     if [[ $ENABLE =~ autosens ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens | tee -a /var/log/openaps/autosens-loop.log") | crontab -
-	grep -q "autosens-loop" ".bash_profile" || echo "alias autosens-loop="'"tail -n 100 -F /var/log/openaps/autosens-loop.log"' >> ".bash_profile"
+	grep -q "autosens-loop" ".bash_profile" || echo "alias autosens-loop="'"tail -n 100 -F /var/log/openaps/autosens-loop.log"' >> ~/.bash_profile 
     fi
     if [[ $ENABLE =~ autotune ]]; then
         # autotune nightly at 12:05am using data from NS
         (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 0 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | json | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
-	grep -q "autotune" ".bash_profile" || echo "alias autotune="'"tail -n 100 -F /var/log/openaps/autotune.log"' >> ".bash_profile"
+	grep -q "autotune" ".bash_profile" || echo "alias autotune="'"tail -n 100 -F /var/log/openaps/autotune.log"' >> ~/.bash_profile
     fi
     if [[ "$ttyport" =~ "spi" ]]; then
         (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
     fi
     (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-    grep -q "pump-loop" ".bash_profile" || echo "alias pump-loop="'"tail -n 100 -F /var/log/openaps/pump-loop.log"' >> ".bash_profile"
+    grep -q "pump-loop" ".bash_profile" || echo "alias pump-loop="'"tail -n 100 -F /var/log/openaps/pump-loop.log"' >> ~/.bash_profile 
     if [[ ! -z "$BT_PEB" ]]; then
        (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
-       grep -q "urchin-loop" ".bash_profile" || echo "alias urchin-loop="'"tail -n 100 -F /var/log/openaps/urchin-loop.log"' >> ".bash_profile"
+       grep -q "urchin-loop" ".bash_profile" || echo "alias urchin-loop="'"tail -n 100 -F /var/log/openaps/urchin-loop.log"' >> ~/.bash_profile 
     fi
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
        (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
-       grep -q "network" ".bash_profile" || echo "alias network="'"tail -n 100 -F /var/log/openaps/network.log"' >> ".bash_profile"
     fi
     crontab -l | tee $HOME/crontab.txt
 fi
 # to enable shortcut aliases in ~/.bash_profile
-source ~/.bash_profile
+. ~/.bash_profile 
 if [[ ${CGM,,} =~ "shareble" ]]; then
     echo
     echo "To pair your G4 Share receiver, open its Setttings, select Share, Forget Device (if previously paired), then turn sharing On"
