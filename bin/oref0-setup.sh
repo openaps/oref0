@@ -686,6 +686,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     if [[ "$ttyport" =~ "spi" ]]; then
         (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
+        (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "*/10 * * * * oref0-radio-reboot") | crontab -
     fi
     (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
     if [[ ! -z "$BT_PEB" ]]; then
