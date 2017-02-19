@@ -593,6 +593,7 @@ fi
 # Install Pancreabble
 echo Checking for BT Pebble Mac 
 if [[ ! -z "$BT_PEB" ]]; then
+   sudo apt-get -y install jq
    sudo pip install libpebble2
    sudo pip install --user git+git://github.com/mddub/pancreabble.git
    oref0-bluetoothup
