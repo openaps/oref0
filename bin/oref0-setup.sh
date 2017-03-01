@@ -503,30 +503,36 @@ grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
 
 if [[ "$ttyport" =~ "spi" ]]; then
-    echo Checking spi_serial installation
+    echo Checking kernel for spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
         # TODO: figure out best way to do this from https://github.com/EnhancedRadioDevices/ URL
         # Opened https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW/issues/11 to discuss
-        echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install spi_serial"
-    fi
-
-    echo Checking mraa installation
-    if ! ldconfig -p | grep -q mraa; then
-        echo Installing swig etc.
-        sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
-
-        if [ -d "$HOME/src/mraa/" ]; then
-            echo "$HOME/src/mraa/ already exists; pulling latest master branch"
-            (cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
-        else
-            echo -n "Cloning mraa master: "
-            (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
+        if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
+           echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
+        else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
+           echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"           
         fi
-        ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
-        make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
-        sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
     fi
 
+    echo Checking kernel for mraa installation
+    if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
+       echo "Skipping mraa install for kernel 4.10+"
+    else # check if mraa is installed
+      if ! ldconfig -p | grep -q mraa; then # if not installed, install it
+          echo Installing swig etc.
+          sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
+          if [ -d "$HOME/src/mraa/" ]; then
+              echo "$HOME/src/mraa/ already exists; pulling latest master branch"
+              (cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
+          else
+              echo -n "Cloning mraa master: "
+              (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
+          fi
+          ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
+          make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
+          sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
+      fi
+    fi
 fi
 
 echo Checking openaps dev installation
