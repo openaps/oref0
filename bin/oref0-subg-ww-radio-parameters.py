@@ -112,7 +112,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Wrapper for setting World Wide radio parameters to a Medtronic pump for TI chip')
     parser.add_argument('-d', '--dir', help='openaps dir', default='.')
     parser.add_argument('-t', '--timeout', type=int, help='timeout value for script', default=30)
-    parser.add_argument('-w', '--wait', type=int, help='wait time after command', default=30)
+    parser.add_argument('-w', '--wait', type=int, help='wait time after command', default=0.5)
     parser.add_argument('--pump_ini', help='filename for pump config file', default='pump.ini')
     parser.add_argument('--resetpy', action="store_true", help='use reset.py script from subg_rfspy')
     parser.add_argument('--resetusb', action="store_true", help='call oref0_reset_usb command if serial pump device is not found', default=False)
