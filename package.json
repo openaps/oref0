@@ -73,7 +73,8 @@
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh",
-    "wifi": "./bin/oref0-tail-wifi.sh"
+    "wifi": "./bin/oref0-tail-wifi.sh",
+    "oref0-delete-future-entries": "./bin/oref0-delete-future-entries.sh"
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
