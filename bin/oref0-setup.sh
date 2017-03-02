@@ -673,7 +673,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
     elif [[ ${CGM,,} =~ "xdrip" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
-	(crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
+        (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
     elif [[ $ENABLE =~ dexusb ]]; then
         (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot cd $directory && /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
     elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
@@ -699,8 +699,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     crontab -l | tee $HOME/crontab.txt
 fi
-# to enable shortcut aliases in ~/.bash_profile
-. ~/.bash_profile 
+
 if [[ ${CGM,,} =~ "shareble" ]]; then
     echo
     echo "To pair your G4 Share receiver, open its Setttings, select Share, Forget Device (if previously paired), then turn sharing On"
