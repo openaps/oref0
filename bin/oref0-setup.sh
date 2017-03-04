@@ -285,7 +285,9 @@ if [[ ! -z "$min_5m_carbimpact" ]]; then
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a /tmp/oref0-runagain.sh; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
 if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a /tmp/oref0-runagain.sh; fi
 echo; echo | tee -a /tmp/oref0-runagain.sh
 
 read -p "Continue? y/[N] " -r
@@ -592,6 +594,7 @@ fi
 # Install Pancreabble
 echo Checking for BT Pebble Mac 
 if [[ ! -z "$BT_PEB" ]]; then
+   sudo apt-get -y install jq
    sudo pip install libpebble2
    sudo pip install --user git+git://github.com/mddub/pancreabble.git
    oref0-bluetoothup
