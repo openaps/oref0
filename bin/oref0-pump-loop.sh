@@ -126,13 +126,13 @@ function smb_enact_temp {
 
 function smb_verify_enacted {
     # Read the currently running temp and
-    # verify rate matches and duration is no shorter than 5m less than smb-suggested.json
+    # verify running rate <= requested rate and duration is no shorter than 5m less than smb-suggested.json
     rm -rf monitor/temp_basal.json
     ( echo -n Temp refresh \
         && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
         2>&1 >/dev/null | tail -1 && echo -n "ed: " \
     ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
-    && jq --slurp --exit-status 'if .[1].rate then (.[0].rate == .[1].rate and .[0].duration > .[1].duration - 5) else true end' monitor/temp_basal.json enact/smb-suggested.json > /dev/null
+    && jq --slurp --exit-status 'if .[1].rate then (.[0].rate <= .[1].rate and .[0].duration > .[1].duration - 5) else true end' monitor/temp_basal.json enact/smb-suggested.json > /dev/null
 }
 
 function smb_verify_reservoir {
