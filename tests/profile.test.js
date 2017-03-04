@@ -14,16 +14,14 @@ describe('Profile', function ( ) {
         ]
         , targets: {
             targets: [
-                { offset: 0, high: 120, low: 100 },
-                { offset: 480, high: 115, low: 95}
+                { offset: 0, high: 120, low: 100 }
             ]
         }
         , temptargets: [
         ]
         , isf: {
             sensitivities: [
-                { offset: 0, i: 0, x: 0, start: '00:00:00', sensitivity: 100 },
-                { offset: 480, i: 16, x: 1, start: '08:00:00', sensitivity: 80 }
+                { offset: 0, i: 0, x: 0, start: '00:00:00', sensitivity: 100 }
             ]
         }
         , carbratio: {

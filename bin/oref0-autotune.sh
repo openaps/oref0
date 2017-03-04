@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This sccript sets up an easy test environment for autotune, allowing the user to vary parameters 
+# This script sets up an easy test environment for autotune, allowing the user to vary parameters 
 # like start/end date and number of runs.
 # 
 # Required Inputs: 
@@ -44,6 +44,18 @@ TERMINAL_LOGGING=true
 RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
 
+# If we are running OS X, we need to use a different version
+# of the 'date' command; the built-in 'date' is BSD, which
+# has fewer options than the linux version.  So the user
+# needs to install coreutils, which gives the GNU 'date'
+# command as 'gdate':
+
+shopt -s expand_aliases
+
+if [[ `uname` == 'Darwin' ]] ; then
+    alias date='gdate'
+fi
+
 # handle input arguments
 for i in "$@"
 do
@@ -52,7 +64,12 @@ case $i in
     DIR="${i#*=}"
     # ~/ paths have to be expanded manually
     DIR="${DIR/#\~/$HOME}"
-    directory="$(readlink -m $DIR)"
+    # If DIR is a symlink, get actual path: 
+    if [[ -L $DIR ]] ; then
+        directory="$(readlink $DIR)"
+    else
+        directory="$DIR"
+    fi
     shift # past argument=value
     ;;
     -n=*|--ns-host=*)
@@ -131,8 +148,8 @@ echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 # Get Nightscout carb and insulin Treatments
 url="$NIGHTSCOUT_HOST/api/v1/treatments.json?find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
 echo $url
-curl -s $url > ns-treatments.json
-ls -la ns-treatments.json
+curl -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
 
 # Build date list for autotune iteration
 date_list=()
@@ -154,8 +171,8 @@ for i in "${date_list[@]}"
 do 
   url="$NIGHTSCOUT_HOST/api/v1/entries/sgv.json?find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
   echo $url
-  curl -s $url > ns-entries.$i.json
-  ls -la ns-entries.$i.json
+  curl -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+  ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
 done
 
 echo "Running $NUMBER_OF_RUNS runs from $START_DATE to $END_DATE"
@@ -173,12 +190,13 @@ do
     # Autotune Prep (required args, <pumphistory.json> <profile.json> <glucose.json>), output prepped glucose 
     # data or <autotune/glucose.json> below
     echo "oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json"
-    oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json
+    oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json \
+        || die "Could not run oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json"
     
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 
     # output autotuned profile or what will be used as <autotune/autotune.json> in the next iteration
     echo "oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json"
-    oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json
+    oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json || die "Could not run oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json"
     
     # Copy tuned profile produced by autotune to profile.json for use with next day of data
     cp newprofile.$run_number.$i.json profile.json
@@ -208,6 +226,6 @@ if [[ $RECOMMENDS_REPORT == "true" ]]; then
   # Run the Autotune Recommends Report
   oref0-autotune-recommends-report $directory
 
-  # Go ahead and echo autotune_recommendations.log to the terminal
-  cat $report_file
+  # Go ahead and echo autotune_recommendations.log to the terminal, minus blank lines
+  cat $report_file | egrep -v "\| *\| *$"
 fi
