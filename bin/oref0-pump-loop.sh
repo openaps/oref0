@@ -84,14 +84,13 @@ function smb_old_temp {
 function smb_check_everything {
     # wait_for_silence and retry if first attempt fails
     smb_reservoir_before \
-    && smb_enact_temp \
-    && smb_verify_enacted \
+    && ( smb_verify_enacted || ( smb_enact_temp && smb_verify_enacted ) ) \
     && smb_verify_reservoir \
     && smb_verify_status \
     || ( echo Retrying SMB checks \
         && wait_for_silence 10 \
         && smb_reservoir_before \
-        && smb_enact_temp \
+        && ( smb_verify_enacted || ( smb_enact_temp && smb_verify_enacted ) ) \
         && smb_verify_enacted \
         && smb_verify_reservoir \
         && smb_verify_status
@@ -119,7 +118,7 @@ function smb_enact_temp {
 
 function smb_verify_enacted {
     # Read the currently running temp and
-    # verify rate matches and duration is > 5m less than smb-suggested.json
+    # verify rate matches and duration is no shorter than 5m less than smb-suggested.json
     rm -rf monitor/temp_basal.json
     ( echo -n Temp refresh \
         && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
