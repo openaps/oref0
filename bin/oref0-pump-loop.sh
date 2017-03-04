@@ -84,14 +84,14 @@ function smb_old_temp {
 function smb_check_everything {
     # wait_for_silence and retry if first attempt fails
     smb_reservoir_before \
-    && ( smb_verify_enacted || ( smb_enact_temp && smb_verify_enacted ) ) \
+    && smb_enact_temp \
     && ( smb_verify_suggested || smb_suggest ) \
     && smb_verify_reservoir \
     && smb_verify_status \
     || ( echo Retrying SMB checks \
         && wait_for_silence 10 \
         && smb_reservoir_before \
-        && ( smb_verify_enacted || ( smb_enact_temp && smb_verify_enacted ) ) \
+        && smb_enact_temp \
         && ( smb_verify_suggested || smb_suggest ) \
         && smb_verify_reservoir \
         && smb_verify_status
@@ -108,17 +108,18 @@ function smb_suggest {
     && smb_verify_suggested
 }
 
-# enact the appropriate temp before SMB'ing
+# enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails)
 function smb_enact_temp {
     smb_suggest \
-    && if (echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json); then (
+    && if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json && ! smb_verify_enacted ); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
         grep -q duration enact/smb-enacted.json || openaps invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
         cp -up enact/smb-enacted.json enact/enacted.json
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c .
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
-    fi
+    fi \
+    && smb_verify_enacted
 }
 
 function smb_verify_enacted {
