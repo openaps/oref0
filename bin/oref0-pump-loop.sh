@@ -72,6 +72,7 @@ function smb_reservoir_before {
 
 }
 
+# check if the temp was read more than 5m ago, or has been running more than 10m
 function smb_old_temp {
     (find monitor/ -mmin +5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old) \
     || ( jq --exit-status "(.duration-1) % 30 < 20" monitor/temp_basal.json > /dev/null \
@@ -79,6 +80,7 @@ function smb_old_temp {
         )
 }
 
+# make sure everything is in the right condition to SMB
 function smb_check_everything {
     # wait_for_silence and retry if first attempt fails
     smb_reservoir_before \
@@ -96,6 +98,7 @@ function smb_check_everything {
         )
 }
 
+# enact the appropriate temp before SMB'ing
 function smb_enact_temp {
     rm -rf enact/smb-suggested.json
     ls enact/smb-suggested.json 2>/dev/null && die "enact/suggested.json present"
@@ -123,10 +126,6 @@ function smb_verify_enacted {
         2>&1 >/dev/null | tail -1 && echo -n "ed: " \
     ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
     && jq --slurp --exit-status 'if .[1].rate then (.[0].rate == .[1].rate and .[0].duration > .[1].duration - 5) else true end' monitor/temp_basal.json enact/smb-suggested.json > /dev/null
-    #&& jq --slurp --exit-status '.[1].rate, .[1].duration, .[0].rate, .[0].duration' monitor/temp_basal.json enact/smb-suggested.json \
-    #) && grep '"rate": 0.0,' monitor/temp_basal.json
-    #|| echo "WARNING: zero temp not running; continuing anyway"
-
 }
 
 function smb_verify_reservoir {
@@ -168,7 +167,7 @@ function smb_verify_status {
 
 function smb_bolus {
     # Verify that the suggested.json is less than 5 minutes old
-    # Administer the supermicrobolus
+    # and administer the supermicrobolus
     find enact/ -mmin -5 | grep smb-suggested.json \
     && if (grep -q '"units":' enact/smb-suggested.json); then
         openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
@@ -179,6 +178,7 @@ function smb_bolus {
     fi
 }
 
+# calculate random sleep intervals, and get TTY port
 function prep {
     set -o pipefail
 
@@ -193,12 +193,15 @@ function prep {
     fi
 }
 
+# make sure we can talk to the pump and get a valid model number
 function preflight {
+    # only 522, 523, 722, and 723 pump models have been tested with SMB
     openaps report invoke settings/model.json 2>&1 >/dev/null | tail -1 \
-    && egrep -q "[57][23]" settings/model.json \
+    && egrep -q "[57]2[23]" settings/model.json \
     && echo -n "Preflight OK, "
 }
 
+# reset radio, mmtune, and wait_for_silence 60 if no signal
 function mmtune {
     reset_spi_serial.py 2>/dev/null
     echo {} > monitor/mmtune.json
@@ -220,6 +223,7 @@ function maybe_mmtune {
     && mmtune
 }
 
+# listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
     if [ -z $1 ]; then
         waitfor=30
@@ -235,6 +239,7 @@ function wait_for_silence {
     done
 }
 
+# Refresh pumphistory etc.
 function gather {
     openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1 \
     && echo -n Ref \
@@ -244,6 +249,7 @@ function gather {
     && echo ed pumphistory || (echo; exit 1) 2>/dev/null
 }
 
+# Calculate new suggested temp basal and enact it
 function enact {
     rm enact/suggested.json
     openaps report invoke enact/suggested.json \
@@ -256,17 +262,20 @@ function enact {
     echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
 }
 
+# refresh pumphistory if it's more than 15m old
 function refresh_old_pumphistory {
     find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
     || ( echo -n "Old pumphistory: " && gather && enact )
 }
 
+# refresh pumphistory_24h if it's more than 2h old
 function refresh_old_pumphistory_24h {
     find settings/ -mmin -120 -size +100c | grep -q pumphistory-24h-zoned \
     || ( echo -n Old pumphistory-24h refresh \
         && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed )
 }
 
+# refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo Profile less than 60m old \
     || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo ed )
