@@ -74,7 +74,7 @@ case $i in
     shift # past argument=value
     ;;
     -n=*|--ns-host=*)
-    NIGHTSCOUT_HOST="${i#*=}"
+    NIGHTSCOUT_HOST=$(echo ${i#*=} | sed 's/\/$//g')
     shift # past argument=value
     ;;
     -a=*|--api-secret=*)
@@ -101,10 +101,6 @@ case $i in
     BT_PEB="${i#*=}"
     shift # past argument=value
     ;;
-    --ti_usb_ww=*)
-    TI_USB_WW="${i#*=}"
-    shift # past argument=value
-    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -128,7 +124,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G4-raw|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ti_usb_ww=(yes|no)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G4-raw|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -149,15 +145,24 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
     fi
-    read -p "Are you using mmeowlink? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? " -r
-    ttyport=$REPLY
-    echo -n "Ok, "
-    if [[ -z "$ttyport" ]]; then
-        echo -n Carelink
+
+
+    read -p "Are you using an Explorer Board? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        ttyport=/dev/spidev5.1
+    echo "Ok, yay for Explorer Board! "
     else
-        echo -n TTY $ttyport
+        read -p 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? ' -r
+        ttyport=$REPLY
+        echo -n "Ok, "
+        if [[ -z "$ttyport" ]]; then
+            echo -n Carelink
+        else
+            echo -n TTY $ttyport
+        fi
+        echo " it is. "
     fi
-    echo " it is."
+
 
     if [[ ! -z "${ttyport}" ]]; then
       echo "Medtronic pumps come in two types: WW (Worldwide) pumps, and NA (North America) pumps."
@@ -172,19 +177,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       echo -n "Ok, "
       # Force uppercase, just in case the user entered ww
       radio_locale=${radio_locale^^}
-
-      # check if user has a TI USB stick and a WorldWide pump and want's to reset the USB subsystem during mmtune if the TI USB fails
-      ti_usb_ww0="no" # assume you don't want it by default
-      ti_usb_ww1=""
-      if [[ $radio_locale =~ ^WW$ ]]; then
-        echo "If you have a TI USB stick and a WW pump, you might want to reset the USB subsystem if it can't be found during a mmtune process"
-        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? Use y if so. Otherwise just hit enter: " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-          ti_usb_ww="yes"
-        else
-          ti_usb_ww="no" 
-        fi
-      fi
 
       if [[ -z "${radio_locale}" ]]; then
           radio_locale='US'
@@ -208,7 +200,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo "Ok, $API_SECRET it is."
     fi
     if [[ ! -z $BT_MAC ]]; then
-       read -p "For BT Tethering enter phone mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+       read -p "For BT Tethering enter phone Bluetooth MAC address (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
        BT_MAC=$REPLY
        echo "Ok, $BT_MAC it is."
        if [[ -z $BT_MAC ]]; then
@@ -237,12 +229,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             ENABLE+=" meal "
         fi
     fi
-else 
-   if [[ $TI_USB_WW =~ ^[Yy] ]]; then
-      ti_usb_ww="yes"
-   else
-      ti_usb_ww0"no"
-   fi
 fi
 
 echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
@@ -299,7 +285,9 @@ if [[ ! -z "$min_5m_carbimpact" ]]; then
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a /tmp/oref0-runagain.sh; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ ! -z "$ti_usb_ww" ]]; then echo -n " --ti_usb_ww='$ti_usb_ww'" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a /tmp/oref0-runagain.sh; fi
 echo; echo | tee -a /tmp/oref0-runagain.sh
 
 read -p "Continue? y/[N] " -r
@@ -326,7 +314,7 @@ mkdir -p settings || die "Can't mkdir settings"
 mkdir -p enact || die "Can't mkdir enact"
 mkdir -p upload || die "Can't mkdir upload"
 if [[ ${CGM,,} =~ "xdrip" ]]; then
-   mkdir -p xdrip || die "Can't mkdir xdrip"
+	mkdir -p xdrip || die "Can't mkdir xdrip"
 fi
 
 mkdir -p $HOME/src/
@@ -359,7 +347,7 @@ if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basa
 else
     preferences_from_args=()
     if [[ $max_iob -ne 0 ]]; then
-    preferences_from_args+="\"max_iob\":$max_iob "
+	preferences_from_args+="\"max_iob\":$max_iob "
     fi
     if [[ ! -z "$max_daily_safety_multiplier" ]]; then
         preferences_from_args+="\"max_daily_safety_multiplier\":$max_daily_safety_multiplier "
@@ -503,36 +491,28 @@ grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
 
 if [[ "$ttyport" =~ "spi" ]]; then
-    echo Checking kernel for spi_serial installation
+    echo Checking spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
-        # TODO: figure out best way to do this from https://github.com/EnhancedRadioDevices/ URL
-        # Opened https://github.com/EnhancedRadioDevices/915MHzEdisonExplorer_SW/issues/11 to discuss
-        if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
-           echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
-        else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
-           echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"           
-        fi
+        echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
     fi
 
-    echo Checking kernel for mraa installation
-    if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
-       echo "Skipping mraa install for kernel 4.10+"
-    else # check if mraa is installed
-      if ! ldconfig -p | grep -q mraa; then # if not installed, install it
-          echo Installing swig etc.
-          sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
-          if [ -d "$HOME/src/mraa/" ]; then
-              echo "$HOME/src/mraa/ already exists; pulling latest master branch"
-              (cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
-          else
-              echo -n "Cloning mraa master: "
-              (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
-          fi
-          ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
-          make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
-          sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
-      fi
+    echo Checking mraa installation
+    if ! ldconfig -p | grep -q mraa; then
+        echo Installing swig etc.
+        sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
+
+        if [ -d "$HOME/src/mraa/" ]; then
+            echo "$HOME/src/mraa/ already exists; pulling latest master branch"
+            (cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
+        else
+            echo -n "Cloning mraa master: "
+            (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
+        fi
+        ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
+        make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
+        sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
     fi
+
 fi
 
 echo Checking openaps dev installation
@@ -556,26 +536,12 @@ else
     openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
     if [[ ${radio_locale,,} =~ "ww" ]]; then
-      if [ -d "$HOME/src/subg_rfspy/" ]; then
-        echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
-        (cd ~/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
-      else
-        echo -n "Cloning subg_rfspy: "
-        (cd ~/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
-      fi
-
       # add subg-ww-radio-parameters script to mmtune for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-      # append --resetusb if using a TI USB stick
-      if [[ $ti_usb_ww =~ ^[Yy] ]]; then
-        ti_usb_ww1="--resetusb"
-      else  
-        ti_usb_ww1="--resetpy"
-      fi
-      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; oref0-subg-ww-radio-parameters.py '$ti_usb_ww1' -v ; \2/g' openaps.ini
+      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; \/usr\/local\/bin\/oref0-subg-ww-radio-parameters-timeout; \2/g' openaps.ini
 
-      # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowli/issues/55
-      # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-      grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+       # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
+       # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+       grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
     fi
 fi
 
@@ -629,6 +595,7 @@ fi
 # Install Pancreabble
 echo Checking for BT Pebble Mac 
 if [[ ! -z "$BT_PEB" ]]; then
+   sudo apt-get -y install jq
    sudo pip install libpebble2
    sudo pip install --user git+git://github.com/mddub/pancreabble.git
    oref0-bluetoothup
@@ -679,6 +646,14 @@ echo
 
 read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
+
+    echo Saving existing crontab to $HOME/crontab.txt:
+    crontab -l | tee $HOME/crontab.old.txt
+    read -p "Would you like to remove your existing crontab first? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        crontab -r
+    fi
+
 # add crontab entries
     (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
     (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
@@ -714,6 +689,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     if [[ "$ttyport" =~ "spi" ]]; then
         (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
+        (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
     fi
     (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
     if [[ ! -z "$BT_PEB" ]]; then
@@ -722,7 +698,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
        (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
     fi
-    crontab -l
+    crontab -l | tee $HOME/crontab.txt
 fi
 
 if [[ ${CGM,,} =~ "shareble" ]]; then
