@@ -131,7 +131,11 @@ fi
 cd $directory && mkdir -p autotune
 cp settings/pumpprofile.json autotune/profile.pump.json
 # This allows manual users to be able to run autotune by simply creating a settings/pumpprofile.json file.
-cp -up settings/pumpprofile.json settings/profile.json
+if [[ `uname` == 'Darwin' ]] ; then
+    cp settings/pumpprofile.json settings/profile.json
+else
+    cp -up settings/pumpprofile.json settings/profile.json
+fi
 # If a previous valid settings/autotune.json exists, use that; otherwise start from settings/profile.json
 cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json
 cd autotune
