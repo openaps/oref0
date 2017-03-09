@@ -634,6 +634,9 @@ echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
 (cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
 (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
 
+echo "Adding OpenAPS log shortcuts"
+oref0-log-shortcuts
+
 echo
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Resetting spi_serial
