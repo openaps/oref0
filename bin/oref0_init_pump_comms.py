@@ -12,7 +12,7 @@ def run_script(args):
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
     else:
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
+        logging.basicConfig(level=logging.ERROR, format='%(asctime)s %(levelname)s %(message)s')
     init_spi_serial()
     init_ww_pump(args)
     sys.exit(0)
