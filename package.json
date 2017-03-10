@@ -68,9 +68,11 @@
     "oref0-set-system-clock": "./bin/oref0-set-system-clock.sh",
     "oref0-setup": "./bin/oref0-setup.sh",
     "oref0-subg-ww-radio-parameters": "./bin/oref0-subg-ww-radio-parameters.sh",
-    "oref0-subg-ww-radio-parameters.py": "./bin/oref0-subg-ww-radio-parameters.py",
     "oref0-template": "./bin/oref0-template.js",
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
+    # python modules within oref0
+    "oref0_init_pump_comms.py": "./bin/oref0_init_pump_comms.py",
+    "oref0_subg_ww_radio_parameters.py": "./bin/oref0_subg_ww_radio_parameters.py",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh",

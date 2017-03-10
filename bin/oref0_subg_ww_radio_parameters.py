@@ -31,8 +31,11 @@ def get_port_from_pump_ini(filename):
                 if option=='radio_locale':
                     radio_locale=config.get(section, option)
     if radio_locale==RADIO_LOCALE_NOT_SET:
-       logging.error("radio_locale is not set in pump.ini. Please set radio_locale=WW in your pump.ini")
-       sys.exit(1)
+        logging.error("radio_locale is not set in pump.ini. Please set radio_locale=WW in your pump.ini")
+        sys.exit(1)
+    elif str.lower(radio_locale)=='us':
+        logging.debug("radio_locale is set to %s. Skipping WW-pump initialization" % radio_locale)
+        sys.exit(0)    
     return port
 
 
@@ -60,7 +63,7 @@ def execute(cmd, to, w):
                 os.killpg(pgrp, signal.SIGTERM)
         sys.exit(1)
         
-def run_script(args):
+def main(args):
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
     else:
@@ -72,27 +75,27 @@ def run_script(args):
         pump_port=get_port_from_pump_ini(pump_ini)
         logging.debug("Serial device (port) for pump is: %s" % pump_port)
         
-        # step 2: check if port device file exists. If not reset USB if it's requested with the --resetusb parameter
+        # step 3: check if port device file exists. If not reset USB if it's requested with the --resetusb parameter
         if pump_port==PORT_NOT_SET:
            logging.error("port is not set in pump.ini. Please set port to your serial device, e.g. /dev/mmeowlink")
            sys.exit(1)
 
-        # step 3: with a II USB stick the device/symlink can disappear for unknown reasons. Restarting the USB subsystem seems to work
+        # step 4: with a II USB stick the device/symlink can disappear for unknown reasons. Restarting the USB subsystem seems to work
         tries=0   
         while (not os.path.exists(pump_port)) and tries<2:
            logging.error("pump port %s does not exist" % pump_port)
-           if args.resetusb:
+           if args.ww_ti_usb_reset=='yes':
                exitcode=execute(["sudo", "oref0-reset-usb"], args.timeout, args.wait)
                tries=tries+1
-           else: # if not --resetusb then quit the loop
+           else: # if not --ww_ti_usb_reset==yes then quit the loop
              break
 
-        # step 4: set environment variable
+        # step 5: set environment variable
         os.environ["RFSPY_RTSCTS"]=str(args.rfsypy_rtscts)
         logging.debug("env RFSPY_RTSCTS=%s" % os.environ["RFSPY_RTSCTS"] )
 
-        # step 5: use reset.py 
-        if args.resetpy:
+        # step 6: use reset.py 
+        if args.ww_ti_usb_reset=='no':
            cmd=["oref0-subg-ww-radio-parameters", str(pump_port), "--resetpy"]
            exitcode=execute(cmd, args.timeout, args.wait)
 
@@ -107,17 +110,14 @@ def run_script(args):
         logging.error("Exception: %s" % ex)
         sys.exit(1)
       
-    
+   
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Wrapper for setting World Wide radio parameters to a Medtronic pump for TI chip')
     parser.add_argument('-d', '--dir', help='openaps dir', default='.')
     parser.add_argument('-t', '--timeout', type=int, help='timeout value for script', default=30)
     parser.add_argument('-w', '--wait', type=int, help='wait time after command', default=0.5)
     parser.add_argument('--pump_ini', help='filename for pump config file', default='pump.ini')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--resetpy', action="store_true", help='ualways start with reset.py script from subg_rfspy. Default', default=True)
-    group.add_argument('--resetusb', action="store_true", help='call oref0_reset_usb command if serial pump device is not found. Recommended only for TI USB with WW-pump', default=False)
-    group.add_argument('--ww_ti_usb_reset', type=str, help='call oref0_reset_usb command or not. Use \'yes\' only for TI USB and WW-pump. Default: no' , default='no')
+    parser.add_argument('--ww_ti_usb_reset', type=str, help='call oref0_reset_usb command or not. Use \'yes\' only for TI USB and WW-pump. Default: no' , default='no')
     parser.add_argument('--rfsypy_rtscts', type=int, help='sets the RFSPY_RTSCTS environment variable (set to 0 for ERF and TI USB)', default=0)
     parser.add_argument('-v', '--verbose', action="store_true", help='increase output verbosity')
     parser.add_argument('--version', action='version', version='%(prog)s 0.0.1-dev')
@@ -125,4 +125,4 @@ if __name__ == '__main__':
     if str.lower(args.ww_ti_usb_reset) not in ['', 'yes', 'no']:
        logging.fatal("Use --ww_ti_usb_reset with 'yes' or  no'. You specified %s" % args.ww_ti_usb_reset)
        sys.exit(1)
-    run_script(args)
+    main(args)
