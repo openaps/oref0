@@ -101,8 +101,8 @@ case $i in
     BT_PEB="${i#*=}"
     shift # past argument=value
     ;;
-    --ti_usb_ww=*)
-    TI_USB_WW="${i#*=}"
+    --ww_ti_usb_reset=*) # use reset if pump device disappears with TI USB and WW-pump
+    WW_TI_USB_RESET="${i#*=}"
     shift # past argument=value
     ;;
     *)
@@ -128,7 +128,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G4-raw|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ti_usb_ww=(yes|no)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G4-raw|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -183,15 +183,14 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       radio_locale=${radio_locale^^}
 
       # check if user has a TI USB stick and a WorldWide pump and want's to reset the USB subsystem during mmtune if the TI USB fails
-      ti_usb_ww0="no" # assume you don't want it by default
-      ti_usb_ww1=""
+      ww_ti_usb_reset="no" # assume you don't want it by default
       if [[ $radio_locale =~ ^WW$ ]]; then
-        echo "If you have a TI USB stick and a WW pump, you might want to reset the USB subsystem if it can't be found during a mmtune process"
-        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? Use y if so. Otherwise just hit enter: " -r
+        echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process"
+        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? Use y if so. Otherwise just hit enter (default no): " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-          ti_usb_ww="yes"
+          ww_ti_usb_reset="yes"
         else
-          ti_usb_ww="no" 
+          ww_ti_usb_reset="no" 
         fi
       fi
 
@@ -247,10 +246,10 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         fi
     fi
 else 
-   if [[ $TI_USB_WW =~ ^[Yy] ]]; then
-      ti_usb_ww="yes"
+   if [[ $ww_ti_usb_reset =~ ^[Yy] ]]; then
+      ww_ti_usb_reset="yes"
    else
-      ti_usb_ww0"no"
+      ww_ti_usb_reset="no"
    fi
 fi
 
@@ -308,7 +307,7 @@ if [[ ! -z "$min_5m_carbimpact" ]]; then
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a /tmp/oref0-runagain.sh; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ ! -z "$ti_usb_ww" ]]; then echo -n " --ti_usb_ww='$ti_usb_ww'" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ $ww_ti_usb_reset =~ ^[Yy]$ ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a /tmp/oref0-runagain.sh; fi
 if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
 if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
 if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a /tmp/oref0-runagain.sh; fi
@@ -344,17 +343,17 @@ fi
 mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
     echo "$HOME/src/oref0/ already exists; pulling latest"
-    (cd ~/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
+    (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
 else
     echo -n "Cloning oref0: "
-    (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
+    (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
 echo Checking oref0 installation
 
 if git branch | grep "* master"; then
     npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
 else
-    npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 from ~/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+    npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
 fi
 
 echo Checking mmeowlink installation
@@ -434,11 +433,11 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
         if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
             echo "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
-            (cd ~/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+            (cd $HOME/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         else
             echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
             # TODO: get this moved over to openaps and install with pip
-            (cd ~/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+            (cd $HOME/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         fi
         echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
     fi
@@ -534,10 +533,10 @@ if [[ "$ttyport" =~ "spi" ]]; then
           sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
           if [ -d "$HOME/src/mraa/" ]; then
               echo "$HOME/src/mraa/ already exists; pulling latest master branch"
-              (cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
+              (cd $HOME/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
           else
               echo -n "Cloning mraa master: "
-              (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
+              (cd $HOME/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
           fi
           ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
           make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
@@ -570,21 +569,15 @@ else
     if [[ ${radio_locale,,} =~ "ww" ]]; then
       if [ -d "$HOME/src/subg_rfspy/" ]; then
         echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
-        (cd ~/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
+        (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
       else
         echo -n "Cloning subg_rfspy: "
-        (cd ~/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
+        (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
       fi
 
-      # add subg-ww-radio-parameters script to mmtune for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-      # append --resetusb if using a TI USB stick
-      if [[ $ti_usb_ww =~ ^[Yy] ]]; then
-        ti_usb_ww1="--resetusb"
-      else  
-        ti_usb_ww1="--resetpy"
-      fi
-      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; oref0-subg-ww-radio-parameters.py '$ti_usb_ww1' -v ; \2/g' openaps.ini
-
+      # add subg-ww-radio-parameters script to mmtune alias for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
+      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump
+      #TODO: change alias sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; oref0-subg-ww-radio-parameters.py '$ww_ti_usb_reset' -v ; \2/g' openaps.ini
 
        # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
        # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
@@ -629,8 +622,8 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
       echo "EdisonVoltage already installed"
    else
       echo "Installing EdisonVoltage"
-      cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
-      cd ~/src/EdisonVoltage
+      cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+      cd $HOME/src/EdisonVoltage
       make voltage
    fi
    cd $directory || die "Can't cd $directory"
