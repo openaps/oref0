@@ -57,7 +57,7 @@ else
         echo
     fi
     echo -n "At $(date), my wifi network name is "
-    iwconfig 2>&1 | grep ESSID | awk -F : '{print $2}' | perl -pe 's/  \n//'
+    printf '%s' $(iwgetid -r)
     echo -n ", and my public IP is: "
     curl -s -m 15 icanhazip.com
 fi
