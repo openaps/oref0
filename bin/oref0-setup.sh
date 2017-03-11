@@ -320,17 +320,17 @@ fi
 mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
     echo "$HOME/src/oref0/ already exists; pulling latest"
-    (cd ~/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
+    (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
 else
     echo -n "Cloning oref0: "
-    (cd ~/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
+    (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
 echo Checking oref0 installation
 
 if git branch | grep "* master"; then
     npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
 else
-    npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 from ~/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+    npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
 fi
 
 echo Checking mmeowlink installation
@@ -410,11 +410,11 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
         if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
             echo "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
-            (cd ~/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+            (cd $HOME/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         else
             echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
             # TODO: get this moved over to openaps and install with pip
-            (cd ~/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+            (cd $HOME/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         fi
         echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
     fi
@@ -536,8 +536,17 @@ else
     openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
     if [[ ${radio_locale,,} =~ "ww" ]]; then
-      # add subg-ww-radio-parameters script to mmtune for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-      sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; \/usr\/local\/bin\/oref0-subg-ww-radio-parameters-timeout; \2/g' openaps.ini
+      if [ -d "$HOME/src/subg_rfspy/" ]; then
+        echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
+        (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
+      else
+        echo -n "Cloning subg_rfspy: "
+        (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
+      fi
+
+     # add subg-ww-radio-parameters script to mmtune for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
+     # in the next release this will be refactored to oref0_init_pump_comms.py which will be called before mmtune
+     sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; \/usr\/local\/bin\/oref0-subg-ww-radio-parameters-timeout; \2/g' openaps.ini
 
        # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
        # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
@@ -582,8 +591,8 @@ if egrep -i "edison" /etc/passwd 2>/dev/null; then
       echo "EdisonVoltage already installed"
    else
       echo "Installing EdisonVoltage"
-      cd ~/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
-      cd ~/src/EdisonVoltage
+      cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+      cd $HOME/src/EdisonVoltage
       make voltage
    fi
    cd $directory || die "Can't cd $directory"
