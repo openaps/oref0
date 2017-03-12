@@ -21,7 +21,7 @@ die() {
 
 # defaults
 max_iob=0
-CGM="G4"
+CGM="G4-upload"
 DIR=""
 directory=""
 EXTRAS=""
@@ -108,8 +108,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G4-raw, G5, MDT or xdrip."
+if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "G4-local-only" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -137,7 +137,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G4-raw, G5, MDT, xdrip) " -r
+    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout" -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
@@ -437,7 +437,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     # comment out existing line if it exists and isn't already commented out
     sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
 fi
-if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
+if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4" ]]; then
     mkdir -p $directory-cgm-loop
     if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
         echo $directory-cgm-loop already exists
@@ -460,7 +460,7 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
     fi
 
-    if [[ ${CGM,,} =~ "g4-raw" ]]; then
+    if [[ ${CGM,,} =~ "g4" ]]; then
         sudo apt-get -y install bc
         openaps device add cgm dexcom || die "Can't add CGM"
         for type in cgm-loop; do
