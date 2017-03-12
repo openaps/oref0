@@ -636,6 +636,10 @@ if [[ $ENABLE =~ autotune ]]; then
 fi
 
 # configure supermicrobolus if enabled
+# WARNING: supermicrobolus mode is not yet documented or ready for general testing
+# It should only be tested with a disconnected pump not administering insulin.
+# If you aren't sure what you're doing, *DO NOT* enable this.
+# If you ignore this warning, it *WILL* administer extra post-meal insulin, which may cause low blood sugar.
 if [[ $ENABLE =~ microbolus ]]; then
     sudo apt-get -y install bc
     cd $directory || die "Can't cd $directory"
