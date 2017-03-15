@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.4.2-dev",
+  "version": "0.5.0-dev",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -61,8 +61,8 @@
     "oref0-mint-max-iob": "./bin/oref0-mint-max-iob.sh",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "oref0-online": "./bin/oref0-online.sh",
-    "oref0-upload-profile": "./bin/oref0-upload-profile.js",
     "oref0-pebble": "./bin/oref0-pebble.js",
+    "oref0-pump-loop": "./bin/oref0-pump-loop.sh",
     "oref0-radio-reboot": "./bin/oref0-radio-reboot.sh",
     "oref0-raw": "./bin/oref0-raw.js",
     "oref0-reset-git": "bin/oref0-reset-git.sh",
@@ -74,7 +74,7 @@
     "oref0-subg-ww-radio-parameters-timeout": "./bin/oref0-subg-ww-radio-parameters-timeout.sh",
     "oref0-template": "./bin/oref0-template.js",
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
-    "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
+    "oref0-upload-profile": "./bin/oref0-upload-profile.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "wifi": "./bin/oref0-tail-wifi.sh"
   },
