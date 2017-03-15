@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.4.1",
+  "version": "0.4.2-dev",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -38,9 +38,11 @@
     "oref0-autotune-export-to-xlsx": "./bin/oref0-autotune-export-to-xlsx.py",
     "oref0-autotune-prep": "./bin/oref0-autotune-prep.js",
     "oref0-autotune-recommends-report": "./bin/oref0-autotune-recommends-report.sh",
+    "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-copy-fresher": "./bin/oref0-copy-fresher",
     "oref0-crun": "./bin/oref0-conditional-run.sh",
+    "oref0-delete-future-entries": "./bin/oref0-delete-future-entries.sh",
     "oref0-detect-sensitivity": "./bin/oref0-detect-sensitivity.js",
     "oref0-determine-basal": "./bin/oref0-determine-basal.js",
     "oref0-dexusb-cgm-loop": "./bin/oref0-dexusb-cgm-loop.py",
@@ -53,6 +55,7 @@
     "oref0-get-profile": "./bin/oref0-get-profile.js",
     "oref0-html": "./bin/oref0-html.js",
     "oref0-ifttt-notify": "./bin/oref0-ifttt-notify",
+    "oref0-log-shortcuts": "./bin/oref0-log-shortcuts.sh",
     "oref0-mdt-trend": "./bin/oref0-mdt-trend.js",
     "oref0-meal": "./bin/oref0-meal.js",
     "oref0-mint-max-iob": "./bin/oref0-mint-max-iob.sh",
@@ -74,7 +77,6 @@
     "oref0_subg_ww_radio_parameters.py": "./bin/oref0_subg_ww_radio_parameters.py",
     "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
-    "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh",
     "wifi": "./bin/oref0-tail-wifi.sh"
   },
   "homepage": "https://github.com/openaps/oref0",
