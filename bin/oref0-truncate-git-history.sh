@@ -45,6 +45,7 @@ if (( $commits > 5000 )); then
     rm -rf .git
     openaps init .
 fi
+
 commits=$(git log | grep -c commit)
 usage=$(du -sh .git | awk '{print $1}')
 oldest=$(git log | grep Date | tail -1)

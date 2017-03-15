@@ -1,0 +1,37 @@
+[
+  {
+    "enact/smb-suggested.json": {
+      "profile": "settings/profile.json",
+      "use": "shell",
+      "temp_basal": "monitor/temp_basal.json",
+      "reporter": "JSON",
+      "json_default": "True",
+      "device": "determine-basal",
+      "remainder": "settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json",
+      "iob": "monitor/iob.json",
+      "glucose": "monitor/glucose.json"
+    },
+    "type": "report",
+    "name": "enact/smb-suggested.json"
+  },
+  {
+    "enact/smb-enacted.json": {
+      "device": "pump",
+      "input": "enact/smb-suggested.json",
+      "use": "set_temp_basal",
+      "reporter": "JSON"
+    },
+    "type": "report",
+    "name": "enact/smb-enacted.json"
+  },
+  {
+    "enact/bolused.json": {
+      "device": "pump",
+      "input": "enact/smb-suggested.json",
+      "use": "bolus",
+      "reporter": "JSON"
+    },
+    "type": "report",
+    "name": "enact/bolused.json"
+  }
+]
