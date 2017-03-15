@@ -210,7 +210,7 @@ describe('determine-basal', function ( ) {
         var iob_data = {"iob":0,"activity":-0.01,"bolussnooze":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         output.duration.should.equal(30);
-        output.reason.should.match(/.*m.* = .* >.* req .*/);
+        output.reason.should.match(/.* > 2.*insulinReq. Setting temp.*/);
     });
 
     it('should continue high-temp when required ~= temp running', function () {
@@ -446,7 +446,7 @@ describe('determine-basal', function ( ) {
         output.rate.should.be.above(1);
         output.rate.should.be.below(2);
         output.duration.should.equal(30);
-        output.reason.should.match(/> 2.*req/);
+        output.reason.should.match(/.* > 2.*insulinReq. Setting temp.*/);
     });
 
     it('should profile.current_basal be undefined return error', function () {

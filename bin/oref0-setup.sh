@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# This script sets up an openaps environment to work with loop.sh,
-# by defining the required devices, reports, and aliases.
+# This script sets up an openaps environment by defining the required devices,
+# reports, and aliases, and optionally enabling it in cron.
 #
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
@@ -349,11 +349,10 @@ else
     (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
 echo Checking oref0 installation
-
 if git branch | grep "* master"; then
-    npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
+    npm list -g oref0 | egrep oref0@0.4.[2-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
 else
-    npm list -g oref0 | egrep oref0@0.4.[0-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+    npm list -g oref0 | egrep oref0@0.5.[0-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
 fi
 
 echo Checking mmeowlink installation
@@ -401,7 +400,7 @@ test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var
 # configure ns
 if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
     echo "Removing any existing ns device: "
-    killall -g openaps 2>/dev/null; openaps device remove ns 2>/dev/null
+    ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
     echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
     nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
 fi
@@ -478,7 +477,7 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
-        killall -g openaps 2>/dev/null; openaps device remove ns 2>/dev/null
+        ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
         echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
     fi
@@ -554,7 +553,7 @@ fi
 
 cd $directory || die "Can't cd $directory"
 echo "Removing any existing pump device:"
-killall -g openaps 2>/dev/null; openaps device remove pump 2>/dev/null
+( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
 if [[ -z "$ttyport" ]]; then
     openaps device add pump medtronic $serial || die "Can't add pump"
     # carelinks can't listen for silence or mmtune, so just do a preflight check instead
@@ -667,6 +666,20 @@ if [[ $ENABLE =~ autotune ]]; then
     done
 fi
 
+# configure supermicrobolus if enabled
+# WARNING: supermicrobolus mode is not yet documented or ready for general testing
+# It should only be tested with a disconnected pump not administering insulin.
+# If you aren't sure what you're doing, *DO NOT* enable this.
+# If you ignore this warning, it *WILL* administer extra post-meal insulin, which may cause low blood sugar.
+if [[ $ENABLE =~ microbolus ]]; then
+    sudo apt-get -y install bc
+    cd $directory || die "Can't cd $directory"
+    for type in supermicrobolus; do
+      echo importing $type file
+      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+fi
+
 # Create ~/.profile so that openaps commands can be executed from the command line
 # as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
 # TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299)
@@ -680,7 +693,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
     reset_spi_serial.py
 fi
 echo Attempting to communicate with pump:
-killall -g openaps
+( killall -g openaps; killall -g oref0-pump-loop)
 openaps mmtune
 echo
 
@@ -700,12 +713,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
     (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
     (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
-    (crontab -l; crontab -l | grep -q "killall -g --older-than" || echo '* * * * * killall -g --older-than 15m openaps') | crontab -
+    (crontab -l; crontab -l | grep -q "killall -g --older-than 15m oref0" || echo '* * * * * ( killall -g --older-than 15m openaps; killall -g --older-than 15m oref0-pump-loop; killall -g --older-than 15m openaps-report )') | crontab -
     # repair or reset git repository if it's corrupted or disk is full
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
     # truncate git history to 1000 commits if it has grown past 1500
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
-    if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
+    if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
         # repair or reset cgm-loop git repository if it's corrupted or disk is full
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-reset-git" || echo "* * * * * cd $directory-cgm-loop && oref0-reset-git") | crontab -
         # truncate cgm-loop git history to 1000 commits if it has grown past 1500
@@ -731,7 +744,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
         (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
     fi
-    (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+    if [[ $ENABLE =~ microbolus ]]; then
+        (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop --microbolus ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+    else
+        (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+    fi
     if [[ ! -z "$BT_PEB" ]]; then
        (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
     fi
