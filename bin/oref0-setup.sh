@@ -283,6 +283,7 @@ echo
 # This section is echoing (commenting) back the options you gave it during the interactive setup script.
 # The "| tee -a /tmp/oref0-runagain.sh" part is also appending it to a file so you can run it again more easily in the future.
 
+# create temporary file for oref0-runagain.sh
 OREF0_RUNAGAIN=`mktemp /tmp/oref0-runagain.XXXXXXXXXX`
 echo "#!/bin/bash" > $OREF0_RUNAGAIN
 echo "# To run again with these same options, use:" | tee $OREF0_RUNAGAIN
@@ -331,7 +332,7 @@ fi
 cd $directory || die "Can't cd $directory"
 
 # Taking the oref0-runagain.sh from tmp to $directory
-mv $OREF0_RUNAGAIN ./
+mv $OREF0_RUNAGAIN ./oref0-runagain.sh
 
 mkdir -p monitor || die "Can't mkdir monitor"
 mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
