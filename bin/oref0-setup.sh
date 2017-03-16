@@ -283,35 +283,38 @@ echo
 # This section is echoing (commenting) back the options you gave it during the interactive setup script.
 # The "| tee -a /tmp/oref0-runagain.sh" part is also appending it to a file so you can run it again more easily in the future.
 
-echo "# To run again with these same options, use:" | tee /tmp/oref0-runagain.sh
-echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a /tmp/oref0-runagain.sh
+OREF0_RUNAGAIN=`mktemp /tmp/oref0-runagain.XXXXXXXXXX`
+echo "#!/bin/bash" > $OREF0_RUNAGAIN
+echo "# To run again with these same options, use:" | tee $OREF0_RUNAGAIN
+echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
 if [[ ${CGM,,} =~ "shareble" ]]; then
-    echo -n " --bleserial=$BLE_SERIAL" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --bleserial=$BLE_SERIAL" | tee -a $OREF0_RUNAGAIN
 fi
-echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a /tmp/oref0-runagain.sh
+echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_RUNAGAIN
 if [[ ! -z "$ttyport" ]]; then
-    echo -n " --tty=$ttyport" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --tty=$ttyport" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
-    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
-    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
-    echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ $ww_ti_usb_reset =~ ^[Yy]$ ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a /tmp/oref0-runagain.sh; fi
-echo; echo | tee -a /tmp/oref0-runagain.sh
+if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ $ww_ti_usb_reset =~ ^[Yy]$ ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN; fi
+echo; echo | tee -a $OREF0_RUNAGAIN
+chmod 755 $OREF0_RUNAGAIN
 
 read -p "Continue? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -328,7 +331,7 @@ fi
 cd $directory || die "Can't cd $directory"
 
 # Taking the oref0-runagain.sh from tmp to $directory
-mv /tmp/oref0-runagain.sh ./
+mv $OREF0_RUNAGAIN ./
 
 mkdir -p monitor || die "Can't mkdir monitor"
 mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
