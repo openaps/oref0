@@ -41,14 +41,14 @@ def get_port_from_pump_ini(filename):
 
 # helper method to execute command cmd and return the returncode
 # use a timeout of to, and wait w seconds after the command
-def execute(cmd, to, w):
+def execute(cmd, cmdtimeout, wait):
     try:
         logging.debug("excuting %s" % cmd)
         proc=subprocess.Popen(cmd, shell=False)
-        outs,errs=proc.communicate(timeout=args.timeout)
+        outs,errs=proc.communicate(timeout=cmdtimeout)
         logging.debug("script exited with %s" % proc.returncode)
-        logging.debug("sleeping for %s seconds " % args.wait)
-        time.sleep(args.wait)
+        logging.debug("sleeping for %s seconds " % wait)
+        time.sleep(wait)
         return proc.returncode
     except subprocess.TimeoutExpired:
         logging.error("TimeoutExpired. Killing process")
@@ -80,7 +80,7 @@ def main(args):
            logging.error("port is not set in pump.ini. Please set port to your serial device, e.g. /dev/mmeowlink")
            sys.exit(1)
 
-        # step 4: with a II USB stick the device/symlink can disappear for unknown reasons. Restarting the USB subsystem seems to work
+        # step 4: with a TI USB stick the device/symlink can disappear for unknown reasons. Restarting the USB subsystem seems to work
         tries=0   
         while (not os.path.exists(pump_port)) and tries<2:
            logging.error("pump port %s does not exist" % pump_port)
