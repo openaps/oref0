@@ -71,9 +71,11 @@
     "oref0-set-system-clock": "./bin/oref0-set-system-clock.sh",
     "oref0-setup": "./bin/oref0-setup.sh",
     "oref0-subg-ww-radio-parameters": "./bin/oref0-subg-ww-radio-parameters.sh",
-    "oref0-subg-ww-radio-parameters-timeout": "./bin/oref0-subg-ww-radio-parameters-timeout.sh",
     "oref0-template": "./bin/oref0-template.js",
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
+    "oref0_init_pump_comms.py": "./bin/oref0_init_pump_comms.py",
+    "oref0_subg_ww_radio_parameters.py": "./bin/oref0_subg_ww_radio_parameters.py",
+    "send-tempbasal-Azure": "./bin/send-tempbasal-Azure.js",
     "oref0-upload-profile": "./bin/oref0-upload-profile.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "wifi": "./bin/oref0-tail-wifi.sh"

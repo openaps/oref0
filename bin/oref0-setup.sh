@@ -21,7 +21,7 @@ die() {
 
 # defaults
 max_iob=0
-CGM="G4-upload"
+CGM="G4"
 DIR=""
 directory=""
 EXTRAS=""
@@ -101,6 +101,10 @@ case $i in
     BT_PEB="${i#*=}"
     shift # past argument=value
     ;;
+    --ww_ti_usb_reset=*) # use reset if pump device disappears with TI USB and WW-pump
+    WW_TI_USB_RESET="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -108,8 +112,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, MDT or xdrip."
+if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G4-raw, G5, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -124,7 +128,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G4-raw|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G4-raw|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -137,7 +141,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout" -r
+    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G4-raw, G5, MDT, xdrip) " -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
@@ -177,6 +181,18 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       echo -n "Ok, "
       # Force uppercase, just in case the user entered ww
       radio_locale=${radio_locale^^}
+
+      # check if user has a TI USB stick and a WorldWide pump and want's to reset the USB subsystem during mmtune if the TI USB fails
+      ww_ti_usb_reset="no" # assume you don't want it by default
+      if [[ $radio_locale =~ ^WW$ ]]; then
+        echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process"
+        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? Use y if so. Otherwise just hit enter (default no): " -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+          ww_ti_usb_reset="yes"
+        else
+          ww_ti_usb_reset="no" 
+        fi
+      fi
 
       if [[ -z "${radio_locale}" ]]; then
           radio_locale='US'
@@ -229,6 +245,12 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             ENABLE+=" meal "
         fi
     fi
+else 
+   if [[ $ww_ti_usb_reset =~ ^[Yy] ]]; then
+      ww_ti_usb_reset="yes"
+   else
+      ww_ti_usb_reset="no"
+   fi
 fi
 
 echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
@@ -261,34 +283,39 @@ echo
 # This section is echoing (commenting) back the options you gave it during the interactive setup script.
 # The "| tee -a /tmp/oref0-runagain.sh" part is also appending it to a file so you can run it again more easily in the future.
 
-echo "# To run again with these same options, use:" | tee /tmp/oref0-runagain.sh
-echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a /tmp/oref0-runagain.sh
+# create temporary file for oref0-runagain.sh
+OREF0_RUNAGAIN=`mktemp /tmp/oref0-runagain.XXXXXXXXXX`
+echo "#!/bin/bash" > $OREF0_RUNAGAIN
+echo "# To run again with these same options, use:" | tee $OREF0_RUNAGAIN
+echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
 if [[ ${CGM,,} =~ "shareble" ]]; then
-    echo -n " --bleserial=$BLE_SERIAL" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --bleserial=$BLE_SERIAL" | tee -a $OREF0_RUNAGAIN
 fi
-echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a /tmp/oref0-runagain.sh
+echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_RUNAGAIN
 if [[ ! -z "$ttyport" ]]; then
-    echo -n " --tty=$ttyport" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --tty=$ttyport" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob" | tee -a /tmp/oref0-runagain.sh; fi
+if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
-    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
-    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
-    echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a /tmp/oref0-runagain.sh
+    echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a /tmp/oref0-runagain.sh; fi
-if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a /tmp/oref0-runagain.sh; fi
-echo; echo | tee -a /tmp/oref0-runagain.sh
+if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ $ww_ti_usb_reset =~ ^[Yy]$ ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN; fi
+echo; echo | tee -a $OREF0_RUNAGAIN
+chmod 755 $OREF0_RUNAGAIN
 
 read -p "Continue? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -305,7 +332,7 @@ fi
 cd $directory || die "Can't cd $directory"
 
 # Taking the oref0-runagain.sh from tmp to $directory
-mv /tmp/oref0-runagain.sh ./
+mv $OREF0_RUNAGAIN ./oref0-runagain.sh
 
 mkdir -p monitor || die "Can't mkdir monitor"
 mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
@@ -436,7 +463,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     # comment out existing line if it exists and isn't already commented out
     sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
 fi
-if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-local" ]]; then
+if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
     mkdir -p $directory-cgm-loop
     if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
         echo $directory-cgm-loop already exists
@@ -459,7 +486,7 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-local" ]]; then
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
     fi
 
-    if [[ ${CGM,,} =~ "g4-local" ]]; then
+    if [[ ${CGM,,} =~ "g4-raw" ]]; then
         sudo apt-get -y install bc
         openaps device add cgm dexcom || die "Can't add CGM"
         for type in cgm-loop; do
@@ -490,27 +517,35 @@ grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
 
 if [[ "$ttyport" =~ "spi" ]]; then
-    echo Checking spi_serial installation
+    echo Checking kernel for spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
-        echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
-    fi
-
-    echo Checking mraa installation
-    if ! ldconfig -p | grep -q mraa; then
-        echo Installing swig etc.
-        sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
-
-        if [ -d "$HOME/src/mraa/" ]; then
-            echo "$HOME/src/mraa/ already exists; pulling latest master branch"
-            (cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
-        else
-            echo -n "Cloning mraa master: "
-            (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
+        if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
+           echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
+        else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
+           echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"           
         fi
-        ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
-        make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
-        sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
+        #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
     fi
+
+    echo Checking kernel for mraa installation
+    if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
+       echo "Skipping mraa install for kernel 4.10+"
+    else # check if mraa is installed
+      if ! ldconfig -p | grep -q mraa; then # if not installed, install it
+          echo Installing swig etc.
+          sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
+          if [ -d "$HOME/src/mraa/" ]; then
+              echo "$HOME/src/mraa/ already exists; pulling latest master branch"
+              (cd $HOME/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
+          else
+              echo -n "Cloning mraa master: "
+              (cd $HOME/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
+          fi
+          ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
+          make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
+          sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
+      fi
+    fi 
 
 fi
 
@@ -543,9 +578,9 @@ else
         (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
       fi
 
-     # add subg-ww-radio-parameters script to mmtune for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-     # in the next release this will be refactored to oref0_init_pump_comms.py which will be called before mmtune
-     sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; \/usr\/local\/bin\/oref0-subg-ww-radio-parameters-timeout; \2/g' openaps.ini
+      # add subg-ww-radio-parameters script to mmtune alias for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
+      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump
+      #TODO: change alias sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; oref0-subg-ww-radio-parameters.py '$ww_ti_usb_reset' -v ; \2/g' openaps.ini
 
        # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
        # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
@@ -656,9 +691,6 @@ echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
 (cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
 (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
 
-echo "Adding OpenAPS log shortcuts"
-oref0-log-shortcuts
-
 echo
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Resetting spi_serial
@@ -689,7 +721,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # repair or reset git repository if it's corrupted or disk is full
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
     # truncate git history to 1000 commits if it has grown past 1500
-    (crontab -l; crontab -l | grep -q "oref0-truncate-git-history" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q oref0-truncate-git-history || oref0-truncate-git-history") | crontab -
+    (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
     if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
         # repair or reset cgm-loop git repository if it's corrupted or disk is full
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-reset-git" || echo "* * * * * cd $directory-cgm-loop && oref0-reset-git") | crontab -
@@ -727,12 +759,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
        (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
     fi
-    # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
-    if egrep -i "edison" /etc/passwd 2>/dev/null; then
-     (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
-    fi
-    (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
-
     crontab -l | tee $HOME/crontab.txt
 fi
 
