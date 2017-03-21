@@ -6,7 +6,7 @@ main() {
     until( \
         echo && echo Starting pump-loop at $(date): \
         && wait_for_silence \
-        && refresh_old_pumphistory \
+        && refresh_old_pumphistory_enact \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
         && refresh_temp_and_enact \
@@ -269,10 +269,16 @@ function enact {
     echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
 }
 
-# refresh pumphistory if it's more than 15m old
-function refresh_old_pumphistory {
+# refresh pumphistory if it's more than 15m old and enact
+function refresh_old_pumphistory_enact {
     find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
     || ( echo -n "Old pumphistory: " && gather && enact )
+}
+
+# refresh pumphistory if it's more than 15m old, but don't enact
+function refresh_old_pumphistory {
+    find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
+    || ( echo -n "Old pumphistory: " && gather )
 }
 
 # refresh pumphistory_24h if it's more than 2h old
