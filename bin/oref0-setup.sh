@@ -418,13 +418,13 @@ echo Checking for BT Mac, BT Peb or Shareble
 if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     # Install Bluez for BT Tethering
     echo Checking bluez installation
-    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
-        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
-        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
+    if ! bluetoothd --version | grep -q 5.44 2>/dev/null; then
+        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.44.tar.gz && tar xvfz bluez-5.44.tar.gz || die "Couldn't download bluez"
+        cd $HOME/src/bluez-5.44 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         oref0-bluetoothup
     else
-        echo bluez v 5.37 already installed
+        echo bluez v 5.44 already installed
     fi
 fi
 # add/configure devices
@@ -450,7 +450,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
-    if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
+    if  bluetoothd --version | grep -q 5.44 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
     fi
      # add two lines to /etc/rc.local if they are missing.
