@@ -353,7 +353,6 @@ else
     (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
 echo Checking oref0 installation
-cd $HOME/src/oref0
 if git branch | grep "* master"; then
     npm list -g oref0 | egrep oref0@0.4.[2-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
 else
@@ -579,7 +578,7 @@ else
         (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
       fi
 
-      # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0-init-pump-comms.py
+      # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
       # this will be called when mmtune is use with a WW pump. 
       # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
       # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
