@@ -5,6 +5,7 @@ main() {
     prep
     until( \
         echo && echo Starting pump-loop at $(date): \
+        && low_battery_wait \
         && wait_for_silence \
         && refresh_old_pumphistory_enact \
         && refresh_old_pumphistory_24h \
