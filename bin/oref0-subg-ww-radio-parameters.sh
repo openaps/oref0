@@ -29,7 +29,7 @@ cd $SUBG_RFSPY_DIR/tools
 
 # Disabled by default, because it can hang the pump loop with TI USB stick
 # The reset.py script will be called if this script is run with --resetpy as second parameter
-# This is the default behaviour implemented in oref0_init_pump_comms.py
+# This is the default behaviour implemented in oref0-init-pump-comms.py
 case "$2" in
   --resetpy)
     ./reset.py $SERIAL_PORT
