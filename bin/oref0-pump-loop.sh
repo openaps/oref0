@@ -29,6 +29,7 @@ smb_main() {
     until ( \
         prep
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
+        && low_battery_wait \
         && wait_for_silence $upto30s \
         && preflight \
         && refresh_old_pumphistory \
@@ -321,6 +322,24 @@ function refresh_pumphistory_and_enact {
 function refresh_profile {
     find settings/ -mmin -10 -size +5c | grep -q settings.json && echo Settings less than 10m old \
     || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed)
+}
+
+low_battery_wait {
+    if (jq --exit-status ".battery > 60" monitor/edison-battery.json); then
+        echo -n Edison battery ok:
+        jq .battery monitor/edison-battery.json
+    elif (jq --exit-status ".battery <= 60" monitor/edison-battery.json); then
+        echo -n "Edison battery low; waiting up to 5 minutes for new BG:"
+        jq .battery monitor/edison-battery.json
+        for i in `seq 1 30`; do
+            if (! (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json )); then
+                break
+            fi
+            echo -n .; sleep 10
+        done
+    else
+        echo Edison battery level not found
+    fi
 }
 
 function refresh_pumphistory_24h {
