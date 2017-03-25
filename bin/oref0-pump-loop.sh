@@ -337,10 +337,12 @@ function low_battery_wait {
     elif (jq --exit-status ".battery <= 60" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison battery low: $(jq .battery monitor/edison-battery.json)%; waiting up to 5 minutes for new BG: "
         for i in `seq 1 30`; do
-            if (! (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json )); then
+            if (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json); then
+                echo glucose.json newer than temp_basal.json
                 break
+            else
+                echo -n .; sleep 10
             fi
-            echo -n .; sleep 10
         done
     else
         echo Edison battery level not found
