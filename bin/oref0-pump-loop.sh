@@ -325,12 +325,10 @@ function refresh_profile {
 }
 
 function low_battery_wait {
-    if (jq --exit-status ".battery > 60" monitor/edison-battery.json); then
-        echo -n "Edison battery ok: "
-        jq .battery monitor/edison-battery.json
-    elif (jq --exit-status ".battery <= 60" monitor/edison-battery.json); then
-        echo -n "Edison battery low; waiting up to 5 minutes for new BG: "
-        jq .battery monitor/edison-battery.json
+    if (jq --exit-status ".battery > 60" monitor/edison-battery.json > /dev/null); then
+        echo -n "Edison battery ok: $(jq .battery monitor/edison-battery.json)%"
+    elif (jq --exit-status ".battery <= 60" monitor/edison-battery.json > /dev/null); then
+        echo -n "Edison battery low: $(jq .battery monitor/edison-battery.json)%; waiting up to 5 minutes for new BG: "
         for i in `seq 1 30`; do
             if (! (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json )); then
                 break
@@ -343,13 +341,11 @@ function low_battery_wait {
 }
 
 function refresh_pumphistory_24h {
-    if (jq --exit-status ".battery > 60" monitor/edison-battery.json); then
-        echo -n "Edison battery: "
-        jq .battery monitor/edison-battery.json
+    if (jq --exit-status ".battery > 60" monitor/edison-battery.json > /dev/null); then
+        echo -n "Edison battery ok: $(jq .battery monitor/edison-battery.json)%"
         autosens_freq=20
-    elif (jq --exit-status ".battery <= 60" monitor/edison-battery.json); then
-        echo -n "Edison battery: "
-        jq .battery monitor/edison-battery.json
+    elif (jq --exit-status ".battery <= 60" monitor/edison-battery.json > /dev/null); then
+        echo -n "Edison battery low: $(jq .battery monitor/edison-battery.json)%"
         autosens_freq=90
     else
         echo Edison battery level not found
