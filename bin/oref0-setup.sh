@@ -703,7 +703,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
     reset_spi_serial.py
 fi
 echo Attempting to communicate with pump:
-( killall -g openaps; killall -g oref0-pump-loop)
+( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
 openaps mmtune
 echo
 
