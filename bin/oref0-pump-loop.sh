@@ -208,9 +208,9 @@ function preflight {
     && echo -n "Preflight OK, "
 }
 
-# reset radio, mmtune, and wait_for_silence 60 if no signal
+# reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
-    reset_spi_serial.py 2>/dev/null
+    oref0_init_pump_comms.py
     echo {} > monitor/mmtune.json
     echo -n "mmtune: " && openaps report invoke monitor/mmtune.json 2>&1 >/dev/null | tail -1
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line

@@ -21,7 +21,7 @@ die() {
 
 # defaults
 max_iob=0
-CGM="G4"
+CGM="G4-upload"
 DIR=""
 directory=""
 EXTRAS=""
@@ -112,8 +112,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G4-raw, G5, MDT or xdrip."
+if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -128,7 +128,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4|shareble|G4-raw|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -141,7 +141,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What kind of CGM are you using? (i.e. G4, ShareBLE, G4-raw, G5, MDT, xdrip) " -r
+    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout" -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
@@ -418,13 +418,13 @@ echo Checking for BT Mac, BT Peb or Shareble
 if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     # Install Bluez for BT Tethering
     echo Checking bluez installation
-    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
-        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
-        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
+    if ! bluetoothd --version | grep -q 5.44 2>/dev/null; then
+        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.44.tar.gz && tar xvfz bluez-5.44.tar.gz || die "Couldn't download bluez"
+        cd $HOME/src/bluez-5.44 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         oref0-bluetoothup
     else
-        echo bluez v 5.37 already installed
+        echo bluez v 5.44 already installed
     fi
 fi
 # add/configure devices
@@ -450,7 +450,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
-    if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
+    if  bluetoothd --version | grep -q 5.44 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
     fi
      # add two lines to /etc/rc.local if they are missing.
@@ -463,7 +463,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     # comment out existing line if it exists and isn't already commented out
     sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
 fi
-if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
+if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-local" ]]; then
     mkdir -p $directory-cgm-loop
     if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
         echo $directory-cgm-loop already exists
@@ -486,7 +486,7 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-raw" ]]; then
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
     fi
 
-    if [[ ${CGM,,} =~ "g4-raw" ]]; then
+    if [[ ${CGM,,} =~ "g4-local" ]]; then
         sudo apt-get -y install bc
         openaps device add cgm dexcom || die "Can't add CGM"
         for type in cgm-loop; do
@@ -578,13 +578,15 @@ else
         (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
       fi
 
-      # add subg-ww-radio-parameters script to mmtune alias for WW pump. See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump
-      #TODO: change alias sed -i"" 's/^\(mmtune.*\); \(echo -n .*mmtune:\)/\1; echo -n subg-ww-radio-parameters:; oref0-subg-ww-radio-parameters.py '$ww_ti_usb_reset' -v ; \2/g' openaps.ini
+      # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
+      # this will be called when mmtune is use with a WW pump. 
+      # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
+      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
 
-       # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
-       # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-       grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+      # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
+      # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+      # TODO: remove once https://github.com/openaps/openaps/pull/112 has been released in a openaps version
+      grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
     fi
 fi
 
@@ -691,6 +693,9 @@ echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
 (cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
 (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
 
+echo "Adding OpenAPS log shortcuts"
+oref0-log-shortcuts
+
 echo
 if [[ "$ttyport" =~ "spi" ]]; then
     echo Resetting spi_serial
@@ -721,7 +726,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # repair or reset git repository if it's corrupted or disk is full
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
     # truncate git history to 1000 commits if it has grown past 1500
-    (crontab -l; crontab -l | grep -q "cd $directory && oref0-truncate-git-history" || echo "* * * * * cd $directory && oref0-truncate-git-history") | crontab -
+    (crontab -l; crontab -l | grep -q "oref0-truncate-git-history" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q oref0-truncate-git-history || oref0-truncate-git-history") | crontab -
     if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
         # repair or reset cgm-loop git repository if it's corrupted or disk is full
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-reset-git" || echo "* * * * * cd $directory-cgm-loop && oref0-reset-git") | crontab -
@@ -759,6 +764,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
        (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
     fi
+    # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
+    if egrep -i "edison" /etc/passwd 2>/dev/null; then
+     (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
+    fi
+    (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
+
     crontab -l | tee $HOME/crontab.txt
 fi
 
