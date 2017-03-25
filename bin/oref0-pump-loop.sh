@@ -324,7 +324,19 @@ function refresh_profile {
 }
 
 function refresh_pumphistory_24h {
-    find settings/ -mmin -20 -size +100c | grep -q pumphistory-24h-zoned && echo Pumphistory-24 less than 20m old \
+    if (jq --exit-status ".battery > 60" monitor/edison-battery.json); then
+        echo -n Edison battery:
+        jq .battery monitor/edison-battery.json
+        autosens_freq=20
+    elif (jq --exit-status ".battery <= 60" monitor/edison-battery.json); then
+        echo -n Edison battery:
+        jq .battery monitor/edison-battery.json
+        autosens_freq=90
+    else
+        echo Edison battery level not found
+        autosens_freq=20
+    fi
+    find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo Pumphistory-24 less than ${autosens_freq}m old \
     || (echo -n pumphistory-24h refresh \
         && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed)
 }
