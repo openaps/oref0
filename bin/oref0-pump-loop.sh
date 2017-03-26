@@ -280,7 +280,7 @@ function refresh_old_pumphistory_enact {
 # refresh pumphistory if it's more than 15m old, but don't enact
 function refresh_old_pumphistory {
     find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
-    || ( echo -n "Old pumphistory, waiting for $upto30s of silence: " && wait_for_silence $upto30s && gather )
+    || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && gather )
 }
 
 # refresh pumphistory_24h if it's more than 2h old
