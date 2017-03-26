@@ -338,7 +338,9 @@ function refresh_profile {
 }
 
 function low_battery_wait {
-    if (jq --exit-status ".battery >= 95 or (.battery < 70 and .battery > 60)" monitor/edison-battery.json > /dev/null); then
+    if (! ls monitor/edison-battery.json 2>/dev/null); then
+        echo Edison battery level not found
+    elif (jq --exit-status ".battery >= 95 or (.battery < 70 and .battery > 60)" monitor/edison-battery.json > /dev/null); then
         echo "Edison charged (>= 95%) or likely charging (60-70%): $(jq .battery monitor/edison-battery.json)%"
     elif (jq --exit-status ".battery < 95" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; waiting up to 5 minutes for new BG: "
@@ -355,19 +357,22 @@ function low_battery_wait {
             fi
         done
     else
-        echo Edison battery level not found
+        echo Edison battery level unknown
     fi
 }
 
 function refresh_pumphistory_24h {
-    if (jq --exit-status ".battery >= 95 or (.battery < 70 and .battery > 60)" monitor/edison-battery.json > /dev/null); then
+    if (! ls monitor/edison-battery.json 2>/dev/null); then
+        echo Edison battery level not found
+        autosens_freq=20
+    elif (jq --exit-status ".battery >= 95 or (.battery < 70 and .battery > 60)" monitor/edison-battery.json > /dev/null); then
         echo "Edison charged (>= 95%) or likely charging (60-70%): $(jq .battery monitor/edison-battery.json)%"
         autosens_freq=20
     elif (jq --exit-status ".battery < 95" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; waiting up to 5 minutes for new BG: "
         autosens_freq=90
     else
-        echo Edison battery level not found
+        echo Edison battery level unknown
         autosens_freq=20
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo Pumphistory-24 less than ${autosens_freq}m old \
