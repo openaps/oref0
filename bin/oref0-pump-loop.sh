@@ -369,7 +369,7 @@ function refresh_pumphistory_24h {
         echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 95%) or likely charging (60-70%)"
         autosens_freq=20
     elif (jq --exit-status ".battery < 95" monitor/edison-battery.json > /dev/null); then
-        echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; waiting up to 5 minutes for new BG: "
+        echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%"
         autosens_freq=90
     else
         echo Edison battery level unknown
