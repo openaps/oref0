@@ -345,7 +345,9 @@ function low_battery_wait {
         for i in `seq 1 30`; do
             # set mtime of monitor/glucose.json to the time of its most recent glucose value
             touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
-            if (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json); then
+            if (! ls monitor/temp_basal.json ); then
+                break
+            elif (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json); then
                 echo glucose.json newer than temp_basal.json
                 break
             else
