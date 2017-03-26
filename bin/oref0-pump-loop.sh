@@ -362,7 +362,7 @@ function low_battery_wait {
 }
 
 function refresh_pumphistory_24h {
-    if (! ls monitor/edison-battery.json 2>/dev/null); then
+    if (! ls monitor/edison-battery.json 2>/dev/null >/dev/null); then
         echo Edison battery level not found
         autosens_freq=20
     elif (jq --exit-status ".battery >= 95 or (.battery <= 70 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
