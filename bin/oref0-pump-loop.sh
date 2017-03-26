@@ -241,7 +241,7 @@ function wait_for_silence {
     fi
     ((mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms) 2>&1 | tail -1 && echo -n Radio ok, || mmtune) \
     && echo -n " Listening: "
-    for i in $(seq 1 400); do
+    for i in $(seq 1 800); do
         echo -n .
         mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
         && break
