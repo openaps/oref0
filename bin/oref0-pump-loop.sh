@@ -341,7 +341,7 @@ function low_battery_wait {
     if (! ls monitor/edison-battery.json 2>/dev/null); then
         echo Edison battery level not found
     elif (jq --exit-status ".battery >= 95 or (.battery < 70 and .battery > 60)" monitor/edison-battery.json > /dev/null); then
-        echo "Edison charged (>= 95%) or likely charging (60-70%): $(jq .battery monitor/edison-battery.json)%"
+        echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 95%) or likely charging (60-70%)"
     elif (jq --exit-status ".battery < 95" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; waiting up to 5 minutes for new BG: "
         for i in `seq 1 30`; do
@@ -366,7 +366,7 @@ function refresh_pumphistory_24h {
         echo Edison battery level not found
         autosens_freq=20
     elif (jq --exit-status ".battery >= 95 or (.battery < 70 and .battery > 60)" monitor/edison-battery.json > /dev/null); then
-        echo "Edison charged (>= 95%) or likely charging (60-70%): $(jq .battery monitor/edison-battery.json)%"
+        echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 95%) or likely charging (60-70%)"
         autosens_freq=20
     elif (jq --exit-status ".battery < 95" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; waiting up to 5 minutes for new BG: "
