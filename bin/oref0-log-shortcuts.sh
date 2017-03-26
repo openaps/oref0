@@ -10,7 +10,7 @@ grep -q pump-looplog ~/.bash_profile || echo "alias pump-looplog="'"tail -n 100 
 grep -q urchin-looplog ~/.bash_profile || echo "alias urchin-looplog="'"tail -n 100 -F /var/log/openaps/urchin-loop.log"' >> ~/.bash_profile
 
 # source default /etc/profile as well
-grep -q /etc/profile ~/.bash_profile || echo ". /etc/profile" >> ~/.bash_profile
+grep -q /etc/skel/.profile ~/.bash_profile || echo ". /etc/skel/.profile" >> ~/.bash_profile
 
 # to enable shortcut aliases in ~/.bash_profile
 source ~/.bash_profile
