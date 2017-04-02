@@ -353,6 +353,7 @@ else
     (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
 echo Checking oref0 installation
+cd $HOME/src/oref0
 if git branch | grep "* master"; then
     npm list -g oref0 | egrep oref0@0.4.[2-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
 else
@@ -417,14 +418,18 @@ done
 echo Checking for BT Mac, BT Peb or Shareble
 if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     # Install Bluez for BT Tethering
-    echo Checking bluez installation
-    if ! bluetoothd --version | grep -q 5.44 2>/dev/null; then
+    echo Checking bluez installation 
+    bluetoothdversion=$(bluetoothd --version || 0)
+    bluetoothdminversion=5.37
+    bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }') 
+    if [ "$bluetoothdversioncompare" -eq 1 ]; then
+        killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
         cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.44.tar.gz && tar xvfz bluez-5.44.tar.gz || die "Couldn't download bluez"
         cd $HOME/src/bluez-5.44 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         oref0-bluetoothup
     else
-        echo bluez v 5.44 already installed
+        echo bluez v ${bluetoothdversion} already installed
     fi
 fi
 # add/configure devices
@@ -450,7 +455,8 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
-    if  bluetoothd --version | grep -q 5.44 2>/dev/null; then
+    # TODO: figure out if we need to do this for 5.44 as well
+    if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
     fi
      # add two lines to /etc/rc.local if they are missing.
@@ -702,7 +708,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
     reset_spi_serial.py
 fi
 echo Attempting to communicate with pump:
-( killall -g openaps; killall -g oref0-pump-loop)
+( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
 openaps mmtune
 echo
 
