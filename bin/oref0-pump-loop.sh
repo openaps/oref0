@@ -5,6 +5,7 @@ main() {
     prep
     until( \
         echo && echo Starting pump-loop at $(date): \
+        && low_battery_wait \
         && wait_for_silence \
         && refresh_old_pumphistory \
         && refresh_old_pumphistory_24h \
@@ -29,6 +30,7 @@ smb_main() {
     until ( \
         prep
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
+        && low_battery_wait \
         && wait_for_silence $upto30s \
         && preflight \
         && refresh_old_pumphistory \
@@ -289,6 +291,8 @@ function refresh_old_profile {
 }
 
 function refresh_smb_temp_and_enact {
+    # set mtime of monitor/glucose.json to the time of its most recent glucose value
+    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
             smb_enact_temp
@@ -297,6 +301,8 @@ function refresh_smb_temp_and_enact {
     fi
 }
 function refresh_temp_and_enact {
+    # set mtime of monitor/glucose.json to the time of its most recent glucose value
+    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
             (echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
@@ -309,6 +315,8 @@ function refresh_temp_and_enact {
 }
 
 function refresh_pumphistory_and_enact {
+    # set mtime of monitor/glucose.json to the time of its most recent glucose value
+    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
     if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n glucose.json newer than pumphistory) \
         || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n enacted.json newer than pumphistory) \
         || (! find monitor/ -mmin -5 | grep -q pumphistory-zoned && echo -n pumphistory more than 5m old) ); then
@@ -323,8 +331,38 @@ function refresh_profile {
     || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed)
 }
 
+function low_battery_wait {
+    if (jq --exit-status ".battery > 60" monitor/edison-battery.json > /dev/null); then
+        echo "Edison battery ok: $(jq .battery monitor/edison-battery.json)%"
+    elif (jq --exit-status ".battery <= 60" monitor/edison-battery.json > /dev/null); then
+        echo -n "Edison battery low: $(jq .battery monitor/edison-battery.json)%; waiting up to 5 minutes for new BG: "
+        for i in `seq 1 30`; do
+            # set mtime of monitor/glucose.json to the time of its most recent glucose value
+            touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+            if (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json); then
+                echo glucose.json newer than temp_basal.json
+                break
+            else
+                echo -n .; sleep 10
+            fi
+        done
+    else
+        echo Edison battery level not found
+    fi
+}
+
 function refresh_pumphistory_24h {
-    find settings/ -mmin -20 -size +100c | grep -q pumphistory-24h-zoned && echo Pumphistory-24 less than 20m old \
+    if (jq --exit-status ".battery > 60" monitor/edison-battery.json > /dev/null); then
+        echo "Edison battery ok: $(jq .battery monitor/edison-battery.json)%"
+        autosens_freq=20
+    elif (jq --exit-status ".battery <= 60" monitor/edison-battery.json > /dev/null); then
+        echo "Edison battery low: $(jq .battery monitor/edison-battery.json)%"
+        autosens_freq=90
+    else
+        echo Edison battery level not found
+        autosens_freq=20
+    fi
+    find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo Pumphistory-24 less than ${autosens_freq}m old \
     || (echo -n pumphistory-24h refresh \
         && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed)
 }
