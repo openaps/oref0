@@ -31,8 +31,8 @@ def get_port_from_pump_ini(filename):
                 if option=='radio_locale':
                     radio_locale=config.get(section, option)
     if radio_locale==RADIO_LOCALE_NOT_SET:
-        logging.error("radio_locale is not set in pump.ini. Please set radio_locale=WW in your pump.ini")
-        sys.exit(1)
+        logging.debug("radio_locale is not set in pump.ini. Assuming US pump. No need to set WW parameters")
+        sys.exit(0)
     elif str.lower(radio_locale)=='us':
         logging.debug("radio_locale is set to %s. Skipping WW-pump initialization" % radio_locale)
         sys.exit(0)    
@@ -70,17 +70,17 @@ def main(args):
         logging.basicConfig(level=logging.ERROR, format='%(asctime)s %(levelname)s %(message)s')
 
     try:
-        # step 1: get port device (pump device) from pump.ini
+        # step 1: get port device (pump device) from pump.ini. Exit if it's a US pump
         pump_ini=os.path.join(args.dir, args.pump_ini)
         pump_port=get_port_from_pump_ini(pump_ini)
         logging.debug("Serial device (port) for pump is: %s" % pump_port)
         
-        # step 3: check if port device file exists. If not reset USB if it's requested with the --resetusb parameter
+        # step 2: check if port device file exists. If not reset USB if it's requested with the --resetusb parameter
         if pump_port==PORT_NOT_SET:
            logging.error("port is not set in pump.ini. Please set port to your serial device, e.g. /dev/mmeowlink")
            sys.exit(1)
 
-        # step 4: with a TI USB stick the device/symlink can disappear for unknown reasons. Restarting the USB subsystem seems to work
+        # step 3: with a TI USB stick the device/symlink can disappear for unknown reasons. Restarting the USB subsystem seems to work
         tries=0   
         while (not os.path.exists(pump_port)) and tries<2:
            logging.error("pump port %s does not exist" % pump_port)
@@ -90,11 +90,11 @@ def main(args):
            else: # if not --ww_ti_usb_reset==yes then quit the loop
              break
 
-        # step 5: set environment variable
+        # step 4: set environment variable
         os.environ["RFSPY_RTSCTS"]=str(args.rfsypy_rtscts)
         logging.debug("env RFSPY_RTSCTS=%s" % os.environ["RFSPY_RTSCTS"] )
 
-        # step 6: use reset.py 
+        # step 5: use reset.py 
         if args.ww_ti_usb_reset=='no':
            cmd=["oref0-subg-ww-radio-parameters", str(pump_port), "--resetpy"]
            exitcode=execute(cmd, args.timeout, args.wait)

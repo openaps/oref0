@@ -45,7 +45,7 @@ def init_ww_pump(args):
         logging.debug("Exit succesfully with exit code 0")
         sys.exit(0)
     except ImportError: # silence import error by default
-        logging.debug("spi_serial not installed. Assuming not using spidev")
+        logging.debug("could not import oref0_subg_ww_radio_parameters")
         sys.exit(0)
     except Exception as ex: 
         logging.error("Exception in oref0-init-pump-comms spi_serial: %s" % ex)
