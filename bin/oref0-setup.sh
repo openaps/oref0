@@ -418,14 +418,18 @@ done
 echo Checking for BT Mac, BT Peb or Shareble
 if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     # Install Bluez for BT Tethering
-    echo Checking bluez installation
-    if ! bluetoothd --version | grep -q 5.37 2>/dev/null; then
-        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.gz && tar xvfz bluez-5.37.tar.gz || die "Couldn't download bluez"
-        cd $HOME/src/bluez-5.37 && ./configure --enable-experimental --disable-systemd && \
+    echo Checking bluez installation 
+    bluetoothdversion=$(bluetoothd --version || 0)
+    bluetoothdminversion=5.37
+    bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }') 
+    if [ "$bluetoothdversioncompare" -eq 1 ]; then
+        killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.44.tar.gz && tar xvfz bluez-5.44.tar.gz || die "Couldn't download bluez"
+        cd $HOME/src/bluez-5.44 && ./configure --enable-experimental --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         oref0-bluetoothup
     else
-        echo bluez v 5.37 already installed
+        echo bluez v ${bluetoothdversion} already installed
     fi
 fi
 # add/configure devices
