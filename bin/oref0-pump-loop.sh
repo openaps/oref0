@@ -212,6 +212,8 @@ function preflight {
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
+    # TODO: remove reset_spi_serial.py once oref0_init_pump_comms.py is fixed to do it correctly
+    reset_spi_serial.py 2>/dev/null
     oref0_init_pump_comms.py
     echo {} > monitor/mmtune.json
     echo -n "mmtune: " && openaps report invoke monitor/mmtune.json 2>&1 >/dev/null | tail -1
