@@ -43,7 +43,7 @@
   },
   {
     "monitor-pump": {
-      "command": "report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/meal.json monitor/reservoir.json monitor/battery.json monitor/status.json"
+      "command": "report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-prepared.json monitor/pumphistory-zoned.json monitor/pumphistory-zoned-ns.json monitor/clock-zoned.json monitor/iob.json monitor/meal.json monitor/reservoir.json monitor/battery.json monitor/status.json"
     },
     "type": "alias",
     "name": "monitor-pump"
@@ -57,7 +57,7 @@
   },
   {
     "ns-meal-carbs": {
-      "command": "! bash -c \"curl -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[carbs\\]\\[\\$exists\\]=true\\\" > monitor/carbhistory.json; oref0-meal monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json monitor/carbhistory.json monitor/glucose.json settings/basal_profile.json > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0\""
+      "command": "! bash -c \"curl -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[carbs\\]\\[\\$exists\\]=true\\\" > monitor/carbhistory.json; oref0-meal monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json --prepared > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0\""
     },
     "type": "alias",
     "name": "ns-meal-carbs"
@@ -155,7 +155,7 @@
   },
   {
     "merge-pumphistory-long": {
-      "command": "! bash -c \"jq -s \\\".[0] + .[1]|unique|sort_by(.timestamp)|reverse\\\" settings/pumphistory-long.json monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > pumphistory-long.json.new && mv pumphistory-long.json.new settings/pumphistory-long.json\""
+      "command": "! bash -c \"jq -s \\\".[0] + .[1]|unique|sort_by(.timestamp)|reverse\\\" settings/pumphistory-long.json monitor/pumphistory-zoned-ns.json settings/pumphistory-24h-zoned.json > pumphistory-long.json.new && mv pumphistory-long.json.new settings/pumphistory-long.json\""
     },
     "type": "alias",
     "name": "merge-pumphistory-long"
@@ -189,6 +189,20 @@
     "name": "pebble"
   },
   {
+    "prep-pumphistory-entries": {
+      "command": "! bash -c \"cat monitor/pumphistory-zoned-ns.json | json -e \\\"this.dateString = this.timestamp\\\" | json -e \\\"this.medtronic = this._type\\\" | json -e \\\"this.type = \\\\\\\"medtronic\\\\\\\"\\\" | json -e \\\"this.date = new Date(Date.parse(this.timestamp)).getTime( )\\\" > upload/pumphistory-entries.json\""
+    },
+    "type": "alias",
+    "name": "prep-pumphistory-entries"
+  },
+  {
+    "type": "alias",
+    "name": "upload-pumphistory-entries",
+    "upload-pumphistory-entries": {
+      "command": "! bash -c \"openaps prep-pumphistory-entries && ns-upload-entries upload/pumphistory-entries.json\""
+    }
+  },
+  {
     "type": "alias",
     "name": "latest-ns-treatment-time",
     "latest-ns-treatment-time": {
@@ -199,7 +213,7 @@
     "type": "alias",
     "name": "format-latest-nightscout-treatments",
     "format-latest-nightscout-treatments": {
-      "command": "! bash -c \"nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json\""
+      "command": "! bash -c \"nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned-ns.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json\""
     }
   },
   {

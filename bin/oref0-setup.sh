@@ -368,6 +368,12 @@ pip show mmeowlink | egrep "Version: 0.11." || (
 )
 #fi
 
+echo Checking mmhistorytools installation
+if openaps vendor add openapscontrib.mmhistorytools 2>&1 | grep "No module"; then
+    echo Installing latest mmhistorytools
+    sudo pip install -U openapscontrib.mmhistorytools || die "Couldn't install mmhistorytools"
+fi
+
 cd $directory || die "Can't cd $directory"
 if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
     oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"

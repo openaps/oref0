@@ -142,6 +142,15 @@
     "extra": {}
   },
   {
+    "type": "device",
+    "history": {
+      "vendor": "openapscontrib.mmhistorytools",
+      "extra": "history.ini"
+    },
+    "name": "history",
+    "extra": {}
+  },
+  {
     "xdrip": {
       "vendor": "openaps.vendors.process",
       "extra": "xdrip.ini"
