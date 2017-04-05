@@ -300,18 +300,18 @@ function refresh_old_pumphistory_24h {
 
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
-    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo Profile less than 60m old \
-    || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo ed )
+    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n Profile less than 60m old \
+    || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n ed )
 }
 
 function refresh_smb_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json ) \
-        || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
+        || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo ", temp_basal.json more than 5m old")); then
             smb_enact_temp
     else
-        echo temp_basal.json less than 5m old
+        echo ", temp_basal.json less than 5m old"
     fi
 }
 function refresh_temp_and_enact {
