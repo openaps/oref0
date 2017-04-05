@@ -111,7 +111,7 @@ function smb_suggest {
     ls enact/smb-suggested.json 2>/dev/null && die "enact/suggested.json present"
     # Run determine-basal
     echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
-    && openaps report invoke enact/smb-suggested.json \
+    && openaps report invoke enact/smb-suggested.json 2>&1 >/dev/null \
     && cp -up enact/smb-suggested.json enact/suggested.json \
     && smb_verify_suggested
 }
