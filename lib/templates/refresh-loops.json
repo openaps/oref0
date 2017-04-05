@@ -367,7 +367,7 @@
     "name": "ns-glucose",
     "extra": {
       "fields": "",
-      "cmd": "bash -c \"curl -m 30 -s $NIGHTSCOUT_HOST/api/v1/entries/sgv.json?count=1000 | json -e \\\"this.glucose = this.sgv\\\"\"",
+      "cmd": "bash -c \"curl --compressed -m 30 -s $NIGHTSCOUT_HOST/api/v1/entries/sgv.json?count=1000 | json -e \\\"this.glucose = this.sgv\\\"\"",
       "args": ""
     }
   },
@@ -539,13 +539,13 @@
   {
     "type": "alias",
     "ns-temptargets": {
-      "command": "! bash -c \"curl -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[created_at\\]\\[\\$gte\\]=$(date -d \\\"6 hours ago\\\" -Iminutes)&find\\[eventType\\]\\[\\$regex\\]=Target\\\" > settings/temptargets.json; openaps report invoke settings/profile.json 2>/dev/null >/dev/null; exit 0 \""
+      "command": "! bash -c \"curl --compressed -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[created_at\\]\\[\\$gte\\]=$(date -d \\\"6 hours ago\\\" -Iminutes)&find\\[eventType\\]\\[\\$regex\\]=Target\\\" > settings/temptargets.json; openaps report invoke settings/profile.json 2>/dev/null >/dev/null; exit 0 \""
     },
     "name": "ns-temptargets"
   },
   {
     "ns-meal-carbs": {
-      "command": "! bash -c \"curl -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[carbs\\]\\[\\$exists\\]=true\\\" > monitor/carbhistory.json; oref0-meal monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json monitor/carbhistory.json monitor/glucose.json settings/basal_profile.json > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0\""
+      "command": "! bash -c \"curl --compressed -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[carbs\\]\\[\\$exists\\]=true\\\" > monitor/carbhistory.json; oref0-meal monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json monitor/carbhistory.json monitor/glucose.json settings/basal_profile.json > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0\""
     },
     "type": "alias",
     "name": "ns-meal-carbs"
