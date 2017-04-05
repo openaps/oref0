@@ -38,16 +38,18 @@ smb_main() {
         && refresh_old_profile \
         && refresh_smb_temp_and_enact \
         && ( smb_check_everything \
-            && smb_bolus \
-            || ( smb_old_temp && ( \
-                echo "Falling back to normal pump-loop" \
-                && refresh_temp_and_enact \
-                && refresh_pumphistory_and_enact \
-                && refresh_profile \
-                && refresh_pumphistory_24h \
-                && echo Completed pump-loop at $(date) \
-                && echo \
-                ))
+            && if (grep -q '"units":' enact/smb-suggested.json); then
+                smb_bolus \
+                || ( smb_old_temp && ( \
+                    echo "Falling back to normal pump-loop" \
+                    && refresh_temp_and_enact \
+                    && refresh_pumphistory_and_enact \
+                    && refresh_profile \
+                    && refresh_pumphistory_24h \
+                    && echo Completed pump-loop at $(date) \
+                    && echo \
+                    ))
+            fi
             ) \
             && refresh_profile \
             && refresh_pumphistory_24h \
@@ -87,17 +89,22 @@ function smb_check_everything {
     # wait_for_silence and retry if first attempt fails
     smb_reservoir_before \
     && smb_enact_temp \
-    && ( smb_verify_suggested || smb_suggest ) \
-    && smb_verify_reservoir \
-    && smb_verify_status \
-    || ( echo Retrying SMB checks \
-        && wait_for_silence 10 \
-        && smb_reservoir_before \
-        && smb_enact_temp \
-        && ( smb_verify_suggested || smb_suggest ) \
+    && if (grep -q '"units":' enact/smb-suggested.json); then
+        ( smb_verify_suggested || smb_suggest ) \
         && smb_verify_reservoir \
-        && smb_verify_status
-        )
+        && smb_verify_status \
+        || ( echo Retrying SMB checks \
+            && wait_for_silence 10 \
+            && smb_reservoir_before \
+            && smb_enact_temp \
+            && ( smb_verify_suggested || smb_suggest ) \
+            && smb_verify_reservoir \
+            && smb_verify_status
+            )
+    else
+        echo "No bolus needed (yet)"
+        return false;
+    fi
 }
 
 function smb_suggest {
