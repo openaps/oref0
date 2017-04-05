@@ -103,7 +103,7 @@ function smb_check_everything {
             )
     else
         echo "No bolus needed (yet)"
-        return false;
+        return 1;
     fi
 }
 
