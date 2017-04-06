@@ -11,7 +11,7 @@ EOF
 }
 
 function fetch ( ) {
-  curl -s -g $ENDPOINT.json
+  curl --compressed -s -g $ENDPOINT.json
 }
 
 function flatten ( ) {
@@ -22,7 +22,7 @@ function flatten ( ) {
 function find_dupes_on ( ) {
   count=$1
   date=$2
-  test $count -gt 1  && curl -g -s ${ENDPOINT}.json"?count=$(($count-1))&find[created_at]=$date"
+  test $count -gt 1  && curl --compressed -g -s ${ENDPOINT}.json"?count=$(($count-1))&find[created_at]=$date"
 }
 function debug_cmd ( ) {
 tid=$1

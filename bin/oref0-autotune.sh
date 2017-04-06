@@ -34,6 +34,7 @@ die() {
 }
 
 # defaults
+CURL_FLAGS="--compressed"
 DIR=""
 NIGHTSCOUT_HOST=""
 START_DATE=""
@@ -158,9 +159,9 @@ echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 url="$NIGHTSCOUT_HOST/api/v1/treatments.json?find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
 echo $url
 if [ -n "${HASHED_API_SECRET_READ}" ]; then 
-	curl -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+	curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
 else
-	curl -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+	curl ${CURL_FLAGS} -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
 fi
 ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
 
@@ -185,9 +186,9 @@ do
   url="$NIGHTSCOUT_HOST/api/v1/entries/sgv.json?find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
   echo $url
   if [ -n "${HASHED_API_SECRET_READ}" ]; then 
-    curl -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+    curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
   else
-    curl -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+    curl ${CURL_FLAGS} -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
   fi
 
   ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
