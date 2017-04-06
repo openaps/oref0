@@ -334,6 +334,9 @@ cd $directory || die "Can't cd $directory"
 # Taking the oref0-runagain.sh from tmp to $directory
 mv $OREF0_RUNAGAIN ./oref0-runagain.sh
 
+# Make sure it is executable afterwards
+chmod +x ./oref0-runagain.sh
+
 mkdir -p monitor || die "Can't mkdir monitor"
 mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
 mkdir -p cgm || die "Can't mkdir cgm"
