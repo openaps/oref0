@@ -299,6 +299,8 @@ function refresh_old_profile {
 }
 
 function refresh_smb_temp_and_enact {
+    # set mtime of monitor/glucose.json to the time of its most recent glucose value
+    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
             smb_enact_temp
@@ -308,6 +310,8 @@ function refresh_smb_temp_and_enact {
 }
 
 function refresh_temp_and_enact {
+    # set mtime of monitor/glucose.json to the time of its most recent glucose value
+    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo glucose.json newer than temp_basal.json ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
             (echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
@@ -321,6 +325,7 @@ function refresh_temp_and_enact {
 
 function refresh_pumphistory_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
+    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
     if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n glucose.json newer than pumphistory) \
         || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n enacted.json newer than pumphistory) \
         || (! find monitor/ -mmin -5 | grep -q pumphistory-zoned && echo -n pumphistory more than 5m old) ); then
@@ -341,8 +346,10 @@ function low_battery_wait {
     elif (jq --exit-status ".battery <= 60" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison battery low: $(jq .battery monitor/edison-battery.json)%; waiting up to 5 minutes for new BG: "
         for i in `seq 1 30`; do
-            if (find monitor/ -newer monitor/pump_loop_completed | grep -q glucose.json); then
-                echo glucose.json newer than pump_loop_completed
+            # set mtime of monitor/glucose.json to the time of its most recent glucose value
+            touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+            if (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json); then
+                echo glucose.json newer than temp_basal.json
                 break
             else
                 echo -n .; sleep 10
