@@ -45,8 +45,8 @@ export NIGHTSCOUT_HOST ENDPOINT
 fetch | flatten | while read count date; do
   test $count -gt 1 && echo "{}" \
     | json -e "this.count = $count" \
-    | json -e "this.date = '$date'" \
-    | json -e "this.created_at = '$date'"
+    -e "this.date = '$date'" \
+    -e "this.created_at = '$date'"
 done | json -g
 }
 
