@@ -311,7 +311,7 @@ function refresh_smb_temp_and_enact {
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo ", temp_basal.json more than 5m old")); then
             smb_enact_temp
     else
-        echo " temp_basal.json less than 5m old"
+        echo -n " temp_basal.json less than 5m old. "
     fi
 }
 function refresh_temp_and_enact {
@@ -324,7 +324,7 @@ function refresh_temp_and_enact {
                 enact; else echo Temp duration 27m or more
             fi)
     else
-        echo temp_basal.json less than 5m old
+        echo -n " temp_basal.json less than 5m old. "
     fi
 }
 
