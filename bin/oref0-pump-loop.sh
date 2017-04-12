@@ -127,7 +127,7 @@ function smb_enact_temp {
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c .
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     else
-        echo No smb_enact needed
+        echo -n "No smb_enact needed. "
     fi \
     && smb_verify_enacted
 }
