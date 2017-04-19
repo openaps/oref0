@@ -3,6 +3,8 @@
 # This script initializes the connection between the openaps environment
 # and the insulin pump
 # Currently supported features:
+# - Call reset function for spi_serial
+# - Initialize WW pumps
 
 import sys
 import logging
@@ -30,9 +32,9 @@ def init_spi_serial():
         logging.debug("Issuing spidev serial reset")
         s.reset()
     except ImportError: # silence import error by default
-        logging.exception("spi_serial not installed. Assuming not using spidev")
+        logging.debug("spi_serial not installed. Assuming not using spidev")
     except Exception: 
-        logging.exception("Exception in oref0-init-pump-comms spi_serial: %s" % ex)
+        logging.exception("Exception in oref0-init-pump-comms spi_serial")
         sys.exit(1)
 
 def init_ww_pump(args):
@@ -43,9 +45,8 @@ def init_ww_pump(args):
         oref0_subg_ww_radio_parameters.main(args)
     except ImportError: 
         logging.exception("could not import oref0_subg_ww_radio_parameters")
-        sys.exit(0)
     except Exception:
-        logging.exception("Exception in oref0-init-pump-comms init_ww_pump: %s" % ex)
+        logging.exception("Exception in oref0-init-pump-comms init_ww_pump:")
         sys.exit(1)
     
 
@@ -65,5 +66,5 @@ if __name__ == '__main__':
         args = parser.parse_args()
         run_script(args)
     except Exception:
-        logging.exception("Exception in oref0_init_pump_comms.py %s" % ex)
+        logging.exception("Exception in oref0_init_pump_comms.py")
 
