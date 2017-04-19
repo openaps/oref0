@@ -102,7 +102,7 @@ def main(args):
         exitcode=execute(['oref0-subg-ww-radio-parameters', pump_port], args.timeout, args.wait)
         sys.exit(exitcode) # propagate exit code from oref0-subg-ww-radio-parameters
     except Exception:
-        logging.exception("Exception in subg_ww_radio_parameters.py)
+        logging.exception("Exception in subg_ww_radio_parameters.py")
         sys.exit(1)
       
    
