@@ -44,7 +44,7 @@ def init_ww_pump(args):
         import oref0_subg_ww_radio_parameters
         oref0_subg_ww_radio_parameters.main(args)
     except ImportError: 
-        logging.exception("could not import oref0_subg_ww_radio_parameters")
+        logging.debug("Could not import oref0_subg_ww_radio_parameters. Assuming US pump. This is no error")
     except Exception:
         logging.exception("Exception in oref0-init-pump-comms init_ww_pump:")
         sys.exit(1)
