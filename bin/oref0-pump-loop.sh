@@ -59,6 +59,7 @@ smb_main() {
             && refresh_profile \
             && refresh_pumphistory_24h \
             && echo Completed supermicrobolus pump-loop at $(date): \
+            && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
     ); do
         echo Error, retrying && maybe_mmtune
