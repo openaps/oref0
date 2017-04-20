@@ -10,11 +10,13 @@ main() {
         && refresh_old_pumphistory \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
+        && touch monitor/pump_loop_enacted -r monitor/glucose.json \
         && refresh_temp_and_enact \
         && refresh_pumphistory_and_enact \
         && refresh_profile \
         && refresh_pumphistory_24h \
         && echo Completed pump-loop at $(date) \
+        && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
         && echo); do
 
             # On a random subset of failures, wait 45s and mmtune
@@ -36,9 +38,12 @@ smb_main() {
         && refresh_old_pumphistory \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
+        && touch monitor/pump_loop_enacted -r monitor/glucose.json \
         && refresh_smb_temp_and_enact \
         && ( smb_check_everything \
-            && smb_bolus \
+            && ( smb_bolus && \
+                 touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \  
+               ) \
             || ( smb_old_temp && ( \
                 echo "Falling back to normal pump-loop" \
                 && refresh_temp_and_enact \
@@ -46,6 +51,7 @@ smb_main() {
                 && refresh_profile \
                 && refresh_pumphistory_24h \
                 && echo Completed pump-loop at $(date) \
+                && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
                 && echo \
                 ))
             ) \
@@ -302,6 +308,7 @@ function refresh_smb_temp_and_enact {
         echo temp_basal.json less than 5m old
     fi
 }
+
 function refresh_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
