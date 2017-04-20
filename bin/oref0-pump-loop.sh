@@ -354,9 +354,9 @@ function refresh_profile {
 function low_battery_wait {
     if (! ls monitor/edison-battery.json 2>/dev/null >/dev/null); then
         echo Edison battery level not found
-    elif (jq --exit-status ".battery >= 95 or (.battery <= 68 and .battery >= 58)" monitor/edison-battery.json > /dev/null); then
-        echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 95%) or likely charging (58-68%)"
-    elif (jq --exit-status ".battery < 95" monitor/edison-battery.json > /dev/null); then
+    elif (jq --exit-status ".battery >= 98 or (.battery <= 65 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
+        echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-65%)"
+    elif (jq --exit-status ".battery < 98" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; waiting up to 3 minutes for new BG: "
         for i in `seq 1 18`; do
             # set mtime of monitor/glucose.json to the time of its most recent glucose value
@@ -379,10 +379,10 @@ function refresh_pumphistory_24h {
     if (! ls monitor/edison-battery.json 2>/dev/null >/dev/null); then
         echo -n "Edison battery level not found. "
         autosens_freq=20
-    elif (jq --exit-status ".battery >= 95 or (.battery <= 68 and .battery >= 58)" monitor/edison-battery.json > /dev/null); then
-        echo -n "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 95%) or likely charging (58-68%). "
+    elif (jq --exit-status ".battery >= 98 or (.battery <= 65 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
+        echo -n "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-65%). "
         autosens_freq=20
-    elif (jq --exit-status ".battery < 95" monitor/edison-battery.json > /dev/null); then
+    elif (jq --exit-status ".battery < 98" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%. "
         autosens_freq=90
     else
