@@ -358,8 +358,8 @@ function low_battery_wait {
     elif (jq --exit-status ".battery >= 98 or (.battery <= 65 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
         echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-65%)"
     elif (jq --exit-status ".battery < 98" monitor/edison-battery.json > /dev/null); then
-        echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; waiting up to 3 minutes for new BG: "
-        for i in `seq 1 18`; do
+        echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; waiting up to 4 minutes for new BG: "
+        for i in `seq 1 24`; do
             # set mtime of monitor/glucose.json to the time of its most recent glucose value
             touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
             if (! ls monitor/pump_loop_completed >/dev/null ); then
