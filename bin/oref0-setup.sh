@@ -14,6 +14,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# Exit when variables are unset or functions fail
+set -eu
+
 die() {
   echo "$@"
   exit 1
@@ -107,6 +110,7 @@ case $i in
     ;;
 esac
 done
+
 
 if ! [[ ${CGM,,} =~ "g4" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" ]]; then
     echo "Unsupported CGM.  Please select (Dexcom) G4 (default), ShareBLE, G4-raw, G5, MDT or xdrip."

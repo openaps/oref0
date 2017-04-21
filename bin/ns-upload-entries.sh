@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Exit when variables are unset or functions fail
+set -eu
+
 # Author: Ben West
 # Maintainer: @cjo20, @scottleibrand
 

@@ -4,6 +4,10 @@
 # Author: Ben West
 #
 #
+
+# Exit when variables are unset or functions fail
+set -eu
+
 <<EOT
 Sometimes openaps instances get corrupted and only produce error
 messages.

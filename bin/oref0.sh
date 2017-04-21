@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Exit when variables are unset or functions fail
+set -eu
 
 self=$(basename $0)
 NAME=${1-help}
