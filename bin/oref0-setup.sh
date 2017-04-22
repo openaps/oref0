@@ -603,11 +603,6 @@ fi
 if [[ ${CGM,,} =~ "mdt" ]]; then
     sudo pip install -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
     openaps device remove cgm 2>/dev/null
-    if [[ -z "$ttyport" ]]; then
-        openaps device add cgm medtronic $serial || die "Can't add cgm"
-    else
-        openaps device add cgm mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add cgm"
-    fi
     for type in mdt-cgm; do
         echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
@@ -751,6 +746,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
     fi
     (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+    if [[ ${CGM,,} =~ "mdt" ]]; then
+       (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps upload-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps upload-bg' || openaps upload-bg | tee -a /var/log/openaps/upload-bg-loop.log") | crontab -
+    fi
     if [[ $ENABLE =~ autosens ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
     fi
