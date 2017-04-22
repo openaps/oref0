@@ -240,8 +240,17 @@ function mmtune {
         do echo -n "$line "
     done
     if grep '"usedDefault": true' monitor/mmtune.json; then
-        echo "Pump out of range; waiting for 60 second silence before continuing"
+        echo "Pump out of range; waiting for 90 second silence before continuing"
+        wait_for_silence 90
+    elif grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | grep -q -- "-9"; then
+        echo "RSSI <= -90; waiting for 60 second silence before continuing"
         wait_for_silence 60
+    elif grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | grep -q -- "-8"; then
+        echo "RSSI <= -80; waiting for 30 second silence before continuing"
+        wait_for_silence 30
+    elif grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | grep -q -- "-7"; then
+        echo "RSSI <= -70; waiting for 15 second silence before continuing"
+        wait_for_silence 15
     fi
 }
 
