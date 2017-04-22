@@ -219,7 +219,7 @@ function preflight {
     # only 522, 523, 722, and 723 pump models have been tested with SMB
     openaps report invoke settings/model.json 2>&1 >/dev/null | tail -1 \
     && egrep -q "[57]2[23]" settings/model.json \
-    && echo -n "Preflight OK, "
+    && echo -n "Preflight OK. "
 }
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
@@ -330,10 +330,10 @@ function refresh_smb_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
-        || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo ", temp_basal.json more than 5m old")); then
+        || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
             smb_enact_temp
     else
-        echo -n " temp_basal.json less than 5m old. "
+        echo -n "temp_basal.json less than 5m old. "
     fi
 }
 
@@ -341,22 +341,22 @@ function refresh_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
-        || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old)); then
+        || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
             (echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
             && if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi)
     else
-        echo -n " temp_basal.json less than 5m old. "
+        echo -n "temp_basal.json less than 5m old. "
     fi
 }
 
 function refresh_pumphistory_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
-    if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n glucose.json newer than pumphistory) \
-        || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n enacted.json newer than pumphistory) \
-        || (! find monitor/ -mmin -5 | grep -q pumphistory-zoned && echo -n pumphistory more than 5m old) ); then
+    if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
+        || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
+        || (! find monitor/ -mmin -5 | grep -q pumphistory-zoned && echo -n "pumphistory more than 5m old. ") ); then
             (echo -n ": " && gather && enact )
     else
         echo Pumphistory less than 5m old
