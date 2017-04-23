@@ -369,7 +369,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Installing latest mmeowlink
     sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
     )
-#fi
+	#fi
 
     cd $directory || die "Can't cd $directory"
     if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
