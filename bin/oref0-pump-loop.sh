@@ -239,18 +239,10 @@ function mmtune {
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
     done
-    if grep '"usedDefault": true' monitor/mmtune.json; then
-        echo "Pump out of range; waiting for 90 second silence before continuing"
-        wait_for_silence 90
-    elif grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | grep -q -- "-9"; then
-        echo "RSSI <= -90; waiting for 60 second silence before continuing"
-        wait_for_silence 60
-    elif grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | grep -q -- "-8"; then
-        echo "RSSI <= -80; waiting for 30 second silence before continuing"
-        wait_for_silence 30
-    elif grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | grep -q -- "-7"; then
-        echo "RSSI <= -70; waiting for 15 second silence before continuing"
-        wait_for_silence 15
+    rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | tail -1 | awk '($1 < -60) {print -($1+60)*2}')
+    if [[ $rssi_wait > 1 ]]; then
+        echo "waiting for $rssi_wait second silence before continuing"
+        wait_for_silence $rssi_wait
     fi
 }
 
@@ -323,7 +315,7 @@ function refresh_old_pumphistory_24h {
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old. " \
-    || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n ed )
+    || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. " )
 }
 
 function refresh_smb_temp_and_enact {
