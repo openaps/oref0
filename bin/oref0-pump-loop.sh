@@ -329,17 +329,21 @@ function refresh_old_profile {
 function refresh_smb_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
-    if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
-        || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
-            smb_enact_temp
+    if ( find monitor/ -newer monitor/pump_loop_completed | grep -q glucose.json ); then
+        echo "glucose.json newer than pump_loop_completed. "
+        smb_enact_temp
+    elif ( find monitor/ -mmin -5 -size +5c | grep -q monitor/pump_loop_completed ); then
+        echo "pump_loop_completed more than 5m ago. "
+        smb_enact_temp
     else
-        echo -n "temp_basal.json less than 5m old. "
+        echo -n "pump_loop_completed less than 5m ago. "
     fi
 }
 
 function refresh_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    # TODO: use pump_loop_completed logic as in refresh_smb_temp_and_enact
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
             (echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
