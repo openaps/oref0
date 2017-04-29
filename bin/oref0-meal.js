@@ -53,11 +53,6 @@ if (!module.parent) {
         return console.error("Could not parse input data: ", e);
     }
 
-    // if carb_ratio is null buy we have a valid carb_ratios object, use that
-    if (! profile_data.carb_ratio && profile_data.carb_ratios.schedule[0].ratio) {
-        profile_data.carb_ratio = profile_data.carb_ratios.schedule[0].ratio
-    }
-
     // disallow impossibly low carbRatios due to bad decoding
     if ( typeof(profile_data.carb_ratio) == 'undefined' || profile_data.carb_ratio < 3 ) {
         console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratio ' + profile_data.carb_ratio + ' out of bounds" }');

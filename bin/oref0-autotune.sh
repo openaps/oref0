@@ -220,6 +220,11 @@ do
     # Copy tuned profile produced by autotune to profile.json for use with next day of data
     cp newprofile.$run_number.$i.json profile.json
 
+    if cat profile.json | jq --exit-status .carb_ratio==null; then
+        echo "ERROR: profile.json contains null carb_ratio: using profile.pump.json"
+        cp profile.pump.json profile.json
+    fi
+
   done # End Date Range Iteration
 done # End Number of Runs Loop
 
