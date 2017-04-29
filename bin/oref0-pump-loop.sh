@@ -227,11 +227,10 @@ function mmtune {
     # TODO: remove reset_spi_serial.py once oref0_init_pump_comms.py is fixed to do it correctly
     reset_spi_serial.py 2>/dev/null
     oref0_init_pump_comms.py
-    waitfor=$upto30s
-    echo -n "Listening for $waitfor second silence before mmtuning: "
+    echo -n "Listening for 30s second silence before mmtuning: "
     for i in $(seq 1 800); do
         echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
+        mmeowlink-any-pump-comms.py --port $port --wait-for 30 2>/dev/null | egrep -v subg | egrep No \
         && break
     done
     echo {} > monitor/mmtune.json
