@@ -52,8 +52,8 @@ if (!module.parent) {
     }
 
     // if carb_ratio is null buy we have a valid carb_ratios object, use that
-    if (! profile.carb_ratio && profile.carb_ratios.schedule[0].ratio) {
-        profile.carb_ratio = profile.carb_ratios.schedule[0].ratio
+    if (! profile_data.carb_ratio && profile_data.carb_ratios.schedule[0].ratio) {
+        profile_data.carb_ratio = profile_data.carb_ratios.schedule[0].ratio
     }
 
     // disallow impossibly low carbRatios due to bad decoding
