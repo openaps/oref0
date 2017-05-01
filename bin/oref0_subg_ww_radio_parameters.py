@@ -12,6 +12,7 @@ import sys
 import logging
 import subprocess
 import time
+import signal
 
 PORT_NOT_SET="port not set in pump.ini"
 RADIO_LOCALE_NOT_SET="radio_locale not set in pump.ini"
@@ -52,15 +53,9 @@ def execute(cmd, cmdtimeout, wait):
         return proc.returncode
     except subprocess.TimeoutExpired:
         logging.error("TimeoutExpired. Killing process")
-        outs, errs = proc.communicate()
         if proc.pid:
-            pgrp = os.getpgid(proc.pid)
-            if prgp:
-                logging.debug("Sending SIGINT to process %s" % prgp)
-                os.killpg(pgrp, signal.SIGINT)
-                time.sleep(5) # sleep 5 secons
-                logging.debug("Sending SIGTERM to process %s" % prgp)
-                os.killpg(pgrp, signal.SIGTERM)
+            os.kill(int(proc.pid), signal.SIGKILL)
+        logging.debug("Exit with status code 1")
         sys.exit(1)
         
 def main(args):
@@ -106,8 +101,8 @@ def main(args):
         # step 6: now set the subg ww radio parameters
         exitcode=execute(['oref0-subg-ww-radio-parameters', pump_port], args.timeout, args.wait)
         sys.exit(exitcode) # propagate exit code from oref0-subg-ww-radio-parameters
-    except Exception as ex:
-        logging.error("Exception: %s" % ex)
+    except Exception:
+        logging.exception("Exception in subg_ww_radio_parameters.py")
         sys.exit(1)
       
    
