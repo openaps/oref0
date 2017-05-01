@@ -246,8 +246,8 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    # mmtune 25% of the time ((32k-24576)/32k)
-    [[ $RANDOM > 24576 ]] \
+    # mmtune 20% of the time ((32k-26214)/32k)
+    [[ $RANDOM > 26214 ]] \
     && echo "Waiting for 30s silence before mmtuning" \
     && wait_for_silence 30 \
     && mmtune
