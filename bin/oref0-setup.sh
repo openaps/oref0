@@ -310,7 +310,7 @@ if [[ ! -z "$min_5m_carbimpact" ]]; then
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ $ww_ti_usb_reset =~ ^[Yy]$ ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN; fi
@@ -591,7 +591,11 @@ else
       # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
       # this will be called when mmtune is use with a WW pump. 
       # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
+      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not found.
+      if [[ ${ww_ti_usb_reset,,} =~ "yes" ]];
+        openaps alias remove mmtune
+        openaps alias add mmtune '!bash -c "oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done"'
+      fi
 
       # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
       # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
