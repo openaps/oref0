@@ -102,7 +102,7 @@ case $i in
     shift # past argument=value
     ;;
     --ww_ti_usb_reset=*) # use reset if pump device disappears with TI USB and WW-pump
-    WW_TI_USB_RESET="${i#*=}"
+    ww_ti_usb_reset="${i#*=}"
     shift # past argument=value
     ;;
     *)
@@ -596,7 +596,7 @@ else
       # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
       if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
         openaps alias remove mmtune
-        openaps alias add mmtune '!bash -c "oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done"'
+        openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done\""
       fi
 
       # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
