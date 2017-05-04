@@ -15,8 +15,10 @@ fi
 
 if find monitor/ -mmin -$SNOOZE -ls | grep -q pushover-sent; then
     echo "Last pushover sent less than $SNOOZE minutes ago."
-elif cat $FILE | egrep "add'l|maxBolus"; then
-    curl -s -F "token=$TOKEN" -F "user=$USER" -F "sound=$SOUND" -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent
-else
+elif ! find $FILE -mmin -$SNOOZE -ls | grep $FILE; then
+    echo "$FILE more than $SNOOZE minutes old"
+elif ! cat $FILE | egrep "add'l|maxBolus"; then
     echo "No additional carbs or bolus required."
+else
+    curl -s -F "token=$TOKEN" -F "user=$USER" -F "sound=$SOUND" -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent
 fi
