@@ -6,7 +6,7 @@ FILE=${3-enact/smb-suggested.json}
 SOUND=${4-none}
 SNOOZE=${5-15}
 
-echo "Running: $0 $TOKEN $USER $FILE $SOUND $SNOOZE"
+#echo "Running: $0 $TOKEN $USER $FILE $SOUND $SNOOZE"
 
 if [ -z $TOKEN ] || [ -z $USER ]; then
     echo "Usage: $0 <TOKEN> <USER> [enact/smb-suggested.json] [none] [15]"
