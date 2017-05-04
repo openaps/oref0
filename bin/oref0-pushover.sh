@@ -13,9 +13,9 @@ if [ -z $TOKEN ] || [ -z $USER ]; then
     exit
 fi
 
-if find monitor/ -mmin -$SNOOZE -ls | grep -q pushover-sent; then
+if find monitor/ -mmin -$SNOOZE | grep -q pushover-sent; then
     echo "Last pushover sent less than $SNOOZE minutes ago."
-elif ! find $FILE -mmin -$SNOOZE -ls | grep $FILE; then
+elif ! find $FILE -mmin -$SNOOZE | grep -q $FILE; then
     echo "$FILE more than $SNOOZE minutes old"
 elif ! cat $FILE | egrep "add'l|maxBolus"; then
     echo "No additional carbs or bolus required."
