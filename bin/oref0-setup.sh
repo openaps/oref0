@@ -105,6 +105,14 @@ case $i in
     WW_TI_USB_RESET="${i#*=}"
     shift # past argument=value
     ;;
+    -pt=*|--pushover_token=*)
+    PUSHOVER_TOKEN="${i#*=}"
+    shift # past argument=value
+    ;;
+    -pu=*|--pushover_user=*)
+    PUSHOVER_USER="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -780,6 +788,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
      (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
     fi
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
+    if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
+        (crontab -l; crontab -l | grep -q "oref0-pushover" || echo "* * * * * oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log" ) | crontab -
+    fi
 
     crontab -l | tee $HOME/crontab.txt
 fi
