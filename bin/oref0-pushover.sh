@@ -7,7 +7,8 @@ SOUND={$4-none}
 SNOOZE={$5-15}
 
 if [ -z $TOKEN ] || [ -z $USER ]; then
-      echo "Usage: $0 <TOKEN> <USER> [enact/smb-suggested.json] [none] [15]"
+    echo "Usage: $0 <TOKEN> <USER> [enact/smb-suggested.json] [none] [15]"
+    exit
 fi
 
 if ! find monitor/ -mmin -$SNOOZE -ls | grep pushover-sent && cat $FILE | egrep "add'l|maxBolus"; then
