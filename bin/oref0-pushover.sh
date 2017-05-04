@@ -13,6 +13,7 @@ if [ -z $TOKEN ] || [ -z $USER ]; then
     exit
 fi
 
+date
 if find monitor/ -mmin -$SNOOZE | grep -q pushover-sent; then
     echo "Last pushover sent less than $SNOOZE minutes ago."
 elif ! find $FILE -mmin -$SNOOZE | grep -q $FILE; then
