@@ -133,7 +133,7 @@ if (!module.parent) {
       if (autosens_input !== true && autosens_input.length) {
         try {
             autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
-            console.error(JSON.stringify(autosens_data));
+            //console.error(JSON.stringify(autosens_data));
         } catch (e) {
             var msg = {
               msg: "Optional feature Auto Sensitivity enabled.  Could not find specified auto-sens: " + autosens_input
