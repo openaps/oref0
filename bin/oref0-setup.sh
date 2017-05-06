@@ -702,12 +702,15 @@ if [[ $ENABLE =~ microbolus ]]; then
     done
 fi
 
-# Create ~/.profile so that openaps commands can be executed from the command line
-# as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
-# TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299)
-echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
-(cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
-(cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
+# Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
+# Once all crontab entries are called within a bash environment, then the NIGHTSCOUT_HOST and API_SECRET can be removed from the crontab 
+# TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299 )
+# Removing stuff from ~/.profile (old solution) is left as an exercise to the reader
+echo "#Added NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile at `date`" | tee -a $HOME/.bash_profile
+echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
+echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
+echo API_SECRET="$API_SECRET" >> $HOME/.bash_profile
+echo "export API_SECRET" >> $HOME/.bash_profile
 
 echo "Adding OpenAPS log shortcuts"
 oref0-log-shortcuts
