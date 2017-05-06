@@ -62,7 +62,7 @@ smb_main() {
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
     ); do
-        if grep -q '"suspended": false' monitor/status.json; then
+        if grep -q '"suspended": true' monitor/status.json; then
             echo -n "Pump suspended; "
         else
             echo Error, retrying && maybe_mmtune
