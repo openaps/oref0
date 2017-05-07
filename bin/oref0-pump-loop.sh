@@ -216,9 +216,9 @@ function prep {
 
 # make sure we can talk to the pump and get a valid model number
 function preflight {
-    # only 522, 523, 722, and 723 pump models have been tested with SMB
+    # only 515, 522, 523, 715, 722, and 723 pump models have been tested with SMB
     openaps report invoke settings/model.json 2>&1 >/dev/null | tail -1 \
-    && egrep -q "[57]2[23]" settings/model.json \
+    && egrep -q "[57](15|22|23)" settings/model.json \
     && echo -n "Preflight OK. "
 }
 
