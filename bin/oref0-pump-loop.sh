@@ -64,6 +64,7 @@ smb_main() {
     ); do
         if grep -q '"suspended": true' monitor/status.json; then
             echo -n "Pump suspended; "
+            smb_verify_status
         else
             echo Error, retrying && maybe_mmtune
         fi
