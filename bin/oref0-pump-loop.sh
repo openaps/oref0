@@ -138,12 +138,7 @@ function smb_enact_temp {
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c .
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     else
-        if grep incorrectly enact/suggested.json; then
-            echo "Checking system clock against pump clock:"
-            oref0-set-system-clock 2>&1 >/dev/null
-        else
-            echo -n "No smb_enact needed. "
-        fi
+        echo -n "No smb_enact needed. "
     fi \
     && smb_verify_enacted
 }
@@ -177,6 +172,10 @@ function smb_verify_reservoir {
 }
 
 function smb_verify_suggested {
+    if grep incorrectly enact/suggested.json; then
+        echo "Checking system clock against pump clock:"
+        oref0-set-system-clock 2>&1 >/dev/null
+    fi
     echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | tr -d '\n' \
     && echo -n " is within 1m of current time: " && date \
     && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") > -60 )) \
