@@ -138,7 +138,12 @@ function smb_enact_temp {
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c .
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     else
-        echo -n "No smb_enact needed. "
+        if grep incorrectly enact/suggested.json; then
+            echo "Checking system clock against pump clock:"
+            oref0-set-system-clock 2>&1 >/dev/null
+        else
+            echo -n "No smb_enact needed. "
+        fi
     fi \
     && smb_verify_enacted
 }
