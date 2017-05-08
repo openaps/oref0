@@ -109,12 +109,12 @@ describe('determine-basal', function ( ) {
         var glucose_status = {"delta":-5,"glucose":75,"long_avgdelta":-5,"short_avgdelta":-5};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         output.rate.should.equal(0);
-        output.duration.should.equal(30);
+        output.duration.should.be.above(29);
         //output.reason.should.match(/BG 75<80/);
     });
 
-    it('should not extend temp to 0 when >20m left', function () {
-        var currenttemp = {"duration":27,"rate":0,"temp":"absolute"};
+    it('should not extend temp to 0 when <10m elapsed', function () {
+        var currenttemp = {"duration":57,"rate":0,"temp":"absolute"};
         var glucose_status = {"delta":-5,"glucose":75,"long_avgdelta":-5,"short_avgdelta":-5};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         //console.log(output);
@@ -163,8 +163,9 @@ describe('determine-basal', function ( ) {
         var glucose_status = {"delta":-1,"glucose":75,"long_avgdelta":-1,"short_avgdelta":-1};
         var iob_data = {"iob":1,"activity":0.01,"bolussnooze":0.5};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
+        //console.log(output);
         output.rate.should.equal(0);
-        output.duration.should.equal(30);
+        output.duration.should.be.above(29);
         //output.reason.should.match(/BG 75<80/);
     });
 
@@ -290,7 +291,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         //console.log(output);
         output.rate.should.be.below(0.2);
-        output.duration.should.equal(30);
+        output.duration.should.be.above(29);
         //output.reason.should.match(/Eventual BG .*< 110.*setting .*/);
     });
 
@@ -474,17 +475,17 @@ describe('determine-basal', function ( ) {
 
     it('profile should contain min_bg,max_bg or target_bg', function () {
       var result = determine_basal({glucose:100},undefined, undefined, {"current_basal":0.0}, undefined, meal_data, tempBasalFunctions);
-      result.error.should.equal('Error: could not determine target_bg');
+      result.error.should.equal('Error: could not determine target_bg. ');
     });
 
     it('iob_data should not be undefined', function () {
       var result = determine_basal({glucose:100},undefined, undefined, {"current_basal":0.0, "target_bg":100}, undefined, meal_data, tempBasalFunctions);
-      result.error.should.equal('Error: iob_data undefined');
+      result.error.should.equal('Error: iob_data undefined. ');
     });
 
     it('iob_data should contain activity, iob, bolussnooze', function () {
       var result = determine_basal({glucose:100}, undefined,{"activity":0}, {"current_basal":0.0, "target_bg":100}, undefined, meal_data, tempBasalFunctions);
-      result.error.should.equal('Error: iob_data missing some property');
+      result.error.should.equal('Error: iob_data missing some property. ');
     });
 
 /*
