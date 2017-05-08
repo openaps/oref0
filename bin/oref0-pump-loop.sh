@@ -167,7 +167,7 @@ function smb_verify_reservoir {
 }
 
 function smb_verify_suggested {
-    if grep incorrectly enact/suggested.json; then
+    if grep incorrectly enact/smb-suggested.json; then
         echo "Checking system clock against pump clock:"
         oref0-set-system-clock 2>&1 >/dev/null
     fi
