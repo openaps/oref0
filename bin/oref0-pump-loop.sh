@@ -217,7 +217,7 @@ function prep {
 }
 
 function if_mdt_get_bg {
-    if grep "MDT cgm" openaps.ini
+    if grep "MDT cgm" openaps.ini; then
         openaps get-bg
     fi
 }
