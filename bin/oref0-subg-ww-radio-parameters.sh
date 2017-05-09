@@ -1,35 +1,42 @@
 #!/bin/bash
 
-# Set this to the serial port that your device is on: eg /dev/ttyACM0 or /dev/ttyMFD1
-# use oref0-find-ti-usb-device.sh to autodetect the ACM device of the TI USB stick
-SERIAL_PORT=`/usr/local/bin/oref0-find-ti`
-#SERIAL_PORT="/dev/ttyS0"
-echo Your TI-stick is located at $SERIAL_PORT
+# set SERIAL_PORT from environment variable, or first argument, or default to /dev/mmeowlink
+SERIAL_PORT=${SERIAL_PORT-${1-/dev/mmeowlink}}
 
-# Set this to the directory where you've run this. By default:
-#     cd ~
+# It requires subg_rfspy in installed. This can be installated with
+#     cd ~/src
 #     git clone https://github.com/ps2/subg_rfspy.git
-#
+# Set SUBG_RFSPY_DIR to your subg_rfspy checkout
 SUBG_RFSPY_DIR=$HOME/src/subg_rfspy
 
-# If you're on an ERF, set this to 0:
-# export RFSPY_RTSCTS=0
+# If you're on an ERF or TI USB, set this to 0:
+#export RFSPY_RTSCTS=0
 
 ################################################################################
 set -e
 set -x
 
+echo
+echo The CC111x is located at $SERIAL_PORT
+
+# change to subg_rfspy tools directory
 cd $SUBG_RFSPY_DIR/tools
 
-#disabled killing openaps, because we want it to be able to use this with openaps mmtune
+#Disabled killing openaps, because we want it to be able to use this with openaps mmtune
 #echo -n "Killing running openaps processes... "
 #killall -g openaps
 #echo
 
-# Reset to defaults
-./reset.py $SERIAL_PORT
-
-sleep 2
+# Disabled by default, because it can hang the pump loop with TI USB stick
+# The reset.py script will be called if this script is run with --resetpy as second parameter
+# This is the default behaviour implemented in oref0_init_pump_comms.py
+case "$2" in
+  --resetpy)
+    ./reset.py $SERIAL_PORT
+    sleep 2
+    exit 0
+    ;;
+esac
 
 ./change_setting.py $SERIAL_PORT 0x06 0x00          # CHANNR
 

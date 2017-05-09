@@ -10,7 +10,7 @@
     "type": "alias",
     "name": "mmtune",
     "mmtune": {
-      "command": "! bash -c \"reset_spi_serial.py 2>/dev/null; echo {} > monitor/mmtune.json; echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json 2>/dev/null >/dev/null; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \\\"$line \\\"; done\""
+      "command": "! bash -c \"oref0_init_pump_comms.py; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \\\"$line \\\"; done\""
     }
   },
   {
@@ -51,13 +51,13 @@
   {
     "type": "alias",
     "ns-temptargets": {
-      "command": "! bash -c \"curl -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[created_at\\]\\[\\$gte\\]=$(date -d \\\"6 hours ago\\\" -Iminutes)&find\\[eventType\\]\\[\\$regex\\]=Target\\\" > settings/temptargets.json; openaps report invoke settings/profile.json 2>/dev/null >/dev/null; exit 0 \""
+      "command": "! bash -c \"curl --compressed -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[created_at\\]\\[\\$gte\\]=$(date -d \\\"6 hours ago\\\" -Iminutes -u)&find\\[eventType\\]\\[\\$regex\\]=Target\\\" > settings/temptargets.json; openaps report invoke settings/profile.json 2>/dev/null >/dev/null; exit 0 \""
     },
     "name": "ns-temptargets"
   },
   {
     "ns-meal-carbs": {
-      "command": "! bash -c \"curl -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[carbs\\]\\[\\$exists\\]=true\\\" > monitor/carbhistory.json; oref0-meal monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json monitor/carbhistory.json monitor/glucose.json settings/basal_profile.json > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0\""
+      "command": "! bash -c \"curl --compressed -m 30 -s \\\"$NIGHTSCOUT_HOST/api/v1/treatments.json?find\\[carbs\\]\\[\\$exists\\]=true\\\" > monitor/carbhistory.json; oref0-meal monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json monitor/carbhistory.json monitor/glucose.json settings/basal_profile.json > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0\""
     },
     "type": "alias",
     "name": "ns-meal-carbs"

@@ -28,11 +28,11 @@ import argparse
 import re
 
 def parseDateAndRun(filename):
-    m=re.match( r'.*profile.(?P<run>[0-9]*).(?P<date>20[0-9][0-9]-[01][0-9]-[0-3][0-9]).json', filename)
+    m=re.match( r'profile.(?P<run>.*).(?P<date>20[0-9][0-9]-[01][0-9]-[0-3][0-9]).json', filename)
     if m:
          return (m.group('date'), m.group('run'))
     else: # not found
-        return ('0','0')
+        return ('-','-')
 
 def calc_minutes(timestr):
     # returns the number of minutes from midnight. seconds are ignored
@@ -73,19 +73,7 @@ def writeExcelHeader(ws, date_format, headerFormat):
             ws.write_datetime(0, col, dt, date_format)
             col=col+1
 
-def write_profile(worksheet, row, json, excel_number_format):
-    worksheet.write_string(row, 0, filename)
-    date, run = parseDateAndRun(filename)
-    worksheet.write_string(row, 1, date)
-    worksheet.write_string(row, 2, run)
-    col=3
-    value=""
-    for i in PROFILE_FIELDS:
-        if json.has_key(i):
-           worksheet.write_number(row, col, json[i], excel_number_format)
-        col=col+1
-    
-def write_timebased_profile(worksheet, row, expandedList, excel_number_format):
+def write_excel_profile(worksheet, row, expandedList, excel_number_format):
     worksheet.write_string(row, 0, filename)
     date, run = parseDateAndRun(filename)
     worksheet.write_string(row, 1, date)
@@ -102,24 +90,14 @@ def excel_init_workbook(workbook):
     excel_integer_format = workbook.add_format({'num_format': '0', 'font_size': '16'})
     headerFormat = workbook.add_format({'bold': True, 'font_color': 'black'})
     worksheetInfo = workbook.add_worksheet('Read this first')
-
-    worksheetProfile = workbook.add_worksheet('Profile')
-    worksheetProfile.write_string(0,0, 'Filename', headerFormat)
-    worksheetProfile.write_string(0,1, 'Date', headerFormat)
-    worksheetProfile.write_string(0,2, 'Run', headerFormat)
-    col=3
-    for colName in PROFILE_FIELDS:
-        worksheetProfile.write_string(0,col, colName, headerFormat)
-        col=col+1
-
     worksheetIsf = workbook.add_worksheet('isfProfile')
     worksheetBasal = workbook.add_worksheet('basalProfile') 
     writeExcelHeader(worksheetBasal, excel_hour_format,headerFormat)
     writeExcelHeader(worksheetIsf, excel_hour_format,headerFormat)
     worksheetBasal.autofilter('A1:C999')
     worksheetIsf.autofilter('A1:C999')
-    worksheetBasal.set_column(3, 50, 6) # set columns starting from 3 to same width
-    worksheetIsf.set_column(3, 50, 6) # set columns starting from 3 to same width
+    worksheetBasal.set_column(3, 50, 6) # set columns starting from 3 to width 6
+    worksheetIsf.set_column(3, 50, 5) # set columns starting from 3 to width 5
     infoText=['Released under MIT license. See the accompanying LICENSE.txt file for', 'full terms and conditions', '']
     infoText.append('THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR')
     infoText.append('IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,')
@@ -132,42 +110,23 @@ def excel_init_workbook(workbook):
     for i in range(len(infoText)):
         worksheetInfo.write_string(row, 1, infoText[i])
         row=row+1
-    return (worksheetProfile, worksheetBasal, worksheetIsf, excel_2decimals_format, excel_integer_format)
-
-# sort filenames. First on date and then on run number
-# put settings/profile.js
-def sortedFilenames():
-    filelist=glob.glob("settings/profile.json")
-    filelist=filelist+glob.glob("settings/pumpprofile.json")
-    profiles=glob.glob("autotune/profile*.json")
-    listdateandrun=[]
-    for i in profiles:
-        date, run = parseDateAndRun(i)
-        sortkey="%s-%3d" % (date,int(run))
-        listdateandrun.append((sortkey,i))
-    listdateandrun.sort()
-    for (daterun,filename) in listdateandrun:
-        filelist.append(filename)
-    return filelist
-
-# global constants
-PROFILE_FIELDS=['max_iob', 'carb_ratio', 'csf', 'max_basal', 'sens']
+    return (worksheetBasal, worksheetIsf, excel_2decimals_format, excel_integer_format)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Export oref0 autotune files to Microsoft Excel')
     parser.add_argument('-d', '--dir', help='autotune directory', default='.')
     parser.add_argument('-o', '--output', help='default autotune.xlsx', default='autotune.xlsx')
-    parser.add_argument('--version', action='version', version='%(prog)s 0.0.3-dev')
+    parser.add_argument('--version', action='version', version='%(prog)s 0.0.2-dev')
     args = parser.parse_args()
 
-    # change to openaps directory
+    # change to autotune directory
     os.chdir(args.dir)
 
     print "Writing headers to Microsoft Excel file %s" % args.output
     workbook = xlsxwriter.Workbook(args.output)
-    (worksheetProfile,worksheetBasal, worksheetIsf,excel_2decimals_format,excel_integer_format)=excel_init_workbook(workbook)
+    (worksheetBasal, worksheetIsf,excel_2decimals_format,excel_integer_format)=excel_init_workbook(workbook)
     row=1 # start on second row, row=0 is for headers
-    filenamelist=sortedFilenames()
+    filenamelist=glob.glob("profile.json")+glob.glob("profile.pump.json")+glob.glob("profile.[0-9].*.json")+glob.glob("profile.[0-9][0-9].*.json")
     for filename in filenamelist:
         f=open(filename, 'r')
         print "Adding %s to Excel" % filename
@@ -176,9 +135,7 @@ if __name__ == '__main__':
         isfProfile=j['isfProfile']['sensitivities']
         expandedBasal=expandProfile(basalProfile, 'rate', 'minutes')
         expandedIsf=expandProfile(isfProfile, 'sensitivity', 'offset')
-        write_timebased_profile(worksheetBasal, row, expandedBasal, excel_2decimals_format)
-        write_timebased_profile(worksheetIsf, row, expandedIsf, excel_integer_format)
-        write_profile(worksheetProfile, row, j, excel_integer_format)	
+        write_excel_profile(worksheetBasal, row, expandedBasal, excel_2decimals_format)
+        write_excel_profile(worksheetIsf, row, expandedIsf, excel_integer_format)
         row=row+1
     workbook.close()  
-    print "Written %d lines to Excel" % row

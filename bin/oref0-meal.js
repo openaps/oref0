@@ -74,6 +74,9 @@ if (!module.parent) {
         }
     }
 
+    if (typeof basalprofile_data[0] == 'undefined') {
+        return console.error("Error: bad basalprofile_data:" + basalprofile_data);
+    }
     if (typeof basalprofile_data[0].glucose != 'undefined') {
       console.error("Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
       var temp = carb_data;

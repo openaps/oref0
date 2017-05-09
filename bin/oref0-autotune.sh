@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This sccript sets up an easy test environment for autotune, allowing the user to vary parameters 
+# This script sets up an easy test environment for autotune, allowing the user to vary parameters 
 # like start/end date and number of runs.
 # 
 # Required Inputs: 
@@ -34,6 +34,7 @@ die() {
 }
 
 # defaults
+CURL_FLAGS="--compressed"
 DIR=""
 NIGHTSCOUT_HOST=""
 START_DATE=""
@@ -44,6 +45,22 @@ TERMINAL_LOGGING=true
 RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
 
+if [ -n "${API_SECRET_READ}" ]; then
+	HASHED_API_SECRET_READ=`echo -n ${API_SECRET_READ}|sha1sum|cut -f1 -d '-'|cut -f1 -d ' '`
+fi
+
+# If we are running OS X, we need to use a different version
+# of the 'date' command; the built-in 'date' is BSD, which
+# has fewer options than the linux version.  So the user
+# needs to install coreutils, which gives the GNU 'date'
+# command as 'gdate':
+
+shopt -s expand_aliases
+
+if [[ `uname` == 'Darwin' ]] ; then
+    alias date='gdate'
+fi
+
 # handle input arguments
 for i in "$@"
 do
@@ -52,7 +69,12 @@ case $i in
     DIR="${i#*=}"
     # ~/ paths have to be expanded manually
     DIR="${DIR/#\~/$HOME}"
-    directory="$(readlink -m $DIR)"
+    # If DIR is a symlink, get actual path: 
+    if [[ -L $DIR ]] ; then
+        directory="$(readlink $DIR)"
+    else
+        directory="$DIR"
+    fi
     shift # past argument=value
     ;;
     -n=*|--ns-host=*)
@@ -110,10 +132,15 @@ else
   exit 1
 fi
 
-
 # Get profile for testing copied to home directory. "openaps" is my loop directory name.
 cd $directory && mkdir -p autotune
 cp settings/pumpprofile.json autotune/profile.pump.json
+# This allows manual users to be able to run autotune by simply creating a settings/pumpprofile.json file.
+if [[ `uname` == 'Darwin' ]] ; then
+    cp settings/pumpprofile.json settings/profile.json
+else
+    cp -up settings/pumpprofile.json settings/profile.json
+fi
 # If a previous valid settings/autotune.json exists, use that; otherwise start from settings/profile.json
 cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json
 cd autotune
@@ -131,8 +158,12 @@ echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 # Get Nightscout carb and insulin Treatments
 url="$NIGHTSCOUT_HOST/api/v1/treatments.json?find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
 echo $url
-curl -s $url > ns-treatments.json
-ls -la ns-treatments.json
+if [ -n "${HASHED_API_SECRET_READ}" ]; then 
+	curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+else
+	curl ${CURL_FLAGS} -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+fi
+ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
 
 # Build date list for autotune iteration
 date_list=()
@@ -154,8 +185,13 @@ for i in "${date_list[@]}"
 do 
   url="$NIGHTSCOUT_HOST/api/v1/entries/sgv.json?find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
   echo $url
-  curl -s $url > ns-entries.$i.json
-  ls -la ns-entries.$i.json
+  if [ -n "${HASHED_API_SECRET_READ}" ]; then 
+    curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+  else
+    curl ${CURL_FLAGS} -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+  fi
+
+  ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
 done
 
 echo "Running $NUMBER_OF_RUNS runs from $START_DATE to $END_DATE"
@@ -172,16 +208,22 @@ do
     cp profile.json profile.$run_number.$i.json
     # Autotune Prep (required args, <pumphistory.json> <profile.json> <glucose.json>), output prepped glucose 
     # data or <autotune/glucose.json> below
-    echo "~/src/oref0/bin/oref0-autotune-prep.js ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json"
-    ~/src/oref0/bin/oref0-autotune-prep.js ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json
+    echo "oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json"
+    oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json \
+        || die "Could not run oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json"
     
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 
     # output autotuned profile or what will be used as <autotune/autotune.json> in the next iteration
-    echo "~/src/oref0/bin/oref0-autotune-core.js autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json"
-    ~/src/oref0/bin/oref0-autotune-core.js autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json
-    
-    # Copy tuned profile produced by autotune to profile.json for use with next day of data
-    cp newprofile.$run_number.$i.json profile.json
+    echo "oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json"
+    if ! oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json; then
+        if cat profile.json | jq --exit-status .carb_ratio==null; then
+            echo "ERROR: profile.json contains null carb_ratio: using profile.pump.json"
+            cp profile.pump.json profile.json
+            exit
+        else
+            die "Could not run oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json"
+        fi
+    fi
 
   done # End Date Range Iteration
 done # End Number of Runs Loop
@@ -208,6 +250,6 @@ if [[ $RECOMMENDS_REPORT == "true" ]]; then
   # Run the Autotune Recommends Report
   oref0-autotune-recommends-report $directory
 
-  # Go ahead and echo autotune_recommendations.log to the terminal
-  cat $report_file
+  # Go ahead and echo autotune_recommendations.log to the terminal, minus blank lines
+  cat $report_file | egrep -v "\| *\| *$"
 fi
