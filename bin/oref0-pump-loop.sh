@@ -384,7 +384,7 @@ function low_battery_wait {
 }
 
 function wait_for_bg {
-    if grep "MDT cgm" openaps.ini
+    if grep "MDT cgm" openaps.ini; then
         echo "MDT CGM configured; not waiting"
     else
         echo -n "Waiting up to 4 minutes for new BG: "
