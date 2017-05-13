@@ -22,15 +22,15 @@ if curl --compressed -4 -s -m 15 icanhazip.com | egrep "^[12]*[0-9]*[0-9]\.[12]*
         sudo dhclient wlan0
     fi
 else
-    echo; echo "Error, cycling networking "
+    #echo; echo "Error, cycling networking "
     # simply restart networking completely for stability purposes
-    sudo /etc/init.d/networking stop
-    sleep 5
-    sudo /etc/init.d/networking start
-    echo "and getting new wlan0 IP"
-    ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
-    sudo dhclient wlan0 -r
-    sudo dhclient wlan0
+    #sudo /etc/init.d/networking stop
+    #sleep 5
+    #sudo /etc/init.d/networking start
+    #echo "and getting new wlan0 IP"
+    #ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
+    #sudo dhclient wlan0 -r
+    #sudo dhclient wlan0
     echo
     echo -n "At $(date), my wifi network name is "
     printf '%s' $(iwgetid -r)
