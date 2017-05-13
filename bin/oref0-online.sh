@@ -43,6 +43,7 @@ else
             if ! curl --compressed -4 -s -m 15 icanhazip.com | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
                 echo; echo -n "Error, connecting BT to $MAC"
                 oref0-bluetoothup
+                sudo bt-pan client $MAC -d
                 sudo bt-pan client $MAC
                 echo -n ", getting bnep0 IP"
                 sudo dhclient bnep0
