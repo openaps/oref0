@@ -7,7 +7,7 @@ echo
 echo -n "At $(date), my wifi network name is "
 printf '%s' $(iwgetid -r)
 echo -n ", and my public IP is: "
-if curl --compressed -4 -s -m 15 icanhazip.com | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
+if curl --compressed -4 -s -m 15 icanhazip.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
     # if we are back on wifi (and have connectivity to icanhazip.com), shut down bluetooth
     if ( ifconfig | grep -A1 wlan0 | grep -q "inet addr" ) && ( ifconfig | grep -A1 bnep0 | grep -q "inet addr" ); then
         echo "Back online via wifi; disconnecting BT $MAC"
@@ -36,11 +36,11 @@ else
     printf '%s' $(iwgetid -r)
     echo -n ", and my public IP is: "
     # loop over as many MACs as are provided as arguments
-    if ! curl --compressed -4 -s -m 15 icanhazip.com | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
+    if ! curl --compressed -4 -s -m 15 icanhazip.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
         echo
         for MAC; do
             echo -n "At $(date) my public IP is: "
-            if ! curl --compressed -4 -s -m 15 icanhazip.com | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
+            if ! curl --compressed -4 -s -m 15 icanhazip.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
                 echo; echo -n "Error, connecting BT to $MAC"
                 oref0-bluetoothup
                 sudo bt-pan client $MAC -d
