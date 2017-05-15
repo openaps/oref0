@@ -428,8 +428,8 @@ if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }') 
     if [ "$bluetoothdversioncompare" -eq 1 ]; then
         killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.44.tar.gz && tar xvfz bluez-5.44.tar.gz || die "Couldn't download bluez"
-        cd $HOME/src/bluez-5.44 && ./configure --enable-experimental --disable-systemd && \
+        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.45.tar.gz && tar xvfz bluez-5.45.tar.gz || die "Couldn't download bluez"
+        cd $HOME/src/bluez-5.45 && ./configure --disable-systemd && \
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         oref0-bluetoothup
     else
