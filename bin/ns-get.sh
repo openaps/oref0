@@ -8,6 +8,7 @@ NIGHTSCOUT_HOST=${NIGHTSCOUT_HOST-${2-localhost:1337}}
 QUERY=${3}
 OUTPUT=${4-/dev/fd/1}
 
+# use token auhtentication if the user has a token set in their API_SECRET environment variable
 if [[ "${API_SECRET,,}" =~ "token=" ]]; then
   exec ns-get-token $*
   exit $?
