@@ -141,8 +141,16 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    echo -e "What kind of CGM are you using?\nValid options:\nG4-upload: use Dexcom G4 receiver connected to USB and upload to nightscout\nG4-local-only: will NOT upload BGs from a plugged in receiver to Nightscout\nG5: Dexcom G5\nMDT: Medtronic CGM\nshareble: Bluetooth Dexcom G4 or G5 receiver\nxdrip: Requires xDrip Wireless Bridge (No Receiver)."
-    read -p "Please selection option for your CGM: " -r
+    echo "What kind of CGM are you using?"
+    echo "(Nightscout will also be used in addition to whichever directly connected CGM you select below.)
+    echo "Valid options:"
+    echo "G4-upload: use Dexcom G4 receiver connected to USB and upload to Nightscout (supports raw)"
+    echo "G4-local-only: use but do NOT upload BGs from a plugged in receiver to Nightscout"
+    echo "G5: Dexcom G5"
+    echo "MDT: Medtronic Enlite CGM"
+    echo "ShareBLE: Bluetooth Dexcom G4 receiver over BLE (not fully reliable or documented)"
+    echo "xDrip: xDripAPS Wireless Bridge (No Receiver)."
+    read -p "Please enter your CGM selection: " -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
