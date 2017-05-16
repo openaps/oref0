@@ -751,7 +751,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 # add crontab entries
     if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
-      (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo "#NIGHTSCOUT_HOST is not used for token based authentication, use ns.ini instead" | crontab -
+      (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo "#NIGHTSCOUT_HOST is not used for token based authentication, use ns.ini instead") | crontab -
       (crontab -l; crontab -l | grep -q "oref0_nightscout_proxyd.py" || echo "@reboot oref0_nightscout_proxyd.py >> /var/log/openaps/ns-proxy.log") | crontab -
     else
       (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
