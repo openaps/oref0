@@ -153,10 +153,10 @@ openaps use ns shell upload treatments.json recently/combined-treatments.json
   status                                         - ns-status
   get-status                                     - status - get NS status
   preflight                                      - NS preflight
-  temp_targets [expr]                            - Get temp target treatments from Nightscout
-                                                 expr is used with date -d, default is -24hours.
+  temp_targets                                   - Get temp target treatments from Nightscout (last 6 hours)
+                                                 Last 6 hours will be fetched
   carb_history [expr]                            - Get treatments with carbs from Nightscout
-                                                 expr is used with date -d, default is -24hours.
+                                                 Last 6 hours will be fetched
 EOF
 extra_ns_help
 }
@@ -291,12 +291,10 @@ ns)
       | openaps use $zone rezone --astimezone --date dateString -
     ;;
     temp_targets)
-    expr=${1--24hours}
-    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes)&find[eventType]=Temporary+Target"
+    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d \"6 hours ago\" -Iminutes -u)&find[eventType][\$regexp]=Target"
     ;;
     carb_history)
-    expr=${1--24hours}
-    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes)&find[carbs][\$exists]=true"
+    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d \"6 hours ago\" -Iminutes)&find[carbs][\$exists]=true"
     ;;
     *)
     echo "Unknown request:" $OP
@@ -319,7 +317,11 @@ hash-api-secret)
 autoconfigure-device-crud)
   NIGHTSCOUT_HOST=$1
   PLAIN_NS_SECRET=$2
-  API_SECRET=$($self hash-api-secret $2)
+  if [[ "${PLAIN_NS_SECRET,,}" =~ "token=" ]]; then
+    API_SECRET=$2 # store token as API_SECRET
+  else
+    API_SECRET=$($self hash-api-secret $2)
+  fi
   case $1 in
     help|-h|--help)
       setup_help

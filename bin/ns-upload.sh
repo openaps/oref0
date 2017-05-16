@@ -10,6 +10,12 @@ ENTRIES=${4-entries.json}
 #TZ=${3-$(date +%z)}
 OUTPUT=${5}
 
+# use token auhtentication if the user has a token set in their API_SECRET environment variable
+if [[ "${API_SECRET,,}" =~ "token=" ]]; then
+  exec ns-upload-token $*
+  exit $?
+fi
+
 REST_ENDPOINT="${NIGHTSCOUT_HOST}/api/v1/${TYPE}"
 
 function usage ( ) {

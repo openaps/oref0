@@ -128,7 +128,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -212,9 +212,15 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo "Ok, $NIGHTSCOUT_HOST it is."
     fi
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
-        read -p "And what is your Nightscout api secret (i.e. myplaintextsecret)? " -r
-        API_SECRET=$REPLY
-        echo "Ok, $API_SECRET it is."
+         read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This is preferred and makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET. Do you want to use token based authentication [Y]/n?" -r 
+         if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+           read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
+           API_SECRET="token=${REPLY}"
+         else
+           read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
+           API_SECRET=$REPLY
+           echo "Ok, $API_SECRET it is."
+         fi
     fi
     if [[ ! -z $BT_MAC ]]; then
        read -p "For BT Tethering enter phone Bluetooth MAC address (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
@@ -345,7 +351,7 @@ mkdir -p settings || die "Can't mkdir settings"
 mkdir -p enact || die "Can't mkdir enact"
 mkdir -p upload || die "Can't mkdir upload"
 if [[ ${CGM,,} =~ "xdrip" ]]; then
-	mkdir -p xdrip || die "Can't mkdir xdrip"
+    mkdir -p xdrip || die "Can't mkdir xdrip"
 fi
 
 mkdir -p $HOME/src/
@@ -378,7 +384,7 @@ if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basa
 else
     preferences_from_args=()
     if [[ $max_iob -ne 0 ]]; then
-	preferences_from_args+="\"max_iob\":$max_iob "
+    preferences_from_args+="\"max_iob\":$max_iob "
     fi
     if [[ ! -z "$max_daily_safety_multiplier" ]]; then
         preferences_from_args+="\"max_daily_safety_multiplier\":$max_daily_safety_multiplier "
@@ -459,13 +465,13 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
     echo Checking bluez installation
-    # TODO: figure out if we need to do this for 5.44 as well
+    # TODO: figure out if we need to do this for 5.45 as well
     if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
     fi
      # add two lines to /etc/rc.local if they are missing.
-    if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
-        sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
+    if ! grep -q '/usr/local/bin/bluetoothd' /etc/rc.local; then
+        sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
     fi
     if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
         sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
@@ -495,7 +501,15 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
         ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
         echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
+        if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
+            sudo pip3 install requests || die "Can't add nightscout - error installing requests"
+            sudo pip3 install flask || die "Can't add nightscout - error installing flask"
+            sudo pip3 install flask-restful || die "Can't add nightscout - error installing flask-restful"
+            oref0_nightscout_proxyd -check || die "Error checking permissions with Nightscout"
+            touch /tmp/reboot-required
+        fi
     fi
+	
 
     if [[ ${CGM,,} =~ "g4-upload" ]]; then
         sudo apt-get -y install bc
@@ -736,7 +750,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
 # add crontab entries
-    (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
+    if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
+      (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo "#NIGHTSCOUT_HOST is not used for token based authentication, use ns.ini instead" | crontab -
+      (crontab -l; crontab -l | grep -q "oref0_nightscout_proxyd.py" || echo "@reboot oref0_nightscout_proxyd.py >> /var/log/openaps/ns-proxy.log") | crontab -
+    else
+      (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
+    fi
     (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
     (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
     (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
@@ -756,7 +775,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
     elif [[ ${CGM,,} =~ "xdrip" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; cp -rf xdrip/glucose.json xdrip/last-glucose.json; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cmp --silent xdrip/glucose.json xdrip/last-glucose.json || cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
-	(crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
+    (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
     elif [[ $ENABLE =~ dexusb ]]; then
         (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot cd $directory && /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
     elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
