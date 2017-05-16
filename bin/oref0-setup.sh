@@ -502,6 +502,7 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
         echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
         if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
+            sudo apt-get -y install python3-pip
             sudo pip3 install requests || die "Can't add nightscout - error installing requests"
             sudo pip3 install flask || die "Can't add nightscout - error installing flask"
             sudo pip3 install flask-restful || die "Can't add nightscout - error installing flask-restful"
