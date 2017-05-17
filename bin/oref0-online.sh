@@ -1,5 +1,11 @@
 #!/bin/bash
 echo; echo Starting oref0-online.
+if iwgetid -r wlan0; then
+    if ! ip route | grep default | grep -q wlan0; then
+        echo Attempting to renew wlan0 IP
+        sudo dhclient wlan0
+    fi
+fi
 echo -n "At $(date) my local IP is: "
 ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}'
 ip -4 -o addr show dev bnep0 | awk '{split($4,a,"/");print a[1]}'
@@ -33,7 +39,7 @@ else
     #sudo dhclient wlan0
     echo
     echo -n "At $(date), my wifi network name is "
-    printf '%s' $(iwgetid -r)
+    iwgetid -r wlan0 | tr -d '\n'
     echo -n ", and my public IP is: "
     # loop over as many MACs as are provided as arguments
     if ! curl --compressed -4 -s -m 15 icanhazip.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
@@ -58,7 +64,7 @@ else
         echo
     fi
     echo -n "At $(date), my wifi network name is "
-    printf '%s' $(iwgetid -r)
+    iwgetid -r wlan0 | tr -d '\n'
     echo -n ", and my public IP is: "
     curl --compressed -4 -s -m 15 icanhazip.com
 fi
