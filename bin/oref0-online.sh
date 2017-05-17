@@ -1,7 +1,7 @@
 #!/bin/bash
 echo; echo Starting oref0-online.
 # if we are connected to wifi but don't have an IP, try to get one
-if iwgetid -r wlan0 | egrep -q "[A-Z]|[a-z]|[0-9]*"; then
+if iwgetid -r wlan0 | egrep -q "[A-Z]|[a-z]|[0-9]?"; then
     if ! ip route | grep default | grep -q wlan0; then
         echo Attempting to renew wlan0 IP
         sudo dhclient wlan0
