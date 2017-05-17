@@ -58,6 +58,7 @@ else
                 if ( ifconfig | grep -A1 wlan0 | grep -q "inet addr" ) && ( ifconfig | grep -A1 bnep0 | grep -q "inet addr" ); then
                     echo -n " and releasing wifi IP"
                     sudo dhclient wlan0 -r
+                    echo
                     echo Sleeping for 2 minutes before trying wifi again
                     sleep 120
                 fi
