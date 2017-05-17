@@ -17,7 +17,7 @@
     "name": "ns-glucose",
     "extra": {
       "fields": "",
-      "cmd": "bash -c \"curl -m 30 -s $NIGHTSCOUT_HOST/api/v1/entries/sgv.json?count=1000 | json -e \\\"this.glucose = this.sgv\\\"\"",
+      "cmd": "bash -c \"curl --compressed -m 30 -s $NIGHTSCOUT_HOST/api/v1/entries/sgv.json?count=1000 | json -e \\\"this.glucose = this.sgv\\\"\"",
       "args": ""
     }
   },
@@ -150,7 +150,7 @@
     "name": "xdrip",
     "extra": {
       "fields": "",
-      "cmd": "bash -c \"curl -s http://localhost:5000/api/v1/entries?count=288 | json -e \\\"this.glucose = this.sgv\\\"\"",
+      "cmd": "bash -c \"curl --compressed -s http://localhost:5000/api/v1/entries?count=288 | json -e \\\"this.glucose = this.sgv\\\"\"",
       "args": ""
     }
   }

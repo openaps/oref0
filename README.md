@@ -60,8 +60,6 @@ The result is suitable for sending to Nightscout's entries api, eg, using
 `ns-upload-entries`.
 ```
 mm-format-ns-glucose <input> <output>
-
-
 ```
 
 ### `mm-format-ns-pump-history`
@@ -85,7 +83,6 @@ These can be defined in crontab, or in a simple file, eg
 
 ```
 API_SECRET="..." NIGHTSCOUT_HOST=localhost:1337 ns-upload-entries <input> <output>
-
 ```
 
 ## Contributing
@@ -95,6 +92,7 @@ See the [CONTRIBUTING document](CONTRIBUTING.md)
 
 ```
 git clone git://github.com/openaps/oref0.git
+cd oref0
 git checkout dev
 git checkout -b wip/my-enhancement-fix-or-proposal
 ```

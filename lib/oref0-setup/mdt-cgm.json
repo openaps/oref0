@@ -38,14 +38,25 @@
       "input": "raw-cgm/raw-entries.json",
       "device": "glucose",
       "timezone": "",
-      "infile": "monitor/cgm-mm-glucosedirty.json"
+      "infile": "monitor/cgm-mm-glucosetrend.json"
+    }
+  },
+  {
+    "type": "report",
+    "name": "monitor/cgm-mm-glucosetrend.json",
+    "monitor/cgm-mm-glucosetrend.json": {
+      "device": "oref0",
+      "remainder": "mdt-trend monitor/cgm-mm-glucosedirty.json",
+      "use": "shell",
+      "json_default": "True",
+      "reporter": "JSON"
     }
   },
   {
     "type": "alias",
     "name": "monitor-cgm",
     "monitor-cgm": {
-      "command": "report invoke monitor/cgm-mm-glucosedirty.json cgm/cgm-glucose.json"
+      "command": "report invoke monitor/cgm-mm-glucosedirty.json monitor/cgm-mm-glucosetrend.json cgm/cgm-glucose.json"
     }
   },
     {
@@ -114,7 +125,7 @@
   },
   {
      "get-bg": {
-      "command": "! bash -c \"openaps monitor-cgm 2>/dev/null | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose-unzoned.json; openaps report invoke monitor/glucose.json\""
+      "command": "! bash -c \" (echo -n MDT cgm data retrieve && openaps monitor-cgm 2>/dev/null >/dev/null && grep -q glucose cgm/cgm-glucose.json && echo d) && cp -pu cgm/cgm-glucose.json cgm/glucose.json && cp -pu cgm/glucose.json monitor/glucose-unzoned.json && (echo -n MDT cgm data reformat && openaps report invoke monitor/glucose.json 2>/dev/null >/dev/null && echo ted)\""
      },
     "type": "alias",
     "name": "get-bg"

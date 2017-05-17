@@ -71,21 +71,23 @@ describe('IOB', function ( ) {
     var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 1, 'minutes': 0}];
     var now = Date.now()
       , timestamp = new Date(now).toISOString()
-      , timestampEarly = new Date(now - (30 * 60 * 1000)).toISOString()
+      , timestamp30mAgo = new Date(now - (30 * 60 * 1000)).toISOString()
+      , timestamp60mAgo = new Date(now - (60 * 60 * 1000)).toISOString()
       , inputs = {clock: timestamp,
-        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
-        , {_type: 'TempBasal', rate: 2, date: timestampEarly, timestamp: timestampEarly}
-        , {_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
+        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestamp60mAgo}
+        , {_type: 'TempBasal', rate: 2, date: timestamp60mAgo, timestamp: timestamp60mAgo}
+        , {_type: 'TempBasal', rate: 2, date: timestamp30mAgo, timestamp: timestamp30mAgo}
         , {_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
         , profile: { dia: 3, current_basal: 1, bolussnooze_dia_divisor: 2, 'basalprofile': basalprofile}
       };
 
-    var hourLaterInputs = inputs;
-    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    var iobInputs = inputs;
+    iobInputs.clock = timestamp
+    var iobNow = require('../lib/iob')(iobInputs)[0];
 
-    hourLater.iob.should.be.lessThan(1);
-    hourLater.iob.should.be.greaterThan(0.5);
+    //console.log(iobNow);
+    iobNow.iob.should.be.lessThan(1);
+    iobNow.iob.should.be.greaterThan(0.5);
   });
 
   it('should calculate IOB with Temp Basals and a basal profile', function() {
@@ -225,13 +227,13 @@ describe('IOB', function ( ) {
     var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 1, 'minutes': 0}];
 
     var now = Date.now()
-      , timestamp = new Date(now).toISOString()
-      , timestampEarly = new Date(now - 1).toISOString()
-      , inputs = {clock: timestamp,
-        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestampEarly}
-        ,{_type: 'TempBasal', rate: 2, date: timestampEarly, timestamp: timestampEarly}
-        ,{_type: 'TempBasal', rate: 2, date: timestamp, timestamp: timestamp}
-        ,{_type: 'TempBasalDuration','duration (min)': 30, date: timestamp}]
+      , timestamp30mAgo = new Date(now - (30 * 60 * 1000)).toISOString()
+      , timestamp31mAgo = new Date(now - (31 * 60 * 1000)).toISOString()
+      , inputs = {clock: timestamp30mAgo,
+        history: [{_type: 'TempBasalDuration','duration (min)': 30, date: timestamp31mAgo}
+        ,{_type: 'TempBasal', rate: 2, date: timestamp31mAgo, timestamp: timestamp31mAgo}
+        ,{_type: 'TempBasal', rate: 2, date: timestamp30mAgo, timestamp: timestamp30mAgo}
+        ,{_type: 'TempBasalDuration','duration (min)': 30, date: timestamp30mAgo}]
         , profile: { dia: 3, current_basal: 1, 'basalprofile': basalprofile}
       };
 
