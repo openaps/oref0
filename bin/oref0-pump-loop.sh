@@ -7,6 +7,7 @@ main() {
         echo && echo Starting pump-loop at $(date): \
         && wait_for_bg \
         && wait_for_silence \
+        && if_mdt_get_bg \
         && refresh_old_pumphistory_enact \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
@@ -35,6 +36,7 @@ smb_main() {
         && wait_for_bg \
         && wait_for_silence $upto30s \
         && preflight \
+        && if_mdt_get_bg \
         && refresh_old_pumphistory \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
@@ -218,6 +220,11 @@ function prep {
     fi
 }
 
+function if_mdt_get_bg {
+    if grep "MDT cgm" openaps.ini; then
+        openaps get-bg
+    fi
+}
 # make sure we can talk to the pump and get a valid model number
 function preflight {
     # only 515, 522, 523, 715, 722, and 723 pump models have been tested with SMB
@@ -381,19 +388,23 @@ function low_battery_wait {
 }
 
 function wait_for_bg {
-    echo -n "Waiting up to 4 minutes for new BG: "
-    for i in `seq 1 24`; do
-        # set mtime of monitor/glucose.json to the time of its most recent glucose value
-        touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
-        if (! ls monitor/pump_loop_completed >/dev/null ); then
-            break
-        elif (find monitor/ -newer monitor/pump_loop_completed | grep -q glucose.json); then
-            echo glucose.json newer than pump_loop_completed
-            break
-        else
-            echo -n .; sleep 10
-        fi
-    done
+    if grep "MDT cgm" openaps.ini; then
+        echo "MDT CGM configured; not waiting"
+    else
+        echo -n "Waiting up to 4 minutes for new BG: "
+        for i in `seq 1 24`; do
+            # set mtime of monitor/glucose.json to the time of its most recent glucose value
+            touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+            if (! ls monitor/pump_loop_completed >/dev/null ); then
+                break
+            elif (find monitor/ -newer monitor/pump_loop_completed | grep -q glucose.json); then
+                echo glucose.json newer than pump_loop_completed
+                break
+            else
+                echo -n .; sleep 10
+            fi
+        done
+    fi
 }
 
 function refresh_pumphistory_24h {
