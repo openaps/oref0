@@ -133,7 +133,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
     fi
-    read -p "What would you like to call your loop directory? [myopenaps] " -r
+    read -p "What would you like to call your loop directory? [myopenaps is recommended name to use. If you choose to enter a different name here, then you will need to remember to substitute that other name in other areas of the docs where the myopenaps directory is involved] " -r
     DIR=$REPLY
     if [[ -z $DIR ]]; then DIR="myopenaps"; fi
     echo "Ok, $DIR it is."
