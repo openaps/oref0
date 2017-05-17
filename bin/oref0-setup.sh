@@ -696,7 +696,7 @@ fi
 # If you aren't sure what you're doing, *DO NOT* enable this.
 # If you ignore this warning, it *WILL* administer extra post-meal insulin, which may cause low blood sugar.
 if [[ $ENABLE =~ microbolus ]]; then
-    sudo apt-get -y install bc
+    sudo apt-get -y install bc jq
     cd $directory || die "Can't cd $directory"
     for type in supermicrobolus; do
       echo importing $type file
