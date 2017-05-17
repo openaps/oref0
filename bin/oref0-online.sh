@@ -1,6 +1,6 @@
 #!/bin/bash
 echo; echo Starting oref0-online.
-if iwgetid -r wlan0; then
+if iwgetid -r wlan0 | egrep -q "[A-Z]|[a-z]|[0-9]*"; then
     if ! ip route | grep default | grep -q wlan0; then
         echo Attempting to renew wlan0 IP
         sudo dhclient wlan0
