@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 
+# pip3 install requests
+import requests
+
 import json
 import logging
 import argparse
 from flask import Flask, request
 from flask_restful import Resource, Api
+from flask import request as flaskrequest
+
 import configparser
 import sys
 import re
 from urllib.parse import urlsplit
+import time
 
-# pip3 install requests
-import requests
 
 app = Flask(__name__)
 api = Api(app)
@@ -110,21 +114,20 @@ def check_permissions():
        sys.exit(1)
     logging.info("All permissions Nightscout permissions are ok")
     
-class NightscoutProxy(Resource):
+class NightscoutProxyBase(Resource):
     def get(self):
-        try:
-            logging.debug("GET %s" % full_path)
-            maybe_refresh_authorization_token()
-            r=request.get(nightscout_host+full_path, headers=auth_headers)
-            statuscodeclass=int(r.status_code)/100
-            if statuscodeclass==2:
-                return r.text(), 200
-            elif statuscodeclass==4:
-                return "4xx error", r.status_code
-            elif statuscodeclass==5:
-                return "5xx error", r.status_code
-        except:
-                return 'Proxy Error', 500
+        global auth_headers
+        logging.debug(auth_headers)
+        logging.debug("GET %s" % flaskrequest.full_path)
+        maybe_refresh_authorization_token()
+        r=requests.get(nightscout_host+flaskrequest.full_path, headers=auth_headers)
+        statuscodeclass=int(r.status_code)/100
+        if statuscodeclass==2:
+            return r.text(), 200
+        elif statuscodeclass==4:
+            return "4xx error", r.status_code
+        elif statuscodeclass==5:
+            return "5xx error", r.status_code
 
     def post(self):# NOT IMPLEMENTED YET
         logging.debug("POST %s" % full_path)
@@ -135,7 +138,14 @@ class NightscoutProxy(Resource):
   # Get JSON data
   #json_data = request.get_json(force=True)
 
-api.add_resource(NightscoutProxy, '/api/v1/entries')
+class NightscoutProxyEntries(NightscoutProxyBase):
+    pass
+
+class NightscoutProxyTreatments(NightscoutProxyBase):
+    pass
+        
+api.add_resource(NightscoutProxyEntries, '/api/v1/entries')
+api.add_resource(NightscoutProxyTreatments, '/api/v1/treatments.json')
 
 if __name__ == '__main__':
     try:
