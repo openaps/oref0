@@ -322,6 +322,8 @@ if [[ $ww_ti_usb_reset =~ ^[Yy]$ ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_us
 if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$PUSHOVER_TOKEN" ]]; then echo -n " --pushover_token='$PUSHOVER_TOKEN'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$PUSHOVER_USER" ]]; then echo -n " --pushover_user='$PUSHOVER_USER'" | tee -a $OREF0_RUNAGAIN; fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
