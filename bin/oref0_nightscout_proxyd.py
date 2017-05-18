@@ -8,6 +8,7 @@ from flask_restful import Resource, Api
 import configparser
 import sys
 import re
+from urllib.parse import urlsplit
 
 # pip3 install requests
 import requests
@@ -20,6 +21,8 @@ api_secret=None # will be read from ns.ini
 token_secret=None # will be read from ns.ini
 token_dict={}
 token_dict["exp"]=-1
+auth_headers={}
+THREE_MINUTES=3*60
 
 def init(args):
     if args.verbose:
@@ -64,12 +67,22 @@ def parse_ns_ini(filename):
         logging.error("Token is not valid in %s" % filename)
         sys.exit(1)
 
+def maybe_refresh_authorization_token():
+    global token_dict
+    logging.debug("Checking if authentication token is still valid")
+    if time.time()>token_dict['exp']-THREE_MINUTES:
+       refresh_authorization_token()
+       
+
 def refresh_authorization_token():
-    global nightscout_host, token_secret, token_dict
+    global nightscout_host, token_secret, token_dict, auth_headers
+    logging.debug("refresh_authorization_token") 
     try:
         r = requests.get(nightscout_host+"/api/v2/authorization/request/"+token_secret)
         if r.status_code==200:
            token_dict=r.json()
+           # save authentication token to a dict
+           auth_headers["Authorization"]="Bearer %s" % token_dict['token'] 
            logging.debug("authorization valid until @%d " % token_dict['exp'])
            logging.info("Refreshed Nightscout authorization token")
         else:
@@ -98,10 +111,27 @@ def check_permissions():
     logging.info("All permissions Nightscout permissions are ok")
     
 class NightscoutProxy(Resource):
-  def get(self):
-      return 'ok', 200
+    def get(self):
+        try:
+            logging.debug("GET %s" % full_path)
+            maybe_refresh_authorization_token()
+            r=request.get(nightscout_host+full_path, headers=auth_headers)
+            statuscodeclass=int(r.status_code)/100
+            if statuscodeclass==2:
+                return r.text(), 200
+            elif statuscodeclass==4:
+                return "4xx error", r.status_code
+            elif statuscodeclass==5:
+                return "5xx error", r.status_code
+        except:
+                return 'Proxy Error', 500
 
-  #def post(self):
+    def post(self):# NOT IMPLEMENTED YET
+        logging.debug("POST %s" % full_path)
+        return "ok", 200
+    def put(self): # NOT IMPLEMENTED YET
+        logging.debug("PUT %s" % full_path)
+        return "ok", 200
   # Get JSON data
   #json_data = request.get_json(force=True)
 
@@ -111,7 +141,7 @@ if __name__ == '__main__':
     try:
         parser = argparse.ArgumentParser(description='Initializes the connection between the openaps environment and the insulin pump. It can reset_spi_serial and it will initalize the connetion to the World Wide pumps if necessary')
         parser.add_argument('-v', '--verbose', action="store_true", help='increase output verbosity')
-        parser.add_argument('-check', '--check', action="store_true", help="check permission and don't start server", default=True)
+        parser.add_argument('-check', '--check', action="store_true", help="check permission and don't start server", default=False)
         parser.add_argument('--debug', action="store_true", help='debug mode for flask', default=False)
         parser.add_argument('--bind', type=str, help='IP address to bind to' , default='127.0.0.1')
         parser.add_argument('--port', type=int, help='Port to bind to' , default='1338')
