@@ -30,9 +30,9 @@ THREE_MINUTES=3*60
 
 def init(args):
     if args.verbose:
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
+        logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format='%(asctime)s %(levelname)s %(message)s')
     else:
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
+        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format='%(asctime)s %(levelname)s %(message)s')
 
 def parse_ns_ini(filename):
     global nightscout_host, api_secret, token_secret
@@ -58,7 +58,6 @@ def parse_ns_ini(filename):
     if nightscout_host==None:
         logging.error("Nightscout set not found in %s'"%filename)
         sys.exit(1)
-    print(api_secret)
     if not api_secret.startswith('token='):
         logging.error("API_SECRET in %s should start with 'token='"%filename)
         sys.exit(1)
@@ -84,9 +83,9 @@ def refresh_authorization_token():
     try:
         r = requests.get(nightscout_host+"/api/v2/authorization/request/"+token_secret)
         if r.status_code==200:
-           token_dict=r.json()
            # save authentication token to a dict
-           auth_headers["Authorization"]="Bearer %s" % token_dict['token'] 
+           token_dict=r.json()
+           #auth_headers["Authorization"]="Bearer %s" % token_dict['token'] 
            logging.debug("authorization valid until @%d " % token_dict['exp'])
            logging.info("Refreshed Nightscout authorization token")
         else:
@@ -121,9 +120,10 @@ class NightscoutProxyBase(Resource):
         logging.debug("GET %s" % flaskrequest.full_path)
         maybe_refresh_authorization_token()
         r=requests.get(nightscout_host+flaskrequest.full_path, headers=auth_headers)
+        logging.debug("StatusCode=%d Response=%s" % (r.status_code, r.text))
         statuscodeclass=int(r.status_code)/100
         if statuscodeclass==2:
-            return r.text(), 200
+            return r.text, 200
         elif statuscodeclass==4:
             return "4xx error", r.status_code
         elif statuscodeclass==5:
@@ -141,11 +141,17 @@ class NightscoutProxyBase(Resource):
 class NightscoutProxyEntries(NightscoutProxyBase):
     pass
 
+class NightscoutProxyEntriesSgv(NightscoutProxyBase):
+    pass
+
+
 class NightscoutProxyTreatments(NightscoutProxyBase):
     pass
         
-api.add_resource(NightscoutProxyEntries, '/api/v1/entries')
+api.add_resource(NightscoutProxyEntries, '/api/v1/entries.json')
+api.add_resource(NightscoutProxyEntriesSgv, '/api/v1/entries/sgv.json')
 api.add_resource(NightscoutProxyTreatments, '/api/v1/treatments.json')
+
 
 if __name__ == '__main__':
     try:

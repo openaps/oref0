@@ -13,7 +13,7 @@
   },
  {
     "type": "report",
-    " monitor/carbhistory.json": {
+    "monitor/carbhistory.json": {
       "oper": "carb_history",
       "use": "shell",
       "reporter": "JSON",
@@ -21,7 +21,7 @@
       "remainder": "-6hours",
       "json_default": "True"
     },
-    "name": " monitor/carbhistory.json"
+    "name": "monitor/carbhistory.json"
   },
   {
     "type": "report",
