@@ -105,6 +105,14 @@ case $i in
     ww_ti_usb_reset="${i#*=}"
     shift # past argument=value
     ;;
+    -pt=*|--pushover_token=*)
+    PUSHOVER_TOKEN="${i#*=}"
+    shift # past argument=value
+    ;;
+    -pu=*|--pushover_user=*)
+    PUSHOVER_USER="${i#*=}"
+    shift # past argument=value
+    ;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -709,7 +717,7 @@ fi
 # If you aren't sure what you're doing, *DO NOT* enable this.
 # If you ignore this warning, it *WILL* administer extra post-meal insulin, which may cause low blood sugar.
 if [[ $ENABLE =~ microbolus ]]; then
-    sudo apt-get -y install bc
+    sudo apt-get -y install bc jq
     cd $directory || die "Can't cd $directory"
     for type in supermicrobolus; do
       echo importing $type file
@@ -759,7 +767,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
     (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-    (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' >> /var/log/openaps/network.log' ) | crontab -
+    (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
     (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
     (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
     # kill pump-loop after 5 minutes of not writing to pump-loop.log
@@ -810,6 +818,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
      (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
     fi
     (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
+    if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
+        (crontab -l; crontab -l | grep -q "oref0-pushover" || echo "* * * * * cd $directory && oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log" ) | crontab -
+    fi
 
     crontab -l | tee $HOME/crontab.txt
 fi

@@ -67,6 +67,7 @@
     "oref0-online": "./bin/oref0-online.sh",
     "oref0-pebble": "./bin/oref0-pebble.js",
     "oref0-pump-loop": "./bin/oref0-pump-loop.sh",
+    "oref0-pushover": "./bin/oref0-pushover.sh",
     "oref0-radio-reboot": "./bin/oref0-radio-reboot.sh",
     "oref0-raw": "./bin/oref0-raw.js",
     "oref0-reset-git": "bin/oref0-reset-git.sh",
