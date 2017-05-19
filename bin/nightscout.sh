@@ -153,10 +153,10 @@ openaps use ns shell upload treatments.json recently/combined-treatments.json
   status                                         - ns-status
   get-status                                     - status - get NS status
   preflight                                      - NS preflight
-  temp_targets                                   - Get temp target treatments from Nightscout (last 6 hours)
-                                                 Last 6 hours will be fetched
+  temp_targets [expr]                            - Get temp target treatments from Nightscout
+                                                 expr is used with date -d, default is -24hours.
   carb_history [expr]                            - Get treatments with carbs from Nightscout
-                                                 Last 6 hours will be fetched
+                                                 expr is used with date -d, default is -24hours.
 EOF
 extra_ns_help
 }
@@ -291,10 +291,12 @@ ns)
       | openaps use $zone rezone --astimezone --date dateString -
     ;;
     temp_targets)
-    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d \"6 hours ago\" -Iminutes -u)&find[eventType][\$regexp]=Target"
+    expr=${1--24hours}
+    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes)&find[eventType]=Temporary+Target"
     ;;
     carb_history)
-    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d \"6 hours ago\" -Iminutes)&find[carbs][\$exists]=true"
+    expr=${1--24hours}
+    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes)&find[carbs][\$exists]=true"
     ;;
     *)
     echo "Unknown request:" $OP
