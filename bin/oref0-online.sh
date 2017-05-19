@@ -1,7 +1,7 @@
 #!/bin/bash
 echo; echo Starting oref0-online.
 # if we are connected to wifi but don't have an IP, try to get one
-if iwgetid -r wlan0 | egrep -q "[A-Z]|[a-z]|[0-9]?"; then
+if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
     if ! ip route | grep default | grep -q wlan0; then
         echo Attempting to renew wlan0 IP
         sudo dhclient wlan0
@@ -29,15 +29,6 @@ if curl --compressed -4 -s -m 15 icanhazip.com | awk -F , '{print $NF}' | egrep 
         sudo dhclient wlan0
     fi
 else
-    #echo; echo "Error, cycling networking "
-    # simply restart networking completely for stability purposes
-    #sudo /etc/init.d/networking stop
-    #sleep 5
-    #sudo /etc/init.d/networking start
-    #echo "and getting new wlan0 IP"
-    #ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
-    #sudo dhclient wlan0 -r
-    #sudo dhclient wlan0
     echo
     echo -n "At $(date), my wifi network name is "
     iwgetid -r wlan0 | tr -d '\n'
@@ -70,7 +61,17 @@ else
     echo -n "At $(date), my wifi network name is "
     iwgetid -r wlan0 | tr -d '\n'
     echo -n ", and my public IP is: "
-    curl --compressed -4 -s -m 15 icanhazip.com
+    # if we still can't get online, try cycling networking as a last resort
+    if ! curl --compressed -4 -s -m 15 icanhazip.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
+        echo; echo "Error, cycling networking "
+        sudo /etc/init.d/networking stop
+        sleep 5
+        sudo /etc/init.d/networking start
+        echo "and getting new wlan0 IP"
+        ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
+        sudo dhclient wlan0 -r
+        sudo dhclient wlan0
+    fi
 fi
 # restart avahi every minute to keep mDNS working properly
 #/etc/init.d/avahi-daemon restart
