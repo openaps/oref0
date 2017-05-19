@@ -6,7 +6,7 @@
       "use": "shell",
       "reporter": "JSON",
       "device": "ns",
-      "remainder": "",
+      "remainder": "-6hours",
       "json_default": "True"
     }, 
     "name": "settings/temptargets.json"
@@ -18,7 +18,7 @@
       "use": "shell",
       "reporter": "JSON",
       "device": "ns",
-      "remainder": "",
+      "remainder": "-6hours",
       "json_default": "True"
     },
     "name": " monitor/carbhistory.json"
