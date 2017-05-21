@@ -64,7 +64,12 @@ smb_main() {
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
     ); do
-        echo Error, retrying && maybe_mmtune
+        if grep -q '"suspended": true' monitor/status.json; then
+            echo -n "Pump suspended; "
+            smb_verify_status
+        else
+            echo Error, retrying && maybe_mmtune
+        fi
         echo "Sleeping $upto10s; "
         sleep $upto10s
     done
@@ -77,6 +82,10 @@ function smb_reservoir_before {
     && echo -n "pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description \
     && echo -n "Checking pump clock: " && (cat monitor/clock-zoned.json; echo) | tr -d '\n' \
     && echo -n " is within 1m of current time: " && date \
+    && if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -60 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 60 )); then
+        echo Pump clock is more than 1m off: attempting to reset it
+        oref0-set-device-clocks
+       fi \
     && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -60 )) \
     && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 60 )) \
     && echo -n "and that pumphistory is less than 1m old.  " \
