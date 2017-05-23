@@ -733,14 +733,20 @@ if [[ $ENABLE =~ microbolus ]]; then
     done
 fi
 
+if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
+  API_HASHED_SECRET=${API_SECRET}
+else
+  API_HASHED_SECRET=$(nightscout hash-api-secret $API_SECRET)
+fi
+
 # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
-# Once all crontab entries are called within a bash environment, then the NIGHTSCOUT_HOST and API_SECRET can be removed from the crontab 
-# TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299 )
-# Removing stuff from ~/.profile (old solution) is left as an exercise to the reader
-echo "#Added NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile at `date`" | tee -a $HOME/.bash_profile
+# First remove all lines containing API_SECRET or NIGHTSCOUT_HOST
+sed --in-place '/.*API_SECRET.*/d' .bash_profile
+sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .bash_profile
+# Then append the variables
 echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
 echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
-echo API_SECRET="$API_SECRET" >> $HOME/.bash_profile
+echo API_SECRET="${API_HASHED_SECRET}" >> $HOME/.bash_profile
 echo "export API_SECRET" >> $HOME/.bash_profile
 
 echo "Adding OpenAPS log shortcuts"
@@ -767,13 +773,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
 # add crontab entries
-    if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
-      (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo "#NIGHTSCOUT_HOST is not used for token based authentication, use ns.ini instead") | crontab -
-      (crontab -l; crontab -l | grep -q "oref0_nightscout_proxyd.py" || echo "@reboot oref0_nightscout_proxyd.py >> /var/log/openaps/ns-proxy.log") | crontab -
-    else
-      (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
-    fi
-    (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
+    (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
+    (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=${API_HASED_SECRET}) | crontab -
     (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
     (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
     (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
