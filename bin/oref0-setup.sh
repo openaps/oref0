@@ -520,9 +520,9 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
         if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
             sudo apt-get -y install python3-pip
             sudo pip3 install requests || die "Can't add nightscout - error installing requests"
-            sudo pip3 install flask || die "Can't add nightscout - error installing flask"
-            sudo pip3 install flask-restful || die "Can't add nightscout - error installing flask-restful"
-            oref0_nightscout_proxyd.py -check || die "Error checking permissions with Nightscout"
+            #sudo pip3 install flask || die "Can't add nightscout - error installing flask"
+            #sudo pip3 install flask-restful || die "Can't add nightscout - error installing flask-restful"
+            #TODO oref0_check_nightscout.py -check || die "Error checking permissions with Nightscout"
             touch /tmp/reboot-required
         fi
     fi
