@@ -339,7 +339,11 @@ function refresh_old_profile {
 
 function refresh_smb_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
-    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    if grep "MDT cgm" openaps.ini; then
+      touch -d "$(date -R -d @$(jq .[0].date/1000 nightscout/glucose.json))" monitor/glucose.json
+    else
+      touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    fi    
     if ( find monitor/ -newer monitor/pump_loop_completed | grep -q glucose.json ); then
         echo "glucose.json newer than pump_loop_completed. "
         smb_enact_temp
@@ -353,7 +357,11 @@ function refresh_smb_temp_and_enact {
 
 function refresh_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
-    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    if grep "MDT cgm" openaps.ini; then
+      touch -d "$(date -R -d @$(jq .[0].date/1000 nightscout/glucose.json))" monitor/glucose.json
+    else
+      touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    fi
     # TODO: use pump_loop_completed logic as in refresh_smb_temp_and_enact
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
@@ -368,7 +376,11 @@ function refresh_temp_and_enact {
 
 function refresh_pumphistory_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
-    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    if grep "MDT cgm" openaps.ini; then
+      touch -d "$(date -R -d @$(jq .[0].date/1000 nightscout/glucose.json))" monitor/glucose.json
+    else
+      touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    fi
     if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
         || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
         || (! find monitor/ -mmin -5 | grep -q pumphistory-zoned && echo -n "pumphistory more than 5m old. ") ); then
