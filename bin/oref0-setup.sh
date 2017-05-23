@@ -740,7 +740,11 @@ else
 fi
 
 # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
-# First remove all lines containing API_SECRET or NIGHTSCOUT_HOST
+# With 0.5.0 release we switched from ~/.profile to ~/.bash_profile, because a shell will look 
+# for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from 
+# the first one that exists and is readable
+
+# First remove all lines containing API_SECRET or NIGHTSCOUT_HOST (if they exist)
 sed --in-place '/.*API_SECRET.*/d' .bash_profile
 sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .bash_profile
 # Then append the variables
