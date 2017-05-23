@@ -6,7 +6,6 @@
 self=$(basename $0)
 ENTRIES=${1-entries.json}
 NIGHTSCOUT_HOST=${NIGHTSCOUT_HOST-localhost:1337}
-#TZ=${3-$(date +%z)}
 OUTPUT=${2}
 
 function usage ( ) {
@@ -37,8 +36,8 @@ fi
 
 # requires API_SECRET and NIGHTSCOUT_HOST to be set in calling environment (i.e. in crontab)
 (
-curl -m 30 -s -X POST --data-binary @$ENTRIES \
+curl -m 30 -s -X POST --data-binary @${ENTRIES} \
   ${API_SECRET_HEADER}  -H "content-type: application/json" \
   ${REST_ENDPOINT}
-) && ( test -n "$OUTPUT" && touch $OUTPUT ; logger "Uploaded $ENTRIES to $NIGHTSCOUT_HOST" ) || logger "Unable to upload to $NIGHTSCOUT_HOST"
+) && ( test -n "${OUTPUT}" && touch ${OUTPUT} ; logger "Uploaded ${ENTRIES} to ${NIGHTSCOUT_HOST}" ) || logger "Unable to upload to ${NIGHTSCOUT_HOST}"
 

@@ -7,7 +7,6 @@ NIGHTSCOUT_HOST=${NIGHTSCOUT_HOST-${1-localhost:1337}}
 API_SECRET=${2-${API_SECRET}}
 TYPE=${3-entries.json}
 ENTRIES=${4-entries.json}
-#TZ=${3-$(date +%z)}
 OUTPUT=${5}
 
 REST_ENDPOINT="${NIGHTSCOUT_HOST}/api/v1/${TYPE}"
@@ -25,7 +24,7 @@ case $1 in
     usage
     ;;
   *)
-    # curl -s $REPORT_ENDPOINT | json
+    # curl -s ${REPORT_ENDPOINT} | json
     ;;
 esac
 
