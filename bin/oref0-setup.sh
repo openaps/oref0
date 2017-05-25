@@ -243,7 +243,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        BT_MAC=$REPLY
        echo "Ok, $BT_MAC it is. You will need to follow directions in docs to set-up BT tether after your loop is successfully running."
       else
-        echo "Ok, no BT installation at this time, you can revisit run this script again if you decide."
+        echo "Ok, no BT installation at this time, you can run this script again if you change your mind."
     fi
      
   
