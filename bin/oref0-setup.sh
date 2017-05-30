@@ -214,7 +214,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     # remove any trailing / from NIGHTSCOUT_HOST
     NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
     if [[ -z $NIGHTSCOUT_HOST ]]; then
-        echo Ok, no Nightscout for you.
+        echo "Ok, no Nightscout for you."
     else
         echo "Ok, $NIGHTSCOUT_HOST it is."
     fi
@@ -223,35 +223,57 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         API_SECRET=$REPLY
         echo "Ok, $API_SECRET it is."
     fi
-    if [[ ! -z $BT_MAC ]]; then
-       read -p "For BT Tethering enter phone Bluetooth MAC address (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
-       BT_MAC=$REPLY
-       echo "Ok, $BT_MAC it is."
-       if [[ -z $BT_MAC ]]; then
-          echo Ok, no Bluetooth for you.
-          else
-          echo "Ok, $BT_MAC it is."
-       fi
+    
+     read -p "Are you using Pushover? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    	read -p "If so, what is your Pushover API Token? " -r
+    	PUSHOVER_TOKEN=$REPLY
+    	echo "Ok, Pushover token $PUSHOVER_TOKEN it is."
+    
+    	read -p "And what is your Pushover User Key? " -r
+        PUSHOVER_USER=$REPLY
+        echo "Ok, Pushover User Key $PUSHOVER_USER it is."
+    else
+        echo "Ok, no Pushover for you."
     fi
+    
+    read -p "Will you want to setup BT tethering later? y[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
+       BT_MAC=$REPLY
+       echo "Ok, $BT_MAC it is. You will need to follow directions in docs to set-up BT tether after your rig is successfully looping."
+      else
+        echo "Ok, no BT installation at this time, you can run this script again later if you change your mind."
+    fi
+     
+  
     if [[ ! -z $BT_PEB ]]; then
        read -p "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
        BT_PEB=$REPLY
        echo "Ok, $BT_PEB it is."
     fi
-    read -p "Do you need any advanced features? y/[N] " -r
+    
+    read -p "Enable automatic sensitivity adjustment? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        read -p "Enable automatic sensitivity adjustment? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            ENABLE+=" autosens "
-        fi
-        read -p "Enable autotuning of basals and ratios? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            ENABLE+=" autotune "
-        fi
-        read -p "Enable advanced meal assist? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            ENABLE+=" meal "
-        fi
+       ENABLE+=" autosens "
+    fi
+    
+    read -p "Enable autotuning of basals and ratios? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+       ENABLE+=" autotune "
+    fi
+    
+    read -p "Enable advanced meal assist? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+       ENABLE+=" meal "
+    fi    
+   
+   # read -p "Do you need any advanced features? y/[N] " -r
+    # if [[ $REPLY =~ ^[Yy]$ ]]; then
+	#read -p "Enable supermicrobolus (SMB)? y/[N] " -r
+        #if [[ $REPLY =~ ^[Yy]$ ]]; then
+        #    ENABLE+=" microbolus "
+        #fi
     fi
 else 
    if [[ $ww_ti_usb_reset =~ ^[Yy] ]]; then
@@ -322,6 +344,8 @@ if [[ $ww_ti_usb_reset =~ ^[Yy]$ ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_us
 if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$PUSHOVER_TOKEN" ]]; then echo -n " --pushover_token='$PUSHOVER_TOKEN'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$PUSHOVER_USER" ]]; then echo -n " --pushover_user='$PUSHOVER_USER'" | tee -a $OREF0_RUNAGAIN; fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
