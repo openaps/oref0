@@ -241,9 +241,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
     read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
        BT_MAC=$REPLY
-       echo "Ok, $BT_MAC it is. You will need to follow directions in docs to set-up BT tether after your loop is successfully running."
+       echo "Ok, $BT_MAC it is. You will need to follow directions in docs to set-up BT tether after your rig is successfully looping."
       else
-        echo "Ok, no BT installation at this time, you can run this script again if you change your mind."
+        echo "Ok, no BT installation at this time, you can run this script again later if you change your mind."
     fi
      
   
@@ -252,21 +252,25 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        BT_PEB=$REPLY
        echo "Ok, $BT_PEB it is."
     fi
-    read -p "Do you need any advanced features? y/[N] " -r
+    
+    read -p "Enable automatic sensitivity adjustment? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        read -p "Enable automatic sensitivity adjustment? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            ENABLE+=" autosens "
-        fi
-        read -p "Enable autotuning of basals and ratios? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            ENABLE+=" autotune "
-        fi
-        read -p "Enable advanced meal assist? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            ENABLE+=" meal "
-        fi
-	#read -p "Enable single microbolus? y/[N] " -r
+       ENABLE+=" autosens "
+    fi
+    
+    read -p "Enable autotuning of basals and ratios? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+       ENABLE+=" autotune "
+    fi
+    
+    read -p "Enable advanced meal assist? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+       ENABLE+=" meal "
+    fi    
+   
+   # read -p "Do you need any advanced features? y/[N] " -r
+    # if [[ $REPLY =~ ^[Yy]$ ]]; then
+	#read -p "Enable supermicrobolus (SMB)? y/[N] " -r
         #if [[ $REPLY =~ ^[Yy]$ ]]; then
         #    ENABLE+=" microbolus "
         #fi
