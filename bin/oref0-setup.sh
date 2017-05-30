@@ -20,7 +20,7 @@ die() {
 }
 
 # defaults
-max_iob=0
+max_iob=auto # max_IOB will default to auto (<60 min of basal) if not set in setup script
 CGM="G4-upload"
 DIR=""
 directory=""
@@ -268,6 +268,10 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        ENABLE+=" meal "
     fi    
    
+   read -p "What value would you like to set for your max_IOB? Context: max_IOB is a safety setting to limit how much insulin OpenAPS can give you in addition to your manual boluses and pre-set basal rates. max_IOB of 0 will make it so OpenAPS cannot provide positive IOB, and will function as `low glucose suspend' type mode. If you're unsure of what you'd like max_IOB to be, we recommend starting with either 0 or one hour's worth of basals. Read the docs for more tips on how to determine a max_IOB that's right for you. (You can come back and change this easily later)." -r
+      max_iob=$REPLY
+      echo "Ok, $max_iob units will be set as your max_iob."
+      
    # read -p "Do you need any advanced features? y/[N] " -r
     # if [[ $REPLY =~ ^[Yy]$ ]]; then
 	#read -p "Enable supermicrobolus (SMB)? y/[N] " -r
