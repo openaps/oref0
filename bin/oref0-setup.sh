@@ -836,5 +836,3 @@ if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
   sudo reboot
 fi
-
-fi
