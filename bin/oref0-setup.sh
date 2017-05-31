@@ -153,17 +153,21 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     DIR=$REPLY
     if [[ -z $DIR ]]; then DIR="myopenaps"; fi
     echocolor "Ok, $DIR it is."
+    echo ""
     directory="$(readlink -m $DIR)"
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echocolor "Ok, $serial it is."
+    echo ""
     read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout" -r
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
+    echo ""
     if [[ ${CGM,,} =~ "shareble" ]]; then
         read -p "What is your G4 Share Serial Number? (i.e. SM12345678) " -r
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
+	echo ""
     fi
 
 
@@ -171,6 +175,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         ttyport=/dev/spidev5.1
     echocolor "Ok, yay for Explorer Board! "
+    echo ""
     else
         read -p 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? ' -r
         ttyport=$REPLY
@@ -262,6 +267,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        echocolor "Ok, $BT_PEB it is."
     fi
     
+    echo ""
     echo -e "\e[1mWhat value would you like to set for your max_IOB? Context: max_IOB is a safety setting\e[0m"
     echo ""
     echo -e "\e[3mIt limits how much insulin OpenAPS can give you in addition to your manual boluses and pre-set basal rates.\e[0m"
