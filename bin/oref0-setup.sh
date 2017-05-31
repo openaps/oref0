@@ -250,22 +250,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 	echo ""
     fi
     
-     read -p "Are you using Pushover? y/[N] " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-    	read -p "If so, what is your Pushover API Token? " -r
-    	PUSHOVER_TOKEN=$REPLY
-    	echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
-	echo ""
-    
-    	read -p "And what is your Pushover User Key? " -r
-        PUSHOVER_USER=$REPLY
-        echocolor "Ok, Pushover User Key $PUSHOVER_USER it is."
-	echo ""
-    else
-        echocolor "Ok, no Pushover for you."
-	echo ""
-    fi
-    
     read -p "Do you want to be able to setup BT tethering later? y[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
     read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
@@ -325,13 +309,31 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi    
     echo ""
    
-   # read -p "Do you need any advanced features? y/[N] " -r
+   read -p "Do you need any advanced features? y/[N] " -r
     # if [[ $REPLY =~ ^[Yy]$ ]]; then
 	#read -p "Enable supermicrobolus (SMB)? y/[N] " -r
         #if [[ $REPLY =~ ^[Yy]$ ]]; then
         #    ENABLE+=" microbolus "
         #fi
+        read -p "Are you planning on using Pushover for oref1-related push alerts? y/[N] " -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+    	read -p "If so, what is your Pushover API Token? " -r
+    	PUSHOVER_TOKEN=$REPLY
+    	echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
+	echo ""
+    
+    	read -p "And what is your Pushover User Key? " -r
+        PUSHOVER_USER=$REPLY
+        echocolor "Ok, Pushover User Key $PUSHOVER_USER it is."
+	echo ""
+    else
+        echocolor "Ok, no Pushover for you."
+	echo ""
+    fi
+
    # fi
+   
+    
 else 
    if [[ $ww_ti_usb_reset =~ ^[Yy] ]]; then
       ww_ti_usb_reset="yes"
