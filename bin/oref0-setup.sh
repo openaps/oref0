@@ -478,7 +478,7 @@ else
     npm list -g oref0 | egrep oref0@0.5.[0-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
 fi
 
-echocolor Checking mmeowlink installation
+echo Checking mmeowlink installation
 #if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
 pip show mmeowlink | egrep "Version: 0.11." || (
     echo Installing latest mmeowlink
@@ -823,7 +823,7 @@ oref0-log-shortcuts
 
 echo
 if [[ "$ttyport" =~ "spi" ]]; then
-    echocolor Resetting spi_serial
+    echo Resetting spi_serial
     reset_spi_serial.py
 fi
 echo Attempting to communicate with pump:
