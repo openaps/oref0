@@ -326,19 +326,20 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         #fi
         read -p "Are you planning on using Pushover for oref1-related push alerts? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-    	read -p "If so, what is your Pushover API Token? " -r
-    	PUSHOVER_TOKEN=$REPLY
-    	echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
-	echo ""
+    	   read -p "If so, what is your Pushover API Token? " -r
+    	     PUSHOVER_TOKEN=$REPLY
+    	     echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
+	     echo ""
     
-    	read -p "And what is your Pushover User Key? " -r
-        PUSHOVER_USER=$REPLY
-        echocolor "Ok, Pushover User Key $PUSHOVER_USER it is."
-	echo ""
-    else
-        echocolor "Ok, no Pushover for you."
-	echo ""
+    	   read -p "And what is your Pushover User Key? " -r
+             PUSHOVER_USER=$REPLY
+             echocolor "Ok, Pushover User Key $PUSHOVER_USER it is."
+	     echo ""
+        else
+           echocolor "Ok, no Pushover for you."
+	   echo ""
     fi
+    echocolor "Ok, no advanced features right now."
 
    # fi
    
