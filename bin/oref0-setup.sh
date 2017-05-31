@@ -239,6 +239,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
     if [[ -z $NIGHTSCOUT_HOST ]]; then
         echocolor "Ok, no Nightscout for you."
+	echo
     else
         echocolor "Ok, $NIGHTSCOUT_HOST it is."
 	echo ""
