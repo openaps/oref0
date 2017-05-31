@@ -154,12 +154,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "What would you like to call your loop directory? 
     echo "[myopenaps is recommended name to use. If you choose to enter a different name here,"
     echo "then you will need to remember to substitute that other name in other areas of the docs where the myopenaps directory is involved]   "
-    read 
+    read -r
     DIR=$REPLY
     if [[ -z $DIR ]]; then DIR="myopenaps"; fi
     echocolor "Ok, $DIR it is."
     directory="$(readlink -m $DIR)"
-    echo ""
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echocolor "Ok, $serial it is."
