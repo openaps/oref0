@@ -346,6 +346,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
    fi
    
+   echo
+   echo
+   echo
     
 else 
    if [[ $ww_ti_usb_reset =~ ^[Yy] ]]; then
@@ -380,6 +383,7 @@ if [[ ! -z "$min_5m_carbimpact" ]]; then
     echo -n ", min_5m_carbimpact $min_5m_carbimpact";
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
+echo
 echo
 
 # This section is echoing (commenting) back the options you gave it during the interactive setup script.
