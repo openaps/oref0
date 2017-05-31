@@ -151,10 +151,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         exit
     fi
     echo
-    echo "What would you like to call your loop directory?"
+    echo -e "\e[1mWhat would you like to call your loop directory?\e[0m"
+    echo
     echo "[myopenaps is recommended name to use. If you choose to enter a different name here,"
     echo "then you will need to remember to substitute that other name in other areas of the docs"
-    echo "where the myopenaps directory is involved]   "
+    echo "where the myopenaps directory is involved]. Type in a directory name and hit enter:   "
     read -r
     DIR=$REPLY
     if [[ -z $DIR ]]; then DIR="myopenaps"; fi
@@ -265,7 +266,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 	echo ""
     fi
     
-    read -p "Will you want to setup BT tethering later? y[N] " -r
+    read -p "Do you want to be able to setup BT tethering later? y[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
     read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
        BT_MAC=$REPLY
