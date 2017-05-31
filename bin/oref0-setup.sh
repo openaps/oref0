@@ -20,7 +20,7 @@ die() {
 }
 
 # defaults
-max_iob="auto" # max_IOB will default to auto (<60 min of basal) if not set in setup script
+max_iob=0 # max_IOB will default to zero if not set in setup script
 CGM="G4-upload"
 DIR=""
 directory=""
@@ -296,12 +296,13 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
     echo ""
     read -p "Type a number [i.e. 0] and hit enter:   " -r
-      if max_iob=$REPLY
+      if [[ $REPLY =~ [0-9] ]]; then
+        max_iob=$REPLY
         echocolor "Ok, $max_iob units will be set as your max_iob."
-        echo ""
+        echo 
       else
-        max_iob=auto
-	echocolor "Ok, your max_iob will be set to auto for now."
+        max_iob=0
+	echocolor "Ok, your max_iob will be set to 0 for now."
       	echo
       fi
    
