@@ -294,23 +294,29 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "Enable automatic sensitivity adjustment? y/[N]  " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" autosens "
+       echocolor "Ok, autosens will be enabled."
+       echo ""
+    else
+       echocolor "Ok, no autosens."
     fi
-    echocolor "Ok, autosens will be enabled."
-    echo ""
     
     read -p "Enable autotuning of basals and ratios? y/[N]  " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" autotune "
+       echocolor "Ok, autotune will be enabled."
+       echo ""
+    else
+       echocolor "Ok, no autotune."
     fi
-    echocolor "Ok, autotune will be enabled."
-    echo ""
     
     read -p "Enable advanced meal assist? y/[N]  " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-       ENABLE+=" meal "
-    fi    
-    echocolor "Ok, AMA will be enabled."
-    echo ""
+       ENABLE+=" meal "    
+       echocolor "Ok, AMA will be enabled."
+       echo ""
+    else
+       echocolor "Ok, no AMA."
+    fi
    
    read -p "Do you need any advanced features? y/[N] " -r
     # if [[ $REPLY =~ ^[Yy]$ ]]; then
