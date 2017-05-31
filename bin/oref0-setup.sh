@@ -298,6 +298,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        echo ""
     else
        echocolor "Ok, no autosens."
+       echo
     fi
     
     read -p "Enable autotuning of basals and ratios? y/[N]  " -r
@@ -307,6 +308,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        echo ""
     else
        echocolor "Ok, no autotune."
+       echo
     fi
     
     read -p "Enable advanced meal assist? y/[N]  " -r
@@ -316,12 +318,14 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        echo ""
     else
        echocolor "Ok, no AMA."
+       echo
     fi
    
    read -p "Do you need any advanced features? (See docs in Phase 4 for more information about these features.) y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        #delete this next line once we decide SMB goes in the script
+        #delete this next 2 lines once we decide SMB goes in the script
 	echocolor "Ok. Remember to enable oref1 related features manually and update your preferences. See the docs for more details about enabling."
+	echo
 	#read -p "Enable supermicrobolus (SMB)? y/[N] " -r
         #if [[ $REPLY =~ ^[Yy]$ ]]; then
         #    ENABLE+=" microbolus "
@@ -343,6 +347,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 	fi
     else
     echocolor "Ok, no advanced features right now."
+    echo
 
    fi
    
