@@ -185,17 +185,17 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
 
     if [[ ! -z "${ttyport}" ]]; then
-      echocolor "Medtronic pumps come in two types: WW (Worldwide) pumps, and NA (North America) pumps."
-      echocolor "Confusingly, North America pumps may also be used outside of North America."
-      echocolor ""
-      echocolor "USA pumps have a serial number / model number that has 'NA' in it."
-      echocolor "Non-USA pumps have a serial number / model number that 'WW' in it."
-      echocolor ""
-      echocolor "When using MMeowlink, we need to know which frequency we should use:"
+      echo "Medtronic pumps come in two types: WW (Worldwide) pumps, and NA (North America) pumps."
+      echo "Confusingly, North America pumps may also be used outside of North America."
+      echo ""
+      echo "USA pumps have a serial number / model number that has 'NA' in it."
+      echo  "Non-USA pumps have a serial number / model number that 'WW' in it."
+      echo ""
+      echo  "When using MMeowlink, we need to know which frequency we should use:"
       echo -e "\e[1mAre you using a USA/North American pump? If so, just hit enter. Otherwise enter WW: \e[0m"
       read -r
       radio_locale=$REPLY
-      echocolor -n "Ok, "
+      echo -n "Ok, "
       # Force uppercase, just in case the user entered ww
       radio_locale=${radio_locale^^}
 
@@ -277,10 +277,10 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        ENABLE+=" meal "
     fi    
    echo -e "\e[1mWhat value would you like to set for your max_IOB? Context: max_IOB is a safety setting\e[0m"
-   echo -e "\e[3It limits how much insulin OpenAPS can give you in addition to your manual boluses and pre-set basal rates.\e[0m"
+   echo -e "\e[3mIt limits how much insulin OpenAPS can give you in addition to your manual boluses and pre-set basal rates.\e[0m"
    echo -e 'max_IOB of 0 will make it so OpenAPS cannot provide positive IOB, and will function as "low glucose suspend" type mode.'
    echo -e "\e[4mIf you are unsure of what you would like max_IOB to be, we recommend starting with either 0 or one hour worth of basals.\e[0m"
-   echo -e "\e[3Read the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
+   echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
    read -p "Type a number [i.e. 0] and hit enter:" -r
    #read -p 'What value would you like to set for your max_IOB? Context: max_IOB is a safety setting to limit how much insulin OpenAPS can give you in addition to your manual boluses and pre-set basal rates. max_IOB of 0 will make it so OpenAPS cannot provide positive IOB, and will function as "low glucose suspend" type mode. If you are unsure of what you would like max_IOB to be, we recommend starting with either 0 or one hour worth of basals. Read the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later). Type a number [i.e. 0] and hit enter:' -r
       max_iob=$REPLY
@@ -314,16 +314,16 @@ else
 fi
 if [[ "$max_iob" != "0" ]]; then echo -n ", max_iob $max_iob"; fi
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
-    echocolor -n ", max_daily_safety_multiplier $max_daily_safety_multiplier";
+    echo -n ", max_daily_safety_multiplier $max_daily_safety_multiplier";
 fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
-    echocolor -n ", current_basal_safety_multiplier $current_basal_safety_multiplier";
+    echo -n ", current_basal_safety_multiplier $current_basal_safety_multiplier";
 fi
 if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-    echocolor -n ", bolussnooze_dia_divisor $bolussnooze_dia_divisor";
+    echo -n ", bolussnooze_dia_divisor $bolussnooze_dia_divisor";
 fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
-    echocolor -n ", min_5m_carbimpact $min_5m_carbimpact";
+    echo -n ", min_5m_carbimpact $min_5m_carbimpact";
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
 echo
@@ -370,12 +370,12 @@ chmod 755 $OREF0_RUNAGAIN
 read -p "Continue? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
-echocolor -n "Checking $directory: "
+echo -n "Checking $directory: "
 mkdir -p $directory
 if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
     echo $directory already exists
 elif openaps init $directory; then
-    echocolor $directory initialized
+    echo $directory initialized
 else
     die "Can't init $directory"
 fi
@@ -399,13 +399,13 @@ fi
 
 mkdir -p $HOME/src/
 if [ -d "$HOME/src/oref0/" ]; then
-    echocolor "$HOME/src/oref0/ already exists; pulling latest"
+    echo "$HOME/src/oref0/ already exists; pulling latest"
     (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
 else
-    echocolor -n "Cloning oref0: "
+    echo -n "Cloning oref0: "
     (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
 fi
-echocolor Checking oref0 installation
+echo Checking oref0 installation
 cd $HOME/src/oref0
 if git branch | grep "* master"; then
     npm list -g oref0 | egrep oref0@0.4.[2-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
@@ -442,7 +442,7 @@ else
         preferences_from_args+="\"min_5m_carbimpact\":$min_5m_carbimpact "
     fi
     function join_by { local IFS="$1"; shift; echo "$*"; }
-    echocolor "{ $(join_by , ${preferences_from_args[@]}) }" > preferences_from_args.json
+    echo "{ $(join_by , ${preferences_from_args[@]}) }" > preferences_from_args.json
     oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
 fi
 
@@ -457,21 +457,21 @@ test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var
 
 # configure ns
 if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
-    echocolor "Removing any existing ns device: "
+    echo "Removing any existing ns device: "
     ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
-    echocolor "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
+    echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
     nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
 fi
 
 # import template
 for type in vendor device report alias; do
-    echocolor importing $type file
+    echo importing $type file
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
 echocolor Checking for BT Mac, BT Peb or Shareble
 if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     # Install Bluez for BT Tethering
-    echocolor Checking bluez installation 
+    echo Checking bluez installation 
     bluetoothdversion=$(bluetoothd --version || 0)
     bluetoothdminversion=5.37
     bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }') 
@@ -482,7 +482,7 @@ if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
         oref0-bluetoothup
     else
-        echocolor bluez v ${bluetoothdversion} already installed
+        echo bluez v ${bluetoothdversion} already installed
     fi
 fi
 # add/configure devices
@@ -490,24 +490,24 @@ if [[ ${CGM,,} =~ "g5" ]]; then
     openaps use cgm config --G5
     openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
 elif [[ ${CGM,,} =~ "shareble" ]]; then
-    echocolor Checking Adafruit_BluefruitLE installation
+    echo Checking Adafruit_BluefruitLE installation
     if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
         if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
             echocolor "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
             (cd $HOME/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         else
-            echocolor -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
+            echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
             # TODO: get this moved over to openaps and install with pip
             (cd $HOME/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         fi
-        echocolor Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
+        echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
     fi
-    echocolor Checking openxshareble installation
+    echo Checking openxshareble installation
     if ! python -c "import openxshareble" 2>/dev/null; then
-        echocolor Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
+        echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
     fi
     sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
-    echocolor Checking bluez installation
+    echo Checking bluez installation
     # TODO: figure out if we need to do this for 5.44 as well
     if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
         sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
@@ -526,9 +526,9 @@ fi
 if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
     mkdir -p $directory-cgm-loop
     if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
-        echocolor $directory-cgm-loop already exists
+        echo $directory-cgm-loop already exists
     elif openaps init $directory-cgm-loop; then
-        echocolor $directory-cgm-loop initialized
+        echo $directory-cgm-loop initialized
     else
         die "Can't init $directory-cgm-loop"
     fi
@@ -540,9 +540,9 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
 
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
-        echocolor "Removing any existing ns device: "
+        echo "Removing any existing ns device: "
         ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
-        echocolor "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
+        echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
     fi
 
@@ -550,13 +550,13 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
         sudo apt-get -y install bc
         openaps device add cgm dexcom || die "Can't add CGM"
         for type in cgm-loop; do
-            echocolor importing $type file
+            echo importing $type file
             cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
         done
     elif [[ ${CGM,,} =~ "shareble" ]]; then
         # import shareble stuff
         for type in shareble cgm-loop; do
-            echocolor importing $type file
+            echo importing $type file
             cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
         done
 
@@ -567,7 +567,7 @@ if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
             BLE_MAC=$REPLY
             echo "$BLE_MAC? Got it."
         fi
-        echocolor openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC
+        echo openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC
         openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC || die "Couldn't configure Share serial and MAC"
     fi
 
@@ -577,28 +577,28 @@ grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
 git add .gitignore
 
 if [[ "$ttyport" =~ "spi" ]]; then
-    echocolor Checking kernel for spi_serial installation
+    echo Checking kernel for spi_serial installation
     if ! python -c "import spi_serial" 2>/dev/null; then
         if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
-           echocolor Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
+           echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
         else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
-           echocolor Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"           
+           echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"           
         fi
         #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
     fi
 
     echocolor Checking kernel for mraa installation
     if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
-       echocolor "Skipping mraa install for kernel 4.10+"
+       echo "Skipping mraa install for kernel 4.10+"
     else # check if mraa is installed
       if ! ldconfig -p | grep -q mraa; then # if not installed, install it
-          echocolor Installing swig etc.
+          echo Installing swig etc.
           sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
           if [ -d "$HOME/src/mraa/" ]; then
-              echocolor "$HOME/src/mraa/ already exists; pulling latest master branch"
+              echo "$HOME/src/mraa/ already exists; pulling latest master branch"
               (cd $HOME/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
           else
-              echocolor -n "Cloning mraa master: "
+              echo -n "Cloning mraa master: "
               (cd $HOME/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
           fi
           ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
@@ -609,14 +609,14 @@ if [[ "$ttyport" =~ "spi" ]]; then
 
 fi
 
-echocolor Checking openaps dev installation
+echo Checking openaps dev installation
 if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
     # TODO: switch this back to master once https://github.com/openaps/openaps/pull/116 is merged/released
-    echocolor Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
+    echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
 fi
 
 cd $directory || die "Can't cd $directory"
-echocolor "Removing any existing pump device:"
+echo "Removing any existing pump device:"
 ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
 if [[ -z "$ttyport" ]]; then
     openaps device add pump medtronic $serial || die "Can't add pump"
@@ -631,10 +631,10 @@ else
     openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
     if [[ ${radio_locale,,} =~ "ww" ]]; then
       if [ -d "$HOME/src/subg_rfspy/" ]; then
-        echocolor "$HOME/src/subg_rfspy/ already exists; pulling latest"
+        echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
         (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
       else
-        echocolor -n "Cloning subg_rfspy: "
+        echo -n "Cloning subg_rfspy: "
         (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
       fi
 
@@ -660,14 +660,14 @@ if [[ ${CGM,,} =~ "mdt" ]]; then
         openaps device add cgm mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add cgm"
     fi
     for type in mdt-cgm; do
-        echocolor importing $type file
+        echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
 fi
 
 # xdrip CGM (xDripAPS)
 if [[ ${CGM,,} =~ "xdrip" ]]; then
-    echocolor xdrip selected as CGM, so configuring xDripAPS
+    echo xdrip selected as CGM, so configuring xDripAPS
     sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
     sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
     sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
@@ -682,23 +682,23 @@ fi
 
 # Install EdisonVoltage
 if egrep -i "edison" /etc/passwd 2>/dev/null; then
-   echocolor "Checking if EdisonVoltage is already installed"
+   echo "Checking if EdisonVoltage is already installed"
    if [ -d "$HOME/src/EdisonVoltage/" ]; then
-      echocolor "EdisonVoltage already installed"
+      echo "EdisonVoltage already installed"
    else
-      echocolor "Installing EdisonVoltage"
+      echo "Installing EdisonVoltage"
       cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
       cd $HOME/src/EdisonVoltage
       make voltage
    fi
    cd $directory || die "Can't cd $directory"
    for type in edisonbattery; do
-     echocolor importing $type file
+     echo importing $type file
      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
   done
 fi
 # Install Pancreabble
-echocolor Checking for BT Pebble Mac 
+echo Checking for BT Pebble Mac 
 if [[ ! -z "$BT_PEB" ]]; then
    sudo apt-get -y install jq
    sudo pip install libpebble2
@@ -706,7 +706,7 @@ if [[ ! -z "$BT_PEB" ]]; then
    oref0-bluetoothup
    sudo rfcomm bind hci0 $BT_PEB
    for type in pancreabble; do
-     echocolor importing $type file
+     echo importing $type file
      cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
   done 
   sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json 
@@ -719,7 +719,7 @@ elif [[ $ENABLE =~ autosens ]]; then
 elif [[ $ENABLE =~ meal ]]; then
     EXTRAS='"" monitor/meal.json'
 fi
-echocolor Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
+echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
 
 # configure autotune if enabled
@@ -727,7 +727,7 @@ if [[ $ENABLE =~ autotune ]]; then
     sudo apt-get -y install jq
     cd $directory || die "Can't cd $directory"
     for type in autotune; do
-      echocolor importing $type file
+      echo importing $type file
       cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
 fi
@@ -741,7 +741,7 @@ if [[ $ENABLE =~ microbolus ]]; then
     sudo apt-get -y install bc jq
     cd $directory || die "Can't cd $directory"
     for type in supermicrobolus; do
-      echocolor importing $type file
+      echo importing $type file
       cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
 fi
@@ -749,11 +749,11 @@ fi
 # Create ~/.profile so that openaps commands can be executed from the command line
 # as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
 # TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299)
-echocolor Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
+echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
 (cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
 (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
 
-echocolor "Adding OpenAPS log shortcuts"
+echo "Adding OpenAPS log shortcuts"
 oref0-log-shortcuts
 
 echocolor
@@ -761,7 +761,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
     echocolor Resetting spi_serial
     reset_spi_serial.py
 fi
-echocolor Attempting to communicate with pump:
+echo Attempting to communicate with pump:
 ( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
 openaps mmtune
 echo
@@ -769,7 +769,7 @@ echo
 read -p "Schedule openaps in cron? y/[N] " -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
-    echocolor Saving existing crontab to $HOME/crontab.txt:
+    echo Saving existing crontab to $HOME/crontab.txt:
     crontab -l | tee $HOME/crontab.old.txt
     read -p "Would you like to remove your existing crontab first? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -840,7 +840,7 @@ fi
 
 if [[ ${CGM,,} =~ "shareble" ]]; then
     echo
-    echocolor "To pair your G4 Share receiver, open its Setttings, select Share, Forget Device (if previously paired), then turn sharing On"
+    echo "To pair your G4 Share receiver, open its Settings, select Share, Forget Device (if previously paired), then turn sharing On"
 fi
 
 
