@@ -318,10 +318,10 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        echocolor "Ok, no AMA."
     fi
    
-   read -p "Do you need any advanced features? y/[N] " -r
+   read -p "Do you need any advanced features? (See docs in Phase 4 for more information about these features.) y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         #delete this next line once we decide SMB goes in the script
-	echocolor "Ok. Remember to set oref1 related features manually. See the docs for more details."
+	echocolor "Ok. Remember to enable oref1 related features manually and update your preferences. See the docs for more details about enabling."
 	#read -p "Enable supermicrobolus (SMB)? y/[N] " -r
         #if [[ $REPLY =~ ^[Yy]$ ]]; then
         #    ENABLE+=" microbolus "
