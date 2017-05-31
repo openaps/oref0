@@ -144,7 +144,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echocolor "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
@@ -186,6 +186,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echocolor -n TTY $ttyport
         fi
         echocolor " it is. "
+	echo ""
     fi
 
 
@@ -220,7 +221,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           radio_locale='US'
       fi
 
-      echocolor "-n ${radio_locale} it is"
+      echocolor "${radio_locale} it is"
+      echo ""
     fi
 
     echo "Are you using Nightscout? If not, press enter."
@@ -231,11 +233,13 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "Ok, no Nightscout for you."
     else
         echocolor "Ok, $NIGHTSCOUT_HOST it is."
+	echo ""
     fi
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
         read -p "And what is your Nightscout api secret (i.e. myplaintextsecret)? " -r
         API_SECRET=$REPLY
         echocolor "Ok, $API_SECRET it is."
+	echo ""
     fi
     
      read -p "Are you using Pushover? y/[N] " -r
@@ -243,12 +247,15 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     	read -p "If so, what is your Pushover API Token? " -r
     	PUSHOVER_TOKEN=$REPLY
     	echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
+	echo ""
     
     	read -p "And what is your Pushover User Key? " -r
         PUSHOVER_USER=$REPLY
         echocolor "Ok, Pushover User Key $PUSHOVER_USER it is."
+	echo ""
     else
         echocolor "Ok, no Pushover for you."
+	echo ""
     fi
     
     read -p "Will you want to setup BT tethering later? y[N] " -r
@@ -256,8 +263,10 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
        BT_MAC=$REPLY
        echocolor "Ok, $BT_MAC it is. You will need to follow directions in docs to set-up BT tether after your rig is successfully looping."
+       echo ""
       else
         echocolor "Ok, no BT installation at this time, you can run this script again later if you change your mind."
+	echo ""
     fi
      
   
@@ -265,6 +274,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        read -p "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
        BT_PEB=$REPLY
        echocolor "Ok, $BT_PEB it is."
+       echo ""
     fi
     
     echo ""
@@ -281,21 +291,25 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "Type a number [i.e. 0] and hit enter:" -r
       max_iob=$REPLY
       echocolor "Ok, $max_iob units will be set as your max_iob."
+      echo ""
    
     read -p "Enable automatic sensitivity adjustment? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" autosens "
     fi
+    echo ""
     
     read -p "Enable autotuning of basals and ratios? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" autotune "
     fi
+    echo ""
     
     read -p "Enable advanced meal assist? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" meal "
     fi    
+    echo ""
    
    # read -p "Do you need any advanced features? y/[N] " -r
     # if [[ $REPLY =~ ^[Yy]$ ]]; then
