@@ -278,7 +278,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         #if [[ $REPLY =~ ^[Yy]$ ]]; then
         #    ENABLE+=" microbolus "
         #fi
-    fi
+   # fi
 else 
    if [[ $ww_ti_usb_reset =~ ^[Yy] ]]; then
       ww_ti_usb_reset="yes"
