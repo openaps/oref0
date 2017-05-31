@@ -319,7 +319,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
    
    read -p "Do you need any advanced features? y/[N] " -r
-    # if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
 	#read -p "Enable supermicrobolus (SMB)? y/[N] " -r
         #if [[ $REPLY =~ ^[Yy]$ ]]; then
         #    ENABLE+=" microbolus "
@@ -338,10 +338,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         else
            echocolor "Ok, no Pushover for you."
 	   echo ""
-    fi
+	fi
+    else
     echocolor "Ok, no advanced features right now."
 
-   # fi
+   fi
    
     
 else 
