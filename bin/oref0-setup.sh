@@ -20,7 +20,7 @@ die() {
 }
 
 # defaults
-max_iob=auto # max_IOB will default to auto (<60 min of basal) if not set in setup script
+max_iob="auto" # max_IOB will default to auto (<60 min of basal) if not set in setup script
 CGM="G4-upload"
 DIR=""
 directory=""
