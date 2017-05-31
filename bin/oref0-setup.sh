@@ -320,6 +320,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
    
    read -p "Do you need any advanced features? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
+        #delete this next line once we decide SMB goes in the script
+	echocolor "Ok. Remember to set oref1 related features manually. See the docs for more details."
 	#read -p "Enable supermicrobolus (SMB)? y/[N] " -r
         #if [[ $REPLY =~ ^[Yy]$ ]]; then
         #    ENABLE+=" microbolus "
