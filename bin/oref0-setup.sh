@@ -295,18 +295,21 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" autosens "
     fi
+    echocolor "Ok, autosens will be enabled."
     echo ""
     
     read -p "Enable autotuning of basals and ratios? y/[N]  " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" autotune "
     fi
+    echocolor "Ok, autotune will be enabled."
     echo ""
     
     read -p "Enable advanced meal assist? y/[N]  " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" meal "
     fi    
+    echocolor "Ok, AMA will be enabled."
     echo ""
    
    read -p "Do you need any advanced features? y/[N] " -r
