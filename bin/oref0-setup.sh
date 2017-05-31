@@ -129,7 +129,7 @@ esac
 done
 
 if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
-    echocolor "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, MDT or xdrip."
+    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -145,10 +145,12 @@ if ! ( git config -l | grep -q user.name ); then
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
+    echo
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         exit
     fi
+    echo
     read -p "What would you like to call your loop directory? [myopenaps is recommended name to use. If you choose to enter a different name here, then you will need to remember to substitute that other name in other areas of the docs where the myopenaps directory is involved] " -r
     DIR=$REPLY
     if [[ -z $DIR ]]; then DIR="myopenaps"; fi
@@ -208,8 +210,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       # check if user has a TI USB stick and a WorldWide pump and want's to reset the USB subsystem during mmtune if the TI USB fails
       ww_ti_usb_reset="no" # assume you don't want it by default
       if [[ $radio_locale =~ ^WW$ ]]; then
-        echocolor "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process"
-        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? Use y if so. Otherwise just hit enter (default no): " -r
+        echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process"
+        echo
+	read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? Use y if so. Otherwise just hit enter (default no): " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
           ww_ti_usb_reset="yes"
         else
@@ -328,14 +331,14 @@ fi
 
 echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
 if [[ ${CGM,,} =~ "shareble" ]]; then
-    echocolor -n "G4 Share serial $BLE_SERIAL, "
+    echo -n "G4 Share serial $BLE_SERIAL, "
 fi
 echo
-echocolor -n "NS host $NIGHTSCOUT_HOST, "
+echo -n "NS host $NIGHTSCOUT_HOST, "
 if [[ -z "$ttyport" ]]; then
-    echocolor -n Carelink
+    echo -n Carelink
 else
-    echocolor -n TTY $ttyport
+    echo -n TTY $ttyport
 fi
 if [[ "$max_iob" != "0" ]]; then echo -n ", max_iob $max_iob"; fi
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
@@ -358,28 +361,28 @@ echo
 
 # create temporary file for oref0-runagain.sh
 OREF0_RUNAGAIN=`mktemp /tmp/oref0-runagain.XXXXXXXXXX`
-echocolor "#!/bin/bash" > $OREF0_RUNAGAIN
+echo "#!/bin/bash" > $OREF0_RUNAGAIN
 echocolor "# To run again with these same options, use:" | tee $OREF0_RUNAGAIN
-echocolor -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
+echocolor "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
 if [[ ${CGM,,} =~ "shareble" ]]; then
-    echocolor -n " --bleserial=$BLE_SERIAL" | tee -a $OREF0_RUNAGAIN
+    echo -n " --bleserial=$BLE_SERIAL" | tee -a $OREF0_RUNAGAIN
 fi
-echocolor -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_RUNAGAIN
+echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_RUNAGAIN
 if [[ ! -z "$ttyport" ]]; then
-    echocolor -n " --tty=$ttyport" | tee -a $OREF0_RUNAGAIN
+    echo -n " --tty=$ttyport" | tee -a $OREF0_RUNAGAIN
 fi
-echocolor -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN;
+echo -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN;
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
-    echocolor -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a $OREF0_RUNAGAIN
+    echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
-    echocolor -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier" | tee -a $OREF0_RUNAGAIN
+    echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-    echocolor -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a $OREF0_RUNAGAIN
+    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
-    echocolor -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a $OREF0_RUNAGAIN
+    echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN; fi
@@ -389,7 +392,7 @@ if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAG
 if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$PUSHOVER_TOKEN" ]]; then echo -n " --pushover_token='$PUSHOVER_TOKEN'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$PUSHOVER_USER" ]]; then echo -n " --pushover_user='$PUSHOVER_USER'" | tee -a $OREF0_RUNAGAIN; fi
-echo; echocolor | tee -a $OREF0_RUNAGAIN
+echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
 read -p "Continue? y/[N] " -r
@@ -493,7 +496,7 @@ for type in vendor device report alias; do
     echo importing $type file
     cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
 done
-echocolor Checking for BT Mac, BT Peb or Shareble
+echo Checking for BT Mac, BT Peb or Shareble
 if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     # Install Bluez for BT Tethering
     echo Checking bluez installation 
@@ -518,7 +521,7 @@ elif [[ ${CGM,,} =~ "shareble" ]]; then
     echo Checking Adafruit_BluefruitLE installation
     if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
         if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
-            echocolor "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
+            echo "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
             (cd $HOME/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
         else
             echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
@@ -612,7 +615,7 @@ if [[ "$ttyport" =~ "spi" ]]; then
         #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
     fi
 
-    echocolor Checking kernel for mraa installation
+    echo Checking kernel for mraa installation
     if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
        echo "Skipping mraa install for kernel 4.10+"
     else # check if mraa is installed
@@ -781,7 +784,7 @@ echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
 echo "Adding OpenAPS log shortcuts"
 oref0-log-shortcuts
 
-echocolor
+echo
 if [[ "$ttyport" =~ "spi" ]]; then
     echocolor Resetting spi_serial
     reset_spi_serial.py
