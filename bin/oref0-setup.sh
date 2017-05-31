@@ -185,7 +185,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
 
     if [[ ! -z "${ttyport}" ]]; then
-      echo "Medtronic pumps come in two types: WW (Worldwide) pumps, and NA (North America) pumps."
+      echo -e "\e[1mMedtronic pumps come in two types: WW (Worldwide) pumps, and NA (North America) pumps.\e[0m"
       echo "Confusingly, North America pumps may also be used outside of North America."
       echo ""
       echo "USA pumps have a serial number / model number that has 'NA' in it."
@@ -262,6 +262,20 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        echocolor "Ok, $BT_PEB it is."
     fi
     
+    echo -e "\e[1mWhat value would you like to set for your max_IOB? Context: max_IOB is a safety setting\e[0m"
+    echo ""
+    echo -e "\e[3mIt limits how much insulin OpenAPS can give you in addition to your manual boluses and pre-set basal rates.\e[0m"
+    echo ""
+    echo -e 'max_IOB of 0 will make it so OpenAPS cannot provide positive IOB, and will function as "low glucose suspend" type mode.'
+    echo ""
+    echo -e "\e[4mIf you are unsure of what you would like max_IOB to be, we recommend starting with either 0 or one hour worth of basals.\e[0m"
+    echo ""
+    echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
+    echo ""
+    read -p "Type a number [i.e. 0] and hit enter:" -r
+      max_iob=$REPLY
+      echocolor "Ok, $max_iob units will be set as your max_iob."
+   
     read -p "Enable automatic sensitivity adjustment? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" autosens "
@@ -276,16 +290,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" meal "
     fi    
-   echo -e "\e[1mWhat value would you like to set for your max_IOB? Context: max_IOB is a safety setting\e[0m"
-   echo -e "\e[3mIt limits how much insulin OpenAPS can give you in addition to your manual boluses and pre-set basal rates.\e[0m"
-   echo -e 'max_IOB of 0 will make it so OpenAPS cannot provide positive IOB, and will function as "low glucose suspend" type mode.'
-   echo -e "\e[4mIf you are unsure of what you would like max_IOB to be, we recommend starting with either 0 or one hour worth of basals.\e[0m"
-   echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
-   read -p "Type a number [i.e. 0] and hit enter:" -r
-   #read -p 'What value would you like to set for your max_IOB? Context: max_IOB is a safety setting to limit how much insulin OpenAPS can give you in addition to your manual boluses and pre-set basal rates. max_IOB of 0 will make it so OpenAPS cannot provide positive IOB, and will function as "low glucose suspend" type mode. If you are unsure of what you would like max_IOB to be, we recommend starting with either 0 or one hour worth of basals. Read the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later). Type a number [i.e. 0] and hit enter:' -r
-      max_iob=$REPLY
-      echocolor "Ok, $max_iob units will be set as your max_iob."
-      
+   
    # read -p "Do you need any advanced features? y/[N] " -r
     # if [[ $REPLY =~ ^[Yy]$ ]]; then
 	#read -p "Enable supermicrobolus (SMB)? y/[N] " -r
