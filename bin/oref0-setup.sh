@@ -188,9 +188,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         ttyport=$REPLY
         echocolor -n "Ok, "
         if [[ -z "$ttyport" ]]; then
-            echocolor -n Carelink
+            echo -n Carelink
         else
-            echocolor -n TTY $ttyport
+            echo -n TTY $ttyport
         fi
         echocolor " it is. "
 	echo ""
