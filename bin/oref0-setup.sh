@@ -425,7 +425,8 @@ if [[ ! -z "$PUSHOVER_USER" ]]; then echo -n " --pushover_user='$PUSHOVER_USER'"
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
-read -p "Continue? y/[N] " -r
+echocolor "Continue? y/[N] "
+read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 echo -n "Checking $directory: "
