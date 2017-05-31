@@ -151,7 +151,10 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         exit
     fi
     echo
-    read -p "What would you like to call your loop directory? [myopenaps is recommended name to use. If you choose to enter a different name here, then you will need to remember to substitute that other name in other areas of the docs where the myopenaps directory is involved] " -r
+    echo "What would you like to call your loop directory? 
+    echo "[myopenaps is recommended name to use. If you choose to enter a different name here,"
+    echo "then you will need to remember to substitute that other name in other areas of the docs where the myopenaps directory is involved]   "
+    read 
     DIR=$REPLY
     if [[ -z $DIR ]]; then DIR="myopenaps"; fi
     echocolor "Ok, $DIR it is."
@@ -161,7 +164,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     serial=$REPLY
     echocolor "Ok, $serial it is."
     echo ""
-    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout" -r
+    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout:   " -r
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
     echo ""
@@ -291,24 +294,24 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo ""
     echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
     echo ""
-    read -p "Type a number [i.e. 0] and hit enter:" -r
+    read -p "Type a number [i.e. 0] and hit enter:   " -r
       max_iob=$REPLY
       echocolor "Ok, $max_iob units will be set as your max_iob."
       echo ""
    
-    read -p "Enable automatic sensitivity adjustment? y/[N] " -r
+    read -p "Enable automatic sensitivity adjustment? y/[N]  " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" autosens "
     fi
     echo ""
     
-    read -p "Enable autotuning of basals and ratios? y/[N] " -r
+    read -p "Enable autotuning of basals and ratios? y/[N]  " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" autotune "
     fi
     echo ""
     
-    read -p "Enable advanced meal assist? y/[N] " -r
+    read -p "Enable advanced meal assist? y/[N]  " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" meal "
     fi    
@@ -363,7 +366,7 @@ echo
 OREF0_RUNAGAIN=`mktemp /tmp/oref0-runagain.XXXXXXXXXX`
 echo "#!/bin/bash" > $OREF0_RUNAGAIN
 echocolor "# To run again with these same options, use:" | tee $OREF0_RUNAGAIN
-echocolor "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
+echo "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
 if [[ ${CGM,,} =~ "shareble" ]]; then
     echo -n " --bleserial=$BLE_SERIAL" | tee -a $OREF0_RUNAGAIN
 fi
