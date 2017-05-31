@@ -158,8 +158,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     DIR=$REPLY
     if [[ -z $DIR ]]; then DIR="myopenaps"; fi
     echocolor "Ok, $DIR it is."
-    echo ""
     directory="$(readlink -m $DIR)"
+    echo ""
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echocolor "Ok, $serial it is."
