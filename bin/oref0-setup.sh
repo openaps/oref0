@@ -268,7 +268,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        ENABLE+=" meal "
     fi    
    
-   read -p 'What value would you like to set for your max_IOB? Context: max_IOB is a safety setting to limit how much insulin OpenAPS can give you in addition to your manual boluses and pre-set basal rates. max_IOB of 0 will make it so OpenAPS cannot provide positive IOB, and will function as "low glucose suspend" type mode. If you are unsure of what you would like max_IOB to be, we recommend starting with either 0 or one hour worth of basals. Read the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).' -r
+   read -p 'What value would you like to set for your max_IOB? Context: max_IOB is a safety setting to limit how much insulin OpenAPS can give you in addition to your manual boluses and pre-set basal rates. max_IOB of 0 will make it so OpenAPS cannot provide positive IOB, and will function as "low glucose suspend" type mode. If you are unsure of what you would like max_IOB to be, we recommend starting with either 0 or one hour worth of basals. Read the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later). Type a number [i.e. 0] and hit enter:' -r
       max_iob=$REPLY
       echo "Ok, $max_iob units will be set as your max_iob."
       
@@ -329,7 +329,7 @@ echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_R
 if [[ ! -z "$ttyport" ]]; then
     echo -n " --tty=$ttyport" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ "$max_iob" -ne 0 ]]; then echo -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN; fi
+echo -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
     echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a $OREF0_RUNAGAIN
 fi
