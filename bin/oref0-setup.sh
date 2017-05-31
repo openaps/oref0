@@ -153,12 +153,14 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     echo "What would you like to call your loop directory?"
     echo "[myopenaps is recommended name to use. If you choose to enter a different name here,"
-    echo "then you will need to remember to substitute that other name in other areas of the docs where the myopenaps directory is involved]   "
+    echo "then you will need to remember to substitute that other name in other areas of the docs"
+    echo "where the myopenaps directory is involved]   "
     read -r
     DIR=$REPLY
     if [[ -z $DIR ]]; then DIR="myopenaps"; fi
     echocolor "Ok, $DIR it is."
     directory="$(readlink -m $DIR)"
+    echo
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echocolor "Ok, $serial it is."
@@ -294,9 +296,14 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
     echo ""
     read -p "Type a number [i.e. 0] and hit enter:   " -r
-      max_iob=$REPLY
-      echocolor "Ok, $max_iob units will be set as your max_iob."
-      echo ""
+      if max_iob=$REPLY
+        echocolor "Ok, $max_iob units will be set as your max_iob."
+        echo ""
+      else
+        max_iob=auto
+	echocolor "Ok, your max_iob will be set to auto for now."
+      	echo
+      fi
    
     read -p "Enable automatic sensitivity adjustment? y/[N]  " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
