@@ -102,7 +102,7 @@ case $i in
     shift # past argument=value
     ;;
     --ww_ti_usb_reset=*) # use reset if pump device disappears with TI USB and WW-pump
-    WW_TI_USB_RESET="${i#*=}"
+    ww_ti_usb_reset="${i#*=}"
     shift # past argument=value
     ;;
     -pt=*|--pushover_token=*)
@@ -149,7 +149,16 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echo "Ok, $serial it is."
-    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout" -r
+    echo "What kind of CGM are you using?"
+    echo "(Nightscout will also be used in addition to whichever directly connected CGM you select below.)
+    echo "Valid options:"
+    echo "G4-upload: use Dexcom G4 receiver connected to USB and upload to Nightscout (supports raw)"
+    echo "G4-local-only: use but do NOT upload BGs from a plugged in receiver to Nightscout"
+    echo "G5: Dexcom G5"
+    echo "MDT: Medtronic Enlite CGM"
+    echo "ShareBLE: Bluetooth Dexcom G4 receiver over BLE (not fully reliable or documented)"
+    echo "xDrip: xDripAPS Wireless Bridge (No Receiver)."
+    read -p "Please enter your CGM selection: " -r
     CGM=$REPLY
     echo "Ok, $CGM it is."
     if [[ ${CGM,,} =~ "shareble" ]]; then
@@ -318,7 +327,7 @@ if [[ ! -z "$min_5m_carbimpact" ]]; then
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ $ww_ti_usb_reset =~ ^[Yy]$ ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN; fi
@@ -599,7 +608,12 @@ else
       # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
       # this will be called when mmtune is use with a WW pump. 
       # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
+      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not found.
+      # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
+      if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
+        openaps alias remove mmtune
+        openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done\""
+      fi
 
       # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
       # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
@@ -704,12 +718,15 @@ if [[ $ENABLE =~ microbolus ]]; then
     done
 fi
 
-# Create ~/.profile so that openaps commands can be executed from the command line
-# as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
-# TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299)
-echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
-(cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
-(cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
+# Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
+# Once all crontab entries are called within a bash environment, then the NIGHTSCOUT_HOST and API_SECRET can be removed from the crontab 
+# TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299 )
+# Removing stuff from ~/.profile (old solution) is left as an exercise to the reader
+echo "#Added NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile at `date`" | tee -a $HOME/.bash_profile
+echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
+echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
+echo API_SECRET="$API_SECRET" >> $HOME/.bash_profile
+echo "export API_SECRET" >> $HOME/.bash_profile
 
 echo "Adding OpenAPS log shortcuts"
 oref0-log-shortcuts
