@@ -151,7 +151,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         exit
     fi
     echo
-    echo "What would you like to call your loop directory? 
+    echo "What would you like to call your loop directory?"
     echo "[myopenaps is recommended name to use. If you choose to enter a different name here,"
     echo "then you will need to remember to substitute that other name in other areas of the docs where the myopenaps directory is involved]   "
     read -r
