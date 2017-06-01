@@ -3,7 +3,6 @@
 # main pump-loop
 main() {
     prep
-    until( \
         echo && echo Starting pump-loop at $(date): \
         && wait_for_bg \
         && wait_for_silence \
@@ -15,23 +14,22 @@ main() {
         && refresh_temp_and_enact \
         && refresh_pumphistory_and_enact \
         && refresh_profile \
-        && refresh_pumphistory_24h \
-        && echo Completed pump-loop at $(date) \
-        && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
-        && echo); do
+        && refresh_pumphistory_24h 
 
-            # On a random subset of failures, wait 45s and mmtune
-            echo Error, retrying \
-            && maybe_mmtune
-            sleep 5
-    done
+if [ $? -eq 0 ]; then
+        echo Completed pump-loop succesfully at $(date) \
+        && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
+        && echo
+else
+        echo -n Aborted pump-loop with exitcode $? at $(date) \
+        echo Waiting 45s and maybe mmtune \
+        sleep 45 && maybe_mmtune && sleep 5
+fi
 }
 
 # main supermicrobolus loop
 smb_main() {
     prep
-    until ( \
-        prep
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_bg \
         && wait_for_silence $upto30s \
@@ -59,20 +57,23 @@ smb_main() {
             fi
             ) \
             && refresh_profile \
-            && refresh_pumphistory_24h \
-            && echo Completed supermicrobolus pump-loop at $(date): \
+            && refresh_pumphistory_24h 
+
+if [ $? -eq 0 ]; then
+            echo Completed supermicrobolus pump-loop at $(date): \
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
-            && echo \
-    ); do
+            && echo 
+else
+        echo Aborted supermicrobolus pump-loop with exitcode $? at $(date) 
         if grep -q '"suspended": true' monitor/status.json; then
             echo -n "Pump suspended; "
             smb_verify_status
         else
-            echo Error, retrying && maybe_mmtune
+            echo Error2, retrying && maybe_mmtune
         fi
         echo "Sleeping $upto10s; "
         sleep $upto10s
-    done
+fi
 }
 
 function smb_reservoir_before {
@@ -267,7 +268,7 @@ function mmtune {
 
 function maybe_mmtune {
     # mmtune 20% of the time ((32k-26214)/32k)
-    [[ $RANDOM > 26214 ]] \
+    [[ $RANDOM > 11234 ]] \
     && echo "Waiting for 30s silence before mmtuning" \
     && wait_for_silence 30 \
     && mmtune
