@@ -223,9 +223,9 @@ do
         else
             die "Could not run oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json"
         fi
- +    else
- +        # Copy tuned profile produced by autotune to profile.json for use with next day of data
- +        cp newprofile.$run_number.$i.json profile.json
+    else
+        # Copy tuned profile produced by autotune to profile.json for use with next day of data
+        cp newprofile.$run_number.$i.json profile.json
     fi
 
   done # End Date Range Iteration
