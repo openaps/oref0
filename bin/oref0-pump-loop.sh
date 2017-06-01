@@ -5,7 +5,8 @@ main() {
     prep
     until( \
         echo && echo Starting pump-loop at $(date): \
-        && wait_for_bg \
+        && checkcgmtype \
+	    && wait_for_bg \
         && wait_for_silence \
         && if_mdt_get_bg \
         && refresh_old_pumphistory_enact \
@@ -33,7 +34,8 @@ smb_main() {
     until ( \
         prep
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
-        && wait_for_bg \
+        && checkcgmtype \
+	    && wait_for_bg \
         && wait_for_silence $upto30s \
         && preflight \
         && if_mdt_get_bg \
@@ -230,7 +232,7 @@ function prep {
 }
 
 function if_mdt_get_bg {
-    if grep "MDT cgm" openaps.ini; then
+    if [[ $cgmtype =~ "MDT" ]]; then
         openaps get-bg
     fi
 }
@@ -339,7 +341,11 @@ function refresh_old_profile {
 
 function refresh_smb_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
-    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    if [[ $cgmtype =~ "MDT" ]]; then
+      touch -d "$(date -R -d @$(jq .[0].date/1000 nightscout/glucose.json))" monitor/glucose.json
+    else
+      touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    fi    
     if ( find monitor/ -newer monitor/pump_loop_completed | grep -q glucose.json ); then
         echo "glucose.json newer than pump_loop_completed. "
         smb_enact_temp
@@ -353,7 +359,11 @@ function refresh_smb_temp_and_enact {
 
 function refresh_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
-    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    if [[ $cgmtype =~ "MDT" ]]; then
+      touch -d "$(date -R -d @$(jq .[0].date/1000 nightscout/glucose.json))" monitor/glucose.json
+    else
+      touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    fi
     # TODO: use pump_loop_completed logic as in refresh_smb_temp_and_enact
     if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
@@ -368,7 +378,11 @@ function refresh_temp_and_enact {
 
 function refresh_pumphistory_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
-    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    if [[ $cgmtype =~ "MDT" ]]; then
+      touch -d "$(date -R -d @$(jq .[0].date/1000 nightscout/glucose.json))" monitor/glucose.json
+    else
+      touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    fi
     if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
         || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
         || (! find monitor/ -mmin -5 | grep -q pumphistory-zoned && echo -n "pumphistory more than 5m old. ") ); then
@@ -397,7 +411,7 @@ function low_battery_wait {
 }
 
 function wait_for_bg {
-    if grep "MDT cgm" openaps.ini; then
+    if [[ $cgmtype =~ "MDT" ]]; then
         echo "MDT CGM configured; not waiting"
     else
         echo -n "Waiting up to 4 minutes for new BG: "
@@ -434,7 +448,9 @@ function refresh_pumphistory_24h {
     || (echo -n pumphistory-24h refresh \
         && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed)
 }
-
+function checkcgmtype {   
+	cgmtype=$(grep -Po 'cgm=\K[^ ]+' oref0-runagain.sh) 
+}
 die() {
     echo "$@"
     exit 1
