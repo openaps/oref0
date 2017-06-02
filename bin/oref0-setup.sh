@@ -113,13 +113,6 @@ case $i in
     ww_ti_usb_reset="${i#*=}"
     shift # past argument=value
     ;;
-    -pt=*|--pushover_token=*)
-    PUSHOVER_TOKEN="${i#*=}"
-    shift # past argument=value
-    ;;
-    -pu=*|--pushover_user=*)
-    PUSHOVER_USER="${i#*=}"
-    shift # past argument=value
     ;;
     -pt=*|--pushover_token=*)
     PUSHOVER_TOKEN="${i#*=}"
@@ -172,15 +165,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
-#<<< 201705_fixes
-    echo "Ok, $serial it is."
-    echo -e "What kind of CGM are you using?\nValid options:\nG4-upload: use Dexcom G4 receiver connected to USB and upload to nightscout\nG4-local-only: will NOT upload BGs from a plugged in receiver to Nightscout\nG5: Dexcom G5\nMDT: Medtronic CGM\nshareble: Bluetooth Dexcom G4 or G5 receiver\nxdrip: Requires xDrip Wireless Bridge (No Receiver)."
-    read -p "Please selection option for your CGM: " -r
-===
     echocolor "Ok, $serial it is."
     echo
     read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout:   " -r
->>> dev
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
     echo
@@ -259,7 +246,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
-#<<<<<<< 201705_fixes
          read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This is preferred and makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET. Do you want to use token based authentication [Y]/n?" -r 
          if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
            read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
@@ -267,14 +253,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
          else
            read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
            API_SECRET=$REPLY
-           echo "Ok, $API_SECRET it is."
+           echocolor "Ok, $API_SECRET it is."
          fi
-#=======
-        read -p "And what is your Nightscout api secret (i.e. myplaintextsecret)? " -r
-        API_SECRET=$REPLY
-        echocolor "Ok, $API_SECRET it is."
-        echo
-#>>>>>>> dev
     fi
 
     read -p "Do you want to be able to setup BT tethering later? y[N] " -r
@@ -460,34 +440,6 @@ echocolor "Continue? y/[N] "
 read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
-#<<<<<<< 201705_fixes
-echo -n "Checking $directory: "
-mkdir -p $directory
-if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
-    echo $directory already exists
-elif openaps init $directory; then
-    echo $directory initialized
-else
-    die "Can't init $directory"
-fi
-cd $directory || die "Can't cd $directory"
-
-# Taking the oref0-runagain.sh from tmp to $directory
-mv $OREF0_RUNAGAIN ./oref0-runagain.sh
-
-# Make sure it is executable afterwards
-chmod +x ./oref0-runagain.sh
-
-mkdir -p monitor || die "Can't mkdir monitor"
-mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
-mkdir -p cgm || die "Can't mkdir cgm"
-mkdir -p settings || die "Can't mkdir settings"
-mkdir -p enact || die "Can't mkdir enact"
-mkdir -p upload || die "Can't mkdir upload"
-if [[ ${CGM,,} =~ "xdrip" ]]; then
-    mkdir -p xdrip || die "Can't mkdir xdrip"
-fi
-#=======
     echo -n "Checking $directory: "
     mkdir -p $directory
     if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
@@ -498,7 +450,6 @@ fi
         die "Can't init $directory"
     fi
     cd $directory || die "Can't cd $directory"
-#>>>>>>> dev
 
     # Taking the oref0-runagain.sh from tmp to $directory
     mv $OREF0_RUNAGAIN ./oref0-runagain.sh
@@ -506,24 +457,6 @@ fi
     # Make sure it is executable afterwards
     chmod +x ./oref0-runagain.sh
 
-#<<<<<<< 201705_fixes
-cd $directory || die "Can't cd $directory"
-if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
-    oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
-else
-    preferences_from_args=()
-    if [[ $max_iob -ne 0 ]]; then
-    preferences_from_args+="\"max_iob\":$max_iob "
-    fi
-    if [[ ! -z "$max_daily_safety_multiplier" ]]; then
-        preferences_from_args+="\"max_daily_safety_multiplier\":$max_daily_safety_multiplier "
-    fi
-    if [[ ! -z "$current_basal_safety_multiplier" ]]; then
-        preferences_from_args+="\"current_basal_safety_multiplier\":$current_basal_safety_multiplier "
-    fi
-    if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-        preferences_from_args+="\"bolussnooze_dia_divisor\":$bolussnooze_dia_divisor "
-#=======
     mkdir -p monitor || die "Can't mkdir monitor"
     mkdir -p raw-cgm || die "Can't mkdir raw-cgm"
     mkdir -p cgm || die "Can't mkdir cgm"
@@ -541,7 +474,6 @@ else
     else
         echo -n "Cloning oref0: "
         (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
-#>>>>>>> dev
     fi
     echo Checking oref0 installation
     cd $HOME/src/oref0
@@ -559,55 +491,14 @@ else
     )
 #fi
 
-### 201705_fixes
-# import template
-for type in vendor device report alias; do
-    echo importing $type file
-    cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-done
-echo Checking for BT Mac, BT Peb or Shareble
-if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
-    # Install Bluez for BT Tethering
-    echo Checking bluez installation 
-    bluetoothdversion=$(bluetoothd --version || 0)
-    bluetoothdminversion=5.37
-    bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }') 
-    if [ "$bluetoothdversioncompare" -eq 1 ]; then
-        killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-        cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.45.tar.gz && tar xvfz bluez-5.45.tar.gz || die "Couldn't download bluez"
-        cd $HOME/src/bluez-5.45 && ./configure --disable-systemd && \
-        make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
-        oref0-bluetoothup
-###=======
     cd $directory || die "Can't cd $directory"
     if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
-### dev
     else
         preferences_from_args=()
         if [[ $max_iob -ne 0 ]]; then
         preferences_from_args+="\"max_iob\":$max_iob "
         fi
-### 201705_fixes
-        echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
-    fi
-    echo Checking openxshareble installation
-    if ! python -c "import openxshareble" 2>/dev/null; then
-        echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
-    fi
-    sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
-    echo Checking bluez installation
-    # TODO: figure out if we need to do this for 5.45 as well
-    if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
-        sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
-    fi
-     # add two lines to /etc/rc.local if they are missing.
-    if ! grep -q '/usr/local/bin/bluetoothd' /etc/rc.local; then
-        sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
-    fi
-    if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
-        sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
-=======
         if [[ ! -z "$max_daily_safety_multiplier" ]]; then
             preferences_from_args+="\"max_daily_safety_multiplier\":$max_daily_safety_multiplier "
         fi
@@ -623,7 +514,6 @@ if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         function join_by { local IFS="$1"; shift; echo "$*"; }
         echo "{ $(join_by , ${preferences_from_args[@]}) }" > preferences_from_args.json
         oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
-### dev
     fi
 
     cat preferences.json
@@ -643,14 +533,10 @@ if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
         if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
             sudo apt-get -y install python3-pip
-            sudo pip3 install requests || die "Can't add nightscout - error installing requests"
-            #sudo pip3 install flask || die "Can't add nightscout - error installing flask"
-            #sudo pip3 install flask-restful || die "Can't add nightscout - error installing flask-restful"
+            sudo pip3 install requests || die "Can't add pip3 requests - error installing"
             #TODO oref0_check_nightscout.py -check || die "Error checking permissions with Nightscout"
-            touch /tmp/reboot-required
         fi
     fi
-	
 
     # import template
     for type in vendor device report alias; do
@@ -950,28 +836,28 @@ if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
     (cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
     (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
 
-if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
-  API_HASHED_SECRET=${API_SECRET}
-else
-  API_HASHED_SECRET=$(nightscout hash-api-secret $API_SECRET)
-fi
+    if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
+      API_HASHED_SECRET=${API_SECRET}
+    else
+      API_HASHED_SECRET=$(nightscout hash-api-secret $API_SECRET)
+    fi
 
-# Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
-# With 0.5.0 release we switched from ~/.profile to ~/.bash_profile, because a shell will look 
-# for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from 
-# the first one that exists and is readable
+    # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
+    # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile, because a shell will look 
+    # for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from 
+    # the first one that exists and is readable
 
-# First remove all lines containing API_SECRET or NIGHTSCOUT_HOST (if they exist)
-sed --in-place '/.*API_SECRET.*/d' .bash_profile
-sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .bash_profile
-# Then append the variables
-echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
-echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
-echo API_SECRET="${API_HASHED_SECRET}" >> $HOME/.bash_profile
-echo "export API_SECRET" >> $HOME/.bash_profile
+    # First remove all lines containing API_SECRET or NIGHTSCOUT_HOST (if they exist)
+    sed --in-place '/.*API_SECRET.*/d' .bash_profile
+    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .bash_profile
+    # Then append the variables
+    echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
+    echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
+    echo API_SECRET="${API_HASHED_SECRET}" >> $HOME/.bash_profile
+    echo "export API_SECRET" >> $HOME/.bash_profile
 
-echo "Adding OpenAPS log shortcuts"
-oref0-log-shortcuts
+    echo "Adding OpenAPS log shortcuts"
+    oref0-log-shortcuts
 
     echo
     if [[ "$ttyport" =~ "spi" ]]; then
