@@ -113,7 +113,6 @@ case $i in
     ww_ti_usb_reset="${i#*=}"
     shift # past argument=value
     ;;
-    ;;
     -pt=*|--pushover_token=*)
     PUSHOVER_TOKEN="${i#*=}"
     shift # past argument=value
@@ -235,7 +234,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     echo "Are you using Nightscout? If not, press enter."
-    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
+    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.herokuapp.com)? " -r
     # remove any trailing / from NIGHTSCOUT_HOST
     NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
     if [[ -z $NIGHTSCOUT_HOST ]]; then
