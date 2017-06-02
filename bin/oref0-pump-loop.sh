@@ -66,10 +66,8 @@ if [ $? -eq 0 ]; then
 else
         echo Aborted supermicrobolus pump-loop with exitcode $? at $(date) 
         if grep -q '"suspended": true' monitor/status.json; then
-            echo -n "Pump suspended; "
+            echo -n "Pump suspended; " # wait with action until suspended is false
             smb_verify_status
-        else
-            echo Error2, retrying && maybe_mmtune
         fi
         echo "Sleeping $upto10s; "
         sleep $upto10s
