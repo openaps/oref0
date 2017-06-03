@@ -533,7 +533,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
             sudo apt-get -y install python3-pip
             sudo pip3 install requests || die "Can't add pip3 requests - error installing"
-            #TODO oref0_check_nightscout.py -check || die "Error checking permissions with Nightscout"
+            oref0_nightscout_check || die "Error checking Nightscout permissions"
         fi
     fi
 
