@@ -828,30 +828,28 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
     fi
 
-    # Create ~/.profile so that openaps commands can be executed from the command line
-    # as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
-    # TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299)
-    echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
-    (cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
-    (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
+    echo "Adding OpenAPS log shortcuts"
+    oref0-log-shortcuts
 
+    # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
+    echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile 
+    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .bash_profile
+    (cat $HOME/.bash_profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile)
     if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
       API_HASHED_SECRET=${API_SECRET}
     else
       API_HASHED_SECRET=$(nightscout hash-api-secret $API_SECRET)
     fi
-
-    echo "Adding OpenAPS log shortcuts"
-    oref0-log-shortcuts
-
-    # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
-    # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile, because a shell will look 
-    # for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from 
-    # the first one that exists and is readable
-
-    # First remove all lines containing API_SECRET or NIGHTSCOUT_HOST (if they exist)
+    # Check if API_SECRET exists, if so remove all lines containing API_SECRET and add the new API_SECRET to the end of the file
     sed --in-place '/.*API_SECRET.*/d' .bash_profile
-    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .bash_profile
+    (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="$API_HASHED_SECRET" >> $HOME/.profile)
+
+    # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile for API_SECRET and NIGHTSCOUT_HOST, because a shell will look 
+    # for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from 
+    # the first one that exists and is readable. Remove API_SECRET and NIGHTSCOUT_HOST lines from ~/.profile if they exist
+    sed --in-place '/.*API_SECRET.*/d' .profile
+    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .profile
+    
     # Then append the variables
     echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
     echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
