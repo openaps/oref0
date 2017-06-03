@@ -841,6 +841,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
       API_HASHED_SECRET=$(nightscout hash-api-secret $API_SECRET)
     fi
 
+    echo "Adding OpenAPS log shortcuts"
+    oref0-log-shortcuts
+
     # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
     # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile, because a shell will look 
     # for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from 
@@ -854,9 +857,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
     echo API_SECRET="${API_HASHED_SECRET}" >> $HOME/.bash_profile
     echo "export API_SECRET" >> $HOME/.bash_profile
-
-    echo "Adding OpenAPS log shortcuts"
-    oref0-log-shortcuts
 
     echo
     if [[ "$ttyport" =~ "spi" ]]; then
