@@ -102,29 +102,24 @@ if (!module.parent) {
         return console.error("Could not parse input data: ", e);
     }
 
+    //attempting to provide a check for autotune
+    //if autotune directory does not exist, SMB/oref1 should not be able to run
 
+    // console.error("Printing this so you know it's getting to the check for autotune.")
 
-//attempting to provide a check for autotune
-//if autotune directory does not exist, SMB/oref1 should not be able to run
-
-// console.error("Printing this so you know it's getting to the check for autotune.")
-
-//printing microbolus before attempting check
-console.error("Microbolus var is currently set to: ",params['microbolus']);
-
-if (fs.existsSync("autotune")) {
-    console.error("Autotune exists! Hoorah!")
-    }
-else {
-    console.error("Warning: Autotune has not been run. All microboluses will be disabled until you manually run autotune or add it to run nightly in your loop.");
-    params['microbolus'] = false;
+    //printing microbolus before attempting check
     console.error("Microbolus var is currently set to: ",params['microbolus']);
+
+    if (params['microbolus']) {
+        if (fs.existsSync("autotune")) {
+            console.error("Autotune exists! Hoorah! You can use microbolus-related features.")
+        } else {
+            console.error("Warning: Autotune has not been run. All microboluses will be disabled until you manually run autotune or add it to run nightly in your loop.");
+            params['microbolus'] = false;
+            console.error("Microbolus var is currently set to: ",params['microbolus']);
+        }
     }
-
-
-
-
-
+	
     //console.log(carbratio_data);
     var meal_data = { };
     //console.error("meal_input",meal_input);
