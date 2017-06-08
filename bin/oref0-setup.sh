@@ -234,7 +234,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     echo "Are you using Nightscout? If not, press enter."
-    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
+    read -p "If so, what is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
     # remove any trailing / from NIGHTSCOUT_HOST
     NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
     if [[ -z $NIGHTSCOUT_HOST ]]; then
@@ -322,15 +322,21 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        echo
     fi
 
-   read -p "Do you need any advanced features? (See docs in Phase 4 for more information about these features.) y/[N] " -r
+   read -p "Do you want any oref1 features (SMBs/UAM or pushover)? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         #delete this next 2 lines once we decide SMB goes in the script
-        echocolor "Ok. Remember to enable oref1 related features manually and update your preferences. See the docs for more details about enabling."
+        echocolor "Ok. Currently SMBs/UAM require an additional manual step to enable. You will see them in your preferences, but they will not be active (even if set to true) without this additional manual step.  See the docs for more details about how to enable microbolus."
         echo
-        #read -p "Enable supermicrobolus (SMB)? y/[N] " -r
+        #read -p "Enable supermicrobolus (SMB/UAM)? y/[N] " -r
         #if [[ $REPLY =~ ^[Yy]$ ]]; then
         #    ENABLE+=" microbolus "
+        #    echocolor "Ok, SMB/UAM will be enabled."
+        #    echo
+        #else
+        #    echocolor "Ok, no SMB/UAM."
+        #    echo
         #fi
+        
         read -p "Are you planning on using Pushover for oref1-related push alerts? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             read -p "If so, what is your Pushover API Token? " -r
@@ -347,7 +353,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo
         fi
     else
-        echocolor "Ok, no advanced features right now."
+        echocolor "Ok, no oref1 features right now."
         echo
     fi
 
