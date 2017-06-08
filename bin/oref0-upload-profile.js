@@ -60,7 +60,7 @@ if (!module.parent) {
 
     if (apisecret.length != 40) {
         var shasum = crypto.createHash('sha1');
-        shasum.update(apisecret);
+        shasum.update(String(apisecret));
         apisecret = shasum.digest('hex');
     };
 
