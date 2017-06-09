@@ -111,7 +111,7 @@ def check_permissions():
 
 if __name__ == '__main__':
     try:
-        parser = argparse.ArgumentParser(description='Checks permiisons in nightscout based on your ns.ini')
+        parser = argparse.ArgumentParser(description='Checks permissions in Nightscout based on your ns.ini')
         parser.add_argument('-v', '--verbose', action="store_true", help='increase output verbosity')
         parser.add_argument('--nsini', type=str, help='Path to ns.ini' , default='./ns.ini')
         args = parser.parse_args()
