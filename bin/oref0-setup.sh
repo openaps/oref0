@@ -861,10 +861,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo Resetting spi_serial
         reset_spi_serial.py
     fi
-    echo Attempting to communicate with pump:
-    ( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
-    openaps mmtune
-    echo
+# Commenting out the mmtune as attempt to stop the radio reboot errors that happen when re-setting up. 
+#    echo Attempting to communicate with pump:
+#    ( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
+#    openaps mmtune
+#    echo
 
     read -p "Schedule openaps in cron? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
