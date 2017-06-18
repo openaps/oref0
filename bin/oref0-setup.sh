@@ -833,7 +833,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
     echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile 
-    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .bash_profile
+    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.bash_profile
     (cat $HOME/.bash_profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile)
     if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
       API_HASHED_SECRET=${API_SECRET}
@@ -841,7 +841,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
       API_HASHED_SECRET=$(nightscout hash-api-secret $API_SECRET)
     fi
     # Check if API_SECRET exists, if so remove all lines containing API_SECRET and add the new API_SECRET to the end of the file
-    sed --in-place '/.*API_SECRET.*/d' .bash_profile
+    sed --in-place '/.*API_SECRET.*/d' $HOME/.bash_profile
     (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="$API_HASHED_SECRET" >> $HOME/.profile)
 
     # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile for API_SECRET and NIGHTSCOUT_HOST, because a shell will look 
