@@ -108,7 +108,7 @@ if (!module.parent) {
     // console.error("Printing this so you know it's getting to the check for autotune.")
 
     //printing microbolus before attempting check
-    console.error("Microbolus var is currently set to: ",params['microbolus']);
+    //console.error("Microbolus var is currently set to: ",params['microbolus']);
 
     if (params['microbolus']) {
         if (fs.existsSync("autotune")) {
@@ -116,10 +116,10 @@ if (!module.parent) {
         } else {
             console.error("Warning: Autotune has not been run. All microboluses will be disabled until you manually run autotune or add it to run nightly in your loop.");
             params['microbolus'] = false;
-            console.error("Microbolus var is currently set to: ",params['microbolus']);
+            //console.error("Microbolus var is currently set to: ",params['microbolus']);
         }
     }
-	
+
     //console.log(carbratio_data);
     var meal_data = { };
     //console.error("meal_input",meal_input);
@@ -206,8 +206,8 @@ if (!module.parent) {
         var reason = "BG data is too old (it's probably this), or clock set incorrectly.  The last BG data was read at "+bgTime+" but your system time currently is "+systemTime;
         console.error(reason);
         var msg = {reason: reason }
-	console.log(JSON.stringify(msg));
-//        errors.push(msg);
+        console.log(JSON.stringify(msg));
+        // errors.push(msg);
         process.exit(1);
     }
 
