@@ -66,6 +66,7 @@ smb_main() {
     ); do
         if grep -q '"suspended": true' monitor/status.json; then
             echo -n "Pump suspended; "
+            unsuspend_if_no_temp
             smb_verify_status
         else
             echo Error, retrying && maybe_mmtune
@@ -212,6 +213,16 @@ function smb_bolus {
     else
         echo "No bolus needed (yet)"
     fi
+}
+function unsuspend_if_no_temp {
+    # If temp basal duration is zero, unsuspend pump
+    if (cat monitor/temp_basal.json | json -c "this.duration == 0" | grep -q duration); then
+        echo Temp basal has ended: unsuspending pump
+        openaps use pump resume_pump
+    else
+        # If temp basal duration is > zero, do nothing
+        echo Temp basal still running: leaving pump suspended
+    fi)
 }
 
 # calculate random sleep intervals, and get TTY port
