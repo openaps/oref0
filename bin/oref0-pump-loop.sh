@@ -242,19 +242,24 @@ function preflight {
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
     # TODO: remove reset_spi_serial.py once oref0_init_pump_comms.py is fixed to do it correctly
-    reset_spi_serial.py 2>/dev/null
-    oref0_init_pump_comms.py
-    echo -n "Listening for 30s silence before mmtuning: "
-    for i in $(seq 1 800); do
-        echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for 30 2>/dev/null | egrep -v subg | egrep No \
-        && break
-    done
+    #reset_spi_serial.py 2>/dev/null
+    oref0_init_pump_comms.py --reset_spi_serial=auto --init_ww=auto --wait_for=30
+    # echo -n "Listening for 30s silence before mmtuning: "
+    # for i in $(seq 1 800); do
+        # echo -n .
+        # mmeowlink-any-pump-comms.py --port $port --wait-for 30 2>/dev/null | egrep -v subg | egrep No \
+        # && break
+    # done
+	# empty the existing monitor/mmtune.json
     echo {} > monitor/mmtune.json
+	# call mmtune
     echo -n "mmtune: " && openaps report invoke monitor/mmtune.json 2>&1 >/dev/null | tail -1
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
     done
+	# We will wait a while based on the Received Signal Strength Indicator (RSSI). If RSSI:
+	# < -60 => don't wait, < -61 wait 2 seconds, < -62 wait 4 seconds, ..., < -99 => wait 78 seconds
+	# The RSSI value is represented in a negative form (e.g. −99), the closer the value is to 0, the stronger the received signal has been.
     rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | tail -1 | awk '($1 < -60) {print -($1+60)*2}')
     if [[ $rssi_wait > 1 ]]; then
         echo "waiting for $rssi_wait second silence before continuing"
@@ -277,13 +282,18 @@ function wait_for_silence {
     else
         waitfor=$1
     fi
-    ((mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms) 2>&1 | tail -1 && echo -n "Radio ok. " || mmtune) \
-    && echo -n "Listening: "
-    for i in $(seq 1 800); do
-        echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
-        && break
-    done
+	# Question/Bug: Why should one mmtune if there is no silence?
+    #((mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms) 2>&1 | tail -1 && echo -n "Radio ok. " || mmtune) \
+	oref0_init_pump_comms.py --reset_spi_serial=no --init_ww=no --wait_for=1 && echo -n "Radio ok. "  
+	if [ -z $? ]; then
+	  echo -n "Waiting up to $waitfor seconds for silence" && oref0_init_pump_comms.py --reset_spi_serial=no --init_ww=no --wait_for=$waitfor && echo -n "Radio ok. "  
+	fi
+    #&& echo -n "Listening: "
+    #for i in $(seq 1 800); do
+    #    echo -n .
+    #    mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
+    #    && break
+    #done
 }
 
 # Refresh pumphistory etc.
