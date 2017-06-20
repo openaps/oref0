@@ -14,8 +14,8 @@ echo
 echo -n "At $(date), my wifi network name is "
 iwgetid -r wlan0 | tr -d '\n'
 echo -n ", and my public IP is: "
-if curl --compressed -4 -s -m 15 icanhazip.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
-    # if we are back on wifi (and have connectivity to icanhazip.com), shut down bluetooth
+if curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
+    # if we are back on wifi (and have connectivity to checkip.amazonaws.com), shut down bluetooth
     if ( ifconfig | grep -A1 wlan0 | grep -q "inet addr" ) && ( ifconfig | grep -A1 bnep0 | grep -q "inet addr" ); then
         echo "Back online via wifi; disconnecting BT $MAC"
         ifdown bnep0
@@ -34,11 +34,11 @@ else
     iwgetid -r wlan0 | tr -d '\n'
     echo -n ", and my public IP is: "
     # loop over as many MACs as are provided as arguments
-    if ! curl --compressed -4 -s -m 15 icanhazip.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
+    if ! curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
         echo
         for MAC; do
             echo -n "At $(date) my public IP is: "
-            if ! curl --compressed -4 -s -m 15 icanhazip.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
+            if ! curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
                 echo; echo -n "Error, connecting BT to $MAC"
                 oref0-bluetoothup
                 sudo bt-pan client $MAC -d
@@ -62,7 +62,7 @@ else
     iwgetid -r wlan0 | tr -d '\n'
     echo -n ", and my public IP is: "
     # if we still can't get online, try cycling networking as a last resort
-    if ! curl --compressed -4 -s -m 15 icanhazip.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
+    if ! curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
         echo; echo "Error, cycling networking "
         sudo /etc/init.d/networking stop
         sleep 5
