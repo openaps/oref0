@@ -502,11 +502,11 @@ if [[ "$ttyport" =~ "spi" ]]; then
         sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
 
         if [ -d "$HOME/src/mraa/" ]; then
-            echo "$HOME/src/mraa/ already exists; pulling latest master branch"
-            (cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
+            echo "$HOME/src/mraa/ already exists; pulling last known working branch"
+            (cd ~/src/mraa && git fetch && git checkout e0052acfa7ab441b5417a0fbd010ce77b285a4d8 && git pull) || die "Couldn't pull mraa e0052acfa7ab441b5417a0fbd010ce77b285a4d8"
         else
-            echo -n "Cloning mraa master: "
-            (cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
+            echo -n "Cloning mraa last known working branch: "
+            (cd ~/src && git clone -b e0052acfa7ab441b5417a0fbd010ce77b285a4d8 https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa e0052acfa7ab441b5417a0fbd010ce77b285a4d8"
         fi
         ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
         make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
