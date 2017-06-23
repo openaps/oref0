@@ -658,9 +658,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if ! ldconfig -p | grep -q mraa; then # if not installed, install it
             echo Installing swig etc.
             sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
+            # TODO: Due to mraa bug https://github.com/intel-iot-devkit/mraa/issues/771 we're not using the master branch of mraa on dev, but the v1.7.0 version
+            MRAA_RELEASE="v1.7.0" # GitHub hash 8ddbcde84e2d146bc0f9e38504d6c89c14291480
             if [ -d "$HOME/src/mraa/" ]; then
-                echo "$HOME/src/mraa/ already exists; pulling latest master branch"
-                (cd $HOME/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master"
+                echo -n "$HOME/src/mraa/ already exists; "
                 #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
                 (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE}  release" # used for oref0 master
             else
