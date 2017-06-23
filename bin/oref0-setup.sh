@@ -665,8 +665,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 echo -n "Cloning mraa master: "
                 (cd $HOME/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master"
             fi
-            ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
-            make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
+            ( cd $HOME/src/mraa && git reset --hard e0052acfa7ab441b5417a0fbd010ce77b285a4d8 && mkdir -p build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
+            make && sudo make install && echo && touch /tmp/reboot-required && echo latest working commit of mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
             sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
         fi
         fi
