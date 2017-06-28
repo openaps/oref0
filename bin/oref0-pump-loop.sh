@@ -64,6 +64,7 @@ smb_main() {
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
     ); do
+        smb_verify_status
         if grep -q '"suspended": true' monitor/status.json; then
             echo -n "Pump suspended; "
             unsuspend_if_no_temp
