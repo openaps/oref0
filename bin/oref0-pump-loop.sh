@@ -227,7 +227,7 @@ function unsuspend_if_no_temp {
     else
         # If temp basal duration is > zero, do nothing
         echo Temp basal still running: leaving pump suspended
-    fi)
+    fi
 }
 
 # calculate random sleep intervals, and get TTY port
