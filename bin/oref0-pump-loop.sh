@@ -80,6 +80,7 @@ function smb_reservoir_before {
     gather \
     && cp monitor/reservoir.json monitor/lastreservoir.json \
     && echo -n "pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description \
+    && openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
     && echo -n "Checking pump clock: " && (cat monitor/clock-zoned.json; echo) | tr -d '\n' \
     && echo -n " is within 1m of current time: " && date \
     && if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -60 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 60 )); then
