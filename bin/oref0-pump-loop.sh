@@ -3,76 +3,73 @@
 # main pump-loop
 main() {
     prep
-    until( \
-        echo && echo Starting pump-loop at $(date): \
-        && wait_for_bg \
-        && wait_for_silence \
-        && if_mdt_get_bg \
-        && refresh_old_pumphistory_enact \
-        && refresh_old_pumphistory_24h \
-        && refresh_old_profile \
-        && touch monitor/pump_loop_enacted -r monitor/glucose.json \
-        && refresh_temp_and_enact \
-        && refresh_pumphistory_and_enact \
-        && refresh_profile \
-        && refresh_pumphistory_24h \
-        && echo Completed pump-loop at $(date) \
+    echo && echo "Starting pump-loop at $(date):" \
+    && wait_for_bg \
+    && wait_for_silence \
+    && if_mdt_get_bg \
+    && refresh_old_pumphistory_enact \
+    && refresh_old_pumphistory_24h \
+    && refresh_old_profile \
+    && touch monitor/pump_loop_enacted -r monitor/glucose.json \
+    && refresh_temp_and_enact \
+    && refresh_pumphistory_and_enact \
+    && refresh_profile \
+    && refresh_pumphistory_24h 
+    if [ $? -eq 0 ]; then
+        echo "Completed pump-loop succesfully at $(date)" \
         && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
-        && echo); do
-
-            # On a random subset of failures, wait 45s and mmtune
-            echo Error, retrying \
-            && maybe_mmtune
-            sleep 5
-    done
+        && echo
+    else
+        echo "Aborted pump-loop with exitcode $? at $(date)" \
+        echo Waiting 45s and maybe mmtune \
+        sleep 45 && maybe_mmtune && sleep 5
+    fi
 }
 
 # main supermicrobolus loop
 smb_main() {
     prep
-    until ( \
-        prep
-        echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
-        && wait_for_bg \
-        && wait_for_silence $upto30s \
-        && preflight \
-        && if_mdt_get_bg \
-        && refresh_old_pumphistory \
-        && refresh_old_pumphistory_24h \
-        && refresh_old_profile \
-        && touch monitor/pump_loop_enacted -r monitor/glucose.json \
-        && refresh_smb_temp_and_enact \
-        && ( smb_check_everything \
-            && if (grep -q '"units":' enact/smb-suggested.json); then
-                ( smb_bolus && \
-                    touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
-                ) \
-                || ( smb_old_temp && ( \
-                    echo "Falling back to normal pump-loop" \
-                    && refresh_temp_and_enact \
-                    && refresh_pumphistory_and_enact \
-                    && refresh_profile \
-                    && refresh_pumphistory_24h \
-                    && echo Completed pump-loop at $(date) \
-                    && echo \
-                    ))
-            fi
-            ) \
-            && refresh_profile \
-            && refresh_pumphistory_24h \
-            && echo Completed supermicrobolus pump-loop at $(date): \
-            && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
-            && echo \
-    ); do
+    echo && echo "Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence:" \
+    && wait_for_bg \
+    && wait_for_silence $upto30s \
+    && preflight \
+    && if_mdt_get_bg \
+    && refresh_old_pumphistory \
+    && refresh_old_pumphistory_24h \
+    && refresh_old_profile \
+    && touch monitor/pump_loop_enacted -r monitor/glucose.json \
+    && refresh_smb_temp_and_enact \
+    && ( smb_check_everything \
+    && if (grep -q '"units":' enact/smb-suggested.json); then
+        ( smb_bolus && \
+        touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
+    ) \
+    || ( smb_old_temp && ( \
+        echo "Falling back to normal pump-loop" \
+        && refresh_temp_and_enact \
+        && refresh_pumphistory_and_enact \
+        && refresh_profile \
+        && refresh_pumphistory_24h \
+        && echo Completed pump-loop at $(date) \
+        && echo \
+    ))
+    fi
+    ) \
+    && refresh_profile \
+    && refresh_pumphistory_24h 
+    if [ $? -eq 0 ]; then
+        echo "Completed supermicrobolus pump-loop at $(date):" \
+        && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
+        && echo 
+    else
+        echo "Aborted supermicrobolus pump-loop with exitcode $? at $(date)" 
         if grep -q '"suspended": true' monitor/status.json; then
             echo -n "Pump suspended; "
             smb_verify_status
-        else
-            echo Error, retrying && maybe_mmtune
         fi
         echo "Sleeping $upto10s; "
         sleep $upto10s
-    done
+    fi
 }
 
 function smb_reservoir_before {
@@ -245,19 +242,24 @@ function preflight {
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
     # TODO: remove reset_spi_serial.py once oref0_init_pump_comms.py is fixed to do it correctly
-    reset_spi_serial.py 2>/dev/null
-    oref0_init_pump_comms.py
-    echo -n "Listening for 30s silence before mmtuning: "
-    for i in $(seq 1 800); do
-        echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for 30 2>/dev/null | egrep -v subg | egrep No \
-        && break
-    done
+    #reset_spi_serial.py 2>/dev/null
+    oref0_init_pump_comms.py --reset_spi_serial=auto --init_ww=auto --wait_for=30
+    # echo -n "Listening for 30s silence before mmtuning: "
+    # for i in $(seq 1 800); do
+        # echo -n .
+        # mmeowlink-any-pump-comms.py --port $port --wait-for 30 2>/dev/null | egrep -v subg | egrep No \
+        # && break
+    # done
+	# empty the existing monitor/mmtune.json
     echo {} > monitor/mmtune.json
+	# call mmtune
     echo -n "mmtune: " && openaps report invoke monitor/mmtune.json 2>&1 >/dev/null | tail -1
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
     done
+	# We will wait a while based on the Received Signal Strength Indicator (RSSI). If RSSI:
+	# < -60 => don't wait, < -61 wait 2 seconds, < -62 wait 4 seconds, ..., < -99 => wait 78 seconds
+	# The RSSI value is represented in a negative form (e.g. −99), the closer the value is to 0, the stronger the received signal has been.
     rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | tail -1 | awk '($1 < -60) {print -($1+60)*2}')
     if [[ $rssi_wait > 1 ]]; then
         echo "waiting for $rssi_wait second silence before continuing"
@@ -266,8 +268,8 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    # mmtune 20% of the time ((32k-26214)/32k)
-    [[ $RANDOM > 26214 ]] \
+    # mmtune ~ 15% of the time (100-85)
+    [[ $(( ( RANDOM % 100 ) )) > 85 ]] \
     && echo "Waiting for 30s silence before mmtuning" \
     && wait_for_silence 30 \
     && mmtune
@@ -280,13 +282,18 @@ function wait_for_silence {
     else
         waitfor=$1
     fi
-    ((mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms) 2>&1 | tail -1 && echo -n "Radio ok. " || mmtune) \
-    && echo -n "Listening: "
-    for i in $(seq 1 800); do
-        echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
-        && break
-    done
+	# Question/Bug: Why should one mmtune if there is no silence?
+    #((mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms) 2>&1 | tail -1 && echo -n "Radio ok. " || mmtune) \
+	oref0_init_pump_comms.py --reset_spi_serial=no --init_ww=no --wait_for=1 && echo -n "Radio ok. "  
+	if [ -z $? ]; then
+	  echo -n "Waiting up to $waitfor seconds for silence" && oref0_init_pump_comms.py --reset_spi_serial=no --init_ww=no --wait_for=$waitfor && echo -n "Radio ok. "  
+	fi
+    #&& echo -n "Listening: "
+    #for i in $(seq 1 800); do
+    #    echo -n .
+    #    mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
+    #    && break
+    #done
 }
 
 # Refresh pumphistory etc.

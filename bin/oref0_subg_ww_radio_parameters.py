@@ -14,30 +14,6 @@ import subprocess
 import time
 import signal
 
-PORT_NOT_SET="port not set in pump.ini"
-RADIO_LOCALE_NOT_SET="radio_locale not set in pump.ini"
-
-# get the port (device name) of the TI-chip from the pump.ini config file
-def get_port_from_pump_ini(filename):
-    logging.debug("Parsing %s" % filename) 
-    config = configparser.ConfigParser()
-    config.read(filename)
-    port=PORT_NOT_SET
-    radio_locale=RADIO_LOCALE_NOT_SET
-    for section in config.sections():
-        if section=='device "pump"':
-            for option in config.options(section):
-                if option=='port':
-                    port=config.get(section, option)
-                if option=='radio_locale':
-                    radio_locale=config.get(section, option)
-    if radio_locale==RADIO_LOCALE_NOT_SET:
-        logging.debug("radio_locale is not set in pump.ini. Assuming US pump. No need to set WW parameters")
-        sys.exit(0)
-    elif str.lower(radio_locale)=='us':
-        logging.debug("radio_locale is set to %s. Skipping WW-pump initialization" % radio_locale)
-        sys.exit(0)    
-    return port
 
 
 # helper method to execute command cmd and return the returncode
