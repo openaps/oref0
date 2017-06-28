@@ -217,8 +217,12 @@ function smb_bolus {
 function unsuspend_if_no_temp {
     # If temp basal duration is zero, unsuspend pump
     if (cat monitor/temp_basal.json | json -c "this.duration == 0" | grep -q duration); then
-        echo Temp basal has ended: unsuspending pump
-        openaps use pump resume_pump
+        if (grep -iq '"unsuspend_if_no_temp": true' preferences.json); then
+            echo Temp basal has ended: unsuspending pump
+            openaps use pump resume_pump
+        else
+            echo unsuspend_if_no_temp not enabled in preferences.json: leaving pump suspended
+        fi
     else
         # If temp basal duration is > zero, do nothing
         echo Temp basal still running: leaving pump suspended
