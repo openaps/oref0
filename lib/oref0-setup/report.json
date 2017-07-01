@@ -8,7 +8,7 @@
       "device": "ns",
       "remainder": "-6hours",
       "json_default": "True"
-    }, 
+    },
     "name": "settings/temptargets.json"
   },
  {

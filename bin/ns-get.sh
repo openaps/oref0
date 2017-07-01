@@ -53,7 +53,7 @@ case $1 in
       REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${QUERY}
     fi
     test -z "$NIGHTSCOUT_HOST" && usage && exit 1;
-    
+
     curl ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
 
     ;;

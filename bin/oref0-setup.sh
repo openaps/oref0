@@ -245,7 +245,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
-         read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This is preferred and makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET. Do you want to use token based authentication [Y]/n?" -r 
+         read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This is preferred and makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET. Do you want to use token based authentication [Y]/n?" -r
          if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
            read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
            API_SECRET="token=${REPLY}"
@@ -662,7 +662,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
 
       # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-      # this will be called when mmtune is use with a WW pump. 
+      # this will be called when mmtune is use with a WW pump.
       # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
       # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not found.
       # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
@@ -677,7 +677,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if ! ldconfig -p | grep -q mraa; then # if not installed, install it
             echo Installing swig etc.
             sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
-            # TODO: Due to mraa bug https://github.com/intel-iot-devkit/mraa/issues/771 we were not using the master branch of mraa on dev. 
+            # TODO: Due to mraa bug https://github.com/intel-iot-devkit/mraa/issues/771 we were not using the master branch of mraa on dev.
             # TODO: Decide whether to use MRAA 1.7.0 for 0.5.0 release, or if there is a newer MRAA release that is of interest for the OpenAPS community
             MRAA_RELEASE="v1.7.0" # GitHub hash 8ddbcde84e2d146bc0f9e38504d6c89c14291480
             if [ -d "$HOME/src/mraa/" ]; then
@@ -838,7 +838,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     oref0-log-shortcuts
 
     # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
-    echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile 
+    echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile
     sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.bash_profile
     (cat $HOME/.bash_profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile)
     if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
@@ -850,12 +850,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sed --in-place '/.*API_SECRET.*/d' $HOME/.bash_profile
     (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="$API_HASHED_SECRET" >> $HOME/.profile)
 
-    # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile for API_SECRET and NIGHTSCOUT_HOST, because a shell will look 
-    # for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from 
+    # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile for API_SECRET and NIGHTSCOUT_HOST, because a shell will look
+    # for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from
     # the first one that exists and is readable. Remove API_SECRET and NIGHTSCOUT_HOST lines from ~/.profile if they exist
     sed --in-place '/.*API_SECRET.*/d' .profile
     sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .profile
-    
+
     # Then append the variables
     echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
     echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
@@ -867,7 +867,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo Resetting spi_serial
         reset_spi_serial.py
     fi
-# Commenting out the mmtune as attempt to stop the radio reboot errors that happen when re-setting up. 
+# Commenting out the mmtune as attempt to stop the radio reboot errors that happen when re-setting up.
 #    echo Attempting to communicate with pump:
 #    ( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
 #    openaps mmtune
@@ -882,7 +882,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             crontab -r
         fi
-        
+
         # add crontab entries
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -

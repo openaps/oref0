@@ -29,7 +29,7 @@ def init(args):
 
 def parse_ns_ini(filename):
     global nightscout_host, api_secret, token_secret
-    logging.debug("Parsing %s" % filename) 
+    logging.debug("Parsing %s" % filename)
     config = configparser.ConfigParser()
     try:
         with open(filename) as f:
@@ -66,7 +66,7 @@ def parse_ns_ini(filename):
 
 def get_nightscout_authorization_token():
     global nightscout_host, token_secret, token_dict, auth_headers
-    logging.debug("get_nightscout_authorization_token") 
+    logging.debug("get_nightscout_authorization_token")
     try:
         r = requests.get(nightscout_host+"/api/v2/authorization/request/"+token_secret)
         if r.status_code==200:
@@ -83,8 +83,8 @@ def get_nightscout_authorization_token():
         logging.error("Could not get_nightscout_authorization_token")
         logging.debug("Exception: %s" %e)
         sys.exit(1)
-    
-    
+
+
 def startup_checks(args):
     parse_ns_ini(args.nsini)
     logging.info("Nightscout host: %s" % nightscout_host)
@@ -104,10 +104,10 @@ def check_permissions():
 
         if len(missing)>0:
            logging.error("The following permissions are missing in Nightscout: %s" % missing)
-           logging.error("Please follow instructions at https://openaps.readthedocs.io/en/master/docs/walkthrough/phase-1/nightscout-setup.md#switching-from-api_secret-to-token-based-authentication-for-your-rig") 
+           logging.error("Please follow instructions at https://openaps.readthedocs.io/en/master/docs/walkthrough/phase-1/nightscout-setup.md#switching-from-api_secret-to-token-based-authentication-for-your-rig")
            sys.exit(1)
         logging.info("All permissions in Nightscout are ok")
-   
+
 
 if __name__ == '__main__':
     try:
@@ -115,7 +115,7 @@ if __name__ == '__main__':
         parser.add_argument('-v', '--verbose', action="store_true", help='increase output verbosity')
         parser.add_argument('--nsini', type=str, help='Path to ns.ini' , default='./ns.ini')
         args = parser.parse_args()
-        
+
         init(args)
         startup_checks(args)
         check_permissions()
