@@ -319,7 +319,11 @@ hash-api-secret)
 autoconfigure-device-crud)
   NIGHTSCOUT_HOST=$1
   PLAIN_NS_SECRET=$2
-  API_SECRET=$($self hash-api-secret $2)
+  if [[ "${PLAIN_NS_SECRET,,}" =~ "token=" ]]; then
+    API_SECRET=$2 # store token as API_SECRET
+  else
+    API_SECRET=$($self hash-api-secret $2)
+  fi
   case $1 in
     help|-h|--help)
       setup_help

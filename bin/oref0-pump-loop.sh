@@ -69,8 +69,6 @@ smb_main() {
             echo -n "Pump suspended; "
             unsuspend_if_no_temp
             smb_verify_status
-        else
-            echo Error, retrying && maybe_mmtune
         fi
         echo "Sleeping $upto10s; "
         sleep $upto10s
@@ -283,8 +281,8 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    # mmtune 20% of the time ((32k-26214)/32k)
-    [[ $RANDOM > 26214 ]] \
+    # mmtune ~ 15% of the time (100-85)
+    [[ $(( ( RANDOM % 100 ) )) > 85 ]] \
     && echo "Waiting for 30s silence before mmtuning" \
     && wait_for_silence 30 \
     && mmtune

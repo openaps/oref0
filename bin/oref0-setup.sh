@@ -110,7 +110,7 @@ case $i in
     shift # past argument=value
     ;;
     --ww_ti_usb_reset=*) # use reset if pump device disappears with TI USB and WW-pump
-    WW_TI_USB_RESET="${i#*=}"
+    ww_ti_usb_reset="${i#*=}"
     shift # past argument=value
     ;;
     -pt=*|--pushover_token=*)
@@ -144,7 +144,7 @@ if ! ( git config -l | grep -q user.name ); then
     git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.azurewebsites.net] [--api-secret=myplaintextsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     echo
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
@@ -234,7 +234,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     echo "Are you using Nightscout? If not, press enter."
-    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.azurewebsites.net)? " -r
+    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.herokuapp.com)? " -r
     # remove any trailing / from NIGHTSCOUT_HOST
     NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
     if [[ -z $NIGHTSCOUT_HOST ]]; then
@@ -245,10 +245,15 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
-        read -p "And what is your Nightscout api secret (i.e. myplaintextsecret)? " -r
-        API_SECRET=$REPLY
-        echocolor "Ok, $API_SECRET it is."
-        echo
+         read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This is preferred and makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET. Do you want to use token based authentication [Y]/n?" -r 
+         if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+           read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
+           API_SECRET="token=${REPLY}"
+         else
+           read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
+           API_SECRET=$REPLY
+           echocolor "Ok, $API_SECRET it is."
+         fi
     fi
 
     read -p "Do you want to be able to setup BT tethering later? y[N] " -r
@@ -421,7 +426,7 @@ if [[ ! -z "$min_5m_carbimpact" ]]; then
 fi
 if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ $ww_ti_usb_reset =~ ^[Yy]$ ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN; fi
 if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN; fi
@@ -525,6 +530,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
         echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
+        if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
+            sudo apt-get -y install python3-pip
+            sudo pip3 install requests || die "Can't add pip3 requests - error installing"
+            oref0_nightscout_check || die "Error checking Nightscout permissions"
+        fi
     fi
 
     # import template
@@ -651,6 +661,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
         fi
 
+      # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
+      # this will be called when mmtune is use with a WW pump. 
+      # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
+      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not found.
+      # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
+      if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
+        openaps alias remove mmtune
+        openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done\""
+      fi
         echo Checking kernel for mraa installation
         if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
         echo "Skipping mraa install for kernel 4.10+"
@@ -676,7 +695,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
         fi
         fi
-
     fi
 
     echo Checking openaps dev installation
@@ -816,15 +834,33 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
     fi
 
-    # Create ~/.profile so that openaps commands can be executed from the command line
-    # as long as we still use enivorement variables it's easy that the openaps commands work from both crontab and from a common shell
-    # TODO: remove API_SECRET and NIGHTSCOUT_HOST (see https://github.com/openaps/oref0/issues/299)
-    echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.profile
-    (cat $HOME/.profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST") >> $HOME/.profile
-    (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="`nightscout hash-api-secret $API_SECRET`") >> $HOME/.profile
-
     echo "Adding OpenAPS log shortcuts"
     oref0-log-shortcuts
+
+    # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
+    echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile 
+    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.bash_profile
+    (cat $HOME/.bash_profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile)
+    if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
+      API_HASHED_SECRET=${API_SECRET}
+    else
+      API_HASHED_SECRET=$(nightscout hash-api-secret $API_SECRET)
+    fi
+    # Check if API_SECRET exists, if so remove all lines containing API_SECRET and add the new API_SECRET to the end of the file
+    sed --in-place '/.*API_SECRET.*/d' $HOME/.bash_profile
+    (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="$API_HASHED_SECRET" >> $HOME/.profile)
+
+    # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile for API_SECRET and NIGHTSCOUT_HOST, because a shell will look 
+    # for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from 
+    # the first one that exists and is readable. Remove API_SECRET and NIGHTSCOUT_HOST lines from ~/.profile if they exist
+    sed --in-place '/.*API_SECRET.*/d' .profile
+    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .profile
+    
+    # Then append the variables
+    echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
+    echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
+    echo API_SECRET="${API_HASHED_SECRET}" >> $HOME/.bash_profile
+    echo "export API_SECRET" >> $HOME/.bash_profile
 
     echo
     if [[ "$ttyport" =~ "spi" ]]; then
@@ -846,10 +882,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             crontab -r
         fi
-
+        
         # add crontab entries
-        (crontab -l; crontab -l | grep -q "$NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
-        (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$(nightscout hash-api-secret $API_SECRET)) | crontab -
+        (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
+        (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
         (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
         (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
