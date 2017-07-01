@@ -69,6 +69,8 @@ smb_main() {
             echo -n "Pump suspended; "
             unsuspend_if_no_temp
             smb_verify_status
+        else
+            echo Error, retrying && maybe_mmtune
         fi
         echo "Sleeping $upto10s; "
         sleep $upto10s
