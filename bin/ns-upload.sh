@@ -49,15 +49,17 @@ fi
 
 # use token authentication if the user has a token set in their API_SECRET environment variable
 if [[ "${API_SECRET,,}" =~ "token=" ]]; then
-  API_SECRET_HEADER=""
   REST_ENDPOINT="${REST_ENDPOINT}?${API_SECRET}"
+    (test "$ENTRIES" != "-" && cat $ENTRIES || cat )| (
+    curl -m 30 -s -X POST --data-binary @- \
+        -H "content-type: application/json" \
+        $REST_ENDPOINT
+    ) && ( test -n "$OUTPUT" && touch $OUTPUT ; logger "Uploaded $ENTRIES to $NIGHTSCOUT_HOST" ) || logger "Unable to upload to $NIGHTSCOUT_HOST"
 else
-  API_SECRET_HEADER='-H "API-SECRET: $API_SECRET"'
+    (test "$ENTRIES" != "-" && cat $ENTRIES || cat )| (
+    curl -m 30 -s -X POST --data-binary @- \
+        -H "API-SECRET: $API_SECRET" \
+        -H "content-type: application/json" \
+        $REST_ENDPOINT
+    ) && ( test -n "$OUTPUT" && touch $OUTPUT ; logger "Uploaded $ENTRIES to $NIGHTSCOUT_HOST" ) || logger "Unable to upload to $NIGHTSCOUT_HOST"
 fi
-
-(test "$ENTRIES" != "-" && cat $ENTRIES || cat )| (
-curl -m 30 -s -X POST --data-binary @- \
-  ${API_SECRET_HEADER} -H "content-type: application/json" \
-  $REST_ENDPOINT
-) && ( test -n "$OUTPUT" && touch $OUTPUT ; logger "Uploaded $ENTRIES to $NIGHTSCOUT_HOST" ) || logger "Unable to upload to $NIGHTSCOUT_HOST"
-
