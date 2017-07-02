@@ -313,7 +313,13 @@ function gather {
     && test $(cat monitor/status.json | json bolusing) == false \
     && echo -n resh \
     && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 >/dev/null | tail -1 \
-    && echo ed pumphistory || (echo; exit 1) 2>/dev/null
+    && echo ed \
+    && merge_pumphistory \
+    && echo pumphistory || (echo; exit 1) 2>/dev/null
+}
+
+function merge_pumphistory {
+    jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
 }
 
 # Calculate new suggested temp basal and enact it
