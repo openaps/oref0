@@ -64,8 +64,10 @@ smb_main() {
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
     ); do
+        smb_verify_status
         if grep -q '"suspended": true' monitor/status.json; then
             echo -n "Pump suspended; "
+            unsuspend_if_no_temp
             smb_verify_status
         else
             echo Error, retrying && maybe_mmtune
@@ -80,6 +82,7 @@ function smb_reservoir_before {
     gather \
     && cp monitor/reservoir.json monitor/lastreservoir.json \
     && echo -n "pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description \
+    && openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1 \
     && echo -n "Checking pump clock: " && (cat monitor/clock-zoned.json; echo) | tr -d '\n' \
     && echo -n " is within 1m of current time: " && date \
     && if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -60 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 60 )); then
@@ -213,6 +216,20 @@ function smb_bolus {
         echo "No bolus needed (yet)"
     fi
 }
+function unsuspend_if_no_temp {
+    # If temp basal duration is zero, unsuspend pump
+    if (cat monitor/temp_basal.json | json -c "this.duration == 0" | grep -q duration); then
+        if (grep -iq '"unsuspend_if_no_temp": true' preferences.json); then
+            echo Temp basal has ended: unsuspending pump
+            openaps use pump resume_pump
+        else
+            echo unsuspend_if_no_temp not enabled in preferences.json: leaving pump suspended
+        fi
+    else
+        # If temp basal duration is > zero, do nothing
+        echo Temp basal still running: leaving pump suspended
+    fi
+}
 
 # calculate random sleep intervals, and get TTY port
 function prep {
@@ -266,8 +283,8 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    # mmtune 20% of the time ((32k-26214)/32k)
-    [[ $RANDOM > 26214 ]] \
+    # mmtune ~ 15% of the time (100-85)
+    [[ $(( ( RANDOM % 100 ) )) > 85 ]] \
     && echo "Waiting for 30s silence before mmtuning" \
     && wait_for_silence 30 \
     && mmtune
