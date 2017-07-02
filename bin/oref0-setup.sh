@@ -234,7 +234,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     echo "Are you using Nightscout? If not, press enter."
-    read -p "If so, what is your Nightscout host? (i.e. https://mynightscout.herokuapp.com)? " -r
+    read -p "If so, what is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
     # remove any trailing / from NIGHTSCOUT_HOST
     NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
     if [[ -z $NIGHTSCOUT_HOST ]]; then
@@ -310,32 +310,47 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "Enable autotuning of basals and ratios? y/[N]  " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" autotune "
-       echocolor "Ok, autotune will be enabled."
+       echocolor "Ok, autotune will be enabled. It will run around midnight."
        echo
     else
        echocolor "Ok, no autotune."
        echo
     fi
 
-    read -p "Enable advanced meal assist? y/[N]  " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+#now always enabling AMA by default
+ #   read -p "Enable advanced meal assist? y/[N]  " -r
+ #   if [[ $REPLY =~ ^[Yy]$ ]]; then
        ENABLE+=" meal "
-       echocolor "Ok, AMA will be enabled."
-       echo
-    else
-       echocolor "Ok, no AMA."
-       echo
-    fi
+#       echocolor "Ok, AMA will be enabled."
+#       echo
+#    else
+#       echocolor "Ok, no AMA."
+#       echo
+#    fi
 
-   read -p "Do you need any advanced features? (See docs in Phase 4 for more information about these features.) y/[N] " -r
+   read -p "Do you want any oref1 features (SMBs/UAM or SMB-related Pushover)? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        #delete this next 2 lines once we decide SMB goes in the script
-        echocolor "Ok. Remember to enable oref1 related features manually and update your preferences. See the docs for more details about enabling."
-        echo
-        #read -p "Enable supermicrobolus (SMB)? y/[N] " -r
-        #if [[ $REPLY =~ ^[Yy]$ ]]; then
-        #    ENABLE+=" microbolus "
-        #fi
+        read -p "Enable supermicrobolus (SMB/UAM)? y/[N] " -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "WARNING! oref1-related features are considered to be super-advanced features."
+            echo "You should make sure you've read the docs so you know all of the risks of running oref1 features."
+            echo "To ensure you've read the docs, you should be able to enter the following phrase to validate your understanding."
+            read -p "First phrase: " -r
+            if [[ $REPLY =~ ^[s@fety]$ ]]; then
+                echo "Ok, first phrase checked."
+            read -p "Second phrase: " -r
+                   if [[ $REPLY =~ ^[gate]$ ]]; then
+                   echo "Ok, second phrase checks out."
+                 else "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".    
+            else "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".
+            ENABLE+=" microbolus "
+            echocolor "Ok, SMB/UAM will be enabled."
+            echo
+        else
+            echocolor "Ok, no SMB/UAM."
+            echo
+        fi
+        
         read -p "Are you planning on using Pushover for oref1-related push alerts? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             read -p "If so, what is your Pushover API Token? " -r
@@ -352,7 +367,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo
         fi
     else
-        echocolor "Ok, no advanced features right now."
+        echocolor "Ok, no oref1 features right now."
         echo
     fi
 
