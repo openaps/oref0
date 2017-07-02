@@ -313,7 +313,7 @@ function gather {
     && test $(cat monitor/status.json | json bolusing) == false \
     && echo -n resh \
     && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 >/dev/null | tail -1 \
-    && echo ed \
+    && echo -n ed \
     && merge_pumphistory \
     && echo pumphistory || (echo; exit 1) 2>/dev/null
 }
