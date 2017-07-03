@@ -320,7 +320,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 #now always enabling AMA by default
  #   read -p "Enable advanced meal assist? y/[N]  " -r
  #   if [[ $REPLY =~ ^[Yy]$ ]]; then
-       ENABLE+=" meal "
+    ENABLE+=" meal "
 #       echocolor "Ok, AMA will be enabled."
 #       echo
 #    else
@@ -328,23 +328,27 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 #       echo
 #    fi
 
-   read -p "Do you want any oref1 features (SMBs/UAM or SMB-related Pushover)? y/[N] " -r
+    read -p "Do you want any oref1 features (SMBs/UAM or SMB-related Pushover)? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Enable supermicrobolus (SMB/UAM)? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo "WARNING! oref1-related features are considered to be super-advanced features."
             echo "You should make sure you've read the docs so you know all of the risks of running oref1 features."
-            echo "To ensure you've read the docs, you should be able to enter the following phrase to validate your understanding."
+            echo "To demonstrate you've read the docs, please enter the passphrases you read there."
             read -p "First phrase: " -r
-            if [[ $REPLY =~ ^[s@fety]$ ]]; then
+            if [[ $REPLY =~ ^s@fety$ ]]; then
                 echo "Ok, first phrase checked."
-            read -p "Second phrase: " -r
-                   if [[ $REPLY =~ ^[gate]$ ]]; then
-                   echo "Ok, second phrase checks out."
-                 else "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".    
-            else "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".
-            ENABLE+=" microbolus "
-            echocolor "Ok, SMB/UAM will be enabled."
+                read -p "Second phrase: " -r
+                if [[ $REPLY =~ ^gate$ ]]; then
+                    echo "Ok, second phrase checks out."
+                    echocolor "SMB/UAM will be enabled."
+                    ENABLE+=" microbolus "
+                else
+                   echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".    
+                fi
+            else
+                echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".    
+            fi
             echo
         else
             echocolor "Ok, no SMB/UAM."
