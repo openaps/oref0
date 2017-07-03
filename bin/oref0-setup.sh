@@ -288,7 +288,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     read -p "Type a number [i.e. 0] and hit enter:   " -r
       if [[ $REPLY =~ [0-9] ]]; then
-        max_iob=$REPLY
+        max_iob="$REPLY"
         echocolor "Ok, $max_iob units will be set as your max_iob."
         echo
       else
@@ -513,11 +513,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 #fi
 
     cd $directory || die "Can't cd $directory"
-    if [[ "$max_iob" -eq 0 && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
+    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
         preferences_from_args=()
-        if [[ $max_iob -ne 0 ]]; then
+        if [[ "$max_iob" != "0" ]]; then
         preferences_from_args+="\"max_iob\":$max_iob "
         fi
         if [[ ! -z "$max_daily_safety_multiplier" ]]; then
