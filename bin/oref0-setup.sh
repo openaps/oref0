@@ -332,12 +332,15 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Enable supermicrobolus (SMB)? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo
             echo "WARNING! oref1-related features are considered to be super-advanced features."
             echo "You should make sure you've read the docs so you know all of the risks of running oref1 features."
             echo "To demonstrate you've read the docs, please enter the passphrases you read there."
+            echo
             read -p "First phrase: " -r
             if [[ $REPLY =~ ^s@fety$ ]]; then
                 echo "Ok, first phrase checked."
+                echo
                 read -p "Second phrase: " -r
                 if [[ $REPLY =~ ^gate$ ]]; then
                     echo "Ok, second phrase checks out."
