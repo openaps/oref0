@@ -330,7 +330,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
     read -p "Do you want any oref1 features (SMBs/UAM or SMB-related Pushover)? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        read -p "Enable supermicrobolus (SMB/UAM)? y/[N] " -r
+        read -p "Enable supermicrobolus (SMB)? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo "WARNING! oref1-related features are considered to be super-advanced features."
             echo "You should make sure you've read the docs so you know all of the risks of running oref1 features."
@@ -341,7 +341,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
                 read -p "Second phrase: " -r
                 if [[ $REPLY =~ ^gate$ ]]; then
                     echo "Ok, second phrase checks out."
-                    echocolor "SMB/UAM will be enabled."
+                    echocolor "SMB will be enabled."
                     ENABLE+=" microbolus "
                 else
                    echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".    
