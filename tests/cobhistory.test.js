@@ -28,16 +28,17 @@ describe('cobhistory', function ( ) {
    //function determine_basal(glucose_status, currenttemp, iob_data, profile)
 
     it('should dedupe entries', function () {
-		var inputs = {};
-		inputs.history = pumpHistory;
-		inputs.carbs = carbHistory;
-		inputs.profile = {};
-		
-		var output = find_cob_iob_entries(inputs);
-		
-		//console.log(output);
-		
-		output.length.should.equal(7);
+        var inputs = {};
+        inputs.history = pumpHistory;
+        inputs.carbs = carbHistory;
+        inputs.profile = {};
+
+        var output = find_cob_iob_entries(inputs);
+
+        console.log(output);
+
+        // BolusWizard carb_input without a timestamp-matched Bolus will be ignored
+        output.length.should.equal(5);
     });
 
 });
