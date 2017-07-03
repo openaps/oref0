@@ -250,25 +250,26 @@ function if_mdt_get_bg {
     echo -n
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo \
-		&& echo -n MDT cgm data retrieve
-		#due to sometimes the pump is not in a state to give this command repeat till it completes
+		&& echo -n Attempting to retrieve MDT CGM data 
+		#due to sometimes the pump is not in a state to give this command repeat until it completes
 		#"decocare.errors.DataTransferCorruptionError: Page size too short"
 		n=0
 		until [ $n -ge 3 ]; do
 			openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&1 >/dev/null && break
 			echo
-			echo cgm data from pump disrupted, retrying in 5 seconds...
+			echo CGM data retrieval from pump disrupted, retrying in 5 seconds...
 			n=$[$n+1]
 			sleep 5;
-			echo -n MDT cgm data retrieve
+			echo -n MDT CGM data retrieved
 		done
 		if [ -f "monitor/cgm-mm-glucosedirty.json" ]; then			
 			if [ -f "cgm/glucose.json" ]; then
 				if [ $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json | tr -d '"') +%s) == $(date -d $(jq .[0].display_time monitor/glucose.json | tr -d '"') +%s) ]; then		
 					echo d \
-					&& echo MDT No New cgm data to reformat \
+					&& echo No new MDT CGM data to reformat \
 					&& echo
-					# if you want to wait for new bg uncomment next lines add backslash after echo above
+					# TODO: remove if still unused at next oref0 release
+					# if you want to wait for new bg uncomment next lines and add a backslash after echo above
 					#&& wait_for_mdt_get_bg \
 					#&& mdt_get_bg
 				else			
@@ -278,12 +279,13 @@ function if_mdt_get_bg {
 				mdt_get_bg
 			fi
 		else
-			echo " unable to get cgm data from pump"
+			echo "Unable to get cgm data from pump"
 		fi
     fi
 }
+# TODO: remove if still unused at next oref0 release
 function wait_for_mdt_get_bg {	
-	# This might not really be needed since very seldom does Loop take less time to run than CGM Data takes to refresh. 
+	# This might not really be needed since very seldom does a loop take less time to run than CGM Data takes to refresh. 
 	until [ $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +%s) -lt $(date +%s) ]; do
 		CGMDIFFTIME=$(( $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +%s) - $(date +%s) ))
 		echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +"%r") wait untill $(date --date="@$(($(date #-d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +"%r")to continue"
