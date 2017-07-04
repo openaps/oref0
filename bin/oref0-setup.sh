@@ -245,34 +245,41 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
-         read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This is preferred and makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET. Do you want to use token based authentication [Y]/n?" -r
-         if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
-           read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
-           API_SECRET="token=${REPLY}"
-         else
-           read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
-           API_SECRET=$REPLY
-           echocolor "Ok, $API_SECRET it is."
-         fi
+        read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET. Do you want to use token based authentication y/[N]?" -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
+            API_SECRET="token=${REPLY}"
+            echocolor "Ok, $API_SECRET it is."
+            echo
+        else
+            echocolor "Ok, you'll use API_SECRET instead."
+            echo
+            read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
+            API_SECRET=$REPLY
+            echocolor "Ok, $API_SECRET it is."
+            echo
+        fi
     fi
 
     read -p "Do you want to be able to setup BT tethering later? y[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
     read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
-       BT_MAC=$REPLY
-       echocolor "Ok, $BT_MAC it is. You will need to follow directions in docs to set-up BT tether after your rig is successfully looping."
-       echo
+        BT_MAC=$REPLY
+        echo
+        echocolor "Ok, $BT_MAC it is. You will need to follow directions in docs to set-up BT tether after your rig is successfully looping."
+        echo
     else
+        echo
         echocolor "Ok, no BT installation at this time, you can run this script again later if you change your mind."
         echo
     fi
 
 
     if [[ ! -z $BT_PEB ]]; then
-       read -p "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
-       BT_PEB=$REPLY
-       echocolor "Ok, $BT_PEB it is."
-       echo
+        read -p "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+        BT_PEB=$REPLY
+        echocolor "Ok, $BT_PEB it is."
+        echo
     fi
 
     echo
@@ -347,17 +354,17 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
                     echocolor "SMB will be enabled."
                     ENABLE+=" microbolus "
                 else
-                   echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".    
+                   echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".
                 fi
             else
-                echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".    
+                echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".
             fi
             echo
         else
             echocolor "Ok, no SMB/UAM."
             echo
         fi
-        
+
         read -p "Are you planning on using Pushover for oref1-related push alerts? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             read -p "If so, what is your Pushover API Token? " -r
