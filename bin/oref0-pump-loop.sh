@@ -30,7 +30,7 @@ main() {
 # main supermicrobolus loop
 smb_main() {
     prep
-    until ( \
+    if ! ( \
         prep
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_bg \
@@ -63,7 +63,7 @@ smb_main() {
             && echo Completed supermicrobolus pump-loop at $(date): \
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
-    ); do
+    ); then
         smb_verify_status
         if grep -q '"suspended": true' monitor/status.json; then
             echo -n "Pump suspended; "
@@ -74,7 +74,7 @@ smb_main() {
         fi
         echo "Sleeping $upto10s; "
         sleep $upto10s
-    done
+    fi
 }
 
 function smb_reservoir_before {
@@ -342,8 +342,8 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    # mmtune ~ 15% of the time (100-85)
-    [[ $(( ( RANDOM % 100 ) )) > 85 ]] \
+    # mmtune ~ 25% of the time
+    [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
     && echo "Waiting for 30s silence before mmtuning" \
     && wait_for_silence 30 \
     && mmtune
