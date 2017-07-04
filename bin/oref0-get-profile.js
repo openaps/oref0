@@ -22,7 +22,7 @@ function usage ( ) {
 }
 
 function exportDefaults () {
-	var defaults = generate.defaults();
+	var defaults = generate.displayedDefaults();
 	console.log(JSON.stringify(defaults, null, '\t'));
 }
 
@@ -57,7 +57,7 @@ if (!module.parent) {
       .strict(true)
       .help('help')
       .option('exportDefaults', {
-        describe: "Show default preference values",
+        describe: "Show typically-adjusted default preference values",
         default: false
       })
       .option('updatePreferences', {
