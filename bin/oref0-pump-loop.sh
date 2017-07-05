@@ -70,10 +70,9 @@ smb_main() {
             unsuspend_if_no_temp
             smb_verify_status
         else
-            echo Error, retrying && maybe_mmtune
+            maybe_mmtune
         fi
-        echo "Sleeping $upto10s; "
-        sleep $upto10s
+        echo Unsuccessful supermicrobolus pump-loop at $(date)
     fi
 }
 
