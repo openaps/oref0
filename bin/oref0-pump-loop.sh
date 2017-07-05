@@ -64,14 +64,7 @@ smb_main() {
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
     ); then
-        smb_verify_status
-        if grep -q '"suspended": true' monitor/status.json; then
-            echo -n "Pump suspended; "
-            unsuspend_if_no_temp
-            smb_verify_status
-        else
-            maybe_mmtune
-        fi
+        maybe_mmtune
         echo Unsuccessful supermicrobolus pump-loop at $(date)
     fi
 }
@@ -112,9 +105,14 @@ function smb_check_everything {
         ( smb_verify_suggested || smb_suggest ) \
         && smb_verify_reservoir \
         && smb_verify_status \
-        || ( echo Retrying SMB checks \
-            && wait_for_silence 10 \
-            && smb_reservoir_before \
+        || ( echo Retrying SMB checks
+            wait_for_silence 10
+            if grep -q '"suspended": true' monitor/status.json; then
+                echo -n "Pump suspended; "
+                unsuspend_if_no_temp
+            fi
+            smb_verify_status
+            smb_reservoir_before \
             && smb_enact_temp \
             && ( smb_verify_suggested || smb_suggest ) \
             && smb_verify_reservoir \
