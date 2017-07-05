@@ -30,7 +30,7 @@ main() {
 # main supermicrobolus loop
 smb_main() {
     prep
-    until ( \
+    if ! ( \
         prep
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_bg \
@@ -63,18 +63,10 @@ smb_main() {
             && echo Completed supermicrobolus pump-loop at $(date): \
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
-    ); do
-        smb_verify_status
-        if grep -q '"suspended": true' monitor/status.json; then
-            echo -n "Pump suspended; "
-            unsuspend_if_no_temp
-            smb_verify_status
-        else
-            echo Error, retrying && maybe_mmtune
-        fi
-        echo "Sleeping $upto10s; "
-        sleep $upto10s
-    done
+    ); then
+        maybe_mmtune
+        echo Unsuccessful supermicrobolus pump-loop at $(date)
+    fi
 }
 
 function smb_reservoir_before {
@@ -113,9 +105,14 @@ function smb_check_everything {
         ( smb_verify_suggested || smb_suggest ) \
         && smb_verify_reservoir \
         && smb_verify_status \
-        || ( echo Retrying SMB checks \
-            && wait_for_silence 10 \
-            && smb_reservoir_before \
+        || ( echo Retrying SMB checks
+            wait_for_silence 10
+            if grep -q '"suspended": true' monitor/status.json; then
+                echo -n "Pump suspended; "
+                unsuspend_if_no_temp
+            fi
+            smb_verify_status
+            smb_reservoir_before \
             && smb_enact_temp \
             && ( smb_verify_suggested || smb_suggest ) \
             && smb_verify_reservoir \
@@ -313,7 +310,7 @@ function mdt_get_bg {
 # make sure we can talk to the pump and get a valid model number
 function preflight {
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
-    openaps report invoke settings/model.json 2>&1 >/dev/null | tail -1 \
+    ( openaps report invoke settings/model.json || openaps report invoke settings/model.json ) 2>&1 >/dev/null | tail -1 \
     && egrep -q "[57](15|22|23|54)" settings/model.json \
     && echo -n "Preflight OK. "
 }
@@ -342,8 +339,8 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    # mmtune ~ 15% of the time (100-85)
-    [[ $(( ( RANDOM % 100 ) )) > 85 ]] \
+    # mmtune ~ 25% of the time
+    [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
     && echo "Waiting for 30s silence before mmtuning" \
     && wait_for_silence 30 \
     && mmtune
@@ -374,7 +371,7 @@ function gather {
     && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 >/dev/null | tail -1 \
     && echo -n ed \
     && merge_pumphistory \
-    && echo pumphistory || (echo; exit 1) 2>/dev/null
+    && echo " pumphistory" || (echo; exit 1) 2>/dev/null
 }
 
 function merge_pumphistory {
