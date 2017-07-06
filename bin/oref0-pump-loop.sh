@@ -247,7 +247,7 @@ function if_mdt_get_bg {
     echo -n
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo \
-		&& echo -n Attempting to retrieve MDT CGM data 
+	&& echo Attempting to retrieve MDT CGM data from pump 
 		#due to sometimes the pump is not in a state to give this command repeat until it completes
 		#"decocare.errors.DataTransferCorruptionError: Page size too short"
 		n=0
@@ -257,12 +257,12 @@ function if_mdt_get_bg {
 			echo CGM data retrieval from pump disrupted, retrying in 5 seconds...
 			n=$[$n+1]
 			sleep 5;
-			echo -n MDT CGM data retrieved
+			echo Reattempting to retrieve MDT CGM data
 		done
 		if [ -f "monitor/cgm-mm-glucosedirty.json" ]; then			
 			if [ -f "cgm/glucose.json" ]; then
 				if [ $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json | tr -d '"') +%s) == $(date -d $(jq .[0].display_time monitor/glucose.json | tr -d '"') +%s) ]; then		
-					echo d \
+					echo MDT CGM data retrieved \
 					&& echo No new MDT CGM data to reformat \
 					&& echo
 					# TODO: remove if still unused at next oref0 release
@@ -299,7 +299,7 @@ function mdt_get_bg {
     openaps report invoke monitor/cgm-mm-glucosetrend.json 2>&1 >/dev/null \
 	&& openaps report invoke cgm/cgm-glucose.json 2>&1 >/dev/null \
 	&& grep -q glucose cgm/cgm-glucose.json \
-	&& echo d \
+	&& echo MDT CGM data retrieved \
 	&& cp -pu cgm/cgm-glucose.json cgm/glucose.json \
 	&& cp -pu cgm/glucose.json monitor/glucose-unzoned.json \
 	&& echo -n MDT New cgm data reformat \
