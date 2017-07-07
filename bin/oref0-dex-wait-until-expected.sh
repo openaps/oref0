@@ -24,7 +24,8 @@ if (( $(bc <<< "$TIME_SINCE >= $OLD") )); then
         if (( $(bc <<< "$UPTIME_IN_MINUTES >= $TIME_SINCE") )); then
            shutdown -r now "lsusb error. Rebooting to restore USB subsystem"
         else  
-           echo "Not rebooting again, because  CGM is updated $TIME_SINCE and rebooted $UPTIME_IN_MINUTES ago"
+           echo "Not rebooting again, because CGM was last updated $TIME_SINCE minutes ago,"
+           echo "and rig was rebooted only $UPTIME_IN_MINUTES minutes ago."
         fi
      fi
   fi
