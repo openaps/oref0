@@ -10,6 +10,7 @@ if (( $(bc <<< "$TIME_SINCE >= $OLD") )); then
   echo "CGM Data $TIME_SINCE mins ago is old (>=$OLD)"
  
   # if there is no CGM for more than OLD_LSUSB minutes
+  # and the lsusb is failing (e.g. unable to initialize libusb: -99)
   # and uptime is more than 30 minutes
   # reboot the system to restore the USB subsystem and the CGM
   # that is connected to USB OTG
