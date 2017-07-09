@@ -159,7 +159,7 @@
     "type": "report",
     "name": "monitor/pumphistory.json",
     "monitor/pumphistory.json": {
-      "hours": "5.0",
+      "hours": "2.0",
       "device": "pump",
       "use": "iter_pump_hours",
       "reporter": "JSON"
