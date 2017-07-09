@@ -247,7 +247,7 @@ function if_mdt_get_bg {
     echo -n
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo \
-	&& echo Attempting to retrieve MDT CGM data from pump 
+        && echo Attempting to retrieve MDT CGM data from pump
 		#due to sometimes the pump is not in a state to give this command repeat until it completes
 		#"decocare.errors.DataTransferCorruptionError: Page size too short"
 		n=0
