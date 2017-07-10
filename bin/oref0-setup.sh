@@ -513,7 +513,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     echo Checking mmeowlink installation
 #if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-    pip show mmeowlink | egrep "Version: 0.11." || (
+    pip show mmeowlink | egrep "Version: 0.11.1" || (
         echo Installing latest mmeowlink
         sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
     )
