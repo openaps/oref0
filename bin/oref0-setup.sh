@@ -464,7 +464,7 @@ if [[ ! -z "$PUSHOVER_USER" ]]; then echo -n " --pushover_user='$PUSHOVER_USER'"
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
-echocolor "Continue? y/[N] "
+echocolor -n "Continue? y/[N] "
 read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
@@ -844,8 +844,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         sudo apt-get -y install jq
         cd $directory || die "Can't cd $directory"
         for type in autotune; do
-        echo importing $type file
-        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+            echo importing $type file
+            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
         done
     fi
 
