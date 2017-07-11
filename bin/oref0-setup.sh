@@ -959,7 +959,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ $ENABLE =~ microbolus ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop --microbolus ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         else
-            (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+            (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         fi
         if [[ ! -z "$BT_PEB" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
