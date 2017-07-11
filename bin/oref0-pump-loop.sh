@@ -37,8 +37,8 @@ smb_main() {
         && wait_for_silence $upto30s \
         && preflight \
         && if_mdt_get_bg \
-        && refresh_old_pumphistory \
         && refresh_old_pumphistory_24h \
+        && refresh_old_pumphistory \
         && refresh_old_profile \
         && touch monitor/pump_loop_enacted -r monitor/glucose.json \
         && refresh_smb_temp_and_enact \
