@@ -37,8 +37,8 @@ smb_main() {
         && wait_for_silence $upto30s \
         && preflight \
         && if_mdt_get_bg \
-        && refresh_old_pumphistory \
         && refresh_old_pumphistory_24h \
+        && refresh_old_pumphistory \
         && refresh_old_profile \
         && touch monitor/pump_loop_enacted -r monitor/glucose.json \
         && refresh_smb_temp_and_enact \
@@ -73,7 +73,6 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     gather \
     && cp monitor/reservoir.json monitor/lastreservoir.json \
-    && echo -n "pumphistory.json: " && cat monitor/pumphistory.json | jq -C .[0]._description \
     && openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1 \
     && echo -n "Checking pump clock: " && (cat monitor/clock-zoned.json; echo) | tr -d '\n' \
     && echo -n " is within 1m of current time: " && date \
@@ -125,7 +124,7 @@ function smb_check_everything {
 
 function smb_suggest {
     rm -rf enact/smb-suggested.json
-    ls enact/smb-suggested.json 2>/dev/null && die "enact/suggested.json present"
+    ls enact/smb-suggested.json 2>/dev/null >/dev/null && die "enact/suggested.json present"
     # Run determine-basal
     echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
     && openaps report invoke enact/smb-suggested.json 2>&1 >/dev/null \
@@ -406,7 +405,8 @@ function refresh_old_pumphistory {
 # refresh pumphistory_24h if it's more than 2h old
 function refresh_old_pumphistory_24h {
     find settings/ -mmin -120 -size +100c | grep -q pumphistory-24h-zoned \
-    || ( echo -n Old pumphistory-24h refresh \
+    || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30 \
+        && echo -n Old pumphistory-24h refresh \
         && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed )
 }
 
