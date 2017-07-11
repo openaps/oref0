@@ -34,6 +34,11 @@ function echocolor() { # $1 = string
     printf "${COLOR}$1${NC}\n"
 }
 
+function echocolor-n() { # $1 = string
+    COLOR='\033[1;34m'
+    NC='\033[0m'
+    printf "${COLOR}$1${NC}"
+}
 
 for i in "$@"
 do
@@ -186,7 +191,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     else
         read -p 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? ' -r
         ttyport=$REPLY
-        echocolor -n "Ok, "
+        echocolor-n "Ok, "
         if [[ -z "$ttyport" ]]; then
             echo -n Carelink
         else
@@ -464,7 +469,7 @@ if [[ ! -z "$PUSHOVER_USER" ]]; then echo -n " --pushover_user='$PUSHOVER_USER'"
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
-echocolor "Continue? y/[N] "
+echocolor-n "Continue? y/[N] "
 read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
@@ -844,8 +849,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         sudo apt-get -y install jq
         cd $directory || die "Can't cd $directory"
         for type in autotune; do
-        echo importing $type file
-        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+            echo importing $type file
+            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
         done
     fi
 
