@@ -405,7 +405,8 @@ function refresh_old_pumphistory {
 # refresh pumphistory_24h if it's more than 2h old
 function refresh_old_pumphistory_24h {
     find settings/ -mmin -120 -size +100c | grep -q pumphistory-24h-zoned \
-    || ( echo -n Old pumphistory-24h refresh \
+    || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30 \
+        && echo -n Old pumphistory-24h refresh \
         && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed )
 }
 
