@@ -56,10 +56,6 @@ smb_main() {
                     && echo Completed pump-loop at $(date) \
                     && echo \
                     ))
-            fi \
-            || if grep -q '"suspended": true' monitor/status.json; then
-                echo -n "Pump suspended; "
-                unsuspend_if_no_temp
             fi
             ) \
             && refresh_profile \
@@ -146,6 +142,10 @@ function smb_enact_temp {
         echo -n "No smb_enact needed. "
     fi \
     && smb_verify_enacted
+    || if grep -q '"suspended": true' monitor/status.json; then
+        echo -n "Pump suspended; "
+        unsuspend_if_no_temp
+    fi && smb_verify_enacted
 }
 
 function smb_verify_enacted {
