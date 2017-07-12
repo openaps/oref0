@@ -56,6 +56,10 @@ smb_main() {
                     && echo Completed pump-loop at $(date) \
                     && echo \
                     ))
+            fi \
+            || if grep -q '"suspended": true' monitor/status.json; then
+                echo -n "Pump suspended; "
+                unsuspend_if_no_temp
             fi
             ) \
             && refresh_profile \
@@ -106,12 +110,8 @@ function smb_check_everything {
         && smb_verify_status \
         || ( echo Retrying SMB checks
             wait_for_silence 10
-            if grep -q '"suspended": true' monitor/status.json; then
-                echo -n "Pump suspended; "
-                unsuspend_if_no_temp
-            fi
-            smb_verify_status
-            smb_reservoir_before \
+            smb_verify_status \
+            && smb_reservoir_before \
             && smb_enact_temp \
             && ( smb_verify_suggested || smb_suggest ) \
             && smb_verify_reservoir \
