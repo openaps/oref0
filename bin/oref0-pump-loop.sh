@@ -141,7 +141,7 @@ function smb_enact_temp {
     else
         echo -n "No smb_enact needed. "
     fi \
-    && smb_verify_enacted
+    && smb_verify_enacted \
     || if grep -q '"suspended": true' monitor/status.json; then
         echo -n "Pump suspended; "
         unsuspend_if_no_temp
