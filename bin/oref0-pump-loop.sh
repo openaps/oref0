@@ -106,12 +106,8 @@ function smb_check_everything {
         && smb_verify_status \
         || ( echo Retrying SMB checks
             wait_for_silence 10
-            if grep -q '"suspended": true' monitor/status.json; then
-                echo -n "Pump suspended; "
-                unsuspend_if_no_temp
-            fi
-            smb_verify_status
-            smb_reservoir_before \
+            smb_verify_status \
+            && smb_reservoir_before \
             && smb_enact_temp \
             && ( smb_verify_suggested || smb_suggest ) \
             && smb_verify_reservoir \
@@ -145,7 +141,7 @@ function smb_enact_temp {
     else
         echo -n "No smb_enact needed. "
     fi \
-    && smb_verify_enacted
+    && ( smb_verify_enacted || ( smb_verify_status; smb_verify_enacted) )
 }
 
 function smb_verify_enacted {
@@ -197,7 +193,10 @@ function smb_verify_status {
     && cat monitor/status.json | jq -C -c . \
     && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
-    && grep -q '"suspended": false' monitor/status.json
+    && if grep -q '"suspended": true' monitor/status.json; then
+        echo -n "Pump suspended; "
+        unsuspend_if_no_temp
+    fi
 }
 
 function smb_bolus {
