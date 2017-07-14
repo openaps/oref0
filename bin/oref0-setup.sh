@@ -695,15 +695,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
         fi
 
-      # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-      # this will be called when mmtune is use with a WW pump.
-      # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not found.
-      # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
-      if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
-        openaps alias remove mmtune
-        openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done\""
-      fi
+        # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
+        # this will be called when mmtune is use with a WW pump.
+        # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
+        # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not found.
+        # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
+        if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
+                openaps alias remove mmtune
+                openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done\""
+        fi
         echo Checking kernel for mraa installation
         if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
         echo "Skipping mraa install for kernel 4.10+"
@@ -803,34 +803,34 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Install EdisonVoltage
     if egrep -i "edison" /etc/passwd 2>/dev/null; then
-    echo "Checking if EdisonVoltage is already installed"
-    if [ -d "$HOME/src/EdisonVoltage/" ]; then
-        echo "EdisonVoltage already installed"
-    else
-        echo "Installing EdisonVoltage"
-        cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
-        cd $HOME/src/EdisonVoltage
-        make voltage
-    fi
-    cd $directory || die "Can't cd $directory"
-    for type in edisonbattery; do
-        echo importing $type file
-        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-    done
+        echo "Checking if EdisonVoltage is already installed"
+        if [ -d "$HOME/src/EdisonVoltage/" ]; then
+            echo "EdisonVoltage already installed"
+        else
+            echo "Installing EdisonVoltage"
+            cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+            cd $HOME/src/EdisonVoltage
+            make voltage
+        fi
+        cd $directory || die "Can't cd $directory"
+        for type in edisonbattery; do
+            echo importing $type file
+            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+        done
     fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
-    sudo apt-get -y install jq
-    sudo pip install libpebble2
-    sudo pip install --user git+git://github.com/mddub/pancreabble.git
-    oref0-bluetoothup
-    sudo rfcomm bind hci0 $BT_PEB
-    for type in pancreabble; do
-        echo importing $type file
-        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-    done
-    sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
+        sudo apt-get -y install jq
+        sudo pip install libpebble2
+        sudo pip install --user git+git://github.com/mddub/pancreabble.git
+        oref0-bluetoothup
+        sudo rfcomm bind hci0 $BT_PEB
+        for type in pancreabble; do
+            echo importing $type file
+            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+        done
+        sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
     # configure optional features passed to enact/suggested.json report
     if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
