@@ -163,7 +163,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "where the myopenaps directory is involved. Type in a directory name and/or just hit enter:"
     read -r
     DIR=$REPLY
-    if [[ -z $DIR ]]; then DIR="myopenaps"; fi
+    if [[ -z $DIR ]]; then
+        DIR="myopenaps"
+    fi
     echocolor "Ok, $DIR it is."
     directory="$(readlink -m $DIR)"
     echo
@@ -413,7 +415,9 @@ if [[ -z "$ttyport" ]]; then
 else
     echo -n TTY $ttyport
 fi
-if [[ "$max_iob" != "0" ]]; then echo -n ", max_iob $max_iob"; fi
+if [[ "$max_iob" != "0" ]]; then
+    echo -n ", max_iob $max_iob";
+fi
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
     echo -n ", max_daily_safety_multiplier $max_daily_safety_multiplier";
 fi
@@ -426,7 +430,9 @@ fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
     echo -n ", min_5m_carbimpact $min_5m_carbimpact";
 fi
-if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
+if [[ ! -z "$ENABLE" ]]; then
+    echo -n ", advanced features $ENABLE";
+fi
 echo
 echo
 
@@ -458,14 +464,30 @@ fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
     echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$PUSHOVER_TOKEN" ]]; then echo -n " --pushover_token='$PUSHOVER_TOKEN'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$PUSHOVER_USER" ]]; then echo -n " --pushover_user='$PUSHOVER_USER'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$ENABLE" ]]; then
+    echo -n " --enable='$ENABLE'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$radio_locale" ]]; then
+    echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
+    echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$BLE_MAC" ]]; then
+    echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$BT_MAC" ]]; then
+    echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$BT_PEB" ]]; then
+    echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$PUSHOVER_TOKEN" ]]; then
+    echo -n " --pushover_token='$PUSHOVER_TOKEN'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$PUSHOVER_USER" ]]; then
+    echo -n " --pushover_user='$PUSHOVER_USER'" | tee -a $OREF0_RUNAGAIN
+fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
