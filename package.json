@@ -89,7 +89,7 @@
     "moment-timezone": "^0.5.13",
     "yargs": "~8.0.2",
     "json": "~9.0.6"
-  }
+  },
   "devDependencies": {
     "coveralls": "^2.13.1",
     "istanbul": "^0.4.5",
