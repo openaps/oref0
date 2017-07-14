@@ -728,7 +728,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
             sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
         fi
-        fi
     fi
 
     echo Checking openaps dev installation
