@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
