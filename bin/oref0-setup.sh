@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # This script sets up an openaps environment by defining the required devices,
-# reports, and aliases, and optionally enabling it in cron.
-#
+# reports, and aliases, and optionally enabling it in cron, 
+# plus editing other user-entered configuration settings.
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
 #
