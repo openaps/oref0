@@ -34,6 +34,7 @@ die() {
 }
 
 # defaults
+CURL_FLAGS="--compressed"
 DIR=""
 NIGHTSCOUT_HOST=""
 START_DATE=""
@@ -43,6 +44,10 @@ EXPORT_EXCEL="" # Default is to not export to Microsoft Excel
 TERMINAL_LOGGING=true
 RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
+
+if [ -n "${API_SECRET_READ}" ]; then
+	HASHED_API_SECRET_READ=`echo -n ${API_SECRET_READ}|sha1sum|cut -f1 -d '-'|cut -f1 -d ' '`
+fi
 
 # If we are running OS X, we need to use a different version
 # of the 'date' command; the built-in 'date' is BSD, which
@@ -153,7 +158,11 @@ echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 # Get Nightscout carb and insulin Treatments
 url="$NIGHTSCOUT_HOST/api/v1/treatments.json?find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
 echo $url
-curl -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+if [ -n "${HASHED_API_SECRET_READ}" ]; then 
+	curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+else
+	curl ${CURL_FLAGS} -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+fi
 ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
 
 # Build date list for autotune iteration
@@ -176,7 +185,12 @@ for i in "${date_list[@]}"
 do 
   url="$NIGHTSCOUT_HOST/api/v1/entries/sgv.json?find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
   echo $url
-  curl -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+  if [ -n "${HASHED_API_SECRET_READ}" ]; then 
+    curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+  else
+    curl ${CURL_FLAGS} -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+  fi
+
   ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
 done
 
@@ -201,10 +215,18 @@ do
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 
     # output autotuned profile or what will be used as <autotune/autotune.json> in the next iteration
     echo "oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json"
-    oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json || die "Could not run oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json"
-    
-    # Copy tuned profile produced by autotune to profile.json for use with next day of data
-    cp newprofile.$run_number.$i.json profile.json
+    if ! oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json; then
+        if cat profile.json | jq --exit-status .carb_ratio==null; then
+            echo "ERROR: profile.json contains null carb_ratio: using profile.pump.json"
+            cp profile.pump.json profile.json
+            exit
+        else
+            die "Could not run oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json"
+        fi
+    else
+        # Copy tuned profile produced by autotune to profile.json for use with next day of data
+        cp newprofile.$run_number.$i.json profile.json
+    fi
 
   done # End Date Range Iteration
 done # End Number of Runs Loop

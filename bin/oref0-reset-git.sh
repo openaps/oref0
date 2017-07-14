@@ -49,5 +49,14 @@ if [ $status -lt 128 ]; then
 fi
 # if git repository is too corrupt to do anything, mv it to /tmp and start over.
 
-(git status && git diff && git symbolic-ref HEAD && ! df | grep 100% && ! df -i | grep 100%) > /dev/null || (echo "Saving backup to: $BACKUP" > /dev/stderr; mv .git $BACKUP; rm -rf .git; openaps init . )
+(git status && git diff && git symbolic-ref HEAD && ! df | grep 100% && ! df -i | grep 100%) > /dev/null || (
+    echo Removing largest old git repo from $BACKUP_AREA
+    du -sh $BACKUP_AREA/git-1* | head -1 | awk '{print $2}' | while read line; do rm -rf $line; done
+    echo "Saving backup to: $BACKUP" > /dev/stderr
+    mv .git $BACKUP
+    rm -rf .git
+    openaps init .
+  )
 
+#clean out any tmp_pack_ stuff from $BACKUP
+find $BACKUP -name tmp_pack_* -exec rm {} \;

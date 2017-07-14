@@ -20,11 +20,17 @@ if (!module.parent) {
     var determinebasal = init();
 
     var argv = require('yargs')
-      .usage("$0 iob.json currenttemp.json glucose.json profile.json [[--auto-sens] autosens.json] [meal.json]")
+      .usage("$0 iob.json currenttemp.json glucose.json profile.json [[--auto-sens] autosens.json] [meal.json] [--reservoir reservoir.json]")
       .option('auto-sens', {
         alias: 'a',
         describe: "Auto-sensitivity configuration",
         default: true
+
+      })
+      .option('reservoir', {
+        alias: 'r',
+        describe: "Reservoir status file for SuperMicroBolus mode (oref1)",
+        default: false
 
       })
       .option('meal', {
@@ -40,6 +46,11 @@ if (!module.parent) {
       .option('missing-meal-ok', {
         describe: "If meal data is missing, try anyway.",
         default: true
+
+      })
+      .option('microbolus', {
+        describe: "Enable SuperMicroBolus mode (oref1)",
+        default: false
 
       })
       // error and show help if some other args given
@@ -72,6 +83,7 @@ if (!module.parent) {
     if (params.meal && params.meal !== true && !meal_input) {
       meal_input = params.meal;
     }
+    var reservoir_input = params.reservoir;
 
     if (!iob_input || !currenttemp_input || !glucose_input || !profile_input) {
         usage( );
@@ -88,6 +100,24 @@ if (!module.parent) {
         var glucose_status = determinebasal.getLastGlucose(glucose_data);
     } catch (e) {
         return console.error("Could not parse input data: ", e);
+    }
+
+    //attempting to provide a check for autotune
+    //if autotune directory does not exist, SMB/oref1 should not be able to run
+
+    // console.error("Printing this so you know it's getting to the check for autotune.")
+
+    //printing microbolus before attempting check
+    //console.error("Microbolus var is currently set to: ",params['microbolus']);
+
+    if (params['microbolus']) {
+        if (fs.existsSync("autotune")) {
+            console.error("Autotune exists! Hoorah! You can use microbolus-related features.")
+        } else {
+            console.error("Warning: Autotune has not been run. All microboluses will be disabled until you manually run autotune or add it to run nightly in your loop.");
+            params['microbolus'] = false;
+            //console.error("Microbolus var is currently set to: ",params['microbolus']);
+        }
     }
 
     //console.log(carbratio_data);
@@ -121,7 +151,7 @@ if (!module.parent) {
       if (autosens_input !== true && autosens_input.length) {
         try {
             autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
-            console.error(JSON.stringify(autosens_data));
+            //console.error(JSON.stringify(autosens_data));
         } catch (e) {
             var msg = {
               msg: "Optional feature Auto Sensitivity enabled.  Could not find specified auto-sens: " + autosens_input
@@ -137,6 +167,21 @@ if (!module.parent) {
         }
       }
     }
+    var reservoir_data = null;
+    if (reservoir_input && typeof reservoir_input != 'undefined') {
+        try {
+            reservoir_data = fs.readFileSync(reservoir_input, 'utf8');
+            //console.error(reservoir_data);
+        } catch (e) {
+            var msg = {
+              msg: "Warning: Could not read required reservoir data from "+reservoir_input+"."
+            , file: reservoir_input
+            , error: e
+            };
+            console.error(msg.msg);
+        }
+    }
+
     //if old reading from Dexcom do nothing
 
     var systemTime = new Date();
@@ -161,8 +206,8 @@ if (!module.parent) {
         var reason = "BG data is too old (it's probably this), or clock set incorrectly.  The last BG data was read at "+bgTime+" but your system time currently is "+systemTime;
         console.error(reason);
         var msg = {reason: reason }
-	console.log(JSON.stringify(msg));
-//        errors.push(msg);
+        console.log(JSON.stringify(msg));
+        // errors.push(msg);
         process.exit(1);
     }
 
@@ -179,7 +224,7 @@ if (!module.parent) {
 
     var tempBasalFunctions = require('oref0/lib/basal-set-temp');
 
-    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions);
+    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus'], reservoir_data);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));

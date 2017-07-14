@@ -319,7 +319,11 @@ hash-api-secret)
 autoconfigure-device-crud)
   NIGHTSCOUT_HOST=$1
   PLAIN_NS_SECRET=$2
-  API_SECRET=$($self hash-api-secret $2)
+  if [[ "${PLAIN_NS_SECRET,,}" =~ "token=" ]]; then
+    API_SECRET=$2 # store token as API_SECRET
+  else
+    API_SECRET=$($self hash-api-secret $2)
+  fi
   case $1 in
     help|-h|--help)
       setup_help
@@ -331,8 +335,8 @@ autoconfigure-device-crud)
   test -z "$API_SECRET" && setup_help && exit 1;
   openaps device add ns process --require "oper" nightscout ns "NIGHTSCOUT_HOST" "API_SECRET"
   openaps device show ns --json | json \
-    | json -e "this.extra.args = this.extra.args.replace(' NIGHTSCOUT_HOST ', ' $NIGHTSCOUT_HOST ')" \
-    | json -e "this.extra.args = this.extra.args.replace(' API_SECRET', ' $API_SECRET')" \
+    -e "this.extra.args = this.extra.args.replace(' NIGHTSCOUT_HOST ', ' $NIGHTSCOUT_HOST ')" \
+    -e "this.extra.args = this.extra.args.replace(' API_SECRET', ' $API_SECRET')" \
     | openaps import
   ;;
 cull-latest-openaps-treatments)
