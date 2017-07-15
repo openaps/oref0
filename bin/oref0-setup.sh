@@ -657,7 +657,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         mkdir -p $directory-cgm-loop
         if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
             echo $directory-cgm-loop already exists
-        elif openaps init $directory-cgm-loop; then
+        elif openaps init $directory-cgm-loop --nogit; then
             echo $directory-cgm-loop initialized
         else
             die "Can't init $directory-cgm-loop"
