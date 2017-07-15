@@ -499,7 +499,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     mkdir -p $directory
     if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
         echo $directory already exists
-    elif openaps init $directory; then
+    elif openaps init $directory --nogit; then
         echo $directory initialized
     else
         die "Can't init $directory"
