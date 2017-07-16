@@ -382,12 +382,12 @@
   {
     "type": "report",
     "name": "xdrip/glucose.json",
-    "xdrip/glucose.json": {      
-      "device": "xdrip",
-	    "remainder": "",	  
-      "use": "shell",
+    "xdrip/glucose.json": {
+        "device": "xdrip",
+        "remainder": "",
+        "use": "shell",
 	    "json_default": "True",
-      "reporter": "text"
+        "reporter": "text"
     }
   }
 ]
