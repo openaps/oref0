@@ -18,7 +18,7 @@
 
 */
 
-var find_insulin = require('oref0/lib/iob/history');
+var find_insulin = require('../lib/iob/history');
 function usage ( ) {
     console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json>');
 }

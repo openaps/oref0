@@ -15,9 +15,9 @@
   THE SOFTWARE.
 */
 
-var basal = require('oref0/lib/profile/basal');
-var get_iob = require('oref0/lib/iob');
-var detect = require('oref0/lib/determine-basal/cob-autosens');
+var basal = require('../lib/profile/basal');
+var get_iob = require('../lib/iob');
+var detect = require('../lib/determine-basal/cob-autosens');
 
 if (!module.parent) {
     var detectsensitivity = init();

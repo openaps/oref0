@@ -20,7 +20,7 @@
 
 */
 
-var autotune = require('oref0/lib/autotune');
+var autotune = require('../lib/autotune');
 function usage ( ) {
         console.error('usage: ', process.argv.slice(0, 2), '<autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>');
 }

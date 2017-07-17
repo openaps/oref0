@@ -8,7 +8,7 @@ var argv = require('yargs')
   .option('', {
   })
   */
-  .command('mint <type>', 'generate template for import', require('oref0/lib/templates/'))
+  .command('mint <type>', 'generate template for import', require('../lib/templates/'))
   // .choices('type', ['devices', 'reports', 'alias', '*'])
   /*
   .command('devices', 'generate common device loops', function (yargs) {
