@@ -527,17 +527,17 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     mkdir -p $HOME/src/
 
-    # TODO: remove this and switch back to easy_install or pip once decocare dev is released as 0.0.32 or later
+    # TODO: remove this and switch back to easy_install or pip once decocare 0.1.0 is released
     if [ -d "$HOME/src/decocare/" ]; then
-        echo "$HOME/src/decocare/ already exists; pulling latest dev"
-        (cd $HOME/src/decocare && git fetch && git checkout dev && git pull) || die "Couldn't pull latest decocare dev"
+        echo "$HOME/src/decocare/ already exists; pulling latest 0.1.0-dev"
+        (cd $HOME/src/decocare && git fetch && git checkout 0.1.0-dev && git pull) || die "Couldn't pull latest decocare 0.1.0-dev"
     else
-        echo -n "Cloning decocare dev: "
-        (cd $HOME/src && git clone -b dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare dev"
+        echo -n "Cloning decocare 0.1.0-dev: "
+        (cd $HOME/src && git clone -b 0.1.0-dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare 0.1.0-dev"
     fi
-    echo Installing decocare dev
+    echo Installing decocare 0.1.0-dev
     cd $HOME/src/decocare
-    sudo python setup.py develop || die "Couldn't install decocare dev"
+    sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
 
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
