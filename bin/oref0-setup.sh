@@ -523,9 +523,22 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
-    easy_install -U decocare
+    #easy_install -U decocare
 
     mkdir -p $HOME/src/
+
+    # TODO: remove this and switch back to easy_install or pip once decocare dev is released as 0.0.32 or later
+    if [ -d "$HOME/src/decocare/" ]; then
+        echo "$HOME/src/decocare/ already exists; pulling latest dev"
+        (cd $HOME/src/decocare && git fetch && git checkout dev && git pull) || die "Couldn't pull latest decocare dev"
+    else
+        echo -n "Cloning decocare dev: "
+        (cd $HOME/src && git clone -b dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare dev"
+    fi
+    echo Installing decocare dev
+    cd $HOME/src/decocare
+    sudo python setup.py develop || die "Couldn't install decocare dev"
+
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
         (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
