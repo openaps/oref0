@@ -43,6 +43,44 @@ describe('IOB', function ( ) {
     afterDIA.bolussnooze.should.equal(0);
   });
 
+  it('should calculate IOB with Fiasp', function() {
+
+    var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 1, 'minutes': 0}];
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , inputs = {
+        clock: timestamp
+        , history: [{
+        _type: 'Bolus'
+        , amount: 1
+        , timestamp: timestamp
+        }]
+        , profile: {
+          dia: 3, bolussnooze_dia_divisor: 2, basalprofile: basalprofile, current_basal: 1, curve: 'fiasp' }
+
+      };
+
+    var rightAfterBolus = require('../lib/iob')(inputs)[0];
+    rightAfterBolus.iob.should.equal(1);
+    rightAfterBolus.bolussnooze.should.equal(1);
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    hourLater.iob.should.be.lessThan(1);
+    hourLater.bolussnooze.should.be.lessThan(.5);
+    hourLater.iob.should.be.greaterThan(0);
+
+    var afterDIAInputs = inputs;
+    afterDIAInputs.clock = new Date(now + (3 * 60 * 60 * 1000)).toISOString();
+    var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+
+    afterDIA.iob.should.equal(0);
+    afterDIA.bolussnooze.should.equal(0);
+  });
+
+
   it('should snooze fast if bolussnooze_dia_divisor is high', function() {
 
     var now = Date.now()
