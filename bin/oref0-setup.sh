@@ -835,6 +835,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             cd $HOME/src/EdisonVoltage
             make voltage
         fi
+        # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
+        grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
         cd $directory || die "Can't cd $directory"
         for type in edisonbattery; do
             echo importing $type file
