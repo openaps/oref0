@@ -49,6 +49,10 @@ if [ -n "${API_SECRET_READ}" ]; then
    echo "WARNING: API_SECRET_READ is deprecated starting with oref 0.6.x. The Nightscout authentication information is now used from the API_SECRET environment variable"
 fi
 
+  echo "ERROR: API_SECRET is not set when calling oref0-autotune.sh"
+  exit 1
+fi
+
 #if [ -n "${API_SECRET_READ}" ]; then
 #	HASHED_API_SECRET_READ=`echo -n ${API_SECRET_READ}|sha1sum|cut -f1 -d '-'|cut -f1 -d ' '`
 #fi
@@ -161,7 +165,7 @@ echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 
 # Get Nightscout carb and insulin Treatments
 query="find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
-echo $query
+echo Query: $NIGHTSCOUT_HOST/$query
 exec ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.json || die "Couldn't download ns-treatments.json"
 #if [ -n "${HASHED_API_SECRET_READ}" ]; then 
 #	curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
@@ -189,7 +193,7 @@ echo "Grabbing NIGHTSCOUT entries/sgv.json for date range..."
 for i in "${date_list[@]}"
 do 
   query="find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
-  echo $query
+  echo Query: $NIGHTSCOUT_HOST/$query
   exec ns-get host $NIGHTSCOUT_HOST sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
   #if [ -n "${HASHED_API_SECRET_READ}" ]; then 
   #  curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
