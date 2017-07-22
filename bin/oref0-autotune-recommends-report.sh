@@ -65,16 +65,16 @@ printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}s\n" "Parameter"
 printf "%s\n" "-------------------------------------" >> $report_file
 
 # Print ISF, CSF and Carb Ratio Recommendations
-printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "ISF" $isf_current $isf_new >> $report_file
+printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "ISF [mg/dL/U]" $isf_current $isf_new >> $report_file
 if [ $csf_current != null ]; then
-  printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "CSF" $csf_current $csf_new >> $report_file
+  printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "CSF [mg/dL/g]" $csf_current $csf_new >> $report_file
 else
-  printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}.3f\n" "CSF" "n/a" $csf_new >> $report_file
+  printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}.3f\n" "CSF [mg/dL/g]" "n/a" $csf_new >> $report_file
 fi
-printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "Carb Ratio" $carb_ratio_current $carb_ratio_new >> $report_file
+printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "Carb Ratio [g]" $carb_ratio_current $carb_ratio_new >> $report_file
 
 # Print Basal Profile Recommendations
-printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}s\n" "Basal Profile" "" "" >> $report_file
+printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}s\n" "Basal Profile [unit/hour]" "-" "-" >> $report_file
 
 # Build time_list array of H:M in 30 minute increments to mirror pump basal schedule
 time_list=()
