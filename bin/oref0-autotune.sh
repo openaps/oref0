@@ -54,10 +54,6 @@ if [[ -z "$API_SECRET" ]]; then
   exit 1
 fi
 
-#if [ -n "${API_SECRET_READ}" ]; then
-#	HASHED_API_SECRET_READ=`echo -n ${API_SECRET_READ}|sha1sum|cut -f1 -d '-'|cut -f1 -d ' '`
-#fi
-
 # If we are running OS X, we need to use a different version
 # of the 'date' command; the built-in 'date' is BSD, which
 # has fewer options than the linux version.  So the user
@@ -168,11 +164,6 @@ echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 query="find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
 echo Query: $NIGHTSCOUT_HOST/$query
 ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.json || die "Couldn't download ns-treatments.json"
-#if [ -n "${HASHED_API_SECRET_READ}" ]; then 
-#	curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
-#else
-#	#curl ${CURL_FLAGS} -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
-#fi
 ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
 
 # Build date list for autotune iteration
@@ -196,12 +187,6 @@ do
   query="find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
   echo Query: $NIGHTSCOUT_HOST $query
   ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
-  #if [ -n "${HASHED_API_SECRET_READ}" ]; then 
-  #  curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
-  #else
-  #  curl ${CURL_FLAGS} -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
-  #fi
-
   ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
 done
 
