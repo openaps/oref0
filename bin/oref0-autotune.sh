@@ -45,9 +45,13 @@ TERMINAL_LOGGING=true
 RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
 
-if [ -n "${API_SECRET_READ}" ]; then
-	HASHED_API_SECRET_READ=`echo -n ${API_SECRET_READ}|sha1sum|cut -f1 -d '-'|cut -f1 -d ' '`
-fi
+# the output scripts require decimals with . and fail with a locale that uses a , for separating decimals
+LC_NUMERIC="en_US.UTF-8"
+export  LC_NUMERIC
+
+#if [ -n "${API_SECRET_READ}" ]; then
+#	HASHED_API_SECRET_READ=`echo -n ${API_SECRET_READ}|sha1sum|cut -f1 -d '-'|cut -f1 -d ' '`
+#fi
 
 # If we are running OS X, we need to use a different version
 # of the 'date' command; the built-in 'date' is BSD, which
@@ -156,13 +160,14 @@ fi
 echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 
 # Get Nightscout carb and insulin Treatments
-url="$NIGHTSCOUT_HOST/api/v1/treatments.json?find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
-echo $url
-if [ -n "${HASHED_API_SECRET_READ}" ]; then 
-	curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
-else
-	curl ${CURL_FLAGS} -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
-fi
+query="find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
+echo $query
+exec ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-t.json
+#if [ -n "${HASHED_API_SECRET_READ}" ]; then 
+#	curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+#else
+#	#curl ${CURL_FLAGS} -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+#fi
 ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
 
 # Build date list for autotune iteration

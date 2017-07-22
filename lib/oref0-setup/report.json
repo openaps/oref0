@@ -212,7 +212,7 @@
       "clock": "monitor/clock-zoned.json",
       "reporter": "text",
       "json_default": "True",
-      "pumphistory": "monitor/pumphistory-zoned.json",
+      "pumphistory": "monitor/pumphistory-merged.json",
       "device": "iob",
       "remainder": ""
     }
