@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # This script sets up an openaps environment by defining the required devices,
-# reports, and aliases, and optionally enabling it in cron.
-#
+# reports, and aliases, and optionally enabling it in cron, 
+# plus editing other user-entered configuration settings.
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
 #
@@ -34,6 +34,11 @@ function echocolor() { # $1 = string
     printf "${COLOR}$1${NC}\n"
 }
 
+function echocolor-n() { # $1 = string
+    COLOR='\033[1;34m'
+    NC='\033[0m'
+    printf "${COLOR}$1${NC}"
+}
 
 for i in "$@"
 do
@@ -158,7 +163,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "where the myopenaps directory is involved. Type in a directory name and/or just hit enter:"
     read -r
     DIR=$REPLY
-    if [[ -z $DIR ]]; then DIR="myopenaps"; fi
+    if [[ -z $DIR ]]; then
+        DIR="myopenaps"
+    fi
     echocolor "Ok, $DIR it is."
     directory="$(readlink -m $DIR)"
     echo
@@ -186,7 +193,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     else
         read -p 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? ' -r
         ttyport=$REPLY
-        echocolor -n "Ok, "
+        echocolor-n "Ok, "
         if [[ -z "$ttyport" ]]; then
             echo -n Carelink
         else
@@ -408,7 +415,9 @@ if [[ -z "$ttyport" ]]; then
 else
     echo -n TTY $ttyport
 fi
-if [[ "$max_iob" != "0" ]]; then echo -n ", max_iob $max_iob"; fi
+if [[ "$max_iob" != "0" ]]; then
+    echo -n ", max_iob $max_iob";
+fi
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
     echo -n ", max_daily_safety_multiplier $max_daily_safety_multiplier";
 fi
@@ -421,7 +430,9 @@ fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
     echo -n ", min_5m_carbimpact $min_5m_carbimpact";
 fi
-if [[ ! -z "$ENABLE" ]]; then echo -n ", advanced features $ENABLE"; fi
+if [[ ! -z "$ENABLE" ]]; then
+    echo -n ", advanced features $ENABLE";
+fi
 echo
 echo
 
@@ -453,18 +464,34 @@ fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
     echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ ! -z "$ENABLE" ]]; then echo -n " --enable='$ENABLE'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$radio_locale" ]]; then echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$BLE_MAC" ]]; then echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$BT_MAC" ]]; then echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$BT_PEB" ]]; then echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$PUSHOVER_TOKEN" ]]; then echo -n " --pushover_token='$PUSHOVER_TOKEN'" | tee -a $OREF0_RUNAGAIN; fi
-if [[ ! -z "$PUSHOVER_USER" ]]; then echo -n " --pushover_user='$PUSHOVER_USER'" | tee -a $OREF0_RUNAGAIN; fi
+if [[ ! -z "$ENABLE" ]]; then
+    echo -n " --enable='$ENABLE'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$radio_locale" ]]; then
+    echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
+    echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$BLE_MAC" ]]; then
+    echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$BT_MAC" ]]; then
+    echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$BT_PEB" ]]; then
+    echo -n " --btpeb='$BT_PEB'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$PUSHOVER_TOKEN" ]]; then
+    echo -n " --pushover_token='$PUSHOVER_TOKEN'" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$PUSHOVER_USER" ]]; then
+    echo -n " --pushover_user='$PUSHOVER_USER'" | tee -a $OREF0_RUNAGAIN
+fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
-echocolor "Continue? y/[N] "
+echocolor-n "Continue? y/[N] "
 read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
@@ -506,9 +533,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
-        npm list -g oref0 | egrep oref0@0.4.[2-9] || (echo Installing latest oref0 package && sudo npm install -g oref0)
+        npm list -g oref0 | egrep oref0@0.5.0 || (echo Installing latest oref0 package && sudo npm install -g oref0)
     else
-        npm list -g oref0 | egrep oref0@0.5.[0-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+        npm list -g oref0 | egrep oref0@0.5.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
 
     echo Checking mmeowlink installation
@@ -808,6 +835,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $HOME/src/EdisonVoltage
         make voltage
     fi
+        # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
+        grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
     cd $directory || die "Can't cd $directory"
     for type in edisonbattery; do
         echo importing $type file
@@ -954,7 +983,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ $ENABLE =~ microbolus ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop --microbolus ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         else
-            (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'openaps pump-loop' || openaps pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+            (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         fi
         if [[ ! -z "$BT_PEB" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -

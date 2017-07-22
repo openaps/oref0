@@ -19,3 +19,4 @@ else
     echo "finished waiting, let's get some CGM Data"
   fi
 fi
+
