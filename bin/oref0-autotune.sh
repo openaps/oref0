@@ -45,9 +45,8 @@ TERMINAL_LOGGING=true
 RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
 
-# the output scripts require decimals with . and fail with a locale that uses a , for separating decimals
-LC_NUMERIC="en_US.UTF-8"
-export  LC_NUMERIC
+if [ -n "${API_SECRET_READ}" ]; then 
+fi
 
 #if [ -n "${API_SECRET_READ}" ]; then
 #	HASHED_API_SECRET_READ=`echo -n ${API_SECRET_READ}|sha1sum|cut -f1 -d '-'|cut -f1 -d ' '`
@@ -138,12 +137,12 @@ fi
 
 # Get profile for testing copied to home directory. "openaps" is my loop directory name.
 cd $directory && mkdir -p autotune
-cp settings/pumpprofile.json autotune/profile.pump.json
+cp settings/pumpprofile.json autotune/profile.pump.json || die "Cannot copy settings/pumpprofile.json"
 # This allows manual users to be able to run autotune by simply creating a settings/pumpprofile.json file.
 if [[ `uname` == 'Darwin' ]] ; then
-    cp settings/pumpprofile.json settings/profile.json
+    cp settings/pumpprofile.json settings/profile.json || die "Cannot copy settings/pumpprofile.json"
 else
-    cp -up settings/pumpprofile.json settings/profile.json
+    cp -up settings/pumpprofile.json settings/profile.json || die "Cannot copy settings/pumpprofile.json"
 fi
 # If a previous valid settings/autotune.json exists, use that; otherwise start from settings/profile.json
 cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json
@@ -162,7 +161,7 @@ echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 # Get Nightscout carb and insulin Treatments
 query="find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
 echo $query
-exec ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-t.json
+exec ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.json || die "Couldn't download ns-treatments.json"
 #if [ -n "${HASHED_API_SECRET_READ}" ]; then 
 #	curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
 #else
@@ -188,13 +187,14 @@ echo "Grabbing NIGHTSCOUT entries/sgv.json for date range..."
 # Get Nightscout BG (sgv.json) Entries
 for i in "${date_list[@]}"
 do 
-  url="$NIGHTSCOUT_HOST/api/v1/entries/sgv.json?find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
-  echo $url
-  if [ -n "${HASHED_API_SECRET_READ}" ]; then 
-    curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
-  else
-    curl ${CURL_FLAGS} -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
-  fi
+  query="find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
+  echo $query
+  exec ns-get host $NIGHTSCOUT_HOST sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+  #if [ -n "${HASHED_API_SECRET_READ}" ]; then 
+  #  curl ${CURL_FLAGS} -H "api-secret: ${HASHED_API_SECRET_READ}" -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+  #else
+  #  curl ${CURL_FLAGS} -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+  #fi
 
   ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
 done
