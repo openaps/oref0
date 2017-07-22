@@ -18,6 +18,9 @@
 #
 # Example usage: ~/src/oref0/bin/oref0-autotune-recommends-report.sh <OpenAPS Loop Directory Path>
 
+# fix problems with locales with printf output
+LC_NUMERIC=en_US.UTF-8
+
 die() {
   echo "$@"
   exit 1
@@ -74,7 +77,7 @@ fi
 printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "Carb Ratio [g]" $carb_ratio_current $carb_ratio_new >> $report_file
 
 # Print Basal Profile Recommendations
-printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}s\n" "Basal Profile [unit/hour]" "-" "-" >> $report_file
+printf "%-${parameter_width}s| %-${data_width}s|\n" "Basal Profile  [unit/hour]" "-" >> $report_file
 
 # Build time_list array of H:M in 30 minute increments to mirror pump basal schedule
 time_list=()
