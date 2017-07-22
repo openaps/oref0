@@ -46,6 +46,7 @@ RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
 
 if [ -n "${API_SECRET_READ}" ]; then 
+   echo "WARNING: API_SECRET_READ is deprecated starting with oref 0.6.x. The Nightscout authentication information is now used from the API_SECRET environment variable"
 fi
 
 #if [ -n "${API_SECRET_READ}" ]; then
