@@ -523,7 +523,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
-    easy_install -U decocare
+    sudo easy_install -U decocare || die "Can't easy_install decocare"
 
     mkdir -p $HOME/src/
     if [ -d "$HOME/src/oref0/" ]; then
