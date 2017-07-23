@@ -23,6 +23,8 @@ $self host <NIGHTSCOUT_HOST|localhost:1337> <entries.json> [QUERY] [stdout|-]
 EOF
 }
 
+CURL_AUTH=""
+
 # use token authentication if the user has a token set in their API_SECRET environment variable
 if [[ "${API_SECRET,,}" =~ "token=" ]]; then
   if [[ -z ${QUERY} ]]; then
@@ -32,6 +34,7 @@ if [[ "${API_SECRET,,}" =~ "token=" ]]; then
   fi
 else
   REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${QUERY}
+  CURL_AUTH='-H "api-secret: ${API_SECRET}"'
 fi
 
 case $1 in
@@ -54,7 +57,7 @@ case $1 in
     fi
     test -z "$NIGHTSCOUT_HOST" && usage && exit 1;
 
-    curl ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
+    curl ${CURL_AUTH} ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
 
     ;;
   type)
@@ -66,7 +69,7 @@ case $1 in
     ;;
   *)
     test -z "$NIGHTSCOUT_HOST" && usage && exit 1;
-    curl ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
+    curl ${CURL_AUTH} ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
     ;;
 esac
 

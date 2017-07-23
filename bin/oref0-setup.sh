@@ -720,39 +720,39 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
         fi
 
-        # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-        # this will be called when mmtune is use with a WW pump.
-        # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-        # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not found.
-        # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
-        if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
-                openaps alias remove mmtune
-                openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done\""
-        fi
+      # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
+      # this will be called when mmtune is use with a WW pump.
+      # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
+      # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not found.
+      # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
+      if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
+        openaps alias remove mmtune
+        openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done\""
+      fi
         echo Checking kernel for mraa installation
         if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
-            echo "Skipping mraa install for kernel 4.10+"
+        echo "Skipping mraa install for kernel 4.10+"
         else # check if mraa is installed
-            if ! ldconfig -p | grep -q mraa; then # if not installed, install it
-                echo Installing swig etc.
-                sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
-                # TODO: Due to mraa bug https://github.com/intel-iot-devkit/mraa/issues/771 we were not using the master branch of mraa on dev.
-                # TODO: After each oref0 release, check whether there is a new stable MRAA release that is of interest for the OpenAPS community
-                MRAA_RELEASE="v1.7.0" # GitHub hash 8ddbcde84e2d146bc0f9e38504d6c89c14291480
-                if [ -d "$HOME/src/mraa/" ]; then
-                    echo -n "$HOME/src/mraa/ already exists; "
-                    #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
-                    (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE} release" # used for oref0 master
-                else
-                    echo -n "Cloning mraa "
-                    #(echo -n "master branch. " && cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master" # used for oref0 dev
-                    (echo -n "stable release ${MRAA_RELEASE}. " && cd $HOME/src && git clone -b ${MRAA_RELEASE} https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa release ${MRAA_RELEASE}" # used for oref0 master
-                fi
-                # build mraa from source
-                ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
-                make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
-                sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
+        if ! ldconfig -p | grep -q mraa; then # if not installed, install it
+            echo Installing swig etc.
+            sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
+            # TODO: Due to mraa bug https://github.com/intel-iot-devkit/mraa/issues/771 we were not using the master branch of mraa on dev.
+            # TODO: After each oref0 release, check whether there is a new stable MRAA release that is of interest for the OpenAPS community
+            MRAA_RELEASE="v1.7.0" # GitHub hash 8ddbcde84e2d146bc0f9e38504d6c89c14291480
+            if [ -d "$HOME/src/mraa/" ]; then
+                echo -n "$HOME/src/mraa/ already exists; "
+                #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
+                (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE} release" # used for oref0 master
+            else
+                echo -n "Cloning mraa "
+                #(echo -n "master branch. " && cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master" # used for oref0 dev
+                (echo -n "stable release ${MRAA_RELEASE}. " && cd $HOME/src && git clone -b ${MRAA_RELEASE} https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa release ${MRAA_RELEASE}" # used for oref0 master
             fi
+            # build mraa from source
+            ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
+            make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
+            sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
+        fi
         fi
     fi
 
@@ -829,36 +829,36 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Install EdisonVoltage
     if egrep -i "edison" /etc/passwd 2>/dev/null; then
-        echo "Checking if EdisonVoltage is already installed"
-        if [ -d "$HOME/src/EdisonVoltage/" ]; then
-            echo "EdisonVoltage already installed"
-        else
-            echo "Installing EdisonVoltage"
-            cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
-            cd $HOME/src/EdisonVoltage
-            make voltage
-        fi
+    echo "Checking if EdisonVoltage is already installed"
+    if [ -d "$HOME/src/EdisonVoltage/" ]; then
+        echo "EdisonVoltage already installed"
+    else
+        echo "Installing EdisonVoltage"
+        cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+        cd $HOME/src/EdisonVoltage
+        make voltage
+    fi
         # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
         grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
-        cd $directory || die "Can't cd $directory"
-        for type in edisonbattery; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
+    cd $directory || die "Can't cd $directory"
+    for type in edisonbattery; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
     fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
-        sudo apt-get -y install jq
-        sudo pip install libpebble2
-        sudo pip install --user git+git://github.com/mddub/pancreabble.git
-        oref0-bluetoothup
-        sudo rfcomm bind hci0 $BT_PEB
-        for type in pancreabble; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
-        sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
+    sudo apt-get -y install jq
+    sudo pip install libpebble2
+    sudo pip install --user git+git://github.com/mddub/pancreabble.git
+    oref0-bluetoothup
+    sudo rfcomm bind hci0 $BT_PEB
+    for type in pancreabble; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
+    sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
     # configure optional features passed to enact/suggested.json report
     if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
@@ -876,8 +876,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         sudo apt-get -y install jq
         cd $directory || die "Can't cd $directory"
         for type in autotune; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
         done
     fi
 
