@@ -522,6 +522,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         mkdir -p xdrip || die "Can't mkdir xdrip"
     fi
 
+    # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
+    easy_install -U decocare
+
     mkdir -p $HOME/src/
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
