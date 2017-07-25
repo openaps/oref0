@@ -92,8 +92,8 @@ function init() {
         , label: "OpenAPS Detect Sensitivity"
     };
 
-    //detectsensitivity.getLastGlucose = require('oref0/lib/glucose-get-last');
-    //detectsensitivity.detect_sensitivity = require('oref0/lib/determine-basal/determine-basal');
+    //detectsensitivity.getLastGlucose = require('../lib/glucose-get-last');
+    //detectsensitivity.detect_sensitivity = require('../lib/determine-basal/determine-basal');
     return detectsensitivity;
 
 }
