@@ -34,6 +34,8 @@ describe('IOB', function ( ) {
     hourLater.iob.should.be.lessThan(1);
     hourLater.bolussnooze.should.be.lessThan(.5);
     hourLater.iob.should.be.greaterThan(0);
+    hourLater.activity.should.be.greaterThan(0.0085);
+    hourLater.activity.should.be.lessThan(0.009);
 
     var afterDIAInputs = inputs;
     afterDIAInputs.clock = new Date(now + (3 * 60 * 60 * 1000)).toISOString();
@@ -57,8 +59,7 @@ describe('IOB', function ( ) {
         , timestamp: timestamp
         }]
         , profile: {
-          dia: 3, bolussnooze_dia_divisor: 2, basalprofile: basalprofile, current_basal: 1, curve: 'fiasp' }
-
+          dia: 4, bolussnooze_dia_divisor: 2, basalprofile: basalprofile, current_basal: 1, curve: 'fiasp' }
       };
 
     var rightAfterBolus = require('../lib/iob')(inputs)[0];
@@ -68,8 +69,124 @@ describe('IOB', function ( ) {
     var hourLaterInputs = inputs;
     hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
     var hourLater = require('../lib/iob')(hourLaterInputs)[0];
-    hourLater.iob.should.be.lessThan(1);
-    hourLater.bolussnooze.should.be.lessThan(.5);
+    hourLater.iob.should.be.lessThan(0.65);
+    hourLater.bolussnooze.should.be.lessThan(0.65);
+    hourLater.iob.should.be.greaterThan(0);
+    hourLater.activity.should.be.greaterThan(0.006);
+    hourLater.activity.should.be.lessThan(0.007);
+
+    var afterDIAInputs = inputs;
+    afterDIAInputs.clock = new Date(now + (4 * 60 * 60 * 1000)).toISOString();
+    var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+
+    afterDIA.iob.should.equal(0);
+    afterDIA.bolussnooze.should.equal(0);
+  });
+
+
+  it('should calculate IOB with Fiasp peak setting of 55', function() {
+
+    var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 1, 'minutes': 0}];
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , inputs = {
+        clock: timestamp
+        , history: [{
+        _type: 'Bolus'
+        , amount: 1
+        , timestamp: timestamp
+        }]
+        , profile: {
+          dia: 5, insulinPeakTime: 55, bolussnooze_dia_divisor: 2, basalprofile: basalprofile, current_basal: 1, curve: 'fiasp' }
+      };
+
+    var rightAfterBolus = require('../lib/iob')(inputs)[0];
+    rightAfterBolus.iob.should.equal(1);
+    rightAfterBolus.bolussnooze.should.equal(1);
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    hourLater.iob.should.be.lessThan(0.75);
+    hourLater.bolussnooze.should.be.lessThan(0.75);
+    hourLater.iob.should.be.greaterThan(0);
+    hourLater.activity.should.be.greaterThan(0.0065);
+    hourLater.activity.should.be.lessThan(0.007);
+
+    var afterDIAInputs = inputs;
+    afterDIAInputs.clock = new Date(now + (5 * 60 * 60 * 1000)).toISOString();
+    var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+
+    afterDIA.iob.should.equal(0);
+    afterDIA.bolussnooze.should.equal(0);
+  });
+
+  it('should calculate IOB with Fiasp peak setting of 65', function() {
+
+    var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 1, 'minutes': 0}];
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , inputs = {
+        clock: timestamp
+        , history: [{
+        _type: 'Bolus'
+        , amount: 1
+        , timestamp: timestamp
+        }]
+        , profile: {
+          dia: 5, insulinPeakTime: 55, bolussnooze_dia_divisor: 2, basalprofile: basalprofile, current_basal: 1, curve: 'fiasp' }
+      };
+
+    var rightAfterBolus = require('../lib/iob')(inputs)[0];
+    rightAfterBolus.iob.should.equal(1);
+    rightAfterBolus.bolussnooze.should.equal(1);
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    hourLater.iob.should.be.lessThan(0.75);
+    hourLater.bolussnooze.should.be.lessThan(0.75);
+    hourLater.iob.should.be.greaterThan(0);
+    hourLater.activity.should.be.greaterThan(0.0065);
+    hourLater.activity.should.be.lessThan(0.007);
+
+    var afterDIAInputs = inputs;
+    afterDIAInputs.clock = new Date(now + (5 * 60 * 60 * 1000)).toISOString();
+    var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+
+    afterDIA.iob.should.equal(0);
+    afterDIA.bolussnooze.should.equal(0);
+  });
+
+
+  it('should calculate IOB with Novorapid', function() {
+
+    var basalprofile = [{'i': 0, 'start': '00:00:00', 'rate': 1, 'minutes': 0}];
+
+    var now = Date.now()
+      , timestamp = new Date(now).toISOString()
+      , inputs = {
+        clock: timestamp
+        , history: [{
+        _type: 'Bolus'
+        , amount: 1
+        , timestamp: timestamp
+        }]
+        , profile: {
+          dia: 3, bolussnooze_dia_divisor: 2, basalprofile: basalprofile, current_basal: 1, curve: 'novorapid' }
+      };
+
+    var rightAfterBolus = require('../lib/iob')(inputs)[0];
+    rightAfterBolus.iob.should.equal(1);
+    rightAfterBolus.bolussnooze.should.equal(1);
+
+    var hourLaterInputs = inputs;
+    hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+    var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+    hourLater.iob.should.be.lessThan(0.6);
+    hourLater.bolussnooze.should.be.lessThan(.6);
     hourLater.iob.should.be.greaterThan(0);
 
     var afterDIAInputs = inputs;
