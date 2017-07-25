@@ -54,7 +54,7 @@ describe('IOB', function() {
         afterDIA.bolussnooze.should.equal(0);
     });
 
-    it('should calculate IOB with Fiasp', function() {
+    it('should calculate IOB with Ultra-fast curve', function() {
 
         var basalprofile = [{
             'i': 0,
@@ -77,7 +77,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
-                    curve: 'ultrafast'
+                    curve: 'ultra-rapid'
                 }
             };
 
@@ -103,7 +103,7 @@ describe('IOB', function() {
     });
 
 
-    it('should calculate IOB with Fiasp peak setting of 55', function() {
+    it('should calculate IOB with Ultra-fast peak setting of 55', function() {
 
         var basalprofile = [{
             'i': 0,
@@ -127,7 +127,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
-                    curve: 'ultrafast'
+                    curve: 'ultra-rapid'
                 }
             };
 
@@ -152,7 +152,7 @@ describe('IOB', function() {
         afterDIA.bolussnooze.should.equal(0);
     });
 
-    it('should calculate IOB with Fiasp peak setting of 65', function() {
+    it('should calculate IOB with Ultra-fast curve peak setting of 65', function() {
 
         var basalprofile = [{
             'i': 0,
@@ -176,7 +176,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
-                    curve: 'ultrafast'
+                    curve: 'ultra-rapid'
                 }
             };
 
@@ -203,7 +203,7 @@ describe('IOB', function() {
         afterDIA.bolussnooze.should.equal(0);
     });
 
-    it('should calculate IOB with Fiasp peak setting of 75', function() {
+    it('should calculate IOB with Ultra-fast curve peak setting of 75', function() {
 
         var basalprofile = [{
             'i': 0,
@@ -227,7 +227,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
-                    curve: 'ultrafast'
+                    curve: 'ultra-rapid'
                 }
             };
 
@@ -278,7 +278,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
-                    curve: 'fast-acting'
+                    curve: 'rapid-acting'
                 }
             };
 
