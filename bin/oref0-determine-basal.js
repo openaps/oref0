@@ -222,7 +222,7 @@ if (!module.parent) {
     console.error(JSON.stringify(currenttemp));
     //console.error(JSON.stringify(profile));
     
-    var tempBasalFunctions = require('../lib/basal-set-temp');
+    var tempBasalFunctions = require('oref0/lib/basal-set-temp');
 
     rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus'], reservoir_data);
 
@@ -241,8 +241,8 @@ function init() {
         , label: "OpenAPS Determine Basal"
     };
 
-    determinebasal.getLastGlucose = require('../lib/glucose-get-last');
-    determinebasal.determine_basal = require('../lib/determine-basal/determine-basal');
+    determinebasal.getLastGlucose = require('oref0/lib/glucose-get-last');
+    determinebasal.determine_basal = require('oref0/lib/determine-basal/determine-basal');
     return determinebasal;
 
 }

@@ -16,7 +16,7 @@
 
 */
 
-var generate = require('../lib/profile/');
+var generate = require('oref0/lib/profile/');
 function usage ( ) {
         console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>] [<temptargets.json>] [--model model.json] [--autotune autotune.json]');
 }

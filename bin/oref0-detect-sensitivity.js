@@ -15,9 +15,9 @@
   THE SOFTWARE.
 */
 
-var basal = require('../lib/profile/basal');
-var get_iob = require('../lib/iob');
-var detect = require('../lib/determine-basal/cob-autosens');
+var basal = require('oref0/lib/profile/basal');
+var get_iob = require('oref0/lib/iob');
+var detect = require('oref0/lib/determine-basal/cob-autosens');
 
 if (!module.parent) {
     var detectsensitivity = init();
@@ -92,8 +92,8 @@ function init() {
         , label: "OpenAPS Detect Sensitivity"
     };
 
-    //detectsensitivity.getLastGlucose = require('../lib/glucose-get-last');
-    //detectsensitivity.detect_sensitivity = require('../lib/determine-basal/determine-basal');
+    //detectsensitivity.getLastGlucose = require('oref0/lib/glucose-get-last');
+    //detectsensitivity.detect_sensitivity = require('oref0/lib/determine-basal/determine-basal');
     return detectsensitivity;
 
 }

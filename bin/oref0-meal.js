@@ -19,7 +19,7 @@
 
 */
 
-var generate = require('../lib/meal');
+var generate = require('oref0/lib/meal');
 function usage ( ) {
         console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [carbhistory.json]');
 }
