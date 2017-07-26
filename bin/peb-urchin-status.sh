@@ -23,11 +23,11 @@ if [[ $(jq .notify_temp_basal pancreoptions.json) = "true" ]]; then
    fi
 fi
 
-#Notification Status
-if [[ $(jq .notify_insulinreq pancreoptions.json) = "true" || $(jq .notify_carbsreq pancreoptions.json) = "true" ]]; then
-   openaps use pbbl handle_notifications
-fi
-
+# Notification Status. It will parse pancreoptions.json for notify_insulinreq and notify_carbsreq. 
+# TODO: also add Set Temp Basal to handle_notification
+#if [[ $(jq .notify_insulinreq pancreoptions.json) = "true" || $(jq .notify_carbsreq pancreoptions.json) = "true" ]]; then
+openaps use pbbl handle_notifications monitor/pebble_notification 15
+#fi
 
 #decide to run urchin loop or not
 if [[ $(jq .urchin_loop_on pancreoptions.json) = "true" ]]; then
