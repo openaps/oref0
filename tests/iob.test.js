@@ -175,6 +175,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 5,
                     insulinPeakTime: 65,
+                    useCustomPeakTime: true,
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
@@ -226,6 +227,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 5,
                     insulinPeakTime: 75,
+                    useCustomPeakTime: true,
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
@@ -278,6 +280,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 6,
                     insulinPeakTime: 44,
+                    useCustomPeakTime: true,
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
