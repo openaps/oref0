@@ -551,12 +551,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 #fi
 
     cd $directory || die "Can't cd $directory"
-    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
+    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
         preferences_from_args=()
         if [[ "$max_iob" != "0" ]]; then
-        preferences_from_args+="\"max_iob\":$max_iob "
+            preferences_from_args+="\"max_iob\":$max_iob "
         fi
         if [[ ! -z "$max_daily_safety_multiplier" ]]; then
             preferences_from_args+="\"max_daily_safety_multiplier\":$max_daily_safety_multiplier "
