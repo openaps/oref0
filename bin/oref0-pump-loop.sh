@@ -309,10 +309,11 @@ function mdt_get_bg {
 }
 # make sure we can talk to the pump and get a valid model number
 function preflight {
+    echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( openaps report invoke settings/model.json || openaps report invoke settings/model.json ) 2>&1 >/dev/null | tail -1 \
     && egrep -q "[57](15|22|23|54)" settings/model.json \
-    && echo -n "Preflight OK. "
+    && echo -n "OK. "
 }
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
