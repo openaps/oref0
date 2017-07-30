@@ -58,8 +58,7 @@ smb_main() {
                     ))
             fi
             ) \
-            && refresh_profile \
-            && refresh_pumphistory_24h \
+            && ( refresh_profile; refresh_pumphistory_24h; true ) \
             && echo Completed supermicrobolus pump-loop at $(date): \
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
