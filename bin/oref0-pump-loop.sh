@@ -366,7 +366,7 @@ function wait_for_silence {
       ( echo -n .; sleep 2; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
       ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
       ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) )
-    ) 2>&1 | tail -5 \
+    ) 2>&1 | tail -2 \
         && echo -n "Radio ok. " || (echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune)
     echo -n "Listening: "
     for i in $(seq 1 800); do
