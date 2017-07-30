@@ -361,7 +361,7 @@ function wait_for_silence {
     fi
     # check radio twice, and mmtune if both checks fail
     ( ( any_pump_comms 1 | grep -q comms ) || ( any_pump_comms 1 | grep -q comms) ) 2>&1 | tail -1 \
-        && echo -n "Radio ok. " || (echo -n "Radio check failed. "; any_pump_comms 1; mmtune)
+        && echo -n "Radio ok. " || (echo -n "Radio check failed. "; mmtune)
     echo -n "Listening: "
     for i in $(seq 1 800); do
         echo -n .
