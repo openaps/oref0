@@ -360,9 +360,9 @@ function wait_for_silence {
         waitfor=$1
     fi
     # check radio thrice, and mmtune if all checks fail
-    ( ( any_pump_comms 1 | grep -q comms ) || \
-      ( any_pump_comms 1 | grep -q comms ) || \
-      ( any_pump_comms 1 | grep -q comms ) \
+    ( ( any_pump_comms 1 | grep -qi comms ) || \
+      ( any_pump_comms 1 | grep -qi comms ) || \
+      ( any_pump_comms 1 | grep -qi comms ) \
     ) 2>&1 | tail -1 \
         && echo -n "Radio ok. " || (echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune)
     echo -n "Listening: "
