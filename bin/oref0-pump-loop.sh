@@ -35,7 +35,7 @@ smb_main() {
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_bg \
         && wait_for_silence $upto30s \
-        && preflight \
+        && ( preflight || preflight ) \
         && if_mdt_get_bg \
         && refresh_old_pumphistory_24h \
         && refresh_old_pumphistory \
