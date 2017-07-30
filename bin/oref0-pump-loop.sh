@@ -324,7 +324,7 @@ function mmtune {
     echo -n "Listening for 30s silence before mmtuning: "
     for i in $(seq 1 800); do
         echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for 30 2>/dev/null | egrep -v subg | egrep No \
+        any_pump_comms 30 2>/dev/null | egrep -v subg | egrep No \
         && break
     done
     echo {} > monitor/mmtune.json
