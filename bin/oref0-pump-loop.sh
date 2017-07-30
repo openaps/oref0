@@ -360,8 +360,9 @@ function wait_for_silence {
     else
         waitfor=$1
     fi
-    # check radio thrice, and mmtune if all checks fail
+    # check radio multiple times, and mmtune if all checks fail
     ( ( any_pump_comms 1 | grep -qi comms ) || \
+      ( any_pump_comms 1 | grep -qi comms ) || \
       ( any_pump_comms 1 | grep -qi comms ) || \
       ( any_pump_comms 1 | grep -qi comms ) \
     ) 2>&1 | tail -1 \
