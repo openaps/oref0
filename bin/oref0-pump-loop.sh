@@ -361,12 +361,12 @@ function wait_for_silence {
         waitfor=$1
     fi
     # check radio multiple times, and mmtune if all checks fail
-    ( ( any_pump_comms 1 | grep -qi comms ) || \
-      ( echo -n .; sleep 1; any_pump_comms 1 | grep -qi comms ) || \
-      ( echo -n .; sleep 2; any_pump_comms 1 | grep -qi comms ) || \
-      ( echo -n .; sleep 4; any_pump_comms 1 | grep -qi comms ) || \
-      ( echo -n .; sleep 8; any_pump_comms 1 | grep -qi comms ) \
-    ) 2>&1 | tail -1 \
+    ( ( out=$(any_pump_comms 1) && echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 1; out=$(any_pump_comms 1) && echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 2; out=$(any_pump_comms 1) && echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 4; out=$(any_pump_comms 1) && echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 8; out=$(any_pump_comms 1) && echo $out | grep -qi comms || (echo $out; false) )
+    ) 2>&1 | tail -5 \
         && echo -n "Radio ok. " || (echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune)
     echo -n "Listening: "
     for i in $(seq 1 800); do
