@@ -64,6 +64,7 @@ smb_main() {
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
     ); then
+        echo -n "SMB pump-loop failed. "
         maybe_mmtune
         echo Unsuccessful supermicrobolus pump-loop at $(date)
     fi
@@ -360,7 +361,7 @@ function wait_for_silence {
     fi
     # check radio twice, and mmtune if both checks fail
     ( ( any_pump_comms 1 | grep -q comms ) || ( any_pump_comms 1 | grep -q comms) ) 2>&1 | tail -1 \
-        && echo -n "Radio ok. " || (any_pump_comms 1; mmtune)
+        && echo -n "Radio ok. " || (echo -n "Radio check failed. "; any_pump_comms 1; mmtune)
     echo -n "Listening: "
     for i in $(seq 1 800); do
         echo -n .
