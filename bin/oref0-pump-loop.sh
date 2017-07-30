@@ -347,6 +347,10 @@ function maybe_mmtune {
     && mmtune
 }
 
+function any_pump_comms {
+    mmeowlink-any-pump-comms.py --port $port --wait-for $1
+}
+
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
     if [ -z $1 ]; then
@@ -354,11 +358,13 @@ function wait_for_silence {
     else
         waitfor=$1
     fi
-    ((mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms) 2>&1 | tail -1 && echo -n "Radio ok. " || mmtune) \
-    && echo -n "Listening: "
+    # check radio twice, and mmtune if both checks fail
+    ( ( any_pump_comms 1 | grep -q comms ) || ( any_pump_comms 1 | grep -q comms) ) 2>&1 | tail -1 \
+        && echo -n "Radio ok. " || mmtune
+    echo -n "Listening: "
     for i in $(seq 1 800); do
         echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
+        any_pump_comms $waitfor 2>/dev/null | egrep -v subg | egrep No \
         && break
     done
 }
