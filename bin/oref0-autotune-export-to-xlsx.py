@@ -137,9 +137,9 @@ def excel_init_workbook(workbook):
 # sort filenames. First on date and then on run number
 # put settings/profile.js
 def sortedFilenames():
-    filelist=glob.glob("settings/profile.json")
-    filelist=filelist+glob.glob("settings/pumpprofile.json")
-    profiles=glob.glob("autotune/profile*.json")
+    filelist=glob.glob("../settings/profile.json")
+    filelist=filelist+glob.glob("../settings/pumpprofile.json")
+    profiles=glob.glob("profile*.json")
     listdateandrun=[]
     for i in profiles:
         date, run = parseDateAndRun(i)
