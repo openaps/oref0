@@ -316,7 +316,9 @@ function preflight {
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
     # TODO: remove reset_spi_serial.py once oref0_init_pump_comms.py is fixed to do it correctly
-    reset_spi_serial.py 2>/dev/null
+    if [[ $port == "/dev/spidev5.1" ]]; then
+        reset_spi_serial.py 2>/dev/null
+    fi
     oref0_init_pump_comms.py
     echo -n "Listening for 30s silence before mmtuning: "
     for i in $(seq 1 800); do
