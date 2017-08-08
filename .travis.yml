@@ -3,5 +3,6 @@ sudo: false
 node_js:
   - "0.10"
   - "0.12"
+  - "8.1.4"
 script: make travis
 after_script: make report

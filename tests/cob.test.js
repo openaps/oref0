@@ -34,7 +34,7 @@ describe('cobhistory', function() {
 
     //function determine_basal(glucose_status, currenttemp, iob_data, profile)
 
-    it('should dedupe entries', function() {
+    it('should decay COB', function() {
         var inputs = {};
         inputs.pumphistory = ph;
         inputs.treatments = treatments;
