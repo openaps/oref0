@@ -12,7 +12,7 @@ main() {
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
         && touch monitor/pump_loop_enacted -r monitor/glucose.json \
-        && refresh_temp_and_enact \
+        && ( refresh_temp_and_enact || ( smb_verify_status && refresh_temp_and_enact ) ) \
         && refresh_pumphistory_and_enact \
         && refresh_profile \
         && refresh_pumphistory_24h \
