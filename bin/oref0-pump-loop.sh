@@ -389,7 +389,10 @@ function gather {
     && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 >/dev/null | tail -1 \
     && echo -n ed \
     && merge_pumphistory \
-    && echo " pumphistory" || (echo; exit 1) 2>/dev/null
+    && echo -n " pumphistory" \
+    && openaps report invoke monitor/meal.json 2>&1 >/dev/null | tail -1 \
+    && echo " and meal.json" \
+    || (echo; exit 1) 2>/dev/null
 }
 
 function merge_pumphistory {
