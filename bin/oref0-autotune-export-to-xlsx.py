@@ -155,7 +155,7 @@ PROFILE_FIELDS=['max_iob', 'carb_ratio', 'csf', 'max_basal', 'sens']
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Export oref0 autotune files to Microsoft Excel')
-    parser.add_argument('-d', '--dir', help='autotune directory', default='.')
+    parser.add_argument('-d', '--dir', help='openaps directory', default='.')
     parser.add_argument('-o', '--output', help='default autotune.xlsx', default='autotune.xlsx')
     parser.add_argument('--version', action='version', version='%(prog)s 0.0.4-dev')
     args = parser.parse_args()
