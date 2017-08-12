@@ -522,9 +522,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         mkdir -p xdrip || die "Can't mkdir xdrip"
     fi
 
-    # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
-	
-    sudo easy_install -U decocare || die "Can't easy_install decocare"
+    # check whether decocare-0.0.31 has been installed
+    if ! ls /usr/local/lib/python2.7/dist-packages/decocare-0.0.31-py2.7.egg/ 2>/dev/null >/dev/null; then
+        # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
+        sudo easy_install -U decocare || die "Can't easy_install decocare"
+    fi
 
     mkdir -p $HOME/src/
     if [ -d "$HOME/src/oref0/" ]; then
