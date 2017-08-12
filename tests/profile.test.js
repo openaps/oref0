@@ -32,10 +32,8 @@ describe('Profile', function ( ) {
         }
     };
 
-	var profile = require('../lib/profile')(baseInputs);
-
-    it('should should create a profile from inputs', function () {    
-        console.log(profile);
+    it('should should create a profile from inputs', function () {
+        var profile = require('../lib/profile')(baseInputs);
         profile.max_iob.should.equal(0);
         profile.dia.should.equal(3);
         profile.sens.should.equal(100);
@@ -45,25 +43,9 @@ describe('Profile', function ( ) {
         profile.carb_ratio.should.equal(20);
     });
 
-    it('should should support multi-ISF profiles', function () {
-        
-		var isf = {
-            sensitivities: [
-                { offset: 0, i: 0, x: 0, start: '00:00:00', sensitivity: 100 },
-                { offset: 60, i: 1, x: 1, start: '01:00:00', sensitivity: 101 }
-            ]};
-
-        var isfLookup = require('../lib/profile/isf');
-        
-        var result = isfLookup.isfLookup(isf,new Date('2016-06-19T01:00:00+00:00'));
-
-        result.should.equal(101);
-        
-    });
-    
     it('should adjust carbratio with carbratio_adjustmentratio', function () {
 
-//        var profile = require('../lib/profile')(baseInputs);
+        var profile = require('../lib/profile')(baseInputs);
         profile.carb_ratio.should.equal(20);
 
         var profileA = require('../lib/profile')(_.merge({}, baseInputs, {
