@@ -32,7 +32,7 @@ smb_main() {
     prep
     if ! ( \
         prep
-	# checking to see if the log reports out that it's on % basal type, which blocks remote temps being set
+        # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
         if grep -q '"Temp":"percent"' monitor/temp_basal.json; then
             echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
     	fi
