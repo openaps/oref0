@@ -35,7 +35,7 @@ smb_main() {
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_bg \
         && wait_for_silence $upto30s \
-        && preflight \
+        && ( preflight || preflight ) \
         && if_mdt_get_bg \
         && refresh_old_pumphistory_24h \
         && refresh_old_pumphistory \
@@ -58,12 +58,12 @@ smb_main() {
                     ))
             fi
             ) \
-            && refresh_profile \
-            && refresh_pumphistory_24h \
+            && ( refresh_profile; refresh_pumphistory_24h; true ) \
             && echo Completed supermicrobolus pump-loop at $(date): \
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
     ); then
+        echo -n "SMB pump-loop failed. "
         maybe_mmtune
         echo Unsuccessful supermicrobolus pump-loop at $(date)
     fi
@@ -196,6 +196,7 @@ function smb_verify_status {
     && if grep -q '"suspended": true' monitor/status.json; then
         echo -n "Pump suspended; "
         unsuspend_if_no_temp
+        gather
     fi
 }
 
@@ -307,21 +308,25 @@ function mdt_get_bg {
 }
 # make sure we can talk to the pump and get a valid model number
 function preflight {
+    echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( openaps report invoke settings/model.json || openaps report invoke settings/model.json ) 2>&1 >/dev/null | tail -1 \
     && egrep -q "[57](15|22|23|54)" settings/model.json \
-    && echo -n "Preflight OK. "
+    && echo -n "OK. " \
+    || ( echo -n "fail. "; false )
 }
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
     # TODO: remove reset_spi_serial.py once oref0_init_pump_comms.py is fixed to do it correctly
-    reset_spi_serial.py 2>/dev/null
+    if [[ $port == "/dev/spidev5.1" ]]; then
+        reset_spi_serial.py 2>/dev/null
+    fi
     oref0_init_pump_comms.py
     echo -n "Listening for 30s silence before mmtuning: "
     for i in $(seq 1 800); do
         echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for 30 2>/dev/null | egrep -v subg | egrep No \
+        any_pump_comms 30 2>/dev/null | egrep -v subg | egrep No \
         && break
     done
     echo {} > monitor/mmtune.json
@@ -333,15 +338,19 @@ function mmtune {
     if [[ $rssi_wait > 1 ]]; then
         echo "waiting for $rssi_wait second silence before continuing"
         wait_for_silence $rssi_wait
+        echo "Done waiting for rigs with better signal."
     fi
 }
 
 function maybe_mmtune {
-    # mmtune ~ 25% of the time
-    [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
-    && echo "Waiting for 30s silence before mmtuning" \
-    && wait_for_silence 30 \
+    # mmtune 30% of the time
+    [[ $(( ( RANDOM % 100 ) )) > 70 ]] \
+    && echo "mmtuning" \
     && mmtune
+}
+
+function any_pump_comms {
+    mmeowlink-any-pump-comms.py --port $port --wait-for $1
 }
 
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
@@ -351,11 +360,18 @@ function wait_for_silence {
     else
         waitfor=$1
     fi
-    ((mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms) 2>&1 | tail -1 && echo -n "Radio ok. " || mmtune) \
-    && echo -n "Listening: "
+    # check radio multiple times, and mmtune if all checks fail
+    ( ( out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 1; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 2; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) )
+    ) 2>&1 | tail -2 \
+        && echo -n "Radio ok. " || (echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune)
+    echo -n "Listening: "
     for i in $(seq 1 800); do
         echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
+        any_pump_comms $waitfor 2>/dev/null | egrep -v subg | egrep No \
         && break
     done
 }
