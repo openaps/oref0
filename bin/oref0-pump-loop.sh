@@ -32,7 +32,7 @@ smb_main() {
     prep
     if ! ( \
         prep
-	# checking to see if the log reports out that it's on % basal type, which blocks remote temps being set
+        # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
         if grep -q '"Temp":"percent"' monitor/temp_basal.json; then
             echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
     	fi
@@ -389,7 +389,10 @@ function gather {
     && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 >/dev/null | tail -1 \
     && echo -n ed \
     && merge_pumphistory \
-    && echo " pumphistory" || (echo; exit 1) 2>/dev/null
+    && echo -n " pumphistory" \
+    && openaps report invoke monitor/meal.json 2>&1 >/dev/null | tail -1 \
+    && echo " and meal.json" \
+    || (echo; exit 1) 2>/dev/null
 }
 
 function merge_pumphistory {
