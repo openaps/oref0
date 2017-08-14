@@ -525,6 +525,19 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     mkdir -p $HOME/src/
+
+    # TODO: remove this and switch back to easy_install or pip once decocare 0.1.0 is released
+    if [ -d "$HOME/src/decocare/" ]; then
+        echo "$HOME/src/decocare/ already exists; pulling latest 0.1.0-dev"
+        (cd $HOME/src/decocare && git fetch && git checkout 0.1.0-dev && git pull) || die "Couldn't pull latest decocare 0.1.0-dev"
+    else
+        echo -n "Cloning decocare 0.1.0-dev: "
+        (cd $HOME/src && git clone -b 0.1.0-dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare 0.1.0-dev"
+    fi
+    echo Installing decocare 0.1.0-dev
+    cd $HOME/src/decocare
+    sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
+
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
         (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
