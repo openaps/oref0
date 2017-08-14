@@ -20,7 +20,10 @@ main() {
         && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
         && echo); do
 
-            # On a random subset of failures, wait 45s and mmtune
+            if grep -q "percent" monitor/temp_basal.json; then
+                echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
+            fi
+            # On a random subset of failures, mmtune
             echo Error, retrying \
             && maybe_mmtune
             sleep 5
@@ -32,6 +35,7 @@ smb_main() {
     prep
     if ! ( \
         prep
+        # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_bg \
         && wait_for_silence $upto30s \
@@ -64,6 +68,10 @@ smb_main() {
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
     ); then
+        echo -n "SMB pump-loop failed. "
+        if grep -q "percent" monitor/temp_basal.json; then
+            echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
+    	fi
         maybe_mmtune
         echo Unsuccessful supermicrobolus pump-loop at $(date)
     fi
