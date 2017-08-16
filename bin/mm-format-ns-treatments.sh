@@ -27,7 +27,7 @@ model=$(json -f $MODEL)
 
 oref0-normalize-temps $HISTORY  \
   | json -e "this.medtronic = 'mm://openaps/$self/' + (this._type || this.eventType);" \
-    -e "this.created_at = this.created_at ? this.created_at : this.timestamp" \
+    -e "this.created_at = new Date(Date.parse(this.created_at ? this.created_at : this.timestamp)).toISOString()"\
     -e "this.enteredBy = 'openaps://medtronic/$model'" \
     -e "if (this.glucose && !this.glucoseType && this.glucose > 0) { this.glucoseType = this.enteredBy }" \
     -e "this.eventType = (this.eventType ?  this.eventType : 'Note')" \
