@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script sets up an openaps environment by defining the required devices,
-# reports, and aliases, and optionally enabling it in cron, 
+# reports, and aliases, and optionally enabling it in cron,
 # plus editing other user-entered configuration settings.
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
@@ -967,7 +967,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-truncate-git-history" || echo "* * * * * cd $directory-cgm-loop && oref0-truncate-git-history") | crontab -
             (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
         elif [[ ${CGM,,} =~ "xdrip" ]]; then
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip.sh'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip.sh' || monitor-xdrip.sh | tee -a /var/log/openaps/xdrip-loop.log") | crontab -
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip' || monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log") | crontab -
         (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
         elif [[ $ENABLE =~ dexusb ]]; then
             (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot cd $directory && /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
