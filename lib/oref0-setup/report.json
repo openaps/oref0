@@ -18,7 +18,7 @@
       "use": "shell",
       "reporter": "JSON",
       "device": "ns",
-      "remainder": "-18hours",
+      "remainder": "-36hours",
       "json_default": "True"
     },
     "name": "monitor/carbhistory.json"
