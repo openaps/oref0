@@ -492,7 +492,7 @@ function low_battery_wait {
     if (! ls monitor/edison-battery.json 2>/dev/null >/dev/null); then
         echo Edison battery level not found
     elif (jq --exit-status ".battery >= 98 or (.battery <= 65 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
-        echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-65%)"
+        echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-70%)"
     elif (jq --exit-status ".battery < 98" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; "
         wait_for_bg
