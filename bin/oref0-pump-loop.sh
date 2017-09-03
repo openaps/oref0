@@ -348,14 +348,14 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    if ( find monitor/ -mmin -15 | egrep -q "mmtune|pump_loop_completed" ); then
+    if ( find monitor/ -mmin -15 | egrep -q "pump_loop_completed" ); then
         # mmtune ~ 25% of the time
         [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
         && echo "Waiting for 30s silence before mmtuning" \
         && wait_for_silence 30 \
         && mmtune
     else
-        echo "mmtune.json and pump_loop_completed more than 15m old; waiting for 30s silence before mmtuning"
+        echo "pump_loop_completed more than 15m old; waiting for 30s silence before mmtuning"
         wait_for_silence 30
         mmtune
     fi
