@@ -348,7 +348,7 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    if ( find monitor/ -mmin -15 -size | egrep -q "mmtune|pump_loop_completed" ); then
+    if ( find monitor/ -mmin -15 | egrep -q "mmtune|pump_loop_completed" ); then
         # mmtune ~ 25% of the time
         [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
         && echo "Waiting for 30s silence before mmtuning" \
