@@ -454,7 +454,7 @@ function refresh_smb_temp_and_enact {
     setglucosetimestamp
     # only smb_enact_temp if we haven't successfully completed a pump_loop recently
     # (no point in enacting a temp that's going to get changed after we see our last SMB)
-    if ( find monitor/ -mmin -7 | grep -q monitor/pump_loop_completed ); then
+    if ( find monitor/ -mmin +7 | grep -q monitor/pump_loop_completed ); then
         echo "pump_loop_completed more than 7m ago: setting temp before refreshing pumphistory. "
         smb_enact_temp
     else
