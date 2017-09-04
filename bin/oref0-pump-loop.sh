@@ -488,19 +488,6 @@ function refresh_profile {
     || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed)
 }
 
-function low_battery_wait {
-    if (! ls monitor/edison-battery.json 2>/dev/null >/dev/null); then
-        echo Edison battery level not found
-    elif (jq --exit-status ".battery >= 98 or (.battery <= 65 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
-        echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-70%)"
-    elif (jq --exit-status ".battery < 98" monitor/edison-battery.json > /dev/null); then
-        echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; "
-        wait_for_bg
-    else
-        echo Edison battery level unknown
-    fi
-}
-
 function wait_for_bg {
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo "MDT CGM configured; not waiting"
@@ -526,7 +513,7 @@ function refresh_pumphistory_24h {
         echo -n "Edison battery level not found. "
         autosens_freq=15
     elif (jq --exit-status ".battery >= 98 or (.battery <= 70 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
-        echo -n "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-65%). "
+        echo -n "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-70%). "
         autosens_freq=15
     elif (jq --exit-status ".battery < 98" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%. "
