@@ -458,7 +458,7 @@ function refresh_smb_temp_and_enact {
         echo "pump_loop_completed more than 7m ago: setting temp before refreshing pumphistory. "
         smb_enact_temp
     else
-        echo -n "pump_loop_completed less than 5m ago. "
+        echo -n "pump_loop_completed less than 7m ago. "
     fi
 }
 
