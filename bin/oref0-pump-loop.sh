@@ -452,11 +452,10 @@ function refresh_old_profile {
 function refresh_smb_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     setglucosetimestamp
-    if ( find monitor/ -newer monitor/pump_loop_completed | grep -q glucose.json ); then
-        echo "glucose.json newer than pump_loop_completed. "
-        smb_enact_temp
-    elif ( find monitor/ -mmin -5 -size +5c | grep -q monitor/pump_loop_completed ); then
-        echo "pump_loop_completed more than 5m ago. "
+    # only smb_enact_temp if we haven't successfully completed a pump_loop recently
+    # (no point in enacting a temp that's going to get changed after we see our last SMB)
+    if ( find monitor/ -mmin -7 | grep -q monitor/pump_loop_completed ); then
+        echo "pump_loop_completed more than 7m ago: setting temp before refreshing pumphistory. "
         smb_enact_temp
     else
         echo -n "pump_loop_completed less than 5m ago. "
