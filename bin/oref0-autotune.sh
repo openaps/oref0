@@ -161,7 +161,7 @@ fi
 echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 
 # Get Nightscout carb and insulin Treatments
-query="find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
+query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$START_DATE -4 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$END_DATE +1 days" -Iminutes`"
 echo Query: $NIGHTSCOUT_HOST/$query
 ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.json || die "Couldn't download ns-treatments.json"
 ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
@@ -184,7 +184,7 @@ echo "Grabbing NIGHTSCOUT entries/sgv.json for date range..."
 # Get Nightscout BG (sgv.json) Entries
 for i in "${date_list[@]}"
 do 
-  query="find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
+  query="find%5Bdate%5D%5B%24gte%5D=`(date -d $i +%s | tr -d '\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
   echo Query: $NIGHTSCOUT_HOST $query
   ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
   ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
