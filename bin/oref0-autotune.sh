@@ -116,6 +116,9 @@ case $i in
 esac
 done
 
+# remove any trailing / from NIGHTSCOUT_HOST
+NIGHTSCOUT_HOST=$(echo $NIGHTSCOUT_HOST | sed 's/\/$//g')
+
 if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" ]]; then
     echo "Usage: oref0-autotune <--dir=myopenaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--runs=number_of_runs] [--xlsx=autotune.xlsx] [--log=(true)|false]"
 exit 1
