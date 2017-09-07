@@ -137,7 +137,7 @@ else
   exit 1
 fi
 
-# Get profile for testing copied to home directory. "openaps" is my loop directory name.
+# Get profile for testing copied to home directory.
 cd $directory && mkdir -p autotune
 cp settings/pumpprofile.json autotune/profile.pump.json || die "Cannot copy settings/pumpprofile.json"
 # This allows manual users to be able to run autotune by simply creating a settings/pumpprofile.json file.
