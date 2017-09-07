@@ -204,8 +204,8 @@ do
     cp profile.json profile.$run_number.$i.json
     # Autotune Prep (required args, <pumphistory.json> <profile.json> <glucose.json>), output prepped glucose 
     # data or <autotune/glucose.json> below
-    echo "oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json"
-    oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json > autotune.$run_number.$i.json \
+    echo "oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json profile.pump.json > autotune.$run_number.$i.json"
+    oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json profile.pump.json > autotune.$run_number.$i.json \
         || die "Could not run oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json"
     
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 
