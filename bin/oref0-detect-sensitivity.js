@@ -17,7 +17,7 @@
 
 var basal = require('oref0/lib/profile/basal');
 var get_iob = require('oref0/lib/iob');
-var detect = require('oref0/lib/determine-basal/cob-autosens');
+var detect = require('oref0/lib/determine-basal/autosens');
 
 if (!module.parent) {
     var detectsensitivity = init();
@@ -27,9 +27,10 @@ if (!module.parent) {
     var isf_input = process.argv.slice(4, 5).pop()
     var basalprofile_input = process.argv.slice(5, 6).pop()
     var profile_input = process.argv.slice(6, 7).pop();
+    var carb_input = process.argv.slice(7, 8).pop()
 
     if (!glucose_input || !pumphistory_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json>');
+        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json> [carbhistory.json]');
         process.exit(1);
     }
     
@@ -62,6 +63,15 @@ if (!module.parent) {
         }
         var basalprofile = require(cwd + '/' + basalprofile_input);
 
+        var carb_data = { };
+        if (typeof carb_input != 'undefined') {
+            try {
+                carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
+            } catch (e) {
+                console.error("Warning: could not parse "+carb_input);
+            }
+        }
+
         var iob_inputs = {
             history: pumphistory_data
             , profile: profile
@@ -73,9 +83,10 @@ if (!module.parent) {
 
     var detection_inputs = {
         iob_inputs: iob_inputs
-    , glucose_data: glucose_data
-    , basalprofile: basalprofile
-    //, clock: clock_data
+        , carbs: carb_data
+        , glucose_data: glucose_data
+        , basalprofile: basalprofile
+        //, clock: clock_data
     };
     detect(detection_inputs);
     var sensAdj = {

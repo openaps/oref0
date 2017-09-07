@@ -350,10 +350,17 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    # mmtune 30% of the time
-    [[ $(( ( RANDOM % 100 ) )) > 70 ]] \
-    && echo "mmtuning" \
-    && mmtune
+    if ( find monitor/ -mmin -15 | egrep -q "pump_loop_completed" ); then
+        # mmtune ~ 25% of the time
+        [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
+        && echo "Waiting for 30s silence before mmtuning" \
+        && wait_for_silence 30 \
+        && mmtune
+    else
+        echo "pump_loop_completed more than 15m old; waiting for 30s silence before mmtuning"
+        wait_for_silence 30
+        mmtune
+    fi
 }
 
 function any_pump_comms {
@@ -445,14 +452,13 @@ function refresh_old_profile {
 function refresh_smb_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     setglucosetimestamp
-    if ( find monitor/ -newer monitor/pump_loop_completed | grep -q glucose.json ); then
-        echo "glucose.json newer than pump_loop_completed. "
-        smb_enact_temp
-    elif ( find monitor/ -mmin -5 -size +5c | grep -q monitor/pump_loop_completed ); then
-        echo "pump_loop_completed more than 5m ago. "
+    # only smb_enact_temp if we haven't successfully completed a pump_loop recently
+    # (no point in enacting a temp that's going to get changed after we see our last SMB)
+    if ( find monitor/ -mmin +10 | grep -q monitor/pump_loop_completed ); then
+        echo "pump_loop_completed more than 10m ago: setting temp before refreshing pumphistory. "
         smb_enact_temp
     else
-        echo -n "pump_loop_completed less than 5m ago. "
+        echo -n "pump_loop_completed less than 10m ago. "
     fi
 }
 
@@ -488,19 +494,6 @@ function refresh_profile {
     || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed)
 }
 
-function low_battery_wait {
-    if (! ls monitor/edison-battery.json 2>/dev/null >/dev/null); then
-        echo Edison battery level not found
-    elif (jq --exit-status ".battery >= 98 or (.battery <= 65 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
-        echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-65%)"
-    elif (jq --exit-status ".battery < 98" monitor/edison-battery.json > /dev/null); then
-        echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; "
-        wait_for_bg
-    else
-        echo Edison battery level unknown
-    fi
-}
-
 function wait_for_bg {
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo "MDT CGM configured; not waiting"
@@ -524,16 +517,16 @@ function wait_for_bg {
 function refresh_pumphistory_24h {
     if (! ls monitor/edison-battery.json 2>/dev/null >/dev/null); then
         echo -n "Edison battery level not found. "
-        autosens_freq=20
-    elif (jq --exit-status ".battery >= 98 or (.battery <= 65 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
-        echo -n "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-65%). "
-        autosens_freq=20
+        autosens_freq=15
+    elif (jq --exit-status ".battery >= 98 or (.battery <= 70 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
+        echo -n "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-70%). "
+        autosens_freq=15
     elif (jq --exit-status ".battery < 98" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%. "
-        autosens_freq=90
+        autosens_freq=30
     else
         echo -n "Edison battery level unknown. "
-        autosens_freq=20
+        autosens_freq=15
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
     || (echo -n pumphistory-24h refresh \

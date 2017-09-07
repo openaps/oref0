@@ -28,7 +28,8 @@ describe('IOB', function() {
                     dia: 3,
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
-                    current_basal: 1
+                    current_basal: 1,
+                    max_daily_basal: 1
                 }
 
             };
@@ -77,6 +78,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
+                    max_daily_basal: 1,
                     curve: 'ultra-rapid'
                 }
             };
@@ -129,6 +131,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
+                    max_daily_basal: 1,
                     curve: 'ultra-rapid'
                 }
             };
@@ -179,6 +182,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
+                    max_daily_basal: 1,
                     curve: 'ultra-rapid'
                 }
             };
@@ -231,6 +235,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
+                    max_daily_basal: 1,
                     curve: 'ultra-rapid'
                 }
             };
@@ -284,6 +289,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
+                    max_daily_basal: 1,
                     curve: 'ultra-rapid'
                 }
             };
@@ -337,6 +343,7 @@ describe('IOB', function() {
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
                     current_basal: 1,
+                    max_daily_basal: 1,
                     curve: 'rapid-acting'
                 }
             };
@@ -420,6 +427,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 3,
                     current_basal: 1,
+                    max_daily_basal: 1,
                     bolussnooze_dia_divisor: 2,
                     'basalprofile': basalprofile
                 }
@@ -538,6 +546,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 3,
                     current_basal: 0.1,
+                    max_daily_basal: 1,
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile
                 }
@@ -611,6 +620,7 @@ describe('IOB', function() {
             profile: {
                 dia: 3,
                 current_basal: 0.1,
+                max_daily_basal: 1,
                 bolussnooze_dia_divisor: 2,
                 basalprofile: basalprofile
             }
@@ -672,6 +682,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 3,
                     current_basal: 0.1,
+                    max_daily_basal: 1,
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile
                 }
@@ -730,6 +741,7 @@ describe('IOB', function() {
             profile: {
                 dia: 3,
                 current_basal: 2,
+                max_daily_basal: 2,
                 bolussnooze_dia_divisor: 2,
                 'basalprofile': basalprofile
             }
@@ -776,6 +788,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 3,
                     current_basal: 1,
+                    max_daily_basal: 1,
                     'basalprofile': basalprofile
                 }
             };
@@ -825,6 +838,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 3,
                     current_basal: 2,
+                    max_daily_basal: 2,
                     bolussnooze_dia_divisor: 2,
                     'basalprofile': basalprofile
                 }
@@ -855,6 +869,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 3,
                     current_basal: 1,
+                    max_daily_basal: 1,
                     bolussnooze_dia_divisor: 2
                 }
             };
@@ -889,6 +904,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 3,
                     current_basal: 1,
+                    max_daily_basal: 1,
                     bolussnooze_dia_divisor: 2
                 }
             };
@@ -924,7 +940,8 @@ describe('IOB', function() {
                     dia: 4,
                     bolussnooze_dia_divisor: 2,
                     basalprofile: basalprofile,
-                    current_basal: 1
+                    current_basal: 1,
+                    max_daily_basal: 1
                 }
 
             };
