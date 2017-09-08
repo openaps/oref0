@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script sets up an openaps environment by defining the required devices,
-# reports, and aliases, and optionally enabling it in cron, 
+# reports, and aliases, and optionally enabling it in cron,
 # plus editing other user-entered configuration settings.
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
@@ -522,6 +522,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         mkdir -p xdrip || die "Can't mkdir xdrip"
     fi
 
+    # check whether decocare-0.0.31 has been installed
+    if ! ls /usr/local/lib/python2.7/dist-packages/decocare-0.0.31-py2.7.egg/ 2>/dev/null >/dev/null; then
+        # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
+        sudo easy_install -U decocare || die "Can't easy_install decocare"
+    fi
+
     mkdir -p $HOME/src/
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
@@ -547,12 +553,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 #fi
 
     cd $directory || die "Can't cd $directory"
-    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
+    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
         preferences_from_args=()
         if [[ "$max_iob" != "0" ]]; then
-        preferences_from_args+="\"max_iob\":$max_iob "
+            preferences_from_args+="\"max_iob\":$max_iob "
         fi
         if [[ ! -z "$max_daily_safety_multiplier" ]]; then
             preferences_from_args+="\"max_daily_safety_multiplier\":$max_daily_safety_multiplier "
@@ -835,6 +841,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             cd $HOME/src/EdisonVoltage
             make voltage
         fi
+        # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
+        grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
         cd $directory || die "Can't cd $directory"
         for type in edisonbattery; do
             echo importing $type file
@@ -959,7 +967,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-truncate-git-history" || echo "* * * * * cd $directory-cgm-loop && oref0-truncate-git-history") | crontab -
             (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
         elif [[ ${CGM,,} =~ "xdrip" ]]; then
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps monitor-xdrip' || ( date; cp -rf xdrip/glucose.json xdrip/last-glucose.json; openaps monitor-xdrip) | tee -a /var/log/openaps/xdrip-loop.log; cmp --silent xdrip/glucose.json xdrip/last-glucose.json || cp -up $directory/xdrip/glucose.json $directory/monitor/glucose.json") | crontab -
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip' || monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log") | crontab -
         (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
         elif [[ $ENABLE =~ dexusb ]]; then
             (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot cd $directory && /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -

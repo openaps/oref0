@@ -20,7 +20,10 @@ main() {
         && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
         && echo); do
 
-            # On a random subset of failures, wait 45s and mmtune
+            if grep -q "percent" monitor/temp_basal.json; then
+                echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
+            fi
+            # On a random subset of failures, mmtune
             echo Error, retrying \
             && maybe_mmtune
             sleep 5
@@ -32,6 +35,7 @@ smb_main() {
     prep
     if ! ( \
         prep
+        # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_bg \
         && wait_for_silence $upto30s \
@@ -64,6 +68,10 @@ smb_main() {
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
     ); then
+        echo -n "SMB pump-loop failed. "
+        if grep -q "percent" monitor/temp_basal.json; then
+            echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
+    	fi
         maybe_mmtune
         echo Unsuccessful supermicrobolus pump-loop at $(date)
     fi
@@ -196,6 +204,7 @@ function smb_verify_status {
     && if grep -q '"suspended": true' monitor/status.json; then
         echo -n "Pump suspended; "
         unsuspend_if_no_temp
+        gather
     fi
 }
 
@@ -246,64 +255,64 @@ function if_mdt_get_bg {
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo \
         && echo Attempting to retrieve MDT CGM data from pump
-		#due to sometimes the pump is not in a state to give this command repeat until it completes
-		#"decocare.errors.DataTransferCorruptionError: Page size too short"
-		n=0
-		until [ $n -ge 3 ]; do
-			openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&1 >/dev/null && break
-			echo
-			echo CGM data retrieval from pump disrupted, retrying in 5 seconds...
-			n=$[$n+1]
-			sleep 5;
-			echo Reattempting to retrieve MDT CGM data
-		done
-		if [ -f "monitor/cgm-mm-glucosedirty.json" ]; then			
-			if [ -f "cgm/glucose.json" ]; then
-				if [ $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json | tr -d '"') +%s) == $(date -d $(jq .[0].display_time monitor/glucose.json | tr -d '"') +%s) ]; then		
-					echo MDT CGM data retrieved \
-					&& echo No new MDT CGM data to reformat \
-					&& echo
-					# TODO: remove if still unused at next oref0 release
-					# if you want to wait for new bg uncomment next lines and add a backslash after echo above
-					#&& wait_for_mdt_get_bg \
-					#&& mdt_get_bg
-				else			
-					mdt_get_bg
-				fi
-			else
-				mdt_get_bg
-			fi
-		else
-			echo "Unable to get cgm data from pump"
-		fi
+        #due to sometimes the pump is not in a state to give this command repeat until it completes
+        #"decocare.errors.DataTransferCorruptionError: Page size too short"
+        n=0
+        until [ $n -ge 3 ]; do
+            openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&1 >/dev/null && break
+            echo
+            echo CGM data retrieval from pump disrupted, retrying in 5 seconds...
+            n=$[$n+1]
+            sleep 5;
+            echo Reattempting to retrieve MDT CGM data
+        done
+        if [ -f "monitor/cgm-mm-glucosedirty.json" ]; then
+            if [ -f "cgm/glucose.json" ]; then
+                if [ $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json | tr -d '"') +%s) == $(date -d $(jq .[0].display_time monitor/glucose.json | tr -d '"') +%s) ]; then
+                    echo MDT CGM data retrieved \
+                    && echo No new MDT CGM data to reformat \
+                    && echo
+                    # TODO: remove if still unused at next oref0 release
+                    # if you want to wait for new bg uncomment next lines and add a backslash after echo above
+                    #&& wait_for_mdt_get_bg \
+                    #&& mdt_get_bg
+                else
+                    mdt_get_bg
+                fi
+            else
+                mdt_get_bg
+            fi
+        else
+            echo "Unable to get cgm data from pump"
+        fi
     fi
 }
 # TODO: remove if still unused at next oref0 release
-function wait_for_mdt_get_bg {	
-	# This might not really be needed since very seldom does a loop take less time to run than CGM Data takes to refresh. 
-	until [ $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +%s) -lt $(date +%s) ]; do
-		CGMDIFFTIME=$(( $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +%s) - $(date +%s) ))
-		echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +"%r") wait untill $(date --date="@$(($(date #-d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +"%r")to continue"
-		echo "waiting for $CGMDIFFTIME seconds before continuing"
-		sleep $CGMDIFFTIME
-		until openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&1 >/dev/null; do
-			echo cgm data from pump disrupted, retrying in 5 seconds...
-			sleep 5;
-			echo -n MDT cgm data retrieve
-		done
-	done	
+function wait_for_mdt_get_bg {
+    # This might not really be needed since very seldom does a loop take less time to run than CGM Data takes to refresh.
+    until [ $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +%s) -lt $(date +%s) ]; do
+        CGMDIFFTIME=$(( $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +%s) - $(date +%s) ))
+        echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +"%r") wait untill $(date --date="@$(($(date #-d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +"%r")to continue"
+        echo "waiting for $CGMDIFFTIME seconds before continuing"
+        sleep $CGMDIFFTIME
+        until openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&1 >/dev/null; do
+            echo cgm data from pump disrupted, retrying in 5 seconds...
+            sleep 5;
+            echo -n MDT cgm data retrieve
+        done
+    done
 }
 function mdt_get_bg {
     openaps report invoke monitor/cgm-mm-glucosetrend.json 2>&1 >/dev/null \
-	&& openaps report invoke cgm/cgm-glucose.json 2>&1 >/dev/null \
-	&& grep -q glucose cgm/cgm-glucose.json \
-	&& echo MDT CGM data retrieved \
-	&& cp -pu cgm/cgm-glucose.json cgm/glucose.json \
-	&& cp -pu cgm/glucose.json monitor/glucose-unzoned.json \
-	&& echo -n MDT New cgm data reformat \
-	&& openaps report invoke monitor/glucose.json 2>&1 >/dev/null \
-	&& openaps report invoke nightscout/glucose.json 2>&1 >/dev/null \
-	&& echo ted
+    && openaps report invoke cgm/cgm-glucose.json 2>&1 >/dev/null \
+    && grep -q glucose cgm/cgm-glucose.json \
+    && echo MDT CGM data retrieved \
+    && cp -pu cgm/cgm-glucose.json cgm/glucose.json \
+    && cp -pu cgm/glucose.json monitor/glucose-unzoned.json \
+    && echo -n MDT New cgm data reformat \
+    && openaps report invoke monitor/glucose.json 2>&1 >/dev/null \
+    && openaps report invoke nightscout/glucose.json 2>&1 >/dev/null \
+    && echo ted
 }
 # make sure we can talk to the pump and get a valid model number
 function preflight {
@@ -316,7 +325,9 @@ function preflight {
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
     # TODO: remove reset_spi_serial.py once oref0_init_pump_comms.py is fixed to do it correctly
-    reset_spi_serial.py 2>/dev/null
+    if [[ $port == "/dev/spidev5.1" ]]; then
+        reset_spi_serial.py 2>/dev/null
+    fi
     oref0_init_pump_comms.py
     echo -n "Listening for 30s silence before mmtuning: "
     for i in $(seq 1 800); do
@@ -337,11 +348,17 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    # mmtune ~ 25% of the time
-    [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
-    && echo "Waiting for 30s silence before mmtuning" \
-    && wait_for_silence 30 \
-    && mmtune
+    if ( find monitor/ -mmin -15 | egrep -q "pump_loop_completed" ); then
+        # mmtune ~ 25% of the time
+        [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
+        && echo "Waiting for 30s silence before mmtuning" \
+        && wait_for_silence 30 \
+        && mmtune
+    else
+        echo "pump_loop_completed more than 15m old; waiting for 30s silence before mmtuning"
+        wait_for_silence 30
+        mmtune
+    fi
 }
 
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
@@ -364,12 +381,16 @@ function wait_for_silence {
 function gather {
     openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1 \
     && echo -n Ref \
-    && test $(cat monitor/status.json | json bolusing) == false \
+    && ( test $(cat monitor/status.json | json suspended) == true || \
+         test $(cat monitor/status.json | json bolusing) == false ) \
     && echo -n resh \
     && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 >/dev/null | tail -1 \
     && echo -n ed \
     && merge_pumphistory \
-    && echo " pumphistory" || (echo; exit 1) 2>/dev/null
+    && echo -n " pumphistory" \
+    && openaps report invoke monitor/meal.json 2>&1 >/dev/null | tail -1 \
+    && echo " and meal.json" \
+    || (echo; exit 1) 2>/dev/null
 }
 
 function merge_pumphistory {

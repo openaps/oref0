@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.5.2",
+  "version": "0.5.3-dev",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -26,6 +26,7 @@
     "mm-format-ns-pump-history": "./bin/mm-format-ns-pump-history.sh",
     "mm-format-ns-treatments": "./bin/mm-format-ns-treatments.sh",
     "mm-stick": "./bin/mm-stick.sh",
+    "monitor-xdrip": "./bin/monitor-xdrip.sh",
     "nightscout": "./bin/nightscout.sh",
     "ns-dedupe-treatments": "./bin/ns-dedupe-treatments.sh",
     "ns-get": "./bin/ns-get.sh",
