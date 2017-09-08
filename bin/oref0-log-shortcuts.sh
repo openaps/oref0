@@ -18,6 +18,8 @@ grep -q edit-runagain ~/.bash_profile || echo "alias edit-runagain="'"cd ~/myope
 grep -q cat-autotune ~/.bash_profile || echo "alias cat-autotune="'"cd ~/myopenaps/autotune && cat autotune_recommendations.log"' >> ~/.bash_profile
 grep -q git-branch ~/.bash_profile || echo "alias git-branch="'"cd ~/src/oref0 && git branch"' >> ~/.bash_profile
 grep -q runagain ~/.bash_profile || echo "alias runagain="'"bash ~/myopenaps/oref0-runagain.sh"' >> ~/.bash_profile
+grep -q edison-battery ~/.bash_profile || echo "alias edison-battery="'"cd ~/myopenaps/monitor && cat edison-battery.json"' >> ~/.bash_profile
+grep -q cat-reservoir ~/.bash_profile || echo "alias cat-reservoir="'"cd ~/myopenaps/monitor && cat reservoir.json"' >> ~/.bash_profile
 
 # source default /etc/profile as well
 grep -q /etc/skel/.profile ~/.bash_profile || echo ". /etc/skel/.profile" >> ~/.bash_profile
