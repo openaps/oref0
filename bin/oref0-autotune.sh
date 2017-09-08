@@ -160,15 +160,6 @@ if [[ $TERMINAL_LOGGING = "true" ]]; then
   exec &> >(tee -a autotune.$(date +%Y-%m-%d-%H%M%S).log)
 fi
 
-# Pull Nightscout Data
-echo "Grabbing NIGHTSCOUT treatments.json for date range..."
-
-# Get Nightscout carb and insulin Treatments
-query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$START_DATE -4 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$END_DATE +1 days" -Iminutes`"
-echo Query: $NIGHTSCOUT_HOST/$query
-ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.json || die "Couldn't download ns-treatments.json"
-ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
-
 # Build date list for autotune iteration
 date_list=()
 date=$START_DATE; 
@@ -182,15 +173,24 @@ do
   fi
 done
 
-echo "Grabbing NIGHTSCOUT entries/sgv.json for date range..."
+echo "Grabbing NIGHTSCOUT treatments.json and entries/sgv.json for date range..."
 
 # Get Nightscout BG (sgv.json) Entries
 for i in "${date_list[@]}"
 do 
-  query="find%5Bdate%5D%5B%24gte%5D=`(date -d $i +%s | tr -d '\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
-  echo Query: $NIGHTSCOUT_HOST $query
-  ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
-  ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
+    query="find%5Bdate%5D%5B%24gte%5D=`(date -d $i +%s | tr -d '\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
+    echo Query: $NIGHTSCOUT_HOST $query
+    ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+    ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
+
+    # Get Nightscout carb and insulin Treatments
+    echo $i $START_DATE;
+    #query="find%5Bdate%5D%5B%24gte%5D=`(date -d $i +%s | tr -d'\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
+    query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$i -5 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$END_DATE +1 days" -Iminutes`"
+    echo Query: $NIGHTSCOUT_HOST/$query
+    ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.$i.json || die "Couldn't download ns-treatments.$i.json"
+    ls -la ns-treatments.$i.json || die "No ns-treatments.$i.json downloaded"
+
 done
 
 echo "Running $NUMBER_OF_RUNS runs from $START_DATE to $END_DATE"
@@ -207,9 +207,9 @@ do
     cp profile.json profile.$run_number.$i.json
     # Autotune Prep (required args, <pumphistory.json> <profile.json> <glucose.json>), output prepped glucose 
     # data or <autotune/glucose.json> below
-    echo "oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json profile.pump.json > autotune.$run_number.$i.json"
-    oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json profile.pump.json > autotune.$run_number.$i.json \
-        || die "Could not run oref0-autotune-prep ns-treatments.json profile.json ns-entries.$i.json"
+    echo "oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json > autotune.$run_number.$i.json"
+    oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json > autotune.$run_number.$i.json \
+        || die "Could not run oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json"
     
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 
     # output autotuned profile or what will be used as <autotune/autotune.json> in the next iteration
