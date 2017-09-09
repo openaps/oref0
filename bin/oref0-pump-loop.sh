@@ -330,10 +330,10 @@ function mmtune {
         reset_spi_serial.py 2>/dev/null
     fi
     oref0_init_pump_comms.py
-    echo -n "Listening for 30s silence before mmtuning: "
+    echo -n "Listening for 40s silence before mmtuning: "
     for i in $(seq 1 800); do
         echo -n .
-        any_pump_comms 30 2>/dev/null | egrep -v subg | egrep No \
+        any_pump_comms 40 2>/dev/null | egrep -v subg | egrep No \
         && break
     done
     echo {} > monitor/mmtune.json
@@ -353,12 +353,12 @@ function maybe_mmtune {
     if ( find monitor/ -mmin -15 | egrep -q "pump_loop_completed" ); then
         # mmtune ~ 25% of the time
         [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
-        && echo "Waiting for 30s silence before mmtuning" \
-        && wait_for_silence 30 \
+        && echo "Waiting for 40s silence before mmtuning" \
+        && wait_for_silence 40 \
         && mmtune
     else
-        echo "pump_loop_completed more than 15m old; waiting for 30s silence before mmtuning"
-        wait_for_silence 30
+        echo "pump_loop_completed more than 15m old; waiting for 40s silence before mmtuning"
+        wait_for_silence 40
         mmtune
     fi
 }
@@ -370,7 +370,7 @@ function any_pump_comms {
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
     if [ -z $1 ]; then
-        waitfor=30
+        waitfor=40
     else
         waitfor=$1
     fi
