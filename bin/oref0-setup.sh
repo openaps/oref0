@@ -835,7 +835,19 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
         touch /tmp/reboot-required
     fi
-
+    
+    # disable IPv6
+    if ! grep -q 'net.ipv6.conf.all.disable_ipv6=1' /etc/sysctl.conf; then
+        sudo echo 'net.ipv6.conf.all.disable_ipv6=1' >> /etc/sysctl.conf
+    fi    
+    if ! grep -q 'net.ipv6.conf.default.disable_ipv6=1' /etc/sysctl.conf; then
+        sudo echo 'net.ipv6.conf.default.disable_ipv6=1' >> /etc/sysctl.conf
+    fi    
+    if ! grep -q 'net.ipv6.conf.lo.disable_ipv6=1' /etc/sysctl.conf; then
+        sudo echo 'net.ipv6.conf.lo.disable_ipv6=1' >> /etc/sysctl.conf
+    fi    
+    sudo sysctl -p
+    
     # Install EdisonVoltage
     if egrep -i "edison" /etc/passwd 2>/dev/null; then
         echo "Checking if EdisonVoltage is already installed"
