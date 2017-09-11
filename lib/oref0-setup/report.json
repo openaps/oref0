@@ -18,7 +18,7 @@
       "use": "shell",
       "reporter": "JSON",
       "device": "ns",
-      "remainder": "-6hours",
+      "remainder": "-36hours",
       "json_default": "True"
     },
     "name": "monitor/carbhistory.json"
@@ -244,7 +244,7 @@
       "json_default": "True",
       "pumphistory": "settings/pumphistory-24h-zoned.json",
       "device": "detect-sensitivity",
-      "remainder": "",
+      "remainder": "monitor/carbhistory.json",
       "isf": "settings/insulin_sensitivities.json",
       "glucose": "monitor/glucose.json"
     },
@@ -382,12 +382,12 @@
   {
     "type": "report",
     "name": "xdrip/glucose.json",
-    "xdrip/glucose.json": {      
-      "device": "xdrip",
-	    "remainder": "",	  
-      "use": "shell",
+    "xdrip/glucose.json": {
+        "device": "xdrip",
+        "remainder": "",
+        "use": "shell",
 	    "json_default": "True",
-      "reporter": "text"
+        "reporter": "text"
     }
   }
 ]

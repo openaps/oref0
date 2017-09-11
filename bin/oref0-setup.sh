@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script sets up an openaps environment by defining the required devices,
-# reports, and aliases, and optionally enabling it in cron, 
+# reports, and aliases, and optionally enabling it in cron,
 # plus editing other user-entered configuration settings.
 # Released under MIT license. See the accompanying LICENSE.txt file for
 # full terms and conditions
@@ -137,16 +137,6 @@ if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CG
     echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
-fi
-if ! ( git config -l | grep -q user.email ) ; then
-    read -p "What email address would you like to use for git commits? " -r
-    EMAIL=$REPLY
-    git config --global user.email $EMAIL
-fi
-if ! ( git config -l | grep -q user.name ); then
-    read -p "What full name would you like to use for git commits? " -r
-    NAME=$REPLY
-    git config --global user.name $NAME
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
@@ -495,11 +485,17 @@ echocolor-n "Continue? y/[N] "
 read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
+    # TODO: delete this after openaps 0.2.1 release
+    echo Checking openaps 0.2.1 installation with --nogit support
+    if ! openaps --version 2>&1 | egrep "0.[2-9].[1-9]"; then
+        echo Installing latest openaps w/ nogit && sudo pip install git+https://github.com/openaps/openaps.git@nogit || die "Couldn't install openaps w/ nogit"
+    fi
+
     echo -n "Checking $directory: "
     mkdir -p $directory
-    if ( cd $directory && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
+    if ( cd $directory && ls openaps.ini 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
         echo $directory already exists
-    elif openaps init $directory; then
+    elif openaps init $directory --nogit; then
         echo $directory initialized
     else
         die "Can't init $directory"
@@ -522,11 +518,26 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         mkdir -p xdrip || die "Can't mkdir xdrip"
     fi
 
-    # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
-	
-    sudo easy_install -U decocare || die "Can't easy_install decocare"
+    # check whether decocare-0.0.31 has been installed
+    if ! ls /usr/local/lib/python2.7/dist-packages/decocare-0.0.31-py2.7.egg/ 2>/dev/null >/dev/null; then
+        # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
+        sudo easy_install -U decocare || die "Can't easy_install decocare"
+    fi
 
     mkdir -p $HOME/src/
+
+    # TODO: remove this and switch back to easy_install or pip once decocare 0.1.0 is released
+    if [ -d "$HOME/src/decocare/" ]; then
+        echo "$HOME/src/decocare/ already exists; pulling latest 0.1.0-dev"
+        (cd $HOME/src/decocare && git fetch && git checkout 0.1.0-dev && git pull) || die "Couldn't pull latest decocare 0.1.0-dev"
+    else
+        echo -n "Cloning decocare 0.1.0-dev: "
+        (cd $HOME/src && git clone -b 0.1.0-dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare 0.1.0-dev"
+    fi
+    echo Installing decocare 0.1.0-dev
+    cd $HOME/src/decocare
+    sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
+
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
         (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
@@ -537,9 +548,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
-        npm list -g oref0 | egrep oref0@0.5.0 || (echo Installing latest oref0 package && sudo npm install -g oref0)
+        npm list -g oref0 | egrep oref0@0.5.[0-1] || (echo Installing latest oref0 package && sudo npm install -g oref0)
     else
-        npm list -g oref0 | egrep oref0@0.5.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+        npm list -g oref0 | egrep oref0@0.5.[2-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
 
     echo Checking mmeowlink installation
@@ -551,12 +562,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 #fi
 
     cd $directory || die "Can't cd $directory"
-    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "&current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
+    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
         preferences_from_args=()
         if [[ "$max_iob" != "0" ]]; then
-        preferences_from_args+="\"max_iob\":$max_iob "
+            preferences_from_args+="\"max_iob\":$max_iob "
         fi
         if [[ ! -z "$max_daily_safety_multiplier" ]]; then
             preferences_from_args+="\"max_daily_safety_multiplier\":$max_daily_safety_multiplier "
@@ -576,7 +587,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     cat preferences.json
-    git add preferences.json
 
     # enable log rotation
     sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps || die "Could not cp /etc/logrotate.d/openaps"
@@ -659,9 +669,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
         mkdir -p $directory-cgm-loop
-        if ( cd $directory-cgm-loop && git status 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
+        if ( cd $directory-cgm-loop && ls openaps.ini 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
             echo $directory-cgm-loop already exists
-        elif openaps init $directory-cgm-loop; then
+        elif openaps init $directory-cgm-loop --nogit; then
             echo $directory-cgm-loop initialized
         else
             die "Can't init $directory-cgm-loop"
@@ -707,8 +717,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
         cd $directory || die "Can't cd $directory"
     fi
-    grep -q pump.ini .gitignore 2>/dev/null || echo pump.ini >> .gitignore
-    git add .gitignore
 
     if [[ "$ttyport" =~ "spi" ]]; then
         echo Checking kernel for spi_serial installation
@@ -827,7 +835,19 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
         touch /tmp/reboot-required
     fi
-
+    
+    # disable IPv6
+    if ! grep -q 'net.ipv6.conf.all.disable_ipv6=1' /etc/sysctl.conf; then
+        sudo echo 'net.ipv6.conf.all.disable_ipv6=1' >> /etc/sysctl.conf
+    fi    
+    if ! grep -q 'net.ipv6.conf.default.disable_ipv6=1' /etc/sysctl.conf; then
+        sudo echo 'net.ipv6.conf.default.disable_ipv6=1' >> /etc/sysctl.conf
+    fi    
+    if ! grep -q 'net.ipv6.conf.lo.disable_ipv6=1' /etc/sysctl.conf; then
+        sudo echo 'net.ipv6.conf.lo.disable_ipv6=1' >> /etc/sysctl.conf
+    fi    
+    sudo sysctl -p
+    
     # Install EdisonVoltage
     if egrep -i "edison" /etc/passwd 2>/dev/null; then
         echo "Checking if EdisonVoltage is already installed"
@@ -955,18 +975,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
         (crontab -l; crontab -l | grep -q "killall -g --older-than 5m oref0" || echo '* * * * * find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && ( killall -g --older-than 5m openaps; killall -g --older-than 5m oref0-pump-loop; killall -g --older-than 5m openaps-report )') | crontab -
-        # repair or reset git repository if it's corrupted or disk is full
-        (crontab -l; crontab -l | grep -q "cd $directory && oref0-reset-git" || echo "* * * * * cd $directory && oref0-reset-git") | crontab -
-        # truncate git history to 1000 commits if it has grown past 1500
-        (crontab -l; crontab -l | grep -q "oref0-truncate-git-history" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q oref0-truncate-git-history || oref0-truncate-git-history") | crontab -
         if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
-            # repair or reset cgm-loop git repository if it's corrupted or disk is full
-            (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-reset-git" || echo "* * * * * cd $directory-cgm-loop && oref0-reset-git") | crontab -
-            # truncate cgm-loop git history to 1000 commits if it has grown past 1500
-            (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && oref0-truncate-git-history" || echo "* * * * * cd $directory-cgm-loop && oref0-truncate-git-history") | crontab -
             (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
         elif [[ ${CGM,,} =~ "xdrip" ]]; then
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip.sh'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip.sh' || monitor-xdrip.sh | tee -a /var/log/openaps/xdrip-loop.log") | crontab -
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip' || monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log") | crontab -
         (crontab -l; crontab -l | grep -q "xDripAPS.py" || echo "@reboot python $HOME/.xDripAPS/xDripAPS.py") | crontab -
         elif [[ $ENABLE =~ dexusb ]]; then
             (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot cd $directory && /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
