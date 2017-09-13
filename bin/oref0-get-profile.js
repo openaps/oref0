@@ -22,14 +22,14 @@ function usage ( ) {
 }
 
 function exportDefaults () {
-	var defaults = generate.defaults();
+	var defaults = generate.displayedDefaults();
 	console.log(JSON.stringify(defaults, null, '\t'));
 }
 
 function updatePreferences (prefs) {
-	var defaults = generate.defaults();
+	var defaults = generate.displayedDefaults();
 	
-	// check for any keys missing from current prefs and add from defaults
+	// check for any displayedDefaults missing from current prefs and add from defaults
 	
     for (var pref in defaults) {
       if (defaults.hasOwnProperty(pref) && !prefs.hasOwnProperty(pref)) {
@@ -57,7 +57,7 @@ if (!module.parent) {
       .strict(true)
       .help('help')
       .option('exportDefaults', {
-        describe: "Show default preference values",
+        describe: "Show typically-adjusted default preference values",
         default: false
       })
       .option('updatePreferences', {

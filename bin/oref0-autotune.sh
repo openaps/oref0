@@ -34,6 +34,7 @@ die() {
 }
 
 # defaults
+CURL_FLAGS="--compressed"
 DIR=""
 NIGHTSCOUT_HOST=""
 START_DATE=""
@@ -43,6 +44,15 @@ EXPORT_EXCEL="" # Default is to not export to Microsoft Excel
 TERMINAL_LOGGING=true
 RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
+
+if [ -n "${API_SECRET_READ}" ]; then 
+   echo "WARNING: API_SECRET_READ is deprecated starting with oref 0.6.x. The Nightscout authentication information is now used from the API_SECRET environment variable"
+fi
+
+if [[ -z "$API_SECRET" ]]; then
+  echo "ERROR: API_SECRET is not set when calling oref0-autotune.sh"
+  exit 1
+fi
 
 # If we are running OS X, we need to use a different version
 # of the 'date' command; the built-in 'date' is BSD, which
@@ -129,12 +139,12 @@ fi
 
 # Get profile for testing copied to home directory. "openaps" is my loop directory name.
 cd $directory && mkdir -p autotune
-cp settings/pumpprofile.json autotune/profile.pump.json
+cp settings/pumpprofile.json autotune/profile.pump.json || die "Cannot copy settings/pumpprofile.json"
 # This allows manual users to be able to run autotune by simply creating a settings/pumpprofile.json file.
 if [[ `uname` == 'Darwin' ]] ; then
-    cp settings/pumpprofile.json settings/profile.json
+    cp settings/pumpprofile.json settings/profile.json || die "Cannot copy settings/pumpprofile.json"
 else
-    cp -up settings/pumpprofile.json settings/profile.json
+    cp -up settings/pumpprofile.json settings/profile.json || die "Cannot copy settings/pumpprofile.json"
 fi
 # If a previous valid settings/autotune.json exists, use that; otherwise start from settings/profile.json
 cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json
@@ -151,9 +161,9 @@ fi
 echo "Grabbing NIGHTSCOUT treatments.json for date range..."
 
 # Get Nightscout carb and insulin Treatments
-url="$NIGHTSCOUT_HOST/api/v1/treatments.json?find\[created_at\]\[\$gte\]=`date --date="$START_DATE -4 hours" -Iminutes`&find\[created_at\]\[\$lte\]=`date --date="$END_DATE +1 days" -Iminutes`"
-echo $url
-curl -s $url > ns-treatments.json || die "Couldn't download ns-treatments.json"
+query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$START_DATE -4 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$END_DATE +1 days" -Iminutes`"
+echo Query: $NIGHTSCOUT_HOST/$query
+ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.json || die "Couldn't download ns-treatments.json"
 ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
 
 # Build date list for autotune iteration
@@ -174,9 +184,9 @@ echo "Grabbing NIGHTSCOUT entries/sgv.json for date range..."
 # Get Nightscout BG (sgv.json) Entries
 for i in "${date_list[@]}"
 do 
-  url="$NIGHTSCOUT_HOST/api/v1/entries/sgv.json?find\[date\]\[\$gte\]=`(date -d $i +%s | tr -d '\n'; echo 000)`&find\[date\]\[\$lte\]=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
-  echo $url
-  curl -s $url > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
+  query="find%5Bdate%5D%5B%24gte%5D=`(date -d $i +%s | tr -d '\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
+  echo Query: $NIGHTSCOUT_HOST $query
+  ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
   ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
 done
 
@@ -201,10 +211,18 @@ do
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 
     # output autotuned profile or what will be used as <autotune/autotune.json> in the next iteration
     echo "oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json"
-    oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json || die "Could not run oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json"
-    
-    # Copy tuned profile produced by autotune to profile.json for use with next day of data
-    cp newprofile.$run_number.$i.json profile.json
+    if ! oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json > newprofile.$run_number.$i.json; then
+        if cat profile.json | jq --exit-status .carb_ratio==null; then
+            echo "ERROR: profile.json contains null carb_ratio: using profile.pump.json"
+            cp profile.pump.json profile.json
+            exit
+        else
+            die "Could not run oref0-autotune-core autotune.$run_number.$i.json profile.json profile.pump.json"
+        fi
+    else
+        # Copy tuned profile produced by autotune to profile.json for use with next day of data
+        cp newprofile.$run_number.$i.json profile.json
+    fi
 
   done # End Date Range Iteration
 done # End Number of Runs Loop
