@@ -88,9 +88,17 @@ if (!module.parent) {
         , basalprofile: basalprofile
         //, clock: clock_data
     };
+    // calculate sensitivity using 8h of non-exluded data
+    detection_inputs.deviations = 96;
     detect(detection_inputs);
+    ratio8h = ratio;
+    // calculate sensitivity using all non-exluded data (up to 24h)
+    detection_inputs.deviations = 288;
+    detect(detection_inputs);
+    ratio24h = ratio;
+    var lowestRatio = Math.min(ratio8h, ratio24h);
     var sensAdj = {
-        "ratio": ratio
+        "ratio": lowestRatio
     }
     return console.log(JSON.stringify(sensAdj));
 
