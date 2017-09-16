@@ -92,10 +92,17 @@ if (!module.parent) {
     detection_inputs.deviations = 96;
     detect(detection_inputs);
     ratio8h = ratio;
+    newisf8h = newisf;
     // calculate sensitivity using all non-exluded data (up to 24h)
     detection_inputs.deviations = 288;
     detect(detection_inputs);
     ratio24h = ratio;
+    newisf24h = newisf;
+    if ( ratio8h < ratio24h ) {
+        console.error("Using 8h autosens ratio of",ratio8h,"(ISF",newisf8h+")");
+    } else {
+        console.error("Using 24h autosens ratio of",ratio24h,"(ISF",newisf24h+")");
+    }
     var lowestRatio = Math.min(ratio8h, ratio24h);
     var sensAdj = {
         "ratio": lowestRatio
