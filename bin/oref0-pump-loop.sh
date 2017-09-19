@@ -12,7 +12,7 @@ main() {
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
         && touch monitor/pump_loop_enacted -r monitor/glucose.json \
-        && refresh_temp_and_enact \
+        && ( refresh_temp_and_enact || ( smb_verify_status && refresh_temp_and_enact ) ) \
         && refresh_pumphistory_and_enact \
         && refresh_profile \
         && refresh_pumphistory_24h \
@@ -39,7 +39,7 @@ smb_main() {
         echo && echo Starting supermicrobolus pump-loop at $(date) with $upto30s second wait_for_silence: \
         && wait_for_bg \
         && wait_for_silence $upto30s \
-        && preflight \
+        && ( preflight || preflight ) \
         && if_mdt_get_bg \
         && refresh_old_pumphistory_24h \
         && refresh_old_pumphistory \
@@ -62,8 +62,7 @@ smb_main() {
                     ))
             fi
             ) \
-            && refresh_profile \
-            && refresh_pumphistory_24h \
+            && ( refresh_profile; refresh_pumphistory_24h; true ) \
             && echo Completed supermicrobolus pump-loop at $(date): \
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
@@ -71,7 +70,7 @@ smb_main() {
         echo -n "SMB pump-loop failed. "
         if grep -q "percent" monitor/temp_basal.json; then
             echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
-    	fi
+        fi
         maybe_mmtune
         echo Unsuccessful supermicrobolus pump-loop at $(date)
     fi
@@ -316,10 +315,12 @@ function mdt_get_bg {
 }
 # make sure we can talk to the pump and get a valid model number
 function preflight {
+    echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( openaps report invoke settings/model.json || openaps report invoke settings/model.json ) 2>&1 >/dev/null | tail -1 \
     && egrep -q "[57](15|22|23|54)" settings/model.json \
-    && echo -n "Preflight OK. "
+    && echo -n "OK. " \
+    || ( echo -n "fail. "; false )
 }
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
@@ -329,10 +330,10 @@ function mmtune {
         reset_spi_serial.py 2>/dev/null
     fi
     oref0_init_pump_comms.py
-    echo -n "Listening for 30s silence before mmtuning: "
+    echo -n "Listening for 40s silence before mmtuning: "
     for i in $(seq 1 800); do
         echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for 30 2>/dev/null | egrep -v subg | egrep No \
+        any_pump_comms 40 2>/dev/null | egrep -v subg | egrep No \
         && break
     done
     echo {} > monitor/mmtune.json
@@ -344,6 +345,7 @@ function mmtune {
     if [[ $rssi_wait > 1 ]]; then
         echo "waiting for $rssi_wait second silence before continuing"
         wait_for_silence $rssi_wait
+        echo "Done waiting for rigs with better signal."
     fi
 }
 
@@ -351,28 +353,39 @@ function maybe_mmtune {
     if ( find monitor/ -mmin -15 | egrep -q "pump_loop_completed" ); then
         # mmtune ~ 25% of the time
         [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
-        && echo "Waiting for 30s silence before mmtuning" \
-        && wait_for_silence 30 \
+        && echo "Waiting for 40s silence before mmtuning" \
+        && wait_for_silence 40 \
         && mmtune
     else
-        echo "pump_loop_completed more than 15m old; waiting for 30s silence before mmtuning"
-        wait_for_silence 30
+        echo "pump_loop_completed more than 15m old; waiting for 40s silence before mmtuning"
+        wait_for_silence 40
         mmtune
     fi
+}
+
+function any_pump_comms {
+    mmeowlink-any-pump-comms.py --port $port --wait-for $1
 }
 
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
     if [ -z $1 ]; then
-        waitfor=30
+        waitfor=40
     else
         waitfor=$1
     fi
-    ((mmeowlink-any-pump-comms.py --port $port --wait-for 1 | grep -q comms) 2>&1 | tail -1 && echo -n "Radio ok. " || mmtune) \
-    && echo -n "Listening: "
+    # check radio multiple times, and mmtune if all checks fail
+    ( ( out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 1; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 2; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+      ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) )
+    ) 2>&1 | tail -2 \
+        && echo -n "Radio ok. " || (echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune)
+    echo -n "Listening: "
     for i in $(seq 1 800); do
         echo -n .
-        mmeowlink-any-pump-comms.py --port $port --wait-for $waitfor 2>/dev/null | egrep -v subg | egrep No \
+        any_pump_comms $waitfor 2>/dev/null | egrep -v subg | egrep No \
         && break
     done
 }
@@ -439,14 +452,13 @@ function refresh_old_profile {
 function refresh_smb_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     setglucosetimestamp
-    if ( find monitor/ -newer monitor/pump_loop_completed | grep -q glucose.json ); then
-        echo "glucose.json newer than pump_loop_completed. "
-        smb_enact_temp
-    elif ( find monitor/ -mmin -5 -size +5c | grep -q monitor/pump_loop_completed ); then
-        echo "pump_loop_completed more than 5m ago. "
+    # only smb_enact_temp if we haven't successfully completed a pump_loop recently
+    # (no point in enacting a temp that's going to get changed after we see our last SMB)
+    if ( find monitor/ -mmin +10 | grep -q monitor/pump_loop_completed ); then
+        echo "pump_loop_completed more than 10m ago: setting temp before refreshing pumphistory. "
         smb_enact_temp
     else
-        echo -n "pump_loop_completed less than 5m ago. "
+        echo -n "pump_loop_completed less than 10m ago. "
     fi
 }
 
@@ -482,19 +494,6 @@ function refresh_profile {
     || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed)
 }
 
-function low_battery_wait {
-    if (! ls monitor/edison-battery.json 2>/dev/null >/dev/null); then
-        echo Edison battery level not found
-    elif (jq --exit-status ".battery >= 98 or (.battery <= 65 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
-        echo "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-65%)"
-    elif (jq --exit-status ".battery < 98" monitor/edison-battery.json > /dev/null); then
-        echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%; "
-        wait_for_bg
-    else
-        echo Edison battery level unknown
-    fi
-}
-
 function wait_for_bg {
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo "MDT CGM configured; not waiting"
@@ -518,16 +517,16 @@ function wait_for_bg {
 function refresh_pumphistory_24h {
     if (! ls monitor/edison-battery.json 2>/dev/null >/dev/null); then
         echo -n "Edison battery level not found. "
-        autosens_freq=20
-    elif (jq --exit-status ".battery >= 98 or (.battery <= 65 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
-        echo -n "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-65%). "
-        autosens_freq=20
+        autosens_freq=15
+    elif (jq --exit-status ".battery >= 98 or (.battery <= 70 and .battery >= 60)" monitor/edison-battery.json > /dev/null); then
+        echo -n "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-70%). "
+        autosens_freq=15
     elif (jq --exit-status ".battery < 98" monitor/edison-battery.json > /dev/null); then
         echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%. "
-        autosens_freq=90
+        autosens_freq=30
     else
         echo -n "Edison battery level unknown. "
-        autosens_freq=20
+        autosens_freq=15
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
     || (echo -n pumphistory-24h refresh \
