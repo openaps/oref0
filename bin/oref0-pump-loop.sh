@@ -204,6 +204,7 @@ function smb_verify_status {
         echo -n "Pump suspended; "
         unsuspend_if_no_temp
         gather
+        false
     fi
 }
 
