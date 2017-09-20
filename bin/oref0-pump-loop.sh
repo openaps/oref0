@@ -383,7 +383,8 @@ function wait_for_silence {
 function gather {
     openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1 \
     && echo -n Ref \
-    && ( test $(cat monitor/status.json | json suspended) == true || \
+    && ( grep -q "model.*12" monitor/status.json || \
+         test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
     && echo -n resh \
     && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 >/dev/null | tail -1 \
