@@ -455,7 +455,7 @@ function refresh_smb_temp_and_enact {
     # only smb_enact_temp if we haven't successfully completed a pump_loop recently
     # (no point in enacting a temp that's going to get changed after we see our last SMB)
     if (cat monitor/temp_basal.json | json -c "this.duration > 20" | grep -q duration); then
-        echo "Temp duration >20m. "
+        echo -n "Temp duration >20m. "
     elif ( find monitor/ -mmin +10 | grep -q monitor/pump_loop_completed ); then
         echo "pump_loop_completed more than 10m ago: setting temp before refreshing pumphistory. "
         smb_enact_temp
