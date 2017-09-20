@@ -223,7 +223,7 @@ function smb_bolus {
 }
 
 function refresh_after_bolus_or_enact {
-    if (grep -q '"units":' enact/smb-suggested.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
+    if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
         gather || ( wait_for_silence 10 && gather )
         true
     fi
