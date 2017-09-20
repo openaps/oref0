@@ -143,7 +143,7 @@ function smb_enact_temp {
         openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
         grep -q duration enact/smb-enacted.json || openaps invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
         cp -up enact/smb-enacted.json enact/enacted.json
-        echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c .
+        echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c '. | "Rate: \(.rate) Duration: \(.duration)"'
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     else
         echo -n "No smb_enact needed. "
