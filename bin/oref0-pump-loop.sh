@@ -63,6 +63,7 @@ smb_main() {
             fi
             ) \
             && ( refresh_profile; refresh_pumphistory_24h; true ) \
+            && ( ( smb_verify_status || ( sleep 30 && smb_verify_status ) ) && gather; true ) \
             && echo Completed supermicrobolus pump-loop at $(date): \
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
