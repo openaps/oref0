@@ -210,7 +210,7 @@ function smb_verify_status {
 function smb_bolus {
     # Verify that the suggested.json is less than 5 minutes old
     # and administer the supermicrobolus
-    find enact/ -mmin -5 | grep smb-suggested.json \
+    find enact/ -mmin -5 | grep smb-suggested.json > /dev/null \
     && if (grep -q '"units":' enact/smb-suggested.json); then
         openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
