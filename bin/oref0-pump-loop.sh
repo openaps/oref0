@@ -63,7 +63,7 @@ smb_main() {
             fi
             ) \
             && ( refresh_profile; refresh_pumphistory_24h; true ) \
-            && ( ( smb_verify_status || ( sleep 30 && smb_verify_status ) ) && gather; true ) \
+            && refresh_after_bolus_or_enact \
             && echo Completed supermicrobolus pump-loop at $(date): \
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
@@ -221,6 +221,15 @@ function smb_bolus {
         echo "No bolus needed (yet)"
     fi
 }
+
+function refresh_after_bolus_or_enact {
+    if (grep -q '"units":' enact/smb-suggested.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration); then
+        ( smb_verify_status || ( wait_for_silence 10 && smb_verify_status ) ) && gather
+        true
+    fi
+
+}
+
 function unsuspend_if_no_temp {
     # If temp basal duration is zero, unsuspend pump
     if (cat monitor/temp_basal.json | json -c "this.duration == 0" | grep -q duration); then
