@@ -318,7 +318,7 @@ function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( openaps report invoke settings/model.json || openaps report invoke settings/model.json ) 2>&1 >/dev/null | tail -1 \
-    && egrep -q "[57](15|22|23|54)" settings/model.json \
+    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (echo -n "error: pump model untested with SMB: "; false) ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
 }
@@ -394,7 +394,8 @@ function wait_for_silence {
 function gather {
     openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1 \
     && echo -n Ref \
-    && ( test $(cat monitor/status.json | json suspended) == true || \
+    && ( grep -q "model.*12" monitor/status.json || \
+         test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
     && echo -n resh \
     && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 >/dev/null | tail -1 \
