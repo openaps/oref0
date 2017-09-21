@@ -58,6 +58,10 @@ case $i in
     radio_locale="${i#*=}"
     shift # past argument=value
     ;;
+    -pm=*|--pumpmodel=*)
+    pumpmodel="${i#*=}"
+    shift # past argument=value
+    ;;
     -t=*|--tty=*)
     ttyport="${i#*=}"
     shift # past argument=value
@@ -412,7 +416,7 @@ fi
 echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
 if [[ -z "$pumpmodel" ]]; then
-    echo n "x12 pump, "
+    echo -n "x12 pump, "
 fi
 
 if [[ -z "$ttyport" ]]; then
