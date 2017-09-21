@@ -63,6 +63,7 @@ smb_main() {
             fi
             ) \
             && ( refresh_profile; refresh_pumphistory_24h; true ) \
+            && refresh_after_bolus_or_enact \
             && echo Completed supermicrobolus pump-loop at $(date): \
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
             && echo \
@@ -204,13 +205,14 @@ function smb_verify_status {
         echo -n "Pump suspended; "
         unsuspend_if_no_temp
         gather
+        false
     fi
 }
 
 function smb_bolus {
     # Verify that the suggested.json is less than 5 minutes old
     # and administer the supermicrobolus
-    find enact/ -mmin -5 | grep smb-suggested.json \
+    find enact/ -mmin -5 | grep smb-suggested.json > /dev/null \
     && if (grep -q '"units":' enact/smb-suggested.json); then
         openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
@@ -219,6 +221,15 @@ function smb_bolus {
         echo "No bolus needed (yet)"
     fi
 }
+
+function refresh_after_bolus_or_enact {
+    if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
+        gather || ( wait_for_silence 10 && gather ) || ( wait_for_silence 20 && gather )
+        true
+    fi
+
+}
+
 function unsuspend_if_no_temp {
     # If temp basal duration is zero, unsuspend pump
     if (cat monitor/temp_basal.json | json -c "this.duration == 0" | grep -q duration); then
