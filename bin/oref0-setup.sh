@@ -301,23 +301,23 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
       fi
 
-    read -p "Enable automatic sensitivity adjustment? y/[N]  " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    read -p "Enable automatic sensitivity adjustment? [Y]/n  " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+       echocolor "Ok, no autosens."
+       echo
+    else
        ENABLE+=" autosens "
        echocolor "Ok, autosens will be enabled."
        echo
-    else
-       echocolor "Ok, no autosens."
-       echo
     fi
 
-    read -p "Enable autotuning of basals and ratios? y/[N]  " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-       ENABLE+=" autotune "
-       echocolor "Ok, autotune will be enabled. It will run around midnight."
+    read -p "Enable autotuning of basals and ratios? [Y]/n  " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+       echocolor "Ok, no autotune."
        echo
     else
-       echocolor "Ok, no autotune."
+       ENABLE+=" autotune "
+       echocolor "Ok, autotune will be enabled. It will run around midnight."
        echo
     fi
 
