@@ -169,10 +169,21 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echocolor "Ok, $DIR it is."
     directory="$(readlink -m $DIR)"
     echo
+
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echocolor "Ok, $serial it is."
     echo
+    
+    read -p "Do you have an x12 (i.e. 512 or 712) pump? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        pumpmodel=x12
+        echocolor "Ok, you'll be using a 512 or 712 pump. Got it. "
+        echo
+    else
+        echocolor "You're using a different model pump. Got it."
+    fi
+
     read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout:   " -r
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
