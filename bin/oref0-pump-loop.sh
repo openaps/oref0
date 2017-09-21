@@ -483,7 +483,7 @@ function refresh_pumphistory_and_enact {
     setglucosetimestamp
     if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
         || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
-        || (! find monitor/ -mmin -5 | grep -q pumphistory-zoned && echo -n "pumphistory more than 5m old. ") ); then
+        || ((! find monitor/ -mmin -5 | grep -q pumphistory-zoned || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
             (echo -n ": " && gather && enact )
     else
         echo Pumphistory less than 5m old
