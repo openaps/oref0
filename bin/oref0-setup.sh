@@ -1054,6 +1054,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     if [[ ${pumpmodel,,} =~ "x12" ]]; then
+        echo
         echo To complete your x12 pump setup, you must edit your basal_profile.json,
         echo and may want to edit your settings.json and bg_targets_raw.json as well.
         read -p "Press enter to begin editing basal_profile.json, and then press Ctrl-X when done."
