@@ -1053,6 +1053,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "To pair your G4 Share receiver, open its Settings, select Share, Forget Device (if previously paired), then turn sharing On"
     fi
 
+    if [[ ${pumpmodel,,} =~ "x12" ]]; then
+        echo To complete your x12 pump setup, you must edit your basal_profile.json,
+        echo and may want to edit your settings.json and bg_targets_raw.json as well.
+        read -p "Press enter to begin editing basal_profile.json, and then press Ctrl-X when done."
+        nano $directory/settings/basal_profile.json
+        echo To edit your basal_profile.json again in the future, run: nano $directory/settings/basal_profile.json
+        echo To edit your settings.json to set maxBasal or DIA, run: nano $directory/settings/settings.json
+        echo To edit your bg_targets_raw.json to set targets, run: nano $directory/settings/bg_targets_raw.json
+    fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
 
