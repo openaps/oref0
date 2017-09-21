@@ -411,6 +411,10 @@ if [[ ${CGM,,} =~ "shareble" ]]; then
 fi
 echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
+if [[ -z "$pumpmodel" ]] then
+    echo n "x12 pump, "
+fi
+
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
 else
@@ -452,6 +456,7 @@ echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_R
 if [[ ! -z "$ttyport" ]]; then
     echo -n " --tty=$ttyport" | tee -a $OREF0_RUNAGAIN
 fi
+echo -n " --pumpmodel=$pumpmodel" | tee -a $OREF0_RUNAGAIN;
 echo -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN;
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
     echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a $OREF0_RUNAGAIN
