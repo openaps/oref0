@@ -932,6 +932,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
     fi
 
+    if [[ ${pumpmodel,,} =~ "x12" ]]; then
+        echo "copying settings files for x12 pumps"
+        cp $HOME/src/oref0/lib/oref0-setup/bg-targets-raw.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/selected-basal-profile.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/settings.json $directory/settings/ || die "Could not copy settings files for x12 pumps"
+        echo "getting ready to remove get-settings since this is an x12"
+        openaps alias remove get-settings || die "Could not remove get-settings"
+        echo "settings removed, getting ready to add x12 settings"
+        openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json settings/profile.json" || die "Could not add x12 settings"
+    fi
+
     echo "Adding OpenAPS log shortcuts"
     oref0-log-shortcuts
 
@@ -1038,15 +1047,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ${CGM,,} =~ "shareble" ]]; then
         echo
         echo "To pair your G4 Share receiver, open its Settings, select Share, Forget Device (if previously paired), then turn sharing On"
-    fi
-
-    if [[ ${pumpmodel,,} =~ "x12" ]]; then
-     echo "copying settings files for x12 pumps"
-        cd ~/myopenaps && cp ./raw-pump/bg-targets-raw.json ./settings/ && cp ./raw-pump/selected-basal-profile.json ./settings/ && cp ./raw-pump/settings.json ./settings/ 
-     echo "getting ready to remove get-settings since this is an x12"
-        openaps alias remove get-settings 
-     echo "settings removed, getting ready to add x12 settings"
-        openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json settings/profile.json"
     fi
 
 
