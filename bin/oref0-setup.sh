@@ -415,7 +415,7 @@ if [[ ${CGM,,} =~ "shareble" ]]; then
 fi
 echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
-if [[ -z "$pumpmodel" ]]; then
+if [[ ! -z "$pumpmodel" ]]; then
     echo -n "x12 pump, "
 fi
 
