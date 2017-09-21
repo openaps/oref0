@@ -938,7 +938,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     if [[ ${pumpmodel,,} =~ "x12" ]]; then
         echo "copying settings files for x12 pumps"
-        cp $HOME/src/oref0/lib/oref0-setup/bg_targets_raw.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/selected_basal_profile.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/settings.json $directory/settings/ || die "Could not copy settings files for x12 pumps"
+        cp $HOME/src/oref0/lib/oref0-setup/bg_targets_raw.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/basal_profile.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/settings.json $directory/settings/ || die "Could not copy settings files for x12 pumps"
         echo "getting ready to remove get-settings since this is an x12"
         openaps alias remove get-settings || die "Could not remove get-settings"
         echo "settings removed, getting ready to add x12 settings"
