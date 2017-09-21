@@ -146,17 +146,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         exit
     fi
     echo
-    echo -e "\e[1mWhat would you like to call your loop directory?\e[0m"
-    echo
-    echo "To use myopenaps, the recommended name, hit enter. If you choose to enter a different name here,"
-    echo "then you will need to remember to substitute that other name in other areas of the docs"
-    echo "where the myopenaps directory is involved. Type in a directory name and/or just hit enter:"
-    read -r
-    DIR=$REPLY
     if [[ -z $DIR ]]; then
         DIR="myopenaps"
     fi
-    echocolor "Ok, $DIR it is."
     directory="$(readlink -m $DIR)"
     echo
     read -p "What is your pump serial number (numbers only)? " -r
@@ -903,8 +895,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     # configure supermicrobolus if enabled
-    # WARNING: supermicrobolus mode is not yet documented or ready for general testing
-    # It should only be tested with a disconnected pump not administering insulin.
     # If you aren't sure what you're doing, *DO NOT* enable this.
     # If you ignore this warning, it *WILL* administer extra post-meal insulin, which may cause low blood sugar.
     if [[ $ENABLE =~ microbolus ]]; then
