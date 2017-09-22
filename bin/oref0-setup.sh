@@ -146,17 +146,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         exit
     fi
     echo
-    echo -e "\e[1mWhat would you like to call your loop directory?\e[0m"
-    echo
-    echo "To use myopenaps, the recommended name, hit enter. If you choose to enter a different name here,"
-    echo "then you will need to remember to substitute that other name in other areas of the docs"
-    echo "where the myopenaps directory is involved. Type in a directory name and/or just hit enter:"
-    read -r
-    DIR=$REPLY
     if [[ -z $DIR ]]; then
         DIR="myopenaps"
     fi
-    echocolor "Ok, $DIR it is."
     directory="$(readlink -m $DIR)"
     echo
     read -p "What is your pump serial number (numbers only)? " -r
@@ -301,23 +293,23 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
       fi
 
-    read -p "Enable automatic sensitivity adjustment? y/[N]  " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    read -p "Enable automatic sensitivity adjustment? [Y]/n  " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+       echocolor "Ok, no autosens."
+       echo
+    else
        ENABLE+=" autosens "
        echocolor "Ok, autosens will be enabled."
        echo
-    else
-       echocolor "Ok, no autosens."
-       echo
     fi
 
-    read -p "Enable autotuning of basals and ratios? y/[N]  " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-       ENABLE+=" autotune "
-       echocolor "Ok, autotune will be enabled. It will run around midnight."
+    read -p "Enable autotuning of basals and ratios? [Y]/n  " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+       echocolor "Ok, no autotune."
        echo
     else
-       echocolor "Ok, no autotune."
+       ENABLE+=" autotune "
+       echocolor "Ok, autotune will be enabled. It will run around midnight."
        echo
     fi
 
@@ -903,8 +895,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     # configure supermicrobolus if enabled
-    # WARNING: supermicrobolus mode is not yet documented or ready for general testing
-    # It should only be tested with a disconnected pump not administering insulin.
     # If you aren't sure what you're doing, *DO NOT* enable this.
     # If you ignore this warning, it *WILL* administer extra post-meal insulin, which may cause low blood sugar.
     if [[ $ENABLE =~ microbolus ]]; then
