@@ -510,7 +510,7 @@ function refresh_profile {
     else
         profileage=$1
     fi
-    find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo Settings less than 10m old \
+    find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo Settings less than $profileage minutes old \
     || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed)
 }
 
