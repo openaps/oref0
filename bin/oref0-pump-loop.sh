@@ -62,7 +62,7 @@ smb_main() {
                     ))
             fi
             ) \
-            && ( refresh_profile; refresh_pumphistory_24h; true ) \
+            && ( refresh_profile 15; refresh_pumphistory_24h; true ) \
             && refresh_after_bolus_or_enact \
             && echo Completed supermicrobolus pump-loop at $(date): \
             && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
@@ -224,6 +224,8 @@ function smb_bolus {
 
 function refresh_after_bolus_or_enact {
     if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
+        # refresh profile if >5m old to give SMB a chance to deliver
+        refresh_profile 3
         gather || ( wait_for_silence 10 && gather ) || ( wait_for_silence 20 && gather )
         true
     fi
@@ -504,7 +506,12 @@ function refresh_pumphistory_and_enact {
 }
 
 function refresh_profile {
-    find settings/ -mmin -10 -size +5c | grep -q settings.json && echo Settings less than 10m old \
+    if [ -z $1 ]; then
+        profileage=10
+    else
+        profileage=$1
+    fi
+    find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo Settings less than $profileage minutes old \
     || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed)
 }
 
