@@ -49,8 +49,8 @@ if [ -n "${API_SECRET_READ}" ]; then
 fi
 
 if [[ -z "$API_SECRET" ]]; then
-  echo "ERROR: API_SECRET is not set when calling oref0-autotune.sh"
-  exit 1
+  echo "Warning: API_SECRET is not set when calling oref0-autotune.sh"
+  # exit 1
 fi
 
 # If we are running OS X, we need to use a different version
