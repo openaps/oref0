@@ -11,13 +11,13 @@ main() {
         && refresh_old_pumphistory_enact \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
-        && touch monitor/pump_loop_enacted -r monitor/glucose.json \
+        && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
         && ( refresh_temp_and_enact || ( smb_verify_status && refresh_temp_and_enact ) ) \
         && refresh_pumphistory_and_enact \
         && refresh_profile \
         && refresh_pumphistory_24h \
         && echo Completed pump-loop at $(date) \
-        && touch /tmp/pump_loop_completed -r monitor/pump_loop_enacted \
+        && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
         && echo); do
 
             if grep -q "percent" monitor/temp_basal.json; then
@@ -44,12 +44,12 @@ smb_main() {
         && refresh_old_pumphistory_24h \
         && refresh_old_pumphistory \
         && refresh_old_profile \
-        && touch monitor/pump_loop_enacted -r monitor/glucose.json \
+        && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
         && refresh_smb_temp_and_enact \
         && ( smb_check_everything \
             && if (grep -q '"units":' enact/smb-suggested.json); then
                 ( smb_bolus && \
-                    touch /tmp/pump_loop_completed -r monitor/pump_loop_enacted \
+                    touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
                 ) \
                 || ( smb_old_temp && ( \
                     echo "Falling back to normal pump-loop" \
@@ -65,7 +65,7 @@ smb_main() {
             && ( refresh_profile 15; refresh_pumphistory_24h; true ) \
             && refresh_after_bolus_or_enact \
             && echo Completed supermicrobolus pump-loop at $(date): \
-            && touch /tmp/pump_loop_completed -r monitor/pump_loop_enacted \
+            && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
             && echo \
     ); then
         echo -n "SMB pump-loop failed. "
