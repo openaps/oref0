@@ -11,13 +11,13 @@ main() {
         && refresh_old_pumphistory_enact \
         && refresh_old_pumphistory_24h \
         && refresh_old_profile \
-        && touch monitor/pump_loop_enacted -r monitor/glucose.json \
+        && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
         && ( refresh_temp_and_enact || ( smb_verify_status && refresh_temp_and_enact ) ) \
         && refresh_pumphistory_and_enact \
         && refresh_profile \
         && refresh_pumphistory_24h \
         && echo Completed pump-loop at $(date) \
-        && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
+        && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
         && echo); do
 
             if grep -q "percent" monitor/temp_basal.json; then
@@ -44,12 +44,12 @@ smb_main() {
         && refresh_old_pumphistory_24h \
         && refresh_old_pumphistory \
         && refresh_old_profile \
-        && touch monitor/pump_loop_enacted -r monitor/glucose.json \
+        && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
         && refresh_smb_temp_and_enact \
         && ( smb_check_everything \
             && if (grep -q '"units":' enact/smb-suggested.json); then
                 ( smb_bolus && \
-                    touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
+                    touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
                 ) \
                 || ( smb_old_temp && ( \
                     echo "Falling back to normal pump-loop" \
@@ -65,7 +65,7 @@ smb_main() {
             && ( refresh_profile 15; refresh_pumphistory_24h; true ) \
             && refresh_after_bolus_or_enact \
             && echo Completed supermicrobolus pump-loop at $(date): \
-            && touch monitor/pump_loop_completed -r monitor/pump_loop_enacted \
+            && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
             && echo \
     ); then
         echo -n "SMB pump-loop failed. "
@@ -364,7 +364,7 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    if ( find monitor/ -mmin -15 | egrep -q "pump_loop_completed" ); then
+    if ( find /tmp/ -mmin -15 | egrep -q "pump_loop_completed" ); then
         # mmtune ~ 25% of the time
         [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
         && echo "Waiting for 40s silence before mmtuning" \
@@ -471,7 +471,7 @@ function refresh_smb_temp_and_enact {
     # (no point in enacting a temp that's going to get changed after we see our last SMB)
     if (cat monitor/temp_basal.json | json -c "this.duration > 20" | grep -q duration); then
         echo -n "Temp duration >20m. "
-    elif ( find monitor/ -mmin +10 | grep -q monitor/pump_loop_completed ); then
+    elif ( find /tmp/ -mmin +10 | grep -q /tmp/pump_loop_completed ); then
         echo "pump_loop_completed more than 10m ago: setting temp before refreshing pumphistory. "
         smb_enact_temp
     else
@@ -524,9 +524,9 @@ function wait_for_bg {
         for i in `seq 1 24`; do
             # set mtime of monitor/glucose.json to the time of its most recent glucose value
             touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
-            if (! ls monitor/pump_loop_completed >/dev/null ); then
+            if (! ls /tmp/pump_loop_completed >/dev/null ); then
                 break
-            elif (find monitor/ -newer monitor/pump_loop_completed | grep -q glucose.json); then
+            elif (find /tmp/ -newer /tmp/pump_loop_completed | grep -q glucose.json); then
                 echo glucose.json newer than pump_loop_completed
                 break
             else
