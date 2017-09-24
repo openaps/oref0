@@ -526,7 +526,7 @@ function wait_for_bg {
             touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
             if (! ls /tmp/pump_loop_completed >/dev/null ); then
                 break
-            elif (find /tmp/ -newer /tmp/pump_loop_completed | grep -q glucose.json); then
+            elif (find monitor/ -newer /tmp/pump_loop_completed | grep -q glucose.json); then
                 echo glucose.json newer than pump_loop_completed
                 break
             else
