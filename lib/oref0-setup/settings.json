@@ -1,0 +1,8 @@
+{
+  "maxBasal": 1.5,
+  "temp_basal": {
+    "percent": 100,
+    "type": "Units/hour"
+  }, 
+  "insulin_action_curve": 6
+}
