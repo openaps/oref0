@@ -58,6 +58,10 @@ case $i in
     radio_locale="${i#*=}"
     shift # past argument=value
     ;;
+    -pm=*|--pumpmodel=*)
+    pumpmodel="${i#*=}"
+    shift # past argument=value
+    ;;
     -t=*|--tty=*)
     ttyport="${i#*=}"
     shift # past argument=value
@@ -151,10 +155,21 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     directory="$(readlink -m $DIR)"
     echo
+
     read -p "What is your pump serial number (numbers only)? " -r
     serial=$REPLY
     echocolor "Ok, $serial it is."
     echo
+    
+    read -p "Do you have an x12 (i.e. 512 or 712) pump? y/[N] " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        pumpmodel=x12
+        echocolor "Ok, you'll be using a 512 or 712 pump. Got it. "
+        echo
+    else
+        echocolor "You're using a different model pump. Got it."
+    fi
+
     read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout:   " -r
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
@@ -392,6 +407,10 @@ if [[ ${CGM,,} =~ "shareble" ]]; then
 fi
 echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
+if [[ ${pumpmodel,,} =~ "x12" ]]; then
+    echo -n "x12 pump, "
+fi
+
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
 else
@@ -432,6 +451,9 @@ fi
 echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_RUNAGAIN
 if [[ ! -z "$ttyport" ]]; then
     echo -n " --tty=$ttyport" | tee -a $OREF0_RUNAGAIN
+fi
+if [[ ! -z "$pumpmodel" ]]; then
+    echo -n " --pumpmodel=$pumpmodel" | tee -a $OREF0_RUNAGAIN;
 fi
 echo -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN;
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
@@ -894,16 +916,25 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
     fi
 
-    # configure supermicrobolus if enabled
-    # If you aren't sure what you're doing, *DO NOT* enable this.
-    # If you ignore this warning, it *WILL* administer extra post-meal insulin, which may cause low blood sugar.
-    if [[ $ENABLE =~ microbolus ]]; then
-        sudo apt-get -y install bc jq
-        cd $directory || die "Can't cd $directory"
-        for type in supermicrobolus; do
-        echo importing $type file
-        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
+    if [[ ${pumpmodel,,} =~ "x12" ]]; then
+        echo "copying settings files for x12 pumps"
+        cp $HOME/src/oref0/lib/oref0-setup/bg_targets_raw.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/basal_profile.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/settings.json $directory/settings/ || die "Could not copy settings files for x12 pumps"
+        echo "getting ready to remove get-settings since this is an x12"
+        openaps alias remove get-settings || die "Could not remove get-settings"
+        echo "settings removed, getting ready to add x12 settings"
+        openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json settings/profile.json" || die "Could not add x12 settings"
+    else
+        # configure supermicrobolus if enabled
+        # If you aren't sure what you're doing, *DO NOT* enable this.
+        # If you ignore this warning, it *WILL* administer extra post-meal insulin, which may cause low blood sugar.
+        if [[ $ENABLE =~ microbolus ]]; then
+            sudo apt-get -y install bc jq
+            cd $directory || die "Can't cd $directory"
+            for type in supermicrobolus; do
+            echo importing $type file
+            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+            done
+        fi
     fi
 
     echo "Adding OpenAPS log shortcuts"
@@ -1016,6 +1047,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "To pair your G4 Share receiver, open its Settings, select Share, Forget Device (if previously paired), then turn sharing On"
     fi
 
+    if [[ ${pumpmodel,,} =~ "x12" ]]; then
+        echo
+        echo To complete your x12 pump setup, you must edit your basal_profile.json,
+        echo and may want to edit your settings.json and bg_targets_raw.json as well.
+        read -p "Press enter to begin editing basal_profile.json, and then press Ctrl-X when done."
+        nano $directory/settings/basal_profile.json
+        echo To edit your basal_profile.json again in the future, run: nano $directory/settings/basal_profile.json
+        echo To edit your settings.json to set maxBasal or DIA, run: nano $directory/settings/settings.json
+        echo To edit your bg_targets_raw.json to set targets, run: nano $directory/settings/bg_targets_raw.json
+    fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
 
