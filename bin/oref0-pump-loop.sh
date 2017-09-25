@@ -229,7 +229,8 @@ function refresh_after_bolus_or_enact {
         refresh_profile 3
         gather || ( wait_for_silence 10 && gather ) || ( wait_for_silence 20 && gather )
         openaps report invoke enact/smb-suggested.json 2>/dev/null >/dev/null \
-        && cp -up enact/smb-suggested.json enact/suggested.json
+        && cp -up enact/smb-suggested.json enact/suggested.json \
+        && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
         true
     fi
 
