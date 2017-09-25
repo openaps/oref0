@@ -228,6 +228,9 @@ function refresh_after_bolus_or_enact {
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
         gather || ( wait_for_silence 10 && gather ) || ( wait_for_silence 20 && gather )
+        openaps report invoke enact/smb-suggested.json 2>/dev/null >/dev/null \
+        && cp -up enact/smb-suggested.json enact/suggested.json \
+        && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
         true
     fi
 
@@ -512,8 +515,8 @@ function refresh_profile {
     else
         profileage=$1
     fi
-    find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo Settings less than $profileage minutes old \
-    || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo ed)
+    find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
+    || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo -n "ed. ")
 }
 
 function wait_for_bg {
