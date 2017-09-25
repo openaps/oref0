@@ -228,7 +228,7 @@ function refresh_after_bolus_or_enact {
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
         gather || ( wait_for_silence 10 && gather ) || ( wait_for_silence 20 && gather )
-        smb_suggest
+        smb_suggest 2>&1
         true
     fi
 
