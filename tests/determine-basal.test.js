@@ -242,7 +242,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
-        output.reason.should.match(/basaliob .* > max_iob .*/);
+        output.reason.should.match(/IOB .* > max_iob .*/);
     });
 
     it('should temp to 0 when LOW w/ positive IOB', function () {
