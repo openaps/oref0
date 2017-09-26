@@ -143,7 +143,8 @@ if (!module.parent) {
 
     var pebble = {        
         "content" : "" + bgnow + requestedtemp.tick + " " + bgTime + "\n"
-        + iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + "\n"
+        //+ iob + "U->" + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + "\n"
+        + iob + "U->" + requestedtemp.eventualBG + "\n"
         //+ "Act: " + enactedstring
         //+ " at " + enactedat + "\n"
         + tempstring
