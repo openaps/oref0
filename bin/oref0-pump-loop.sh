@@ -228,7 +228,7 @@ function refresh_after_bolus_or_enact {
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
         gather || ( wait_for_silence 10 && gather ) || ( wait_for_silence 20 && gather )
-        openaps report invoke enact/smb-suggested.json 2>/dev/null >/dev/null \
+        openaps report invoke monitor/iob.json enact/smb-suggested.json 2>/dev/null >/dev/null \
         && cp -up enact/smb-suggested.json enact/suggested.json \
         && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
         true
