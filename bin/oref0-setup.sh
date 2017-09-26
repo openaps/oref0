@@ -78,10 +78,10 @@ case $i in
     current_basal_safety_multiplier="${i#*=}"
     shift # past argument=value
     ;;
-    -bdd=*|--bolussnooze_dia_divisor=*)
-    bolussnooze_dia_divisor="${i#*=}"
-    shift # past argument=value
-    ;;
+    #-bdd=*|--bolussnooze_dia_divisor=*)
+    #bolussnooze_dia_divisor="${i#*=}"
+    #shift # past argument=value
+    #;;
     -m5c=*|--min_5m_carbimpact=*)
     min_5m_carbimpact="${i#*=}"
     shift # past argument=value
@@ -425,9 +425,9 @@ fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
     echo -n ", current_basal_safety_multiplier $current_basal_safety_multiplier";
 fi
-if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-    echo -n ", bolussnooze_dia_divisor $bolussnooze_dia_divisor";
-fi
+#if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+    #echo -n ", bolussnooze_dia_divisor $bolussnooze_dia_divisor";
+#fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
     echo -n ", min_5m_carbimpact $min_5m_carbimpact";
 fi
@@ -462,9 +462,9 @@ fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
     echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a $OREF0_RUNAGAIN
-fi
+#if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+    #echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a $OREF0_RUNAGAIN
+#fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
     echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a $OREF0_RUNAGAIN
 fi
@@ -576,7 +576,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 #fi
 
     cd $directory || die "Can't cd $directory"
-    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
+    #if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
+    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
         preferences_from_args=()
@@ -589,9 +590,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ! -z "$current_basal_safety_multiplier" ]]; then
             preferences_from_args+="\"current_basal_safety_multiplier\":$current_basal_safety_multiplier "
         fi
-        if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-            preferences_from_args+="\"bolussnooze_dia_divisor\":$bolussnooze_dia_divisor "
-        fi
+        #if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+            #preferences_from_args+="\"bolussnooze_dia_divisor\":$bolussnooze_dia_divisor "
+        #fi
         if [[ ! -z "$min_5m_carbimpact" ]]; then
             preferences_from_args+="\"min_5m_carbimpact\":$min_5m_carbimpact "
         fi
