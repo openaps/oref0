@@ -110,7 +110,7 @@ function smb_check_everything {
     && smb_enact_temp \
     && if (grep -q '"units":' enact/smb-suggested.json); then
         ( smb_verify_suggested || smb_suggest ) \
-        && wait_for_silence 1 \
+        && echo -n "Listening for $upto10s silence" && wait_for_silence $upto10s \
         && smb_verify_reservoir \
         && smb_verify_status \
         || ( echo Retrying SMB checks
