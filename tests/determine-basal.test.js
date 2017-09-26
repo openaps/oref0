@@ -485,10 +485,10 @@ describe('determine-basal', function ( ) {
       result.error.should.equal('Error: iob_data undefined. ');
     });
 
-    it('iob_data should contain activity, iob, bolussnooze', function () {
-      var result = determine_basal({glucose:100}, undefined,{"activity":0}, {"current_basal":0.0, "max_bg":100,"min_bg":110}, undefined, meal_data, tempBasalFunctions);
-      result.error.should.equal('Error: iob_data missing some property. ');
-    });
+    //it('iob_data should contain activity, iob, bolussnooze', function () {
+      //var result = determine_basal({glucose:100}, undefined,{"activity":0}, {"current_basal":0.0, "max_bg":100,"min_bg":110}, undefined, meal_data, tempBasalFunctions);
+      //result.error.should.equal('Error: iob_data missing some property. ');
+    //});
 
 /*
     it('should return error eventualBG if something went wrong', function () {
