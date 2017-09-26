@@ -49,8 +49,8 @@ if [ -n "${API_SECRET_READ}" ]; then
 fi
 
 if [[ -z "$API_SECRET" ]]; then
-  echo "ERROR: API_SECRET is not set when calling oref0-autotune.sh"
-  exit 1
+  echo "Warning: API_SECRET is not set when calling oref0-autotune.sh"
+  # exit 1
 fi
 
 # If we are running OS X, we need to use a different version
@@ -189,7 +189,9 @@ do
     # Get Nightscout carb and insulin Treatments
     # echo $i $START_DATE;
     #query="find%5Bdate%5D%5B%24gte%5D=`(date -d $i +%s | tr -d'\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
-    query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$i -5 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$i +1 days" -Iminutes`"
+    # to capture UTC-dated treatments, we need to capture an extra 12h on either side, plus the DIA lookback
+    # 18h = 12h for timezones + 6h for DIA; 36h = 24h for end-of-day + 12h for timezones
+    query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$i -18 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$i +36 hours" -Iminutes`"
     echo Query: $NIGHTSCOUT_HOST/$query
     ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.$i.json || die "Couldn't download ns-treatments.$i.json"
     ls -la ns-treatments.$i.json || die "No ns-treatments.$i.json downloaded"
