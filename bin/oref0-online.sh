@@ -62,7 +62,7 @@ function bt_connect {
     echo
     for MAC; do
         echo -n "At $(date) my public IP is: "
-        if ! curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"; then
+        if ! check_ip; then
             echo; echo -n "Error, connecting BT to $MAC"
             oref0-bluetoothup
             sudo bt-pan client $MAC -d
