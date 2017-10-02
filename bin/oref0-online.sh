@@ -2,7 +2,6 @@
 
 main() {
     MACs=$@
-    Interface='wlan0'
     HostAPDIP='10.29.29.1'
     echo; echo Starting oref0-online.
     # if we are connected to wifi but don't have an IP, try to get one
@@ -102,8 +101,10 @@ function bt_disconnect {
 
 function stop_hotspot {
     if grep -q $HostAPDIP /etc/network/interfaces; then
+        ifdown wlan0
         echo "Activating client config"
         cp /etc/network/interfaces.client /etc/network/interfaces
+        ifup wlan0
         echo "Attempting to stop hostapd"
         /etc/init.d/hostapd stop
         echo "Attempting to stop dnsmasq"
@@ -138,8 +139,8 @@ function start_hotspot {
         #echo "Starting networking"
         #/etc/init.d/networking start
         sleep 5
-        echo "Setting IP Address for $Interface"
-        /sbin/ifconfig $Interface $HostAPDIP netmask 255.255.255.0 up
+        echo "Setting IP Address for wlan0"
+        /sbin/ifconfig wlan0 $HostAPDIP netmask 255.255.255.0 up
     fi
 }
 
