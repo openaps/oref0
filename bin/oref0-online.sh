@@ -97,18 +97,18 @@ function bt_disconnect {
     sudo dhclient wlan0
 }
 
-function start_hotspot {
+function stop_hotspot {
     echo "Activating client config"
     cp /etc/network/interfaces.client /etc/network/interfaces
     echo "Attempting to stop hostapd"
     /etc/init.d/hostapd stop
     echo "Attempting to stop dnsmasq"
     /etc/init.d/dnsmasq stop
-    echo "Renewing IP Address for $Interface"
+    echo "Renewing IP Address for wlan0"
     dhclient_restart
 }
 
-function stop_hotspot {
+function start_hotspot {
     echo "Killing wpa_supplicant"
     #killall wpa_supplicant
     wpa_cli terminate
