@@ -1,6 +1,7 @@
 #!/bin/bash
 
 main() {
+    MACs = $@
     echo; echo Starting oref0-online.
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
@@ -60,7 +61,7 @@ function has_addr {
 function bt_connect {
     # loop over as many MACs as are provided as arguments
     echo
-    for MAC; do
+    for MAC in MACs; do
         echo -n "At $(date) my public IP is: "
         if ! check_ip; then
             echo; echo -n "Error, connecting BT to $MAC"
@@ -87,7 +88,7 @@ function bt_disconnect {
     echo "Back online via wifi; disconnecting BT $MAC"
     ifdown bnep0
     # loop over as many MACs as are provided as arguments
-    for MAC; do
+    for MAC in MACs; do
         sudo bt-pan client $MAC -d
     done
     echo "and getting new wlan0 IP"
