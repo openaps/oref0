@@ -18,13 +18,13 @@ main() {
     if check_ip; then
         # if we are back on wifi (and have connectivity to checkip.amazonaws.com), shut down bluetooth
         if has_addr wlan0 && has_addr bnep0; then
-            bt_disconnect
+            bt_disconnect $MACs
         fi
     else
         echo
         print_wifi_name
         if ! check_ip; then
-            bt_connect
+            bt_connect $MACs
         fi
         print_wifi_name
         if check_ip; then
@@ -61,7 +61,7 @@ function has_addr {
 function bt_connect {
     # loop over as many MACs as are provided as arguments
     echo
-    for MAC in MACs; do
+    for MAC; do
         echo -n "At $(date) my public IP is: "
         if ! check_ip; then
             echo; echo -n "Error, connecting BT to $MAC"
@@ -88,7 +88,7 @@ function bt_disconnect {
     echo "Back online via wifi; disconnecting BT $MAC"
     ifdown bnep0
     # loop over as many MACs as are provided as arguments
-    for MAC in MACs; do
+    for MAC; do
         sudo bt-pan client $MAC -d
     done
     echo "and getting new wlan0 IP"
