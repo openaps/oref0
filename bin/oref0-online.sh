@@ -1,7 +1,7 @@
 #!/bin/bash
 
 main() {
-    MACs = $@
+    MACs=$@
     echo; echo Starting oref0-online.
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
