@@ -99,8 +99,7 @@ function bt_disconnect {
 }
 
 function stop_hotspot {
-    # if hostapd is running (pid is not null)
-    if [[ ! -z $(pidof hostapd) ]]; then
+    if grep -q $HostAPDIP /etc/network/interfaces
         echo "Activating client config"
         cp /etc/network/interfaces.client /etc/network/interfaces
         echo "Attempting to stop hostapd"
@@ -115,26 +114,31 @@ function stop_hotspot {
 }
 
 function start_hotspot {
+    Interface='wlan0'
+    HostAPDIP='10.29.29.1'
     # if hostapd is not running (pid is null)
-    if [[ -z $(pidof hostapd) ]]; then
+    if grep -q $HostAPDIP /etc/network/interfaces
+        echo Local hotspot is already running.
+    else
         echo "Killing wpa_supplicant"
         #killall wpa_supplicant
         wpa_cli terminate
+        echo "Shutting down wlan0"
+        ifdown wlan0
         echo "Activating AP config"
         cp /etc/network/interfaces.ap /etc/network/interfaces
         echo "Attempting to start hostapd"
         /etc/init.d/hostapd start
         echo "Attempting to start dnsmasq"
         /etc/init.d/dnsmasq start
-        echo "Stopping networking"
-        /etc/init.d/networking stop
-        echo "Starting networking"
-        /etc/init.d/networking start
+        ifup wlan0
+        #echo "Stopping networking"
+        #/etc/init.d/networking stop
+        #echo "Starting networking"
+        #/etc/init.d/networking start
         sleep 5
-        echo "Setting IP Address for wlan0"
-        /sbin/ifconfig wlan0 $HostAPDIP netmask 255.255.255.0 up
-    else
-        echo Local hotspot is already running.
+        echo "Setting IP Address for $Interface"
+        /sbin/ifconfig $Interface $HostAPDIP netmask 255.255.255.0 up
     fi
 }
 
