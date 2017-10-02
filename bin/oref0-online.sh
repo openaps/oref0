@@ -77,6 +77,7 @@ function bt_connect {
                 echo -n " and releasing wifi IP"
                 sudo dhclient wlan0 -r
                 echo
+                stop_hotspot
                 echo Sleeping for 2 minutes before trying wifi again
                 sleep 120
             fi
@@ -102,6 +103,7 @@ function bt_disconnect {
 function stop_hotspot {
     if grep -q $HostAPDIP /etc/network/interfaces; then
         ifdown wlan0
+        echo "Bluetooth connectivity restored; shutting down local-only hotspot"
         echo "Activating client config"
         cp /etc/network/interfaces.client /etc/network/interfaces
         ifup wlan0
@@ -121,6 +123,8 @@ function start_hotspot {
     if grep -q $HostAPDIP /etc/network/interfaces; then
         echo Local hotspot is already running.
     else
+        echo
+        echo "Unable to connect via wifi or Bluetooth; activating local-only hotspot"
         echo "Killing wpa_supplicant"
         #killall wpa_supplicant
         wpa_cli terminate
