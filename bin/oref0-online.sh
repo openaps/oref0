@@ -121,6 +121,7 @@ function stop_hotspot {
 function start_hotspot {
     # if hostapd is not running (pid is null)
     if grep -q $HostAPDIP /etc/network/interfaces; then
+        echo
         echo Local hotspot is already running.
     else
         echo
