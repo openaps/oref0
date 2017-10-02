@@ -2,6 +2,8 @@
 
 main() {
     MACs=$@
+    Interface='wlan0'
+    HostAPDIP='10.29.29.1'
     echo; echo Starting oref0-online.
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
@@ -114,8 +116,6 @@ function stop_hotspot {
 }
 
 function start_hotspot {
-    Interface='wlan0'
-    HostAPDIP='10.29.29.1'
     # if hostapd is not running (pid is null)
     if grep -q $HostAPDIP /etc/network/interfaces; then
         echo Local hotspot is already running.
