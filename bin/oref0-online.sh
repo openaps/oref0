@@ -26,9 +26,14 @@ main() {
             bt_connect
         fi
         print_wifi_name
-        if ! check_ip; then
+        if check_ip; then
+            # if we're online after activating bluetooth, shut down any local-access hotspot we're running
+            stop_hotspot
+        else
+            # if we can't get online via wifi or bluetooth, start our own local-access hotspot
+            start_hotspot
             # if we still can't get online, try cycling networking as a last resort
-            restart_networking
+            #restart_networking
         fi
     fi
     echo Finished oref0-online.
@@ -91,15 +96,49 @@ function bt_disconnect {
     sudo dhclient wlan0
 }
 
+function start_hotspot {
+    echo "Activating client config"
+    cp /etc/network/interfaces.client /etc/network/interfaces
+    echo "Attempting to stop hostapd"
+    /etc/init.d/hostapd stop
+    echo "Attempting to stop dnsmasq"
+    /etc/init.d/dnsmasq stop
+    echo "Renewing IP Address for $Interface"
+    dhclient_restart
+}
+
+function stop_hotspot {
+    echo "Killing wpa_supplicant"
+    #killall wpa_supplicant
+    wpa_cli terminate
+    echo "Activating AP config"
+    cp /etc/network/interfaces.ap /etc/network/interfaces
+    echo "Attempting to start hostapd"
+    /etc/init.d/hostapd start
+    echo "Attempting to start dnsmasq"
+    /etc/init.d/dnsmasq start
+    echo "Stopping networking"
+    /etc/init.d/networking stop
+    echo "Starting networking"
+    /etc/init.d/networking start
+    sleep 5
+    echo "Setting IP Address for wlan0"
+    /sbin/ifconfig wlan0 $HostAPDIP netmask 255.255.255.0 up
+}
+
+function dhclient_restart {
+    ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
+    sudo dhclient wlan0 -r
+    sudo dhclient wlan0
+}
+
 function restart_networking {
     echo; echo "Error, cycling networking "
     sudo /etc/init.d/networking stop
     sleep 5
     sudo /etc/init.d/networking start
     echo "and getting new wlan0 IP"
-    ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
-    sudo dhclient wlan0 -r
-    sudo dhclient wlan0
+    dhclient_restart
 }
 
 main "$@"
