@@ -127,11 +127,12 @@ function start_hotspot {
         ifdown wlan0
         echo "Activating AP config"
         cp /etc/network/interfaces.ap /etc/network/interfaces
+        ifup wlan0
         echo "Attempting to start hostapd"
         /etc/init.d/hostapd start
         echo "Attempting to start dnsmasq"
         /etc/init.d/dnsmasq start
-        ifup wlan0
+        systemctl daemon-reload
         #echo "Stopping networking"
         #/etc/init.d/networking stop
         #echo "Starting networking"
