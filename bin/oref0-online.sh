@@ -99,7 +99,7 @@ function bt_disconnect {
 }
 
 function stop_hotspot {
-    if grep -q $HostAPDIP /etc/network/interfaces
+    if grep -q $HostAPDIP /etc/network/interfaces; then
         echo "Activating client config"
         cp /etc/network/interfaces.client /etc/network/interfaces
         echo "Attempting to stop hostapd"
@@ -117,7 +117,7 @@ function start_hotspot {
     Interface='wlan0'
     HostAPDIP='10.29.29.1'
     # if hostapd is not running (pid is null)
-    if grep -q $HostAPDIP /etc/network/interfaces
+    if grep -q $HostAPDIP /etc/network/interfaces; then
         echo Local hotspot is already running.
     else
         echo "Killing wpa_supplicant"
