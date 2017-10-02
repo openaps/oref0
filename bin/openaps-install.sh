@@ -27,6 +27,9 @@ sed -i "s/#compress/compress/g" /etc/logrotate.conf
 # TODO: change back to master after docs release
 curl -s https://raw.githubusercontent.com/openaps/docs/dev/scripts/quick-packages.sh | bash -
 mkdir -p ~/src; cd ~/src && git clone git://github.com/openaps/oref0.git || (cd oref0 && git checkout master && git pull)
+echo "Press Enter to select your preferred language. Be sure to select en_US.utf8 as well to comply with OpenAPS prerequisites."
+read -p "[Enter to continue]" -r
+dpkg-reconfigure locale
 echo "Press Enter to run oref0-setup with the current release (master branch) of oref0,"
 read -p "or press ctrl-c to cancel. " -r
 cd && ~/src/oref0/bin/oref0-setup.sh
