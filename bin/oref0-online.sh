@@ -17,6 +17,7 @@ main() {
     print_wifi_name
     if check_ip; then
         # if we are back on wifi (and have connectivity to checkip.amazonaws.com), shut down bluetooth
+        stop_hotspot
         if has_addr wlan0 && has_addr bnep0; then
             bt_disconnect $MACs
         fi
@@ -108,6 +109,8 @@ function stop_hotspot {
         /etc/init.d/dnsmasq stop
         echo "Renewing IP Address for wlan0"
         dhclient_restart
+    else
+        echo Local hotspot is not running.
     fi
 }
 
@@ -130,6 +133,8 @@ function start_hotspot {
         sleep 5
         echo "Setting IP Address for wlan0"
         /sbin/ifconfig wlan0 $HostAPDIP netmask 255.255.255.0 up
+    else
+        echo Local hotspot is already running.
     fi
 }
 
