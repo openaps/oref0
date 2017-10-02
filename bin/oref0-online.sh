@@ -102,15 +102,15 @@ function bt_disconnect {
 
 function stop_hotspot {
     if grep -q $HostAPDIP /etc/network/interfaces; then
-        ifdown wlan0
         echo "Bluetooth connectivity restored; shutting down local-only hotspot"
-        echo "Activating client config"
-        cp /etc/network/interfaces.client /etc/network/interfaces
-        ifup wlan0
         echo "Attempting to stop hostapd"
         /etc/init.d/hostapd stop
         echo "Attempting to stop dnsmasq"
         /etc/init.d/dnsmasq stop
+        echo "Activating client config"
+        ifdown wlan0
+        cp /etc/network/interfaces.client /etc/network/interfaces
+        ifup wlan0
         echo "Renewing IP Address for wlan0"
         dhclient_restart
     else
