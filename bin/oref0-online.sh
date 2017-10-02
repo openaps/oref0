@@ -136,6 +136,7 @@ function start_hotspot {
         echo "Attempting to start hostapd"
         /etc/init.d/hostapd start
         echo "Attempting to start dnsmasq"
+        service udhcpd stop
         /etc/init.d/dnsmasq start
         systemctl daemon-reload
         #echo "Stopping networking"
