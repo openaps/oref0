@@ -98,33 +98,39 @@ function bt_disconnect {
 }
 
 function stop_hotspot {
-    echo "Activating client config"
-    cp /etc/network/interfaces.client /etc/network/interfaces
-    echo "Attempting to stop hostapd"
-    /etc/init.d/hostapd stop
-    echo "Attempting to stop dnsmasq"
-    /etc/init.d/dnsmasq stop
-    echo "Renewing IP Address for wlan0"
-    dhclient_restart
+    # if hostapd is running (pid is not null)
+    if [[ ! -z $(pidof hostapd) ]]; then
+        echo "Activating client config"
+        cp /etc/network/interfaces.client /etc/network/interfaces
+        echo "Attempting to stop hostapd"
+        /etc/init.d/hostapd stop
+        echo "Attempting to stop dnsmasq"
+        /etc/init.d/dnsmasq stop
+        echo "Renewing IP Address for wlan0"
+        dhclient_restart
+    fi
 }
 
 function start_hotspot {
-    echo "Killing wpa_supplicant"
-    #killall wpa_supplicant
-    wpa_cli terminate
-    echo "Activating AP config"
-    cp /etc/network/interfaces.ap /etc/network/interfaces
-    echo "Attempting to start hostapd"
-    /etc/init.d/hostapd start
-    echo "Attempting to start dnsmasq"
-    /etc/init.d/dnsmasq start
-    echo "Stopping networking"
-    /etc/init.d/networking stop
-    echo "Starting networking"
-    /etc/init.d/networking start
-    sleep 5
-    echo "Setting IP Address for wlan0"
-    /sbin/ifconfig wlan0 $HostAPDIP netmask 255.255.255.0 up
+    # if hostapd is not running (pid is null)
+    if [[ ! -z $(pidof hostapd) ]]; then
+        echo "Killing wpa_supplicant"
+        #killall wpa_supplicant
+        wpa_cli terminate
+        echo "Activating AP config"
+        cp /etc/network/interfaces.ap /etc/network/interfaces
+        echo "Attempting to start hostapd"
+        /etc/init.d/hostapd start
+        echo "Attempting to start dnsmasq"
+        /etc/init.d/dnsmasq start
+        echo "Stopping networking"
+        /etc/init.d/networking stop
+        echo "Starting networking"
+        /etc/init.d/networking start
+        sleep 5
+        echo "Setting IP Address for wlan0"
+        /sbin/ifconfig wlan0 $HostAPDIP netmask 255.255.255.0 up
+    fi
 }
 
 function dhclient_restart {
