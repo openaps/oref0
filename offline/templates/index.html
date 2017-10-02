@@ -1,0 +1,16 @@
+<html>
+<head>
+<link rel="stylesheet" href='/static/style.css' />
+</head>
+<body>
+<h1>OpenAPS</h1>
+<p>Running on {{ data.hostname }}</p>
+<p>BG: {{ data.glucose.glucose }} {{ data.tick }} {{ data.glucose.direction }} at {{ data.glucose.dateString }}</p>
+<p>IOB: {{ data.iob.iob }}, COB: {{ data.meal.mealCOB }}</p>
+<p>Eventual BG: {{ data.suggested.eventualBG }}</p>
+<p>Current temp: {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}m</p>
+<p>Enacted: {{ data.enacted.rate }} for {{ data.enacted.duration }} + SMB {{ data.enacted.units|default("0", true) }}U</p>
+<p>Reason: {{ data.enacted.reason}} at {{ data.enacted.timestamp }}</p>
+</body>
+</html>
+
