@@ -78,8 +78,8 @@ function bt_connect {
                 sudo dhclient wlan0 -r
                 echo
                 stop_hotspot
-                echo Sleeping for 2 minutes before trying wifi again
-                sleep 120
+                # echo Sleeping for 2 minutes before trying wifi again
+                # sleep 120
             fi
             echo
         fi
