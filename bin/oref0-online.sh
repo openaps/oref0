@@ -116,7 +116,7 @@ function stop_hotspot {
 
 function start_hotspot {
     # if hostapd is not running (pid is null)
-    if [[ ! -z $(pidof hostapd) ]]; then
+    if [[ -z $(pidof hostapd) ]]; then
         echo "Killing wpa_supplicant"
         #killall wpa_supplicant
         wpa_cli terminate
