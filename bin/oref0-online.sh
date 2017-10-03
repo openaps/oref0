@@ -34,7 +34,7 @@ main() {
             stop_hotspot
         else
             # if we can't get online via wifi or bluetooth, start our own local-access hotspot
-            start_hotspot
+            start_hotspot $@
             # if we still can't get online, try cycling networking as a last resort
             #restart_networking
         fi
