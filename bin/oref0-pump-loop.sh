@@ -83,8 +83,8 @@ smb_main() {
 
 function overtemp {
     # check for CPU temperature above 80F
-    sensors -u 2>/dev/null | awk '$NF > 78' | grep input \
-    && echo Rig is too hot: not running pump-loop \
+    sensors -u 2>/dev/null | awk '$NF > 80' | grep input \
+    && echo Rig is too hot: not running pump-loop at $(date)\
     && echo Please ensure rig is properly ventilated
 }
 function smb_reservoir_before {
