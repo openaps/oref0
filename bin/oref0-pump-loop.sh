@@ -82,7 +82,7 @@ smb_main() {
 }
 
 function overtemp {
-    # check for CPU temperature above 80F
+    # check for CPU temperature above 80°C
     sensors -u 2>/dev/null | awk '$NF > 80' | grep input \
     && echo Rig is too hot: not running pump-loop at $(date)\
     && echo Please ensure rig is properly ventilated
