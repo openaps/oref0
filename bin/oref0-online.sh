@@ -101,7 +101,7 @@ function bt_disconnect {
 }
 
 function stop_hotspot {
-    if grep -q $HostAPDIP /etc/network/interfaces; then
+    if grep -q $HostAPDIP /etc/network/interfaces || iwconfig wlan0 | grep Mode:Master; then
         echo "Bluetooth connectivity restored; shutting down local-only hotspot"
         echo "Attempting to stop hostapd"
         /etc/init.d/hostapd stop
