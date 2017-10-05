@@ -22,7 +22,7 @@
 
 var generate = require('oref0/lib/autotune-prep');
 function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <glucose.json> [carbhistory.json] [autotune/glucose.json]');
+        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <glucose.json> [pumpprofile.json] [carbhistory.json] [autotune/glucose.json]');
 }
 
 if (!module.parent) {
@@ -33,8 +33,9 @@ if (!module.parent) {
     }
     var profile_input = process.argv.slice(3, 4).pop();
     var glucose_input = process.argv.slice(4, 5).pop();
-    var carb_input = process.argv.slice(5, 6).pop()
-    var prepped_glucose_input = process.argv.slice(6, 7).pop()
+    var pumpprofile_input = process.argv.slice(5, 6).pop()
+    var carb_input = process.argv.slice(6, 7).pop()
+    var prepped_glucose_input = process.argv.slice(7, 8).pop()
 
     if ( !pumphistory_input || !profile_input || !glucose_input ) {
         usage( );
@@ -51,10 +52,23 @@ if (!module.parent) {
         return console.error("Could not parse input data: ", e);
     }
 
+    var pumpprofile_data = { };
+    if (typeof pumpprofile_input != 'undefined') {
+        try {
+            pumpprofile_data = JSON.parse(fs.readFileSync(pumpprofile_input, 'utf8'));
+        } catch (e) {
+            console.error("Warning: could not parse "+pumpprofile_input);
+        }
+    }
+
     // disallow impossibly low carbRatios due to bad decoding
     if ( typeof(profile_data.carb_ratio) == 'undefined' || profile_data.carb_ratio < 2 ) {
-        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratio ' + profile_data.carb_ratio + ' out of bounds" }');
-        return console.error("Error: carb_ratio " + profile_data.carb_ratio + " out of bounds");
+        if ( typeof(pumpprofile_data.carb_ratio) == 'undefined' || pumpprofile_data.carb_ratio < 2 ) {
+            console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratios ' + profile_data.carb_ratio + ' and ' + pumpprofile_data.carb_ratio + ' out of bounds" }');
+            return console.error("Error: carb_ratios " + profile_data.carb_ratio + ' and ' + pumpprofile_data.carb_ratio + " out of bounds");
+        } else {
+            profile_data.carb_ratio = pumpprofile_data.carb_ratio;
+        }
     }
 
     try {
