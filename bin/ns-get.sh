@@ -26,7 +26,7 @@ EOF
 CURL_AUTH=""
 
 # use token authentication if the user has a token set in their API_SECRET environment variable
-if [[ "${API_SECRET,,}" =~ "token=" ]]; then
+if [[ "${API_SECRET}" =~ "token=" ]]; then
   if [[ -z ${QUERY} ]]; then
     REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${API_SECRET}
   else
@@ -46,7 +46,7 @@ case $1 in
     OUTPUT=${5-/dev/fd/1}
 
     # use token authentication if the user has a token set in their API_SECRET environment variable
-    if [[ "${API_SECRET,,}" =~ "token=" ]]; then
+    if [[ "${API_SECRET}" =~ "token=" ]]; then
       if [[ -z ${QUERY} ]]; then
         REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${API_SECRET}
       else
