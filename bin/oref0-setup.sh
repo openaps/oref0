@@ -499,6 +499,11 @@ echocolor-n "Continue? y/[N] "
 read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
+    # Attempting to remove git to make install --nogit by default for existing users
+    echo Removing any existing git
+    rm -rf ~/myopenaps/.git
+    echo Removed any existing git
+
     # TODO: delete this after openaps 0.2.1 release
     echo Checking openaps 0.2.1 installation with --nogit support
     if ! openaps --version 2>&1 | egrep "0.[2-9].[1-9]"; then
@@ -507,9 +512,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     echo -n "Checking $directory: "
     mkdir -p $directory
-    if ( cd $directory && ls openaps.ini 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
-        echo $directory already exists
-    elif openaps init $directory --nogit; then
+    # if ( cd $directory && ls openaps.ini 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
+     #   echo $directory already exists
+    if openaps init $directory --nogit; then
         echo $directory initialized
     else
         die "Can't init $directory"
