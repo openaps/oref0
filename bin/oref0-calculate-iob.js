@@ -20,7 +20,7 @@
 
 var generate = require('oref0/lib/iob');
 function usage ( ) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory-zoned.json> <profile.json> <clock-zoned.json>');
+    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory-zoned.json> <profile.json> <clock-zoned.json> [autosens.json]');
 
 }
 
@@ -32,6 +32,9 @@ if (!module.parent) {
   }
   var profile_input = process.argv.slice(3, 4).pop();
   var clock_input = process.argv.slice(4, 5).pop();
+  if (params._.length > 5) {
+    autosens_input = params._.slice(5, 6).pop();
+  }
 
   if (!pumphistory_input || !profile_input) {
     usage( );
@@ -43,6 +46,17 @@ if (!module.parent) {
   var profile_data = require(cwd + '/' + profile_input);
   var clock_data = require(cwd + '/' + clock_input);
 
+  var autosens_data = null;
+  if (autosens_input) {
+    autosens_data = { "ratio": 1 };
+    if (autosens_input !== true && autosens_input.length) {
+      try {
+          autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
+          //console.error(JSON.stringify(autosens_data));
+      }
+    }
+  }
+
   // all_data.sort(function (a, b) { return a.date > b.date });
 
   var inputs = {
@@ -50,6 +64,9 @@ if (!module.parent) {
   , profile: profile_data
   , clock: clock_data
   };
+  if ( autosens_data ) {
+    inputs.autosens = autosens_data;
+  }
 
   var iob = generate(inputs);
   console.log(JSON.stringify(iob));
