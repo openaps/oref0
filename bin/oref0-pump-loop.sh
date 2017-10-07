@@ -45,7 +45,6 @@ smb_main() {
             && ( preflight || preflight ) \
             && if_mdt_get_bg \
             && refresh_old_pumphistory_24h \
-            && refresh_old_pumphistory \
             && refresh_old_profile \
             && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
             && ( smb_check_everything \
