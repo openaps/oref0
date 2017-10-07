@@ -46,13 +46,10 @@ if (!module.parent) {
 
   var autosens_data = null;
   if (autosens_input) {
-    autosens_data = { "ratio": 1 };
-    if (autosens_input !== true && autosens_input.length) {
-      try {
-          autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
-          //console.error(JSON.stringify(autosens_data));
-      } catch (e) {}
-    }
+    try {
+        var autosens_data = require(cwd + '/' + autosens_input);
+    } catch (e) {}
+    //console.error(autosens_input, JSON.stringify(autosens_data));
   }
 
   // all_data.sort(function (a, b) { return a.date > b.date });
