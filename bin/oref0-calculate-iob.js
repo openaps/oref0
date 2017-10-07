@@ -32,9 +32,7 @@ if (!module.parent) {
   }
   var profile_input = process.argv.slice(3, 4).pop();
   var clock_input = process.argv.slice(4, 5).pop();
-  if (params._.length > 5) {
-    autosens_input = params._.slice(5, 6).pop();
-  }
+  var autosens_input = process.argv.slice(5, 6).pop();
 
   if (!pumphistory_input || !profile_input) {
     usage( );
@@ -53,7 +51,7 @@ if (!module.parent) {
       try {
           autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
           //console.error(JSON.stringify(autosens_data));
-      }
+      } catch (e) {}
     }
   }
 
