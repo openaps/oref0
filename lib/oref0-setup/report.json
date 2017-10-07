@@ -214,7 +214,7 @@
       "json_default": "True",
       "pumphistory": "monitor/pumphistory-merged.json",
       "device": "iob",
-      "remainder": ""
+      "remainder": "settings/autosens.json"
     }
   },
   {
