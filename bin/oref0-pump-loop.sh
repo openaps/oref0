@@ -48,7 +48,6 @@ smb_main() {
             && refresh_old_pumphistory \
             && refresh_old_profile \
             && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
-            && refresh_smb_temp_and_enact \
             && ( smb_check_everything \
                 && if (grep -q '"units":' enact/smb-suggested.json); then
                     ( smb_bolus && \
