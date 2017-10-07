@@ -22,4 +22,6 @@ elif ! cat $FILE | egrep "add'l|maxBolus"; then
     echo "No additional carbs or bolus required."
 else
     curl -s -F "token=$TOKEN" -F "user=$USER" -F "sound=$SOUND" -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent
+    # delete smb-suggested.json to avoid duplicate notifications if this rig can't loop for 15m
+    rm $FILE
 fi
