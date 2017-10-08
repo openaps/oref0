@@ -124,7 +124,9 @@ function start_hotspot {
     if [[ -z $1 ]]; then
         echo "No BT MAC provided: not activating local-only hotspot"
     elif grep -q $HostAPDIP /etc/network/interfaces; then
-        echo "Local hotspot is already running."
+        echo "Local hotspot is running."
+        service hostapd status > /dev/null || service hostapd restart
+        service dnsmasq status > /dev/null || service dnsmasq restart
     else
         echo "Unable to connect via wifi or Bluetooth; activating local-only hotspot"
         echo "Killing wpa_supplicant"
