@@ -242,7 +242,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
-        output.reason.should.match(/basaliob .* > max_iob .*/);
+        output.reason.should.match(/IOB .* > max_iob .*/);
     });
 
     it('should temp to 0 when LOW w/ positive IOB', function () {
@@ -432,9 +432,10 @@ describe('determine-basal', function ( ) {
     });
 
     it('should set lower high-temp when high and falling almost fast enough with low insulin activity', function () {
-        var glucose_status = {"delta":-8,"glucose":300,"long_avgdelta":-5,"short_avgdelta":-5};
+        var glucose_status = {"delta":-6,"glucose":300,"long_avgdelta":-5,"short_avgdelta":-5};
         var iob_data = {"iob":0.5,"activity":0.005,"bolussnooze":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
+        console.error(output);
         output.rate.should.be.above(1);
         output.rate.should.be.below(2);
         output.duration.should.equal(30);
@@ -442,7 +443,7 @@ describe('determine-basal', function ( ) {
     });
 
     it('should reduce high-temp when high and falling almost fast enough with low insulin activity', function () {
-        var glucose_status = {"delta":-8,"glucose":300,"long_avgdelta":-5,"short_avgdelta":-5};
+        var glucose_status = {"delta":-6,"glucose":300,"long_avgdelta":-5,"short_avgdelta":-5};
         var iob_data = {"iob":0.5,"activity":0.005,"bolussnooze":0};
         var currenttemp = {"duration":30,"rate":3.5,"temp":"absolute"};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);

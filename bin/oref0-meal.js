@@ -99,7 +99,7 @@ if (!module.parent) {
     , glucose: glucose_data
     };
 
-    var dia_carbs = generate(inputs);
-    console.log(JSON.stringify(dia_carbs));
+    var recentCarbs = generate(inputs);
+    console.log(JSON.stringify(recentCarbs));
 }
 
