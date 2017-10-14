@@ -8,7 +8,7 @@ main() {
     overtemp && exit 1
     ns_temptargets || die "ns_temptargets failed"
     echo -n Refreshed temptargets
-    ns_meal_carbs || die "ns_meal_carbs failed"
+    ns_meal_carbs || die ", but ns_meal_carbs failed"
     echo " and meal carbs"
     upload
 }
@@ -54,7 +54,7 @@ function ns_meal_carbs {
     openaps report invoke monitor/carbhistory.json >/dev/null
     oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new
     grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json
-    exit 0
+    return 0
 }
 
 # echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed
