@@ -548,7 +548,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # TODO: remove this and switch back to easy_install or pip once decocare 0.1.0 is released
     if [ -d "$HOME/src/decocare/" ]; then
         echo "$HOME/src/decocare/ already exists; pulling latest 0.1.0-dev"
-        (cd $HOME/src/decocare && git fetch && git checkout 0.1.0-dev && git pull) || die "Couldn't pull latest decocare 0.1.0-dev"
+        (cd $HOME/src/ && rm -r decocare && git clone -b 0.1.0-dev git://github.com/openaps/decocare.git) || die "Couldn't pull latest decocare 0.1.0-dev"
     else
         echo -n "Cloning decocare 0.1.0-dev: "
         (cd $HOME/src && git clone -b 0.1.0-dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare 0.1.0-dev"
