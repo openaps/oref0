@@ -22,12 +22,25 @@ function overtemp {
 
 #openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json
 function get_ns_bg {
-    openaps get-ns-glucose
+    openaps get-ns-glucose > /dev/null
     # if ns-glucose.json data is <10m old, no more than 5m in the future, and valid (>38),
     # copy cgm/ns-glucose.json over to cgm/glucose.json if it's newer
-    cat cgm/ns-glucose.json | json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json
+    valid_glucose=$(find_valid_ns_glucose)
+    if echo $valid_glucose | grep -q glucose; then
+        echo Found valid BG:
+        echo $valid_glucose | jq -c '.[0] | { glucose: .glucose, dateString: .dateString }'
+        cp -pu cgm/ns-glucose.json cgm/glucose.json
+    else
+        echo No recent valid BG found. Most recent:
+        cat cgm/ns-glucose.json | jq -c '.[0] | { glucose: .glucose, dateString: .dateString }'
+    fi
+
     # copy cgm/glucose.json over to monitor/glucose.json if it's newer
     cp -pu cgm/glucose.json monitor/glucose.json
+}
+
+function find_valid_ns_glucose {
+    cat cgm/ns-glucose.json | json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"
 }
 
 function ns_temptargets {
@@ -46,7 +59,7 @@ function ns_meal_carbs {
 
 # echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed
 function upload {
-    echo -n Upload 
+    echo -n Upload
     ( upload_ns_status; upload_recent_treatments ) 2>/dev/null >/dev/null || die " failed"
     echo ed
 }
