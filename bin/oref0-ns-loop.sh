@@ -11,7 +11,6 @@ main() {
     ns_meal_carbs || die "ns_meal_carbs failed"
     echo " and meal carbs"
     upload
-    fi
 }
 
 function overtemp {
