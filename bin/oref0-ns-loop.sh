@@ -70,7 +70,7 @@ function upload_ns_status {
     && find enact/ -mmin -5 -size +5c | grep -q suggested.json \
     && format_ns_status \
     && grep -q iob upload/ns-status.json \
-    && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json
+    && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json | jq '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' -c
 }
 
 #ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json
