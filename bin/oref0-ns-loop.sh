@@ -60,8 +60,8 @@ function ns_meal_carbs {
 # echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed
 function upload {
     echo -n Upload
-    upload_ns_status >/dev/null || die "; NS status upload failed"
-    upload_recent_treatments >/dev/null || die "; NS treatments upload failed"
+    upload_ns_status || die "; NS status upload failed"
+    upload_recent_treatments || die "; NS treatments upload failed"
 }
 
 # grep -q iob monitor/iob.json && find enact/ -mmin -5 -size +5c | grep -q suggested.json && openaps format-ns-status && grep -q iob upload/ns-status.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json
