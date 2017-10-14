@@ -60,7 +60,8 @@ function ns_meal_carbs {
 # echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed
 function upload {
     echo -n Upload
-    ( upload_ns_status; upload_recent_treatments ) 2>/dev/null >/dev/null || die " failed"
+    upload_ns_status >/dev/null || die "; NS status upload failed"
+    upload_recent_treatments >/dev/null || die "; NS treatments upload failed"
     echo ed
 }
 
