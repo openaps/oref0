@@ -21,7 +21,8 @@ function overtemp {
 }
 
 #openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json
-function get_ns_glucose {
+function get_ns_bg {
+    openaps get-ns-glucose
     # if ns-glucose.json data is <10m old, no more than 5m in the future, and valid (>38),
     # copy cgm/ns-glucose.json over to cgm/glucose.json if it's newer
     cat cgm/ns-glucose.json | json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json
