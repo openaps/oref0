@@ -25,7 +25,7 @@ function get_ns_bg {
     # copy cgm/ns-glucose.json over to cgm/glucose.json if it's newer
     valid_glucose=$(find_valid_ns_glucose)
     if echo $valid_glucose | grep -q glucose; then
-        echo Found valid BG:
+        echo Found recent valid BG:
         echo $valid_glucose | jq -c '.[0] | { glucose: .glucose, dateString: .dateString }'
         cp -pu cgm/ns-glucose.json cgm/glucose.json
     else
@@ -62,7 +62,6 @@ function upload {
     echo -n Upload
     upload_ns_status >/dev/null || die "; NS status upload failed"
     upload_recent_treatments >/dev/null || die "; NS treatments upload failed"
-    echo ed
 }
 
 # grep -q iob monitor/iob.json && find enact/ -mmin -5 -size +5c | grep -q suggested.json && openaps format-ns-status && grep -q iob upload/ns-status.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json
@@ -81,9 +80,13 @@ function format_ns_status {
 
 #openaps format-latest-nightscout-treatments && test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0 && (ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json ) || echo \\\"No recent treatments to upload\\\"
 function upload_recent_treatments {
-    format_latest_nightscout_treatments \
-    && test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0 \
-    && (ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json ) || echo \\\"No recent treatments to upload\\\"
+    format_latest_nightscout_treatments || die "Couldn't format latest NS treatments"
+    if test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0; then
+        ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json || die "Couldn't upload latest treatments to NS"
+        echo ed successfully
+    else
+        echo "No recent treatments to upload"
+    fi
 }
 
 #nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
