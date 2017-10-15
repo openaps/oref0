@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "Checking entries-last-date.json..."
 if [ -e upload/entries-last-date.json ]; then
     LAST_TIME=$(jq -s ".[0].date" upload/entries-last-date.json)
@@ -23,6 +25,6 @@ rm upload/entries-upload.new.json upload/entries-upload.array.json
 
 UPLOAD_COUNT=$(jq -s ".[]|length" upload/entries-upload.json)
 echo "Entries to upload: $UPLOAD_COUNT"
-if (( $UPLOAD_COUNT > 0 )); then
+if (( $UPLOAD_COUNT )); then
     (ns-upload $NIGHTSCOUT_HOST $API_SECRET entries upload/entries-upload.json - && jq -s "{\"date\":.[0][0].date}" upload/entries-upload.json > upload/entries-last-date.json && rm upload/entries-upload.json)
 fi
