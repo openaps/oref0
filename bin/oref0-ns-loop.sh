@@ -1,7 +1,7 @@
 #!/bin/bash
 #echo Starting ns-loop at $(date): && openaps get-ns-bg; sensors -u 2>/dev/null | awk '$NF > 85' | grep input || ( openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps upload )
 
-# main pump-loop
+# main ns-loop
 main() {
     echo
     echo Starting oref0-ns-loop at $(date):
