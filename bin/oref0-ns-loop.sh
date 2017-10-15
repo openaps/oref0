@@ -3,7 +3,7 @@
 
 # main pump-loop
 main() {
-    echo Starting ns-loop at $(date):
+    echo Starting oref0-ns-loop at $(date):
     get_ns_bg
     overtemp && exit 1
     ns_temptargets || die "ns_temptargets failed"
@@ -65,7 +65,7 @@ function upload {
 
 # grep -q iob monitor/iob.json && find enact/ -mmin -5 -size +5c | grep -q suggested.json && openaps format-ns-status && grep -q iob upload/ns-status.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json
 function upload_ns_status {
-    echo Uploading devicestatus
+    #echo Uploading devicestatus
     grep -q iob monitor/iob.json || die "IOB not found"
     if ! find enact/ -mmin -5 -size +5c | grep -q suggested.json; then
         echo -n "No recent suggested.json found; last updated "
@@ -83,7 +83,7 @@ function format_ns_status {
 
 #openaps format-latest-nightscout-treatments && test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0 && (ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json ) || echo \\\"No recent treatments to upload\\\"
 function upload_recent_treatments {
-    echo Uploading treatments
+    #echo Uploading treatments
     format_latest_nightscout_treatments || die "Couldn't format latest NS treatments"
     if test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0; then
         ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json || die "Couldn't upload latest treatments to NS"
