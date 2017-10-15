@@ -137,8 +137,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, MDT or xdrip."
+if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, G5-upload, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -170,7 +170,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "You're using a different model pump. Got it."
     fi
 
-    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout:   " -r
+    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, G5-upload, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout:   " -r
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
     echo
@@ -649,7 +649,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
     fi
     # add/configure devices
-    if [[ ${CGM,,} =~ "g5" ]]; then
+    if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
     elif [[ ${CGM,,} =~ "shareble" ]]; then
@@ -1000,6 +1000,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
         (crontab -l; crontab -l | grep -q "killall -g --older-than 5m oref0" || echo '* * * * * find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && ( killall -g --older-than 5m openaps; killall -g --older-than 5m oref0-pump-loop; killall -g --older-than 5m openaps-report )') | crontab -
+        if [[ ${CGM,,} =~ "g5-upload" ]]; then
+            (crontab -l; crontab -l | grep -q "oref0-upload-entries" || echo "* * * * * cd $directory && oref0-upload-entries" ) | crontab -
+        fi
         if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
         elif [[ ${CGM,,} =~ "xdrip" ]]; then
