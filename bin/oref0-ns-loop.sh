@@ -3,12 +3,14 @@
 
 # main pump-loop
 main() {
+    echo
     echo Starting oref0-ns-loop at $(date):
     get_ns_bg
     overtemp && exit 1
     ns_temptargets || die "ns_temptargets failed"
     ns_meal_carbs || die ", but ns_meal_carbs failed"
     upload
+    echo Completed oref0-ns-loop at $(date)
 }
 
 function overtemp {
