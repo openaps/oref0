@@ -1,7 +1,7 @@
 [
  {
     "type": "report",
-    "settings/ns-temptargets.json": {
+    "settings/temptargets.json": {
       "oper": "temp_targets",
       "use": "shell",
       "reporter": "JSON",
@@ -9,7 +9,7 @@
       "remainder": "-6hours",
       "json_default": "True"
     },
-    "name": "settings/ns-temptargets.json"
+    "name": "settings/temptargets.json"
   },
  {
     "type": "report",
