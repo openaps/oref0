@@ -59,7 +59,7 @@ function ns_meal_carbs {
 
 # echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed
 function upload {
-    upload_ns_status || die "; NS status upload failed"
+    upload_ns_status
     upload_recent_treatments || die "; NS treatments upload failed"
 }
 
@@ -67,7 +67,11 @@ function upload {
 function upload_ns_status {
     echo Uploading devicestatus
     grep -q iob monitor/iob.json || die "IOB not found"
-    find enact/ -mmin -5 -size +5c | grep -q suggested.json || die "suggested.json not found"
+    if ! find enact/ -mmin -5 -size +5c | grep -q suggested.json; then
+        echo -n "No recent suggested.json found; last updated "
+        ls -la enact/suggested.json | awk '{print $6,$7,$8}'
+        return 1
+    fi
     format_ns_status && grep -q iob upload/ns-status.json || die "Couldn't generate ns-status.json"
     ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json | jq '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' -c || die "Couldn't upload devicestatus to NS"
 }
@@ -79,6 +83,7 @@ function format_ns_status {
 
 #openaps format-latest-nightscout-treatments && test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0 && (ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json ) || echo \\\"No recent treatments to upload\\\"
 function upload_recent_treatments {
+    echo Uploading treatments
     format_latest_nightscout_treatments || die "Couldn't format latest NS treatments"
     if test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0; then
         ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json || die "Couldn't upload latest treatments to NS"
