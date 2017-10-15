@@ -378,8 +378,6 @@ function maybe_mmtune {
     if ( find /tmp/ -mmin -15 | egrep -q "pump_loop_completed" ); then
         # mmtune ~ 25% of the time
         [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
-        && echo "Waiting for 40s silence before mmtuning" \
-        && wait_for_silence 40 \
         && mmtune
     else
         echo "pump_loop_completed more than 15m old; waiting for 40s silence before mmtuning"
