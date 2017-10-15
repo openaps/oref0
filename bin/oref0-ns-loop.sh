@@ -16,7 +16,7 @@ main() {
 function overtemp {
     # check for CPU temperature above 85°C
     sensors -u 2>/dev/null | awk '$NF > 85' | grep input \
-    && echo Rig is too hot: waiting for it to cool down at $(date)\
+    && echo Edison is too hot: waiting for it to cool down at $(date)\
     && echo Please ensure rig is properly ventilated
 }
 
@@ -55,7 +55,7 @@ function ns_meal_carbs {
     openaps report invoke monitor/carbhistory.json >/dev/null
     oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new
     grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json
-    echo -n "COB: "
+    echo -n "Refreshed carbhistory; COB: "
     grep COB monitor/meal.json | jq .mealCOB
 }
 
