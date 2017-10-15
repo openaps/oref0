@@ -359,7 +359,7 @@ function mmtune {
     for i in $(seq 1 800); do
         echo -n .
         any_pump_comms 40 2>/dev/null | egrep -v subg | egrep -q No \
-        && echo "No interfering pump comms detected from other rigs (this is a good thing!)"
+        && echo "No interfering pump comms detected from other rigs (this is a good thing!)" \
         && break
     done
     echo {} > monitor/mmtune.json
@@ -412,7 +412,7 @@ function wait_for_silence {
     for i in $(seq 1 800); do
         echo -n .
         any_pump_comms $waitfor 2>/dev/null | egrep -v subg | egrep -q No \
-        && echo "No interfering pump comms detected from other rigs (this is a good thing!)"
+        && echo "No interfering pump comms detected from other rigs (this is a good thing!)" \
         && break
     done
 }
