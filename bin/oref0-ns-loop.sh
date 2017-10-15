@@ -59,18 +59,17 @@ function ns_meal_carbs {
 
 # echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed
 function upload {
-    echo -n Upload
     upload_ns_status || die "; NS status upload failed"
     upload_recent_treatments || die "; NS treatments upload failed"
 }
 
 # grep -q iob monitor/iob.json && find enact/ -mmin -5 -size +5c | grep -q suggested.json && openaps format-ns-status && grep -q iob upload/ns-status.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json
 function upload_ns_status {
-    grep -q iob monitor/iob.json \
-    && find enact/ -mmin -5 -size +5c | grep -q suggested.json \
-    && format_ns_status \
-    && grep -q iob upload/ns-status.json \
-    && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json | jq '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' -c
+    echo Uploading devicestatus
+    grep -q iob monitor/iob.json || die "IOB not found"
+    find enact/ -mmin -5 -size +5c | grep -q suggested.json || die "suggested.json not found"
+    format_ns_status && grep -q iob upload/ns-status.json || die "Couldn't generate ns-status.json"
+    ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json | jq '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' -c || die "Couldn't upload devicestatus to NS"
 }
 
 #ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json
