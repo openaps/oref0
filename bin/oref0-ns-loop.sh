@@ -26,11 +26,11 @@ function get_ns_bg {
     valid_glucose=$(find_valid_ns_glucose)
     if echo $valid_glucose | grep -q glucose; then
         echo Found recent valid BG:
-        echo $valid_glucose | jq -c '.[0] | { glucose: .glucose, dateString: .dateString }'
+        echo $valid_glucose | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
         cp -pu cgm/ns-glucose.json cgm/glucose.json
     else
         echo No recent valid BG found. Most recent:
-        cat cgm/ns-glucose.json | jq -c '.[0] | { glucose: .glucose, dateString: .dateString }'
+        cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
     fi
 
     # copy cgm/glucose.json over to monitor/glucose.json if it's newer
@@ -73,7 +73,7 @@ function upload_ns_status {
         return 1
     fi
     format_ns_status && grep -q iob upload/ns-status.json || die "Couldn't generate ns-status.json"
-    ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json | jq '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' -c || die "Couldn't upload devicestatus to NS"
+    ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json | jq -C -c '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' || die "Couldn't upload devicestatus to NS"
 }
 
 #ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json
