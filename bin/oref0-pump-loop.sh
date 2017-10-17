@@ -41,52 +41,57 @@ main() {
     fi
     prep
     if ! overtemp; then
-        if ! ( \
-            prep
-            # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
-            echo && echo Starting $looptype pump-loop at $(date) with $upto30s second wait_for_silence: \
-            && wait_for_bg \
-            && wait_for_silence $upto30s \
-            && ( preflight || preflight ) \
-            && if_mdt_get_bg \
-            && refresh_old_pumphistory_24h \
-            && refresh_old_profile \
-            && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
-            && ( smb_check_everything \
-                && if ( grep -q '"units":' enact/smb-suggested.json); then
-                    if [[ $1 == *"microbolus"* ]]; then
-                        ( smb_bolus && \
-                            touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
-                        ) \
-                        || ( smb_old_temp && ( \
-                            echo "Falling back to basal-only pump-loop" \
-                            && refresh_temp_and_enact \
-                            && refresh_pumphistory_and_enact \
-                            && refresh_profile \
-                            && refresh_pumphistory_24h \
-                            && echo Completed pump-loop at $(date) \
-                            && echo \
-                            ))
-                    else
+        # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
+        prep
+        echo && echo "Starting $looptype pump-loop at $(date) with $upto30s second wait_for_silence:"
+        wait_for_bg || fail "$@"
+        wait_for_silence $upto30s || fail "$@"
+        preflight || preflight || fail "$@"
+        if_mdt_get_bg || fail "$@"
+        refresh_old_pumphistory_24h || fail "$@"
+        refresh_old_profile || fail "$@"
+        touch /tmp/pump_loop_enacted -r monitor/glucose.json || fail "$@"
+        if smb_check_everything; then
+            if ( grep -q '"units":' enact/smb-suggested.json); then
+                if [[ $1 == *"microbolus"* ]] ; then
+                    if smb_bolus; then
                         touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
+                    else
+                        smb_old_temp && ( \
+                        echo "Falling back to basal-only pump-loop" \
+                        && refresh_temp_and_enact \
+                        && refresh_pumphistory_and_enact \
+                        && refresh_profile \
+                        && refresh_pumphistory_24h \
+                        && echo Completed pump-loop at $(date) \
+                        && echo \
+                        )
                     fi
+                else
+                    touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
                 fi
-                ) \
-                && ( refresh_profile 15; refresh_pumphistory_24h; true ) \
-                && refresh_after_bolus_or_enact \
-                && echo Completed $looptype pump-loop at $(date): \
-                && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
-                && echo \
-        ); then
-            echo -n "$looptype pump-loop failed. "
-            if grep -q "percent" monitor/temp_basal.json; then
-                echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
             fi
-            maybe_mmtune
-            echo Unsuccessful $looptype pump-loop at $(date)
+            refresh_profile 15; refresh_pumphistory_24h
+            refresh_after_bolus_or_enact
+            echo Completed $looptype pump-loop at $(date)
+            touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+            echo
+        else
+            fail "$@"
         fi
     fi
 }
+
+function fail {
+    echo -n "$looptype pump-loop failed. "
+    if grep -q "percent" monitor/temp_basal.json; then
+        echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
+    fi
+    maybe_mmtune
+    echo Unsuccessful $looptype pump-loop at $(date)
+    exit 1
+}
+
 
 function overtemp {
     # check for CPU temperature above 85°C
