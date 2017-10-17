@@ -21,6 +21,7 @@ main() {
         stop_hotspot
         if has_addr wlan0 && has_addr bnep0; then
             bt_disconnect $MACs
+            wifi_connect
         fi
     else
         echo
@@ -34,7 +35,9 @@ main() {
             stop_hotspot
         else
             # if we can't get online via wifi or bluetooth, start our own local-access hotspot
+            # and disconnect bluetooth
             start_hotspot $@
+            bt_disconnect $MACs
             # if we still can't get online, try cycling networking as a last resort
             #restart_networking
         fi
@@ -76,8 +79,6 @@ function bt_connect {
             if has_addr wlan0 && has_addr bnep0; then
                 echo -n " and releasing wifi IP"
                 sudo dhclient wlan0 -r
-                echo
-                stop_hotspot
                 # echo Sleeping for 2 minutes before trying wifi again
                 # sleep 120
             fi
@@ -88,13 +89,16 @@ function bt_connect {
 }
 
 function bt_disconnect {
-    echo "Back online via wifi; disconnecting BT $MAC"
+    echo "Disconnecting BT $MAC"
     ifdown bnep0
     # loop over as many MACs as are provided as arguments
     for MAC; do
         sudo bt-pan client $MAC -d
     done
-    echo "and getting new wlan0 IP"
+}
+
+function wifi_connect {
+    echo "Getting new wlan0 IP"
     ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
     sudo dhclient wlan0 -r
     sudo dhclient wlan0
