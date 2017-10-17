@@ -55,7 +55,7 @@ main() {
             if ( grep -q '"units":' enact/smb-suggested.json); then
                 if [[ $1 == *"microbolus"* ]] ; then
                     if smb_bolus; then
-                        touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
+                        touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                     else
                         smb_old_temp && ( \
                         echo "Falling back to basal-only pump-loop" \
