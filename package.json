@@ -76,6 +76,7 @@
     "oref0-subg-ww-radio-parameters": "./bin/oref0-subg-ww-radio-parameters.sh",
     "oref0_subg_ww_radio_parameters.py": "./bin/oref0_subg_ww_radio_parameters.py",
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
+    "oref0-upload-entries": "./bin/oref0-upload-entries.sh",
     "oref0-upload-profile": "./bin/oref0-upload-profile.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "wifi": "./bin/oref0-tail-wifi.sh"
