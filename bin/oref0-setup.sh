@@ -643,7 +643,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
             cd $HOME/src/bluez-5.47 && ./configure --enable-experimental --disable-systemd && \
-            make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+            make && sudo make install || die "Couldn't make bluez"
+            killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+            sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
             oref0-bluetoothup
         else
             echo bluez v ${bluetoothdversion} already installed
