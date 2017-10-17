@@ -7,7 +7,7 @@
 # If it will restore within 5 minutes, then the reboot will be cancelled
 # Note that this is a workaround, until we found the root cause of why the rig pump communication fails
 
-radio_errors=`tail --lines=20 /var/log/openaps/pump-loop.log | egrep "spidev5.1 already in use|retry 0|TimeoutExpired. Killing process"`
+radio_errors=`tail --lines=20 /var/log/openaps/pump-loop.log | egrep "spidev.* already in use|retry 0|TimeoutExpired. Killing process"`
 logfile=/var/log/openaps/pump-loop.log
 if [ ! -z "$radio_errors" ]; then
     if [ ! -e /run/nologin ]; then

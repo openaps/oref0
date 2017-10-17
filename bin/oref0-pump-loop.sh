@@ -358,7 +358,8 @@ function mmtune {
     echo -n "Listening for 40s silence before mmtuning: "
     for i in $(seq 1 800); do
         echo -n .
-        any_pump_comms 40 2>/dev/null | egrep -v subg | egrep No \
+        any_pump_comms 40 2>/dev/null | egrep -v subg | egrep -q No \
+        && echo "No interfering pump comms detected from other rigs (this is a good thing!)" \
         && break
     done
     echo {} > monitor/mmtune.json
@@ -371,6 +372,8 @@ function mmtune {
         echo "waiting for $rssi_wait second silence before continuing"
         wait_for_silence $rssi_wait
         echo "Done waiting for rigs with better signal."
+    else
+        echo "No wait required."
     fi
 }
 
@@ -378,8 +381,6 @@ function maybe_mmtune {
     if ( find /tmp/ -mmin -15 | egrep -q "pump_loop_completed" ); then
         # mmtune ~ 25% of the time
         [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
-        && echo "Waiting for 40s silence before mmtuning" \
-        && wait_for_silence 40 \
         && mmtune
     else
         echo "pump_loop_completed more than 15m old; waiting for 40s silence before mmtuning"
@@ -410,7 +411,8 @@ function wait_for_silence {
     echo -n "Listening: "
     for i in $(seq 1 800); do
         echo -n .
-        any_pump_comms $waitfor 2>/dev/null | egrep -v subg | egrep No \
+        any_pump_comms $waitfor 2>/dev/null | egrep -v subg | egrep -q No \
+        && echo "No interfering pump comms detected from other rigs (this is a good thing!)" \
         && break
     done
 }
