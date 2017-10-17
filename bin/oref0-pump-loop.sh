@@ -53,19 +53,23 @@ main() {
             && refresh_old_profile \
             && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
             && ( smb_check_everything \
-                && if ( [[ $1 == *"microbolus"* ]] && grep -q '"units":' enact/smb-suggested.json); then
-                    ( smb_bolus && \
+                && if ( grep -q '"units":' enact/smb-suggested.json); then
+                    if [[ $1 == *"microbolus"* ]]; then
+                        ( smb_bolus && \
+                            touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
+                        ) \
+                        || ( smb_old_temp && ( \
+                            echo "Falling back to basal-only pump-loop" \
+                            && refresh_temp_and_enact \
+                            && refresh_pumphistory_and_enact \
+                            && refresh_profile \
+                            && refresh_pumphistory_24h \
+                            && echo Completed pump-loop at $(date) \
+                            && echo \
+                            ))
+                    else
                         touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
-                    ) \
-                    || ( smb_old_temp && ( \
-                        echo "Falling back to basal-only pump-loop" \
-                        && refresh_temp_and_enact \
-                        && refresh_pumphistory_and_enact \
-                        && refresh_profile \
-                        && refresh_pumphistory_24h \
-                        && echo Completed pump-loop at $(date) \
-                        && echo \
-                        ))
+                    fi
                 fi
                 ) \
                 && ( refresh_profile 15; refresh_pumphistory_24h; true ) \
