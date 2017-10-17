@@ -68,7 +68,7 @@ main() {
                         )
                     fi
                 else
-                    touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
+                    touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                 fi
             fi
             refresh_profile 15; refresh_pumphistory_24h
