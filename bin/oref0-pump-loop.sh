@@ -78,12 +78,12 @@ main() {
                 && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
                 && echo \
         ); then
-            echo -n "SMB pump-loop failed. "
+            echo -n "$looptype pump-loop failed. "
             if grep -q "percent" monitor/temp_basal.json; then
                 echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
             fi
             maybe_mmtune
-            echo Unsuccessful supermicrobolus pump-loop at $(date)
+            echo Unsuccessful $looptype pump-loop at $(date)
         fi
     fi
 }
