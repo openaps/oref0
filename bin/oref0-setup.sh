@@ -636,12 +636,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        bluetoothdminversion=5.37
+        bluetoothdminversion=5.47
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-            cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.44.tar.gz && tar xvfz bluez-5.44.tar.gz || die "Couldn't download bluez"
-            cd $HOME/src/bluez-5.44 && ./configure --enable-experimental --disable-systemd && \
+            cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/bluez-5.47 && ./configure --enable-experimental --disable-systemd && \
             make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
             oref0-bluetoothup
         else
