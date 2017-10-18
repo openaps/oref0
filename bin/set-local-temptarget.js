@@ -38,7 +38,11 @@ if (!module.parent) {
     temptarget.targetBottom = target;
     temptarget.targetTop = target;
     temptarget.duration = duration;
-    temptarget.created_at = new Date(start);
+    if (start) {
+        temptarget.created_at = new Date(start);
+    } else {
+        temptarget.created_at = new Date();
+    }
 
 
     console.log(JSON.stringify(temptarget));
