@@ -44,10 +44,16 @@ function find_valid_ns_glucose {
 }
 
 function ns_temptargets {
-    openaps report invoke settings/temptargets.json settings/profile.json >/dev/null
+    #openaps report invoke settings/temptargets.json settings/profile.json >/dev/null
+    nightscout ns $NIGHTSCOUT_HOST $API_SECRET temp_targets > settings/ns-temptargets.json
     # TODO: merge local-temptargets.json with ns-temptargets.json
     #openaps report invoke settings/ns-temptargets.json settings/profile.json
-    echo -n "Refreshed temptargets: "
+    echo -n "Refreshed NS temptargets: "
+    cat settings/ns-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration }'
+    echo -n "Merging local temptargets: "
+    cat settings/local-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration }'
+    jq -s '.[0] + .[1]|unique|sort_by(.created_at)|reverse' settings/ns-temptargets.json settings/local-temptargets.json > settings/temptargets.json
+    echo -n "Temptargets merged: "
     cat settings/temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration }'
 }
 
