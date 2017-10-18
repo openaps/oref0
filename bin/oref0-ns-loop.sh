@@ -97,7 +97,6 @@ function upload_recent_treatments {
     format_latest_nightscout_treatments || die "Couldn't format latest NS treatments"
     if test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0; then
         ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json || die "Couldn't upload latest treatments to NS"
-        echo ed successfully
     else
         echo "No recent treatments to upload"
     fi
