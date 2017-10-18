@@ -35,9 +35,9 @@ if (!module.parent) {
     }
 
     var temptarget = {};
-    temptarget.targetBottom = target;
-    temptarget.targetTop = target;
-    temptarget.duration = duration;
+    temptarget.targetBottom = parseInt(target);
+    temptarget.targetTop = parseInt(target);
+    temptarget.duration = parseInt(duration);
     if (start) {
         temptarget.created_at = new Date(start);
     } else {
