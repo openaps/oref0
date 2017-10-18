@@ -46,6 +46,7 @@ function find_valid_ns_glucose {
 function ns_temptargets {
     #openaps report invoke settings/temptargets.json settings/profile.json >/dev/null
     nightscout ns $NIGHTSCOUT_HOST $API_SECRET temp_targets > settings/ns-temptargets.json
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json
     # TODO: merge local-temptargets.json with ns-temptargets.json
     #openaps report invoke settings/ns-temptargets.json settings/profile.json
     echo -n "Refreshed NS temptargets: "
