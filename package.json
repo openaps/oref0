@@ -72,6 +72,7 @@
     "oref0-reset-usb": "bin/oref0-reset-usb.sh",
     "oref0-set-device-clocks": "./bin/oref0-set-device-clocks.sh",
     "oref0-set-system-clock": "./bin/oref0-set-system-clock.sh",
+    "oref0-set-local-temptarget": "./bin/oref0-set-local-temptarget.js",
     "oref0-setup": "./bin/oref0-setup.sh",
     "oref0-subg-ww-radio-parameters": "./bin/oref0-subg-ww-radio-parameters.sh",
     "oref0_subg_ww_radio_parameters.py": "./bin/oref0_subg_ww_radio_parameters.py",
