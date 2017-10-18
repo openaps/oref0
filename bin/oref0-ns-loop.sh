@@ -50,6 +50,8 @@ function ns_temptargets {
     #openaps report invoke settings/ns-temptargets.json settings/profile.json
     echo -n "Refreshed NS temptargets: "
     cat settings/ns-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
+    # delete any local-temptarget files last modified more than 24h ago
+    find settings/local-temptarget* -mmin +1440 -exec rm {} \;
     echo -n "Merging local temptargets: "
     cat settings/local-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
     jq -s '.[0] + .[1]|unique|sort_by(.created_at)|reverse' settings/ns-temptargets.json settings/local-temptargets.json > settings/temptargets.json
