@@ -9,7 +9,7 @@ QUERY=${3}
 OUTPUT=${4-/dev/fd/1}
 
 CURL_FLAGS="--compressed -g -s"
-NIGHTSCOUT_FORMAT=${NIGHTSCOUT_FORMAT-json}
+NIGHTSCOUT_FORMAT=${NIGHTSCOUT_FORMAT-jq .}
 test "$NIGHTSCOUT_DEBUG" = "1" && CURL_FLAGS="${CURL_FLAGS} -iv"
 test "$NIGHTSCOUT_DEBUG" = "1" && set -x
 
@@ -26,7 +26,7 @@ EOF
 CURL_AUTH=""
 
 # use token authentication if the user has a token set in their API_SECRET environment variable
-if [[ "${API_SECRET,,}" =~ "token=" ]]; then
+if [[ "${API_SECRET}" =~ "token=" ]]; then
   if [[ -z ${QUERY} ]]; then
     REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${API_SECRET}
   else
@@ -46,7 +46,7 @@ case $1 in
     OUTPUT=${5-/dev/fd/1}
 
     # use token authentication if the user has a token set in their API_SECRET environment variable
-    if [[ "${API_SECRET,,}" =~ "token=" ]]; then
+    if [[ "${API_SECRET}" =~ "token=" ]]; then
       if [[ -z ${QUERY} ]]; then
         REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${API_SECRET}
       else
@@ -57,7 +57,7 @@ case $1 in
     fi
     test -z "$NIGHTSCOUT_HOST" && usage && exit 1;
 
-    curl ${CURL_AUTH} ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
+    curl -m 30 ${CURL_AUTH} ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
 
     ;;
   type)
@@ -69,7 +69,7 @@ case $1 in
     ;;
   *)
     test -z "$NIGHTSCOUT_HOST" && usage && exit 1;
-    curl ${CURL_AUTH} ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
+    curl -m 30 ${CURL_AUTH} ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
     ;;
 esac
 
