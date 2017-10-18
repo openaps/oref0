@@ -49,12 +49,12 @@ function ns_temptargets {
     # TODO: merge local-temptargets.json with ns-temptargets.json
     #openaps report invoke settings/ns-temptargets.json settings/profile.json
     echo -n "Refreshed NS temptargets: "
-    cat settings/ns-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration }'
+    cat settings/ns-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
     echo -n "Merging local temptargets: "
-    cat settings/local-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration }'
+    cat settings/local-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
     jq -s '.[0] + .[1]|unique|sort_by(.created_at)|reverse' settings/ns-temptargets.json settings/local-temptargets.json > settings/temptargets.json
     echo -n "Temptargets merged: "
-    cat settings/temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration }'
+    cat settings/temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
 }
 
 # openaps report invoke monitor/carbhistory.json; oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0
