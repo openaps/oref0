@@ -9,7 +9,7 @@ QUERY=${3}
 OUTPUT=${4-/dev/fd/1}
 
 CURL_FLAGS="--compressed -g -s"
-NIGHTSCOUT_FORMAT=${NIGHTSCOUT_FORMAT-json}
+NIGHTSCOUT_FORMAT=${NIGHTSCOUT_FORMAT-jq .}
 test "$NIGHTSCOUT_DEBUG" = "1" && CURL_FLAGS="${CURL_FLAGS} -iv"
 test "$NIGHTSCOUT_DEBUG" = "1" && set -x
 
