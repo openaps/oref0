@@ -581,8 +581,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 #fi
 
     cd $directory || die "Can't cd $directory"
-    #if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
+        cp preferences.json old_preferences.json
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
         preferences_from_args=()
