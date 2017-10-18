@@ -935,14 +935,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # configure supermicrobolus if enabled
         # If you aren't sure what you're doing, *DO NOT* enable this.
         # If you ignore this warning, it *WILL* administer extra post-meal insulin, which may cause low blood sugar.
-        if [[ $ENABLE =~ microbolus ]]; then
+        # if [[ $ENABLE =~ microbolus ]]; then
             sudo apt-get -y install bc jq
             cd $directory || die "Can't cd $directory"
             for type in supermicrobolus; do
             echo importing $type file
             cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
             done
-        fi
+        # fi
     fi
 
     echo "Adding OpenAPS log shortcuts"
