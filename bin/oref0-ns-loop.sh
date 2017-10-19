@@ -41,7 +41,12 @@ function highload {
 
 #openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json
 function get_ns_bg {
-    openaps get-ns-glucose > /dev/null
+    #openaps get-ns-glucose > /dev/null
+    if ! find cgm/ -mmin -55 | egrep -q cgm/ns-glucose-24h.json
+        nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -24hours > cgm/ns-glucose-24h.json
+    fi
+    nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -1hour > cgm/ns-glucose-1h.json
+    jq -s '.[0] + .[1]|unique|sort_by(.date)|reverse' cgm/ns-glucose-24h.json cgm/ns-glucose-1h.json > cgm/ns-glucose.json
     # if ns-glucose.json data is <10m old, no more than 5m in the future, and valid (>38),
     # copy cgm/ns-glucose.json over to cgm/glucose.json if it's newer
     valid_glucose=$(find_valid_ns_glucose)
@@ -68,6 +73,7 @@ function glucose_fresh {
 }
 
 function find_valid_ns_glucose {
+    # TODO: use jq for this if possible
     cat cgm/ns-glucose.json | json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"
 }
 
