@@ -69,6 +69,7 @@ function completed_recently {
 
 function glucose_fresh {
     # check whether ns-glucose.json is less than 5m old
+    touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/ns-glucose.json))" cgm/ns-glucose.json
     find cgm -mmin -5 | egrep -q "ns-glucose.json"
 }
 
