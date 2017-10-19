@@ -6,12 +6,23 @@
 main() {
     echo
     echo Starting oref0-ns-loop at $(date):
-    get_ns_bg
+    if glucose_5m_old; then
+        get_ns_bg
+    else
+        echo Glucose is fresh
+        cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
+    fi
     overtemp && exit 1
+    if highload && completed_recently; then
+        echo Load high at $(date): waiting up to 5m to continue
+        exit 2
+    fi
+
     ns_temptargets || die "ns_temptargets failed"
     ns_meal_carbs || die ", but ns_meal_carbs failed"
     battery_status
     upload
+    touch /tmp/ns-loop-completed
     echo Completed oref0-ns-loop at $(date)
 }
 
@@ -21,6 +32,12 @@ function overtemp {
     && echo Edison is too hot: waiting for it to cool down at $(date)\
     && echo Please ensure rig is properly ventilated
 }
+
+function highload {
+    # check whether system load average is high
+    uptime | awk '$NF > 2'
+}
+
 
 #openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json
 function get_ns_bg {
@@ -39,6 +56,15 @@ function get_ns_bg {
 
     # copy cgm/glucose.json over to monitor/glucose.json if it's newer
     cp -pu cgm/glucose.json monitor/glucose.json
+}
+
+function completed_recently {
+    find /tmp/ -mmin -5 | egrep -q "ns-loop-completed"
+}
+
+function glucose_5m_old {
+    # check whether last glucose reading is more than 5m old (or in the future) and needs updated
+    cat cgm/ns-glucose.json | json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo > 5 || minAgo < -1"
 }
 
 function find_valid_ns_glucose {
