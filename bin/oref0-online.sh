@@ -128,6 +128,8 @@ function start_hotspot {
     echo
     if [[ -z $1 ]]; then
         echo "No BT MAC provided: not activating local-only hotspot"
+        echo "Cycling wlan0"
+        ifdown wlan0; ifup wlan0
     elif ! cat preferences.json | jq -e .offline_hotspot; then
         echo "Offline hotspot not enabled in preferences.json"
     elif grep -q $HostAPDIP /etc/network/interfaces; then
