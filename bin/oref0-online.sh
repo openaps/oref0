@@ -37,7 +37,8 @@ main() {
             # if we can't get online via wifi or bluetooth, start our own local-access hotspot
             # and disconnect bluetooth
             start_hotspot $@
-            bt_disconnect $MACs
+            # don't disconnect bluetooth when starting local-only hotspot
+            #bt_disconnect $MACs
             # if we still can't get online, try cycling networking as a last resort
             #restart_networking
         fi
