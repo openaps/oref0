@@ -581,8 +581,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 #fi
 
     cd $directory || die "Can't cd $directory"
-    #if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
+        cp preferences.json old_preferences.json
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
         preferences_from_args=()
@@ -893,11 +893,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
         grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
-        cd $directory || die "Can't cd $directory"
-        for type in edisonbattery; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
     fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
@@ -1021,7 +1016,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
         fi
-        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+        if [[ ${CGM,,} =~ "mdt" ]]; then # use old ns-loop for now
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+        else
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+        fi
         if [[ $ENABLE =~ autosens ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
         fi
