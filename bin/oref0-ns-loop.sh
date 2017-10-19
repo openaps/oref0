@@ -7,7 +7,7 @@ main() {
     echo
     echo Starting oref0-ns-loop at $(date):
     if glucose_fresh; then
-        echo Glucose is fresh
+        echo Glucose file is fresh
         cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
     else
         get_ns_bg
@@ -63,8 +63,8 @@ function completed_recently {
 }
 
 function glucose_fresh {
-    # check whether last glucose reading is more than 5m old (or in the future) and needs updated
-    cat cgm/ns-glucose.json | json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 5 && minAgo > -1 && this.glucose > 38" | grep glucose
+    # check whether ns-glucose.json is less than 5m old
+    find cgm -mmin -5 | egrep -q "ns-glucose.json"
 }
 
 function find_valid_ns_glucose {
