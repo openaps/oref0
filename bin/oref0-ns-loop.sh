@@ -65,7 +65,7 @@ function ns_meal_carbs {
 #sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json
 function battery_status {
     if [ -e ~/src/EdisonVoltage/voltage ]; then
-        sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | tee monitor/edison-battery.json; echo
+        sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | tee monitor/edison-battery.json | jq -C -c .
     fi
 }
 
