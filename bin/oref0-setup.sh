@@ -682,6 +682,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if ! python -c "import openxshareble" 2>/dev/null; then
             echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
         fi
+        sudo apt-get update; sudo apt-get upgrade
         sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
         echo Checking bluez installation
         # TODO: figure out if we need to do this for 5.44 as well
