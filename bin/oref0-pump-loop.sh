@@ -385,6 +385,7 @@ function mmtune {
     if [[ $rssi_wait > 1 ]]; then
         echo "waiting for $rssi_wait second silence before continuing"
         wait_for_silence $rssi_wait
+        preflight
         echo "Done waiting for rigs with better signal."
     else
         echo "No wait required."
