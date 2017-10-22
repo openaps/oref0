@@ -1,12 +1,33 @@
 #!/bin/bash
 
 GLUCOSE=$1
-
 OLD=${2-5}
 MAX_WAIT=${3-1}
-TIME_SINCE=$(oref0-dex-time-since $GLUCOSE)
-OLD_LSUSB=12.0
+OLD_LSUSB=${4-12.0}
+CGM_DIR=$HOME/myopenaps/cgm
+NS_GLUCOSE=$CGM_DIR/ns-glucose.json
 
+function glucose_fresh {
+    # check whether ns-glucose.json is less than 5m old
+    touch -d "$(date -R -d @$(jq .[0].date/1000 $NS_GLUCOSE))" $NS_GLUCOSE
+    find $CGM_DIR -mmin -$OLD_LSUSB | egrep -q "ns-glucose.json"
+}
+
+if [ ! -f $GLUCOSE ]; then
+   echo "CGM not read from USB (yet). $GLUCOSE does not exist. "
+   if glucose_fresh; then
+       echo "$NS_GLUCOSE has been updated less than $OLD_LSUSB minutes ago. Skipping reading from USB"
+       exit 1
+   else
+     echo "$NS_GLUCOSE has not been updated for at least $OLD_LSUSB minutes."
+     echo -n "Checking USB subsystem:"
+     if ! lsusb > /dev/null ; then
+        echo  "lsusb error"
+     fi
+   fi
+fi
+
+TIME_SINCE=$(oref0-dex-time-since $GLUCOSE)
 
 if (( $(bc <<< "$TIME_SINCE >= $OLD") )); then
   echo "CGM Data $TIME_SINCE mins ago is old (>=$OLD), not waiting"
