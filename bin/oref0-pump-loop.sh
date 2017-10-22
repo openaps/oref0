@@ -156,8 +156,8 @@ function smb_suggest {
     rm -rf enact/smb-suggested.json
     ls enact/smb-suggested.json 2>/dev/null >/dev/null && die "enact/suggested.json present"
     # Run determine-basal
-    echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
-    && openaps report invoke enact/smb-suggested.json 2>&1 >/dev/null \
+    echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed
+    openaps report invoke enact/smb-suggested.json 2>&1 >/dev/null \
     && cp -up enact/smb-suggested.json enact/suggested.json \
     && smb_verify_suggested
 }
@@ -491,7 +491,12 @@ function refresh_old_pumphistory_24h {
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old. " \
-    || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. " )
+        || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. " )
+    if cat monitor/iob.json | jq . | grep -q iob && cat settings/profile.json | jq . | grep -q basal; then
+        # iob.json and profile.json are both valid
+    else
+        echo -n Invalid iob.json or profile.json: refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. "
+    fi
 }
 
 function refresh_smb_temp_and_enact {
