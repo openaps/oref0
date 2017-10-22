@@ -6,12 +6,23 @@
 main() {
     echo
     echo Starting oref0-ns-loop at $(date):
-    get_ns_bg
+    if glucose_fresh; then
+        echo Glucose file is fresh
+        cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
+    else
+        get_ns_bg
+    fi
     overtemp && exit 1
+    if highload && completed_recently; then
+        echo Load high at $(date): waiting up to 5m to continue
+        exit 2
+    fi
+
     ns_temptargets || die "ns_temptargets failed"
     ns_meal_carbs || die ", but ns_meal_carbs failed"
     battery_status
     upload
+    touch /tmp/ns-loop-completed
     echo Completed oref0-ns-loop at $(date)
 }
 
@@ -22,9 +33,20 @@ function overtemp {
     && echo Please ensure rig is properly ventilated
 }
 
+function highload {
+    # check whether system load average is high
+    uptime | awk '$NF > 2'
+}
+
+
 #openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json
 function get_ns_bg {
-    openaps get-ns-glucose > /dev/null
+    #openaps get-ns-glucose > /dev/null
+    if ! find cgm/ -mmin -55 | egrep -q cgm/ns-glucose-24h.json; then
+        nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -24hours > cgm/ns-glucose-24h.json
+    fi
+    nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -1hour > cgm/ns-glucose-1h.json
+    jq -s '.[0] + .[1]|unique|sort_by(.date)|reverse' cgm/ns-glucose-24h.json cgm/ns-glucose-1h.json > cgm/ns-glucose.json
     # if ns-glucose.json data is <10m old, no more than 5m in the future, and valid (>38),
     # copy cgm/ns-glucose.json over to cgm/glucose.json if it's newer
     valid_glucose=$(find_valid_ns_glucose)
@@ -41,7 +63,18 @@ function get_ns_bg {
     cp -pu cgm/glucose.json monitor/glucose.json
 }
 
+function completed_recently {
+    find /tmp/ -mmin -5 | egrep -q "ns-loop-completed"
+}
+
+function glucose_fresh {
+    # check whether ns-glucose.json is less than 5m old
+    touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/ns-glucose.json))" cgm/ns-glucose.json
+    find cgm -mmin -5 | egrep -q "ns-glucose.json"
+}
+
 function find_valid_ns_glucose {
+    # TODO: use jq for this if possible
     cat cgm/ns-glucose.json | json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"
 }
 
@@ -55,7 +88,8 @@ function ns_temptargets {
 
 # openaps report invoke monitor/carbhistory.json; oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0
 function ns_meal_carbs {
-    openaps report invoke monitor/carbhistory.json >/dev/null
+    #openaps report invoke monitor/carbhistory.json >/dev/null
+    nightscout ns $NIGHTSCOUT_HOST $API_SECRET carb_history > monitor/carbhistory.json
     oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new
     grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json
     echo -n "Refreshed carbhistory; COB: "
