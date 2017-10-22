@@ -5,13 +5,13 @@ GLUCOSE=$1
 OLD=${2-5}
 MAX_WAIT=${3-1}
 TIME_SINCE=$(oref0-dex-time-since $GLUCOSE)
-OLD_LSUSB=16.0
+OLD_LSUSB=12.0
 
 
 if (( $(bc <<< "$TIME_SINCE >= $OLD") )); then
   echo "CGM Data $TIME_SINCE mins ago is old (>=$OLD), not waiting"
   
-  # if there is no CGM for more than OLD_LSUSB minutes (default 16)
+  # if there is no CGM for more than OLD_LSUSB minutes (default 12)
   # and the lsusb is failing (e.g. unable to initialize libusb: -99
   # and there was no CGM update before the rig was up
   # reboot the system to restore the USB subsystem
