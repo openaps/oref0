@@ -88,6 +88,7 @@ function fail {
         echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
     fi
     maybe_mmtune
+    cat preferences.json | jq . || echo Error: syntax error in preferences.json
     echo Unsuccessful $looptype pump-loop at $(date)
     exit 1
 }
