@@ -492,9 +492,7 @@ function refresh_old_pumphistory_24h {
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old. " \
         || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. " )
-    if cat monitor/iob.json | jq . | grep -q iob && cat settings/profile.json | jq . | grep -q basal; then
-        # iob.json and profile.json are both valid
-    else
+    if ! cat monitor/iob.json | jq . | grep -q iob || ! cat settings/profile.json | jq . | grep -q basal; then
         echo -n Invalid iob.json or profile.json: refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. "
     fi
 }
