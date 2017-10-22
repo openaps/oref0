@@ -34,11 +34,6 @@ old_main() {
 
 # main pump-loop
 main() {
-    if [[ $1 == *"microbolus"* ]]; then
-        looptype="supermicrobolus";
-    else
-        looptype="basal-only";
-    fi
     prep
     if ! overtemp; then
         # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
@@ -53,22 +48,18 @@ main() {
         touch /tmp/pump_loop_enacted -r monitor/glucose.json || fail "$@"
         if smb_check_everything; then
             if ( grep -q '"units":' enact/smb-suggested.json); then
-                if [[ $1 == *"microbolus"* ]] ; then
-                    if smb_bolus; then
-                        touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
-                    else
-                        smb_old_temp && ( \
-                        echo "Falling back to basal-only pump-loop" \
-                        && refresh_temp_and_enact \
-                        && refresh_pumphistory_and_enact \
-                        && refresh_profile \
-                        && refresh_pumphistory_24h \
-                        && echo Completed pump-loop at $(date) \
-                        && echo \
-                        )
-                    fi
-                else
+                if smb_bolus; then
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+                else
+                    smb_old_temp && ( \
+                    echo "Falling back to basal-only pump-loop" \
+                    && refresh_temp_and_enact \
+                    && refresh_pumphistory_and_enact \
+                    && refresh_profile \
+                    && refresh_pumphistory_24h \
+                    && echo Completed pump-loop at $(date) \
+                    && echo \
+                    )
                 fi
             fi
             refresh_profile 15; refresh_pumphistory_24h
@@ -241,7 +232,7 @@ function smb_bolus {
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
-        echo "No bolus needed (yet)"
+        echo "No bolus needed"
     fi
 }
 
@@ -597,8 +588,4 @@ die() {
     exit 1
 }
 
-#if [[ $1 == *"microbolus"* ]]; then
-    #smb_main "$@"
-#else
-    main "$@"
-#fi
+main "$@"
