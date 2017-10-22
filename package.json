@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.6.0-dev",
+  "version": "0.6.0-dev2",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -26,6 +26,7 @@
     "mm-format-ns-pump-history": "./bin/mm-format-ns-pump-history.sh",
     "mm-format-ns-treatments": "./bin/mm-format-ns-treatments.sh",
     "mm-stick": "./bin/mm-stick.sh",
+    "monitor-xdrip": "./bin/monitor-xdrip.sh",
     "nightscout": "./bin/nightscout.sh",
     "ns-dedupe-treatments": "./bin/ns-dedupe-treatments.sh",
     "ns-get": "./bin/ns-get.sh",
@@ -58,6 +59,7 @@
     "oref0-log-shortcuts": "./bin/oref0-log-shortcuts.sh",
     "oref0-mdt-trend": "./bin/oref0-mdt-trend.js",
     "oref0-meal": "./bin/oref0-meal.js",
+    "oref0-ns-loop": "./bin/oref0-ns-loop.sh",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "oref0_nightscout_check": "./bin/oref0_nightscout_check.py",
     "oref0-online": "./bin/oref0-online.sh",
@@ -73,29 +75,29 @@
     "oref0-setup": "./bin/oref0-setup.sh",
     "oref0-subg-ww-radio-parameters": "./bin/oref0-subg-ww-radio-parameters.sh",
     "oref0_subg_ww_radio_parameters.py": "./bin/oref0_subg_ww_radio_parameters.py",
-    "oref0-template": "./bin/oref0-template.js",
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
+    "oref0-upload-entries": "./bin/oref0-upload-entries.sh",
     "oref0-upload-profile": "./bin/oref0-upload-profile.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "wifi": "./bin/oref0-tail-wifi.sh"
   },
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
-    "crypto": "~0.0.3",
-    "lodash": "^4.17.4",
-    "moment": "^2.18.1",
-    "request": "^2.81.0",
+    "crypto": "0.0.3",
+    "lodash": "^4.15.0",
+    "moment": "^2.14.1",
+    "request": "^2.79.0",
     "share2nightscout-bridge": "^0.1.5",
-    "moment-timezone": "^0.5.13",
-    "yargs": "~8.0.2",
-    "json": "~9.0.6"
+    "moment-timezone": "0.5.11",
+    "yargs": "~4.3.2",
+    "json": "~9.0.4"
   },
   "devDependencies": {
-    "coveralls": "^2.13.1",
-    "istanbul": "^0.4.5",
-    "mocha": "^3.4.2",
-    "mocha-lcov-reporter": "^1.3.0",
-    "should": "^11.2.1"
+    "coveralls": "^2.11.12",
+    "istanbul": "^0.4.4",
+    "mocha": "^2.3.3",
+    "mocha-lcov-reporter": "^1.2.0",
+    "should": "^7.1.0"
   },
   "config": {
     "blanket": {
