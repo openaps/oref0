@@ -495,7 +495,7 @@ function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old" \
         || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed" )
     if cat settings/profile.json | jq . | grep -q basal; then
-        echo -n " and valid."
+        echo -n " and valid. "
     else
         echo -n " but invalid: "
         ls -lart settings/profile.json
