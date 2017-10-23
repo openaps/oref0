@@ -499,7 +499,7 @@ function refresh_old_profile {
     else
         echo -n " but invalid: "
         ls -lart settings/profile.json
-        cat settings/profile.json | jq -C -c .current_basal
+        #cat settings/profile.json | jq -C -c .current_basal
         get_settings
     fi
 }
@@ -513,7 +513,8 @@ function get_settings {
         echo -n "Settings refreshed. "
     else
         echo "Invalid profile.json.new after refresh"
-        cat settings/profile.json.new | jq .current_basal
+        ls -lart settings/profile.json.new
+        #cat settings/profile.json.new | jq .current_basal
         # fail "$@"
     fi
 }
