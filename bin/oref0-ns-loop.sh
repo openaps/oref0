@@ -92,7 +92,12 @@ function ns_temptargets {
     jq -s '.[0] + .[1]|unique|sort_by(.created_at)|reverse' settings/ns-temptargets.json settings/local-temptargets.json > settings/temptargets.json
     echo -n "Temptargets merged: "
     cat settings/temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json || die "Couldn't refresh profile"
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || die "Couldn't refresh profile"
+    if cat settings/profile.json.new | jq . | grep -q basal; then
+        mv settings/profile.json.new settings/profile.json
+    else
+        die "Invalid profile.json.new after refresh"
+    fi
 }
 
 # openaps report invoke monitor/carbhistory.json; oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0
