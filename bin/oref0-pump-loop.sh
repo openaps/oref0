@@ -498,18 +498,22 @@ function refresh_old_profile {
         #if ! cat monitor/iob.json | jq . | grep -q iob; then
             #echo -n "Invalid iob.json: "
         #fi
-        set -x
+        #set -x
+        cp settings/profile.json /tmp/profile1.json
         if cat settings/profile.json | jq . | grep -q basal; then
             : # do nothing
         else
+            cp settings/profile.json /tmp/profile2.json
             if cat settings/profile.json | jq . | grep -q basal; then
                 echo -n "Invalid profile.json: "
-                ls -lart settings/profile.json
+                ls -lart settings/profile.json /tmp/profile*.json
                 cat settings/profile.json | jq . -C -c
+                cat /tmp/profile1.json | jq . -C -c
+                cat /tmp/profile2.json | jq . -C -c
             fi
             #echo -n "refresh" && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. "
         fi
-        set +x
+        #set +x
     #fi
 }
 
