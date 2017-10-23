@@ -493,14 +493,25 @@ function refresh_old_pumphistory_24h {
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old" \
-        || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed" )
+        || (echo -n Old settings refresh && get_settings && echo -n "ed" )
     if cat settings/profile.json | jq . | grep -q basal; then
         echo -n " and valid. "
     else
         echo -n " but invalid: "
         ls -lart settings/profile.json
         cat settings/profile.json | jq -C -c .current_basal
-        echo -n "refresh" && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. "
+        echo -n "refresh" && get_settings && echo -n "ed. "
+    fi
+}
+
+# get-settings report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json
+function get_settings {
+    openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || (echo "Couldn't refresh profile"; fail "$@")
+    if cat settings/profile.json.new | jq . | grep -q basal; then
+        mv settings/profile.json.new settings/profile.json
+    else
+        echo "Invalid profile.json.new after refresh"; fail "$@"
     fi
 }
 
@@ -553,7 +564,7 @@ function refresh_profile {
         profileage=$1
     fi
     find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
-    || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo -n "ed. ")
+    || (echo -n Settings refresh && get_settings && echo -n "ed. ")
 }
 
 function wait_for_bg {
