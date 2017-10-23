@@ -158,7 +158,8 @@ function smb_suggest {
     # Run determine-basal
     echo -n Temp refresh
     openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1
-    test ${PIPESTATUS[0]} -eq 0 && echo ed && openaps report invoke enact/smb-suggested.json 2>&1 >/dev/null \
+    test ${PIPESTATUS[0]} -eq 0 && echo ed && \
+    oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json \
     && cp -up enact/smb-suggested.json enact/suggested.json \
     && smb_verify_suggested
 }
