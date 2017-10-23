@@ -20,6 +20,8 @@ grep -q git-branch ~/.bash_profile || echo "alias git-branch="'"cd ~/src/oref0 &
 grep -q runagain ~/.bash_profile || echo "alias runagain="'"bash ~/myopenaps/oref0-runagain.sh"' >> ~/.bash_profile
 grep -q edison-battery ~/.bash_profile || echo "alias edison-battery="'"cd ~/myopenaps/monitor && cat edison-battery.json"' >> ~/.bash_profile
 grep -q cat-reservoir ~/.bash_profile || echo "alias cat-reservoir="'"cd ~/myopenaps/monitor && cat reservoir.json"' >> ~/.bash_profile
+grep -q stop-cron ~/.bash_profile || echo "alias stop-cron="'"cd ~/myopenaps && /etc/init.d/cron stop && killall -g oref0-pump-loop"' >> ~/.bash_profile
+grep -q start-cron ~/.bash_profile || echo "alias start-cron="'"/etc/init.d/cron start"' >> ~/.bash_profile
 
 # source default /etc/profile as well
 grep -q /etc/skel/.profile ~/.bash_profile || echo ". /etc/skel/.profile" >> ~/.bash_profile

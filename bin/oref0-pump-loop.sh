@@ -88,6 +88,9 @@ function fail {
         echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
     fi
     maybe_mmtune
+    if ! cat preferences.json | jq . >/dev/null; then
+        echo Error: syntax error in preferences.json: please go correct your typo.
+    fi
     echo Unsuccessful $looptype pump-loop at $(date)
     exit 1
 }
@@ -546,7 +549,7 @@ function refresh_profile {
 function wait_for_bg {
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo "MDT CGM configured; not waiting"
-    elif egrep -q "Waiting 0.[0-9]m to microbolus again." enact/smb-suggested.json; then
+    elif egrep -q "Waiting [01].[0-9]m to microbolus again." enact/smb-suggested.json; then
         echo "Retrying microbolus without waiting for new BG"
     else
         echo -n "Waiting up to 4 minutes for new BG: "
