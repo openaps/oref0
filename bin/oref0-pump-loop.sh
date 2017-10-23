@@ -501,9 +501,13 @@ function refresh_old_profile {
         if cat settings/profile.json | jq . | grep -q basal; then
             : # do nothing
         else
-            echo -n "Invalid profile.json: "
-            ls -lart settings/profile.json
-            cat settings/profile.json | jq . -C -c
+            set -x
+            if cat settings/profile.json | jq . | grep -q basal; then
+                echo -n "Invalid profile.json: "
+                ls -lart settings/profile.json
+                cat settings/profile.json | jq . -C -c
+            fi
+            set +x
             #echo -n "refresh" && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. "
         fi
     #fi
