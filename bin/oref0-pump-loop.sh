@@ -492,29 +492,16 @@ function refresh_old_pumphistory_24h {
 
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
-    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old. " \
-        || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. " )
-    #if ! cat monitor/iob.json | jq . | grep -q iob || ! cat settings/profile.json | jq . | grep -q basal; then
-        #if ! cat monitor/iob.json | jq . | grep -q iob; then
-            #echo -n "Invalid iob.json: "
-        #fi
-        #set -x
-        cp settings/profile.json /tmp/profile1.json
-        if cat settings/profile.json | jq . | grep -q basal; then
-            : # do nothing
-        else
-            cp settings/profile.json /tmp/profile2.json
-            if cat settings/profile.json | jq . | grep -q basal; then
-                echo -n "Invalid profile.json: "
-                ls -lart settings/profile.json /tmp/profile*.json
-                cat settings/profile.json | jq . -C -c
-                cat /tmp/profile1.json | jq . -C -c
-                cat /tmp/profile2.json | jq . -C -c
-            fi
-            #echo -n "refresh" && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. "
-        fi
-        #set +x
-    #fi
+    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old" \
+        || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed" )
+    if cat settings/profile.json | jq . | grep -q basal; then
+        echo -n " and valid."
+    else
+        echo -n " but invalid: "
+        ls -lart settings/profile.json
+        cat settings/profile.json | jq . -C -c
+        echo -n "refresh" && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. "
+    fi
 }
 
 function refresh_smb_temp_and_enact {
