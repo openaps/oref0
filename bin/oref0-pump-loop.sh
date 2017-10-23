@@ -493,14 +493,14 @@ function refresh_old_pumphistory_24h {
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old" \
-        || (echo -n Old settings refresh && get_settings && echo -n "ed" )
+        || (echo -n "Old settings: " && get_settings )
     if cat settings/profile.json | jq . >/dev/null; then
         echo -n " and valid. "
     else
         echo -n " but invalid: "
         ls -lart settings/profile.json
         cat settings/profile.json | jq -C -c .current_basal
-        echo -n "refresh" && get_settings && echo -n "ed. "
+        get_settings
     fi
 }
 
@@ -510,6 +510,7 @@ function get_settings {
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || (echo "Couldn't refresh profile"; fail "$@")
     if cat settings/profile.json.new | jq . >/dev/null; then
         mv settings/profile.json.new settings/profile.json
+        echo -n "Settings refreshed. "
     else
         echo "Invalid profile.json.new after refresh"
         cat settings/profile.json.new | jq .current_basal
@@ -566,7 +567,7 @@ function refresh_profile {
         profileage=$1
     fi
     find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
-    || (echo -n Settings refresh && get_settings && echo -n "ed. ")
+    || get_settings
 }
 
 function wait_for_bg {
