@@ -498,7 +498,9 @@ function refresh_old_profile {
         #if ! cat monitor/iob.json | jq . | grep -q iob; then
             #echo -n "Invalid iob.json: "
         #fi
-        if ! ( cat settings/profile.json | jq . | grep -q basal ); then
+        if cat settings/profile.json | jq . | grep -q basal; then
+            : # do nothing
+        else
             echo -n "Invalid profile.json: "
             ls -lart settings/profile.json
             cat settings/profile.json | jq . -C -c
