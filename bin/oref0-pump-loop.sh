@@ -506,12 +506,14 @@ function refresh_old_profile {
 
 # get-settings report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json
 function get_settings {
-    openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json
+    openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json 2>&1 >/dev/null | tail -1
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || (echo "Couldn't refresh profile"; fail "$@")
     if cat settings/profile.json.new | jq . | grep -q basal; then
         mv settings/profile.json.new settings/profile.json
     else
-        echo "Invalid profile.json.new after refresh"; fail "$@"
+        echo "Invalid profile.json.new after refresh"
+        cat settings/profile.json.new | jq .current_basal
+        # fail "$@"
     fi
 }
 
