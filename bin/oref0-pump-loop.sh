@@ -499,7 +499,7 @@ function refresh_old_profile {
     else
         echo -n " but invalid: "
         ls -lart settings/profile.json
-        cat settings/profile.json | jq . -C -c
+        cat settings/profile.json | jq -C -c .current_basal
         echo -n "refresh" && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. "
     fi
 }
