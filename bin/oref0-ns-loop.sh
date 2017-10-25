@@ -42,7 +42,9 @@ function highload {
 #openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json
 function get_ns_bg {
     #openaps get-ns-glucose > /dev/null
-    if ! find cgm/ -mmin -55 | egrep -q cgm/ns-glucose-24h.json; then
+    # update 24h glucose file if it's 55m old or too small to calculate COB
+    if ! find cgm/ -mmin -54 | egrep -q cgm/ns-glucose-24h.json \
+        || ! grep -c glucose cgm/ns-glucose-24h.json | jq -e '. > 36' >/dev/null; then
         nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -24hours > cgm/ns-glucose-24h.json
     fi
     nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -1hour > cgm/ns-glucose-1h.json
