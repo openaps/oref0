@@ -156,8 +156,10 @@ function smb_suggest {
     rm -rf enact/smb-suggested.json
     ls enact/smb-suggested.json 2>/dev/null >/dev/null && die "enact/suggested.json present"
     # Run determine-basal
-    echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
-    && openaps report invoke enact/smb-suggested.json 2>&1 >/dev/null \
+    echo -n Temp refresh
+    openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1
+    test ${PIPESTATUS[0]} -eq 0 && echo ed && \
+    oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json \
     && cp -up enact/smb-suggested.json enact/suggested.json \
     && smb_verify_suggested
 }
@@ -491,8 +493,34 @@ function refresh_old_pumphistory_24h {
 
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
-    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old. " \
-    || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. " )
+    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old" \
+        || (echo -n "Old settings: " && get_settings )
+    if cat settings/profile.json | jq . >/dev/null; then
+        echo -n " and valid. "
+    else
+        echo -n " but invalid: "
+        ls -lart settings/profile.json
+        #cat settings/profile.json | jq -C -c .current_basal
+        get_settings
+    fi
+}
+
+# get-settings report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json
+function get_settings {
+    openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json 2>&1 >/dev/null | tail -1
+    # generate settings/pumpprofile.json without autotune
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json | jq . > settings/pumpprofile.json || (echo "Couldn't refresh pumpprofile"; fail "$@")
+    # generate settings/profile.json.new with autotune
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || (echo "Couldn't refresh profile"; fail "$@")
+    if cat settings/profile.json.new | jq . >/dev/null; then
+        mv settings/profile.json.new settings/profile.json
+        echo -n "Settings refreshed. "
+    else
+        echo "Invalid profile.json.new after refresh"
+        ls -lart settings/profile.json.new
+        #cat settings/profile.json.new | jq .current_basal
+        # fail "$@"
+    fi
 }
 
 function refresh_smb_temp_and_enact {
@@ -544,7 +572,7 @@ function refresh_profile {
         profileage=$1
     fi
     find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
-    || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo -n "ed. ")
+    || get_settings
 }
 
 function wait_for_bg {
