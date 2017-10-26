@@ -574,7 +574,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     echo Checking mmeowlink installation
 #if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-    pip show mmeowlink | egrep "Version: 0.11." || (
+    pip show mmeowlink | egrep "Version: 0.11.1" || (
         echo Installing latest mmeowlink
         sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
     )
@@ -672,6 +672,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if ! python -c "import openxshareble" 2>/dev/null; then
             echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
         fi
+        sudo apt-get update; sudo apt-get upgrade
         sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
         echo Checking bluez installation
         # TODO: figure out if we need to do this for 5.44 as well
@@ -871,18 +872,20 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo sysctl -p
     
     # Install EdisonVoltage
-    if egrep -i "edison" /etc/passwd 2>/dev/null; then
-        echo "Checking if EdisonVoltage is already installed"
-        if [ -d "$HOME/src/EdisonVoltage/" ]; then
-            echo "EdisonVoltage already installed"
-        else
-            echo "Installing EdisonVoltage"
-            cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
-            cd $HOME/src/EdisonVoltage
-            make voltage
+    if [[ "$ttyport" =~ "spidev5.1" ]]; then
+        if egrep -i "edison" /etc/passwd 2>/dev/null; then
+            echo "Checking if EdisonVoltage is already installed"
+            if [ -d "$HOME/src/EdisonVoltage/" ]; then
+                echo "EdisonVoltage already installed"
+            else
+                echo "Installing EdisonVoltage"
+                cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+                cd $HOME/src/EdisonVoltage
+                make voltage
+            fi
+            # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
+            grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
         fi
-        # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
-        grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
     fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
@@ -1033,9 +1036,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
         (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
         fi
-        # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
-        if egrep -i "edison" /etc/passwd 2>/dev/null; then
-        (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
+        if [[ "$ttyport" =~ "spidev5.1" ]]; then
+           # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
+           if egrep -i "edison" /etc/passwd 2>/dev/null; then
+           (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
+           fi
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
         if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
