@@ -34,6 +34,20 @@ old_main() {
 
 # main pump-loop
 main() {
+        preflight
+        case $? in # Use the return status code to determine what loop
+                1)
+                        #512/712
+                        old_main
+                        exit 0
+                ;;
+                2)
+                        fail "$@"
+                ;;
+                0)
+                        echo Preflight Complete
+                ;;
+        esac
     if [[ $1 == *"microbolus"* ]]; then
         looptype="supermicrobolus";
     else
@@ -46,7 +60,6 @@ main() {
         echo && echo "Starting $looptype pump-loop at $(date) with $upto30s second wait_for_silence:"
         wait_for_bg || fail "$@"
         wait_for_silence $upto30s || fail "$@"
-        preflight || preflight || fail "$@"
         if_mdt_get_bg || fail "$@"
         refresh_old_pumphistory_24h || fail "$@"
         refresh_old_profile || fail "$@"
@@ -117,9 +130,7 @@ function smb_reservoir_before {
     && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 60 )) \
     && echo -n "and that pumphistory is less than 1m old.  " \
     && (find monitor/ -mmin -1 -size +5c | grep -q pumphistory)
-
 }
-
 # check if the temp was read more than 5m ago, or has been running more than 10m
 function smb_old_temp {
     (find monitor/ -mmin +5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old) \
@@ -127,7 +138,6 @@ function smb_old_temp {
         && echo -n "Temp basal set more than 10m ago: " && jq .duration monitor/temp_basal.json
         )
 }
-
 # make sure everything is in the right condition to SMB
 function smb_check_everything {
     # wait_for_silence and retry if first attempt fails
@@ -151,17 +161,17 @@ function smb_check_everything {
         echo -n "No bolus needed (yet). "
     fi
 }
-
 function smb_suggest {
     rm -rf enact/smb-suggested.json
     ls enact/smb-suggested.json 2>/dev/null >/dev/null && die "enact/suggested.json present"
     # Run determine-basal
-    echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
-    && openaps report invoke enact/smb-suggested.json 2>&1 >/dev/null \
+    echo -n Temp refresh
+    openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1
+    test ${PIPESTATUS[0]} -eq 0 && echo ed && \
+    oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json \
     && cp -up enact/smb-suggested.json enact/suggested.json \
     && smb_verify_suggested
 }
-
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails)
 function smb_enact_temp {
     smb_suggest \
@@ -177,7 +187,6 @@ function smb_enact_temp {
     fi \
     && ( smb_verify_enacted || ( smb_verify_status; smb_verify_enacted) )
 }
-
 function smb_verify_enacted {
     # Read the currently running temp and
     # verify rate matches (within 0.03U/hr) and duration is no shorter than 5m less than smb-suggested.json
@@ -188,7 +197,6 @@ function smb_verify_enacted {
     ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
     && jq --slurp --exit-status 'if .[1].rate then (.[0].rate > .[1].rate - 0.03 and .[0].rate < .[1].rate + 0.03 and .[0].duration > .[1].duration - 5) else true end' monitor/temp_basal.json enact/smb-suggested.json > /dev/null
 }
-
 function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
@@ -205,7 +213,6 @@ function smb_verify_reservoir {
     && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) <= 0.1") )) \
     && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) >= 0") ))
 }
-
 function smb_verify_suggested {
     if grep incorrectly enact/smb-suggested.json; then
         echo "Checking system clock against pump clock:"
@@ -218,7 +225,6 @@ function smb_verify_suggested {
     && echo "and that smb-suggested.json is less than 1m old" \
     && (find enact/ -mmin -1 -size +5c | grep -q smb-suggested.json)
 }
-
 function smb_verify_status {
     # Read the pump status and verify it is not bolusing
     rm -rf monitor/status.json
@@ -234,7 +240,6 @@ function smb_verify_status {
         false
     fi
 }
-
 function smb_bolus {
     # Verify that the suggested.json is less than 5 minutes old
     # and administer the supermicrobolus
@@ -247,7 +252,6 @@ function smb_bolus {
         echo "No bolus needed (yet)"
     fi
 }
-
 function refresh_after_bolus_or_enact {
     if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
         # refresh profile if >5m old to give SMB a chance to deliver
@@ -258,9 +262,7 @@ function refresh_after_bolus_or_enact {
         && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
         true
     fi
-
 }
-
 function unsuspend_if_no_temp {
     # If temp basal duration is zero, unsuspend pump
     if (cat monitor/temp_basal.json | json -c "this.duration == 0" | grep -q duration); then
@@ -275,11 +277,9 @@ function unsuspend_if_no_temp {
         echo Temp basal still running: leaving pump suspended
     fi
 }
-
 # calculate random sleep intervals, and get TTY port
 function prep {
     set -o pipefail
-
     upto10s=$[ ( $RANDOM / 3277 + 1) ]
     upto20s=$[ ( $RANDOM / 1638 + 1) ]
     upto30s=$[ ( $RANDOM / 1092 + 1) ]
@@ -290,7 +290,6 @@ function prep {
         port=/dev/spidev5.1
     fi
 }
-
 function if_mdt_get_bg {
     echo -n
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
@@ -355,15 +354,32 @@ function mdt_get_bg {
     && openaps report invoke nightscout/glucose.json 2>&1 >/dev/null \
     && echo ted
 }
-# make sure we can talk to the pump and get a valid model number
+
 function preflight {
-    echo -n "Preflight "
-    # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
-    ( openaps report invoke settings/model.json || openaps report invoke settings/model.json ) 2>&1 >/dev/null | tail -1 \
-    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && echo -n "error: pump model untested with SMB: "; false) ) \
-    && echo -n "OK. " \
-    || ( echo -n "fail. "; false )
+echo -n "Preflight (validate pump model for SMB): "
+    dcaPumpModel=$(openaps-use pump model)
+    if [ "$dcaPumpModel" == "" ]
+    then
+        echo Error detecting pump model. Check for pump-to-rig connectivity and ensure there are no conflicting instances of oref0-pump-loop running.
+        return 2
+    else
+    echo
+    echo Detected Model $dcaPumpModel
+    if [ $(echo "$dcaPumpModel" | grep 12) ]
+    then
+        looptype="basal-only"
+        echo x12 Pumps not allowed to SMB. Forcing basal-only loop.
+        echo
+	return 1 # Since we successfully detected the pump model, return 1
+    else
+        echo Model $dcaPumpModel cleared for SMB
+        echo
+	return 0
+        #If it's not an x12, and we can talk to it, let it SMB
+    fi
+    fi
 }
+
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
@@ -388,12 +404,12 @@ function mmtune {
     if [[ $rssi_wait > 1 ]]; then
         echo "waiting for $rssi_wait second silence before continuing"
         wait_for_silence $rssi_wait
+        preflight
         echo "Done waiting for rigs with better signal."
     else
         echo "No wait required."
     fi
 }
-
 function maybe_mmtune {
     if ( find /tmp/ -mmin -15 | egrep -q "pump_loop_completed" ); then
         # mmtune ~ 25% of the time
@@ -405,11 +421,9 @@ function maybe_mmtune {
         mmtune
     fi
 }
-
 function any_pump_comms {
     mmeowlink-any-pump-comms.py --port $port --wait-for $1
 }
-
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
     if [ -z $1 ]; then
@@ -433,7 +447,6 @@ function wait_for_silence {
         && break
     done
 }
-
 # Refresh pumphistory etc.
 function gather {
     openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1 \
@@ -450,11 +463,9 @@ function gather {
     && echo " and meal.json" \
     || (echo; exit 1) 2>/dev/null
 }
-
 function merge_pumphistory {
     jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
 }
-
 # Calculate new suggested temp basal and enact it
 function enact {
     rm enact/suggested.json
@@ -467,19 +478,16 @@ function enact {
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>/dev/null
     echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
 }
-
 # refresh pumphistory if it's more than 15m old and enact
 function refresh_old_pumphistory_enact {
     find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
     || ( echo -n "Old pumphistory: " && gather && enact )
 }
-
 # refresh pumphistory if it's more than 30m old, but don't enact
 function refresh_old_pumphistory {
     find monitor/ -mmin -30 -size +100c | grep -q pumphistory-zoned \
     || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && gather )
 }
-
 # refresh pumphistory_24h if it's more than 2h old
 function refresh_old_pumphistory_24h {
     find settings/ -mmin -120 -size +100c | grep -q pumphistory-24h-zoned \
@@ -487,13 +495,36 @@ function refresh_old_pumphistory_24h {
         && echo -n Old pumphistory-24h refresh \
         && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed )
 }
-
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
-    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old. " \
-    || (echo -n Old settings refresh && openaps get-settings 2>&1 >/dev/null | tail -1 && echo -n "ed. " )
+    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old" \
+        || (echo -n "Old settings: " && get_settings )
+    if cat settings/profile.json | jq . >/dev/null; then
+        echo -n " and valid. "
+    else
+        echo -n " but invalid: "
+        ls -lart settings/profile.json
+        #cat settings/profile.json | jq -C -c .current_basal
+        get_settings
+    fi
 }
-
+# get-settings report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json
+function get_settings {
+    openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json 2>&1 >/dev/null | tail -1
+    # generate settings/pumpprofile.json without autotune
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json | jq . > settings/pumpprofile.json || (echo "Couldn't refresh pumpprofile"; fail "$@")
+    # generate settings/profile.json.new with autotune
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || (echo "Couldn't refresh profile"; fail "$@")
+    if cat settings/profile.json.new | jq . >/dev/null; then
+        mv settings/profile.json.new settings/profile.json
+        echo -n "Settings refreshed. "
+    else
+        echo "Invalid profile.json.new after refresh"
+        ls -lart settings/profile.json.new
+        #cat settings/profile.json.new | jq .current_basal
+        # fail "$@"
+    fi
+}
 function refresh_smb_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     setglucosetimestamp
@@ -508,7 +539,6 @@ function refresh_smb_temp_and_enact {
         echo -n "pump_loop_completed less than 10m ago. "
     fi
 }
-
 function refresh_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     setglucosetimestamp
@@ -523,7 +553,6 @@ function refresh_temp_and_enact {
         echo -n "temp_basal.json less than 5m old. "
     fi
 }
-
 function refresh_pumphistory_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     setglucosetimestamp
@@ -535,7 +564,6 @@ function refresh_pumphistory_and_enact {
         echo Pumphistory less than 5m old
     fi
 }
-
 function refresh_profile {
     if [ -z $1 ]; then
         profileage=10
@@ -543,9 +571,8 @@ function refresh_profile {
         profileage=$1
     fi
     find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
-    || (echo -n Settings refresh && openaps get-settings 2>/dev/null >/dev/null && echo -n "ed. ")
+    || get_settings
 }
-
 function wait_for_bg {
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo "MDT CGM configured; not waiting"
@@ -567,7 +594,6 @@ function wait_for_bg {
         done
     fi
 }
-
 function refresh_pumphistory_24h {
     if (! ls monitor/edison-battery.json 2>/dev/null >/dev/null); then
         echo -n "Edison battery level not found. "
@@ -586,7 +612,6 @@ function refresh_pumphistory_24h {
     || (echo -n pumphistory-24h refresh \
         && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed)
 }
-
 function setglucosetimestamp {
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
       touch -d "$(date -R -d @$(jq .[0].date/1000 nightscout/glucose.json))" monitor/glucose.json
@@ -594,12 +619,10 @@ function setglucosetimestamp {
       touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
     fi
 }
-
 die() {
     echo "$@"
     exit 1
 }
-
 #if [[ $1 == *"microbolus"* ]]; then
     #smb_main "$@"
 #else
