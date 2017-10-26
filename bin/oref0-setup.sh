@@ -659,6 +659,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
         cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
         cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
+        #Stop automatic startup of hostapd & dnsmasq
+        update-rc.d -f hostapd remove 
+       update-rc.d -f dnsmasq remove 
 
     fi
     # add/configure devices
