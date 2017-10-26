@@ -664,6 +664,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
        update-rc.d -f dnsmasq remove 
 
     fi
+    # add linux-bootup.sh to /etc/rc.local
+    sudo sed -i.bak -e '/exit/ i sudo bash ~/src/oref0/bin/linux-bootup.sh' /etc/rc.local
+    
     # add/configure devices
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
