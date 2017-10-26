@@ -661,8 +661,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
         #Stop automatic startup of hostapd & dnsmasq
         update-rc.d -f hostapd remove 
-       update-rc.d -f dnsmasq remove 
-
+        update-rc.d -f dnsmasq remove 
+        # Edit /etc/hostapd/hostapd.conf for Hostname and wpa
+        sed -i "s/\(ssid=\)\(.*\)/\1${HOSTNAME}/" /etc/hostapd/hostapd.conf
+        sed -i "s/\(ignore_broadcast_ssid=\)\(.*\)/\10/" /etc/hostapd/hostapd.conf
+        sed -i "s/\(wpa=\)\(.*\)/\1#OpenAPS/" /etc/hostapd/hostapd.conf
+        
     fi
     # add linux-bootup.sh to /etc/rc.local
     sudo sed -i.bak -e '/exit/ i sudo bash ~/src/oref0/bin/linux-bootup.sh' /etc/rc.local
