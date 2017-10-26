@@ -1,6 +1,5 @@
 #!/bin/bash
-# echo Starting ns-loop at $(date): && openaps get-ns-bg; sensors -u 2>/dev/null | awk '$NF > 85' | grep input || ( openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps upload )
-# echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps battery-status; cat monitor/edison-battery.json; echo; openaps upload
+#echo Starting ns-loop at $(date): && openaps get-ns-bg; sensors -u 2>/dev/null | awk '$NF > 85' | grep input || ( openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps upload )
 
 # main ns-loop
 main() {
@@ -10,7 +9,6 @@ main() {
     overtemp && exit 1
     ns_temptargets || die "ns_temptargets failed"
     ns_meal_carbs || die ", but ns_meal_carbs failed"
-    battery_status
     upload
     echo Completed oref0-ns-loop at $(date)
 }
@@ -62,13 +60,6 @@ function ns_meal_carbs {
     grep COB monitor/meal.json | jq .mealCOB
 }
 
-#sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json
-function battery_status {
-    if [ -e ~/src/EdisonVoltage/voltage ]; then
-        sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | tee monitor/edison-battery.json | jq -C -c .
-    fi
-}
-
 # echo -n Upload && ( openaps upload-ns-status; openaps upload-pumphistory-entries; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed
 function upload {
     upload_ns_status
@@ -89,9 +80,8 @@ function upload_ns_status {
 }
 
 #ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json
-# ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --uploader monitor/edison-battery.json > upload/ns-status.json
 function format_ns_status {
-    ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --uploader monitor/edison-battery.json > upload/ns-status.json
+    ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json
 }
 
 #openaps format-latest-nightscout-treatments && test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0 && (ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json ) || echo \\\"No recent treatments to upload\\\"
@@ -99,9 +89,10 @@ function upload_recent_treatments {
     #echo Uploading treatments
     format_latest_nightscout_treatments || die "Couldn't format latest NS treatments"
     if test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0; then
-        ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json | jq -C -c . || die "Couldn't upload latest treatments to NS"
+        ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json || die "Couldn't upload latest treatments to NS"
+        echo ed successfully
     else
-        echo "No new treatments to upload"
+        echo "No recent treatments to upload"
     fi
 }
 

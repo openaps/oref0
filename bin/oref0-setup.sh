@@ -888,6 +888,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
             grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
         fi
+        if [[ ${CGM,,} =~ "mdt" ]]; then
+            cd $directory || die "Can't cd $directory"
+            for type in edisonbattery; do
+                echo importing $type file
+                cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+            done
+        fi
     fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
