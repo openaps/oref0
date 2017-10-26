@@ -888,7 +888,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
             grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
         fi
-        if [[ ${CGM,,} =~ "mdt" ]]; then
+        if [[ ${CGM,,} =~ "mdt" ]] || [[ ${CGM,,} =~ "xdrip" ]]; then # still need this for the old ns-loop for now
             cd $directory || die "Can't cd $directory"
             for type in edisonbattery; do
                 echo importing $type file
@@ -1018,7 +1018,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
         fi
-        if [[ ${CGM,,} =~ "mdt" ]]; then # use old ns-loop for now
+        if [[ ${CGM,,} =~ "mdt" ]] || [[ ${CGM,,} =~ "xdrip" ]]; then # use old ns-loop for now
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
         else
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
