@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // Simple script to check current version / branch of oref0 installed and check for updates
 const execSync = require('child_process').execSync;
 const argv = require('yargs').argv;
