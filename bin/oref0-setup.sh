@@ -1000,6 +1000,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
         (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
         (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
+        (crontab -l; crontab -l | grep -q "oref0-version" || echo "0 * * * * oref0-version --check-for-updates 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
         (crontab -l; crontab -l | grep -q "killall -g --older-than 5m oref0" || echo '* * * * * find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && ( killall -g --older-than 5m openaps; killall -g --older-than 5m oref0-pump-loop; killall -g --older-than 5m openaps-report )') | crontab -
