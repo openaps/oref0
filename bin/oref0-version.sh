@@ -15,7 +15,7 @@ if [[ $1 =~ "update" ]]; then
 			echo; echo "You are currently running a development branch of oref0.  Such branches change frequently."
 			echo "Please read the latest PR notes and update with the latest commits to dev before reporting any issues."; echo
 		else
-			echo "Please make sure to read any new documentation that may accompany update, as some things may have changed."
+			echo "Please make sure to read any new documentation and release notes that accompany the update."
 		fi
 	else
 		echo "Your instance of oref0 [${version}, ${branch}] is up-to-date."
