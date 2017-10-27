@@ -12,8 +12,8 @@ if [[ $1 =~ "update" ]]; then
 		# we are out of date
 		echo "Your instance of oref0 [${version}, ${branch}] is out-of-date by ${behind} commits, you may want to consider updating."
         if [ $branch != "master" ]; then
-			echo; echo "You are currently running a development branch of oref0.  Such branches change frequently."
-			echo "Please read the latest PR notes and update with the latest commits to dev before reporting any issues."; echo
+			echo "You are currently running a development branch of oref0.  Such branches change frequently."
+			echo "Please read the latest PR notes and update with the latest commits to dev before reporting any issues."
 		else
 			echo "Please make sure to read any new documentation and release notes that accompany the update."
 		fi
