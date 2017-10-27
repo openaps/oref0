@@ -17,15 +17,19 @@ main() {
     echo
     print_wifi_name
     if check_ip; then
-        # if we are back on wifi (and have connectivity to checkip.amazonaws.com), shut down bluetooth
+        # if we are back on normal wifi (and have connectivity to checkip.amazonaws.com), shut down bluetooth
         stop_hotspot
         if has_addr wlan0 && has_addr bnep0; then
-            bt_disconnect $MACs
-            wifi_connect
+            if has_addr wlan0 | grep $HostAPDIP
+                ifdown wlan0; ifup wlan0
+            else
+                bt_disconnect $MACs
+            fi
         fi
     else
         echo
         print_wifi_name
+        wifi_dhcp_renew
         if ! check_ip; then
             bt_connect $MACs
         fi
@@ -98,7 +102,7 @@ function bt_disconnect {
     done
 }
 
-function wifi_connect {
+function wifi_dhcp_renew {
     echo "Getting new wlan0 IP"
     ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
     sudo dhclient wlan0 -r
