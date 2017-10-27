@@ -666,14 +666,18 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         #sed -i "s/\(ssid=\)\(.*\)/\1${HOSTNAME}HotSpot/" /etc/hostapd/hostapd.conf
         #sed -i "s/\(ignore_broadcast_ssid=\)\(.*\)/\10/" /etc/hostapd/hostapd.conf
         #sed -i "s/\(wpa=\)\(.*\)/\12/" /etc/hostapd/hostapd.conf
-        sed -i '$ a\wpa_passphrase=#OpenAPS\nwpa_key_mgmt=WPA-PSK\nwpa_pairwise=CCMP\nwpa_group_rekey=86400\nieee80211n=1\nwme_enabled=1
-' /etc/hostapd/hostapd.conf || die "Couldn't modify /etc/hostapd/hostapd.conf"
-        sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
+        #if ! grep -q 'wpa_passphrase=' /etc/hostapd/hostapd.conf; then
+        #  sed -i '$ a\wpa_passphrase=#OpenAPS\nwpa_key_mgmt=WPA-PSK\nwpa_pairwise=CCMP\nwpa_group_rekey=86400\nieee80211n=1\nwme_enabled=1' /etc/hostapd/hostapd.conf || die "Couldn't modify /etc/hostapd/hostapd.conf"
+        #fi
+        if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
+          sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
+        fi  
         #sed -i.bak -e '$ i sudo ifdown wlan0' /etc/rc.local
         #sed -i.bak -e '$ i sudo cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local
         #sed -i.bak -e '$ i sudo ifup wlan0' /etc/rc.local
-        sed -i.bak -e '/exit/ i sudo ifdown wlan0\nsudo cp /etc/network/interfaces.client /etc/network/interfaces\nsudo ifup wlan0' /etc/rc.local || die "Couldn't modify /etc/rc.local"
-        
+        if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
+          sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
+        fi
     fi 
     
     # add/configure devices
