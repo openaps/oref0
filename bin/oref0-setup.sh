@@ -663,13 +663,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         update-rc.d -f hostapd remove 
         update-rc.d -f dnsmasq remove 
         # Edit /etc/hostapd/hostapd.conf for Hostname and wpa
-        sed -i "s/\(ssid=\)\(.*\)/\1${HOSTNAME}HotSpot/" /etc/hostapd/hostapd.conf
-        sed -i "s/\(ignore_broadcast_ssid=\)\(.*\)/\10/" /etc/hostapd/hostapd.conf
-        sed -i "s/\(wpa=\)\(.*\)/\1#OpenAPS/" /etc/hostapd/hostapd.conf
+        #sed -i "s/\(ssid=\)\(.*\)/\1${HOSTNAME}HotSpot/" /etc/hostapd/hostapd.conf
+        #sed -i "s/\(ignore_broadcast_ssid=\)\(.*\)/\10/" /etc/hostapd/hostapd.conf
+        #sed -i "s/\(wpa=\)\(.*\)/\12/" /etc/hostapd/hostapd.conf
+        sed -i '$ a\wpa_passphrase=#OpenAPS\nwpa_key_mgmt=WPA-PSK\nwpa_pairwise=CCMP\nwpa_group_rekey=86400\nieee80211n=1\nwme_enabled=1
+' /etc/hostapd/hostapd.conf || die "Couldn't modify /etc/hostapd/hostapd.conf"
         sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
-        sed -i.bak -e '$ i sudo ifdown wlan0' /etc/rc.local
-        sed -i.bak -e '$ i sudo cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local
-        sed -i.bak -e '$ i sudo ifup wlan0' /etc/rc.local
+        #sed -i.bak -e '$ i sudo ifdown wlan0' /etc/rc.local
+        #sed -i.bak -e '$ i sudo cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local
+        #sed -i.bak -e '$ i sudo ifup wlan0' /etc/rc.local
+        sed -i.bak -e '/exit/ i sudo ifdown wlan0\nsudo cp /etc/network/interfaces.client /etc/network/interfaces\nsudo ifup wlan0' /etc/rc.local || die "Couldn't modify /etc/rc.local"
         
     fi 
     
