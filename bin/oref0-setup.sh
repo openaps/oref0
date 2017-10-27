@@ -666,10 +666,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         sed -i "s/\(ssid=\)\(.*\)/\1${HOSTNAME}/" /etc/hostapd/hostapd.conf
         sed -i "s/\(ignore_broadcast_ssid=\)\(.*\)/\10/" /etc/hostapd/hostapd.conf
         sed -i "s/\(wpa=\)\(.*\)/\1#OpenAPS/" /etc/hostapd/hostapd.conf
+        sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
+        sed -i.bak -e '$ i sudo ifdown wlan0' /etc/rc.local
+        sed -i.bak -e '$ i sudo cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local
+        sed -i.bak -e '$ i sudo ifup wlan0' /etc/rc.local
         
-    fi
-    # add linux-bootup.sh to /etc/rc.local
-    sudo sed -i.bak -e '/exit/ i sudo bash ~/src/oref0/bin/linux-bootup.sh' /etc/rc.local
+    fi 
     
     # add/configure devices
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
