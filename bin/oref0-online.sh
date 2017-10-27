@@ -130,13 +130,11 @@ function start_hotspot {
         echo "No BT MAC provided: not activating local-only hotspot"
         echo "Cycling wlan0"
         ifdown wlan0; ifup wlan0
-    elif ! cat preferences.json | jq -e .offline_hotspot; then
-        echo "Offline hotspot not enabled in preferences.json"
     elif grep -q $HostAPDIP /etc/network/interfaces; then
         echo "Local hotspot is running."
         service hostapd status > /dev/null || service hostapd restart
         service dnsmasq status > /dev/null || service dnsmasq restart
-    else
+    elif cat preferences.json | jq -e .offline_hotspot; then
         echo "Unable to connect via wifi or Bluetooth; activating local-only hotspot"
         echo "Killing wpa_supplicant"
         #killall wpa_supplicant
@@ -159,6 +157,8 @@ function start_hotspot {
         sleep 5
         echo "Setting IP Address for wlan0"
         /sbin/ifconfig wlan0 $HostAPDIP netmask 255.255.255.0 up
+    else
+        echo "Offline hotspot not enabled in preferences.json"
     fi
 }
 
