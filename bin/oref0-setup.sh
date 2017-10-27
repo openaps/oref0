@@ -663,7 +663,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         update-rc.d -f hostapd remove 
         update-rc.d -f dnsmasq remove 
         # Edit /etc/hostapd/hostapd.conf for Hostname and wpa
-        sed -i "s/\(ssid=\)\(.*\)/\1${HOSTNAME}/" /etc/hostapd/hostapd.conf
+        sed -i "s/\(ssid=\)\(.*\)/\1${HOSTNAME}HotSpot/" /etc/hostapd/hostapd.conf
         sed -i "s/\(ignore_broadcast_ssid=\)\(.*\)/\10/" /etc/hostapd/hostapd.conf
         sed -i "s/\(wpa=\)\(.*\)/\1#OpenAPS/" /etc/hostapd/hostapd.conf
         sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
