@@ -6,7 +6,7 @@ branch=$(cd $HOME/src/oref0/ && git rev-parse --abbrev-ref HEAD)
 version=$(jq .version "$HOME/src/oref0/package.json" | sed 's/"//g')
 
 if [[ $1 =~ "update" ]]; then
-	cd $HOME/src/oref0/ && git fetch # pull latest remote info
+	cd $HOME/src/oref0/ && git fetch 2>/dev/null || echo git fetch failed # pull latest remote info
 	behind=$(cd $HOME/src/oref0/ && git rev-list --count ${branch}...origin/${branch})
     if (("$behind" > "0")); then
 		# we are out of date
