@@ -19,12 +19,12 @@ main() {
     if check_ip; then
         # if we are back on normal wifi (and have connectivity to checkip.amazonaws.com), shut down bluetooth
         stop_hotspot
-        if has_addr wlan0 && has_addr bnep0; then
+        if has_ip wlan0 && has_ip bnep0; then
             # if online but still configured with hotspot IP, cycle wlan0
-            if has_addr wlan0 | grep $HostAPDIP; then
+            if has_ip wlan0 | grep $HostAPDIP; then
                 ifdown wlan0; ifup wlan0
             # if online via BT, cycle wlan0
-            elif ! has_addr wlan0; then
+            elif ! has_ip wlan0; then
                 ifdown wlan0; ifup wlan0
             # if online via wifi, disconnect BT
             else
@@ -35,7 +35,7 @@ main() {
     else
         echo
         print_wifi_name
-        if ! has_addr wlan0; then
+        if ! has_ip wlan0; then
             wifi_dhcp_renew
         fi
         if ! check_ip; then
@@ -70,7 +70,7 @@ function check_ip {
     curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"
 }
 
-function has_addr {
+function has_ip {
     ifconfig | grep -A1 $1 | grep -q "inet addr"
 }
 
@@ -87,7 +87,7 @@ function bt_connect {
             echo -n ", getting bnep0 IP"
             sudo dhclient bnep0
             # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
-            if has_addr wlan0 && has_addr bnep0; then
+            if has_ip wlan0 && has_ip bnep0; then
                 echo -n " and releasing wifi IP"
                 sudo dhclient wlan0 -r
                 # echo Sleeping for 2 minutes before trying wifi again
@@ -133,28 +133,33 @@ function stop_hotspot {
     fi
 }
 
+function stop_cycle {
+    stop_hotspot
+    echo "Cycling wlan0"
+    ifdown wlan0; ifup wlan0
+}
+
+
 function start_hotspot {
-    # if hostapd is not running (pid is null)
     echo
-    if ! ls preferences.json 2>/dev/null >/dev/null \
+    if ls /tmp/disable_hotspot; then
+        stop_cycle
+    elif ! ls preferences.json 2>/dev/null >/dev/null \
         || ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
         echo "Offline hotspot not enabled in preferences.json"
-        stop_hotspot
-        echo "Cycling wlan0"
-        ifdown wlan0; ifup wlan0
+        stop_cycle
     elif [[ -z $1 ]]; then
         echo "No BT MAC provided: not activating local-only hotspot"
         echo "Cycling wlan0"
         ifdown wlan0; ifup wlan0
-    elif grep -q $HostAPDIP /etc/network/interfaces; then
+    elif grep -q $HostAPDIP /etc/network/interfaces \
+        && ifconfig wlan0 | grep -q $HostAPDIP; then
         echo "Local hotspot is running."
         service hostapd status > /dev/null || service hostapd restart
         service dnsmasq status > /dev/null || service dnsmasq restart
     elif ! ls /etc/network/interfaces.ap 2>/dev/null >/dev/null; then
         echo "Local-only hotspot not configured"
-        stop_hotspot
-        echo "Cycling wlan0"
-        ifdown wlan0; ifup wlan0
+        stop_cycle
     else
         echo "Unable to connect via wifi or Bluetooth; activating local-only hotspot"
         echo "Killing wpa_supplicant"
