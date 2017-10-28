@@ -659,8 +659,22 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
         cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
         cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
-
-    fi
+        #Stop automatic startup of hostapd & dnsmasq
+        update-rc.d -f hostapd remove 
+        update-rc.d -f dnsmasq remove 
+        # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
+        sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}-HotSpot/" /etc/hostapd/hostapd.conf
+        # Add Commands to /etc/rc.local 
+        # Interrupt Kernel Messages
+        if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
+          sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
+        fi  
+        # Add to /etc/rc.local to check if in hotspot mode and turn back to client mode during bootup
+        if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
+          sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
+        fi
+    fi 
+    
     # add/configure devices
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5

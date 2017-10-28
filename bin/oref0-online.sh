@@ -13,15 +13,30 @@ main() {
     fi
     echo -n "At $(date) my local IP is: "
     print_local_ip wlan0
-    print_local_ip bnep0
+	if ifconfig | egrep -q "bnep0" >/dev/null; then
+		print_local_ip bnep0
+	fi
     echo
-    print_wifi_name
-    if check_ip; then
-        # if we are back on normal wifi (and have connectivity to checkip.amazonaws.com), shut down bluetooth
+	echo -n "At $(date) my Public IP is: "
+    check_ip
+	if [[ $(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip wlan0) ]]; then
+		print_wifi_name
+	fi
+	if ifconfig | egrep -q "bnep0" >/dev/null; then
+		if [[ $(ip -4 -o addr show dev bnep0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip bnep0) ]]; then
+			print_bluetooth_name
+		fi
+	else
+		echo
+		echo "Bluetooth PAN Not connected"
+	fi	
+    if check_ip >/dev/null; then
+        # if we are back on the Internet (and have connectivity to checkip.amazonaws.com), shut down bluetooth
+        echo
         stop_hotspot
         if has_ip wlan0 && has_ip bnep0; then
             # if online but still configured with hotspot IP, cycle wlan0
-            if has_ip wlan0 | grep $HostAPDIP; then
+            if print_local_ip wlan0 | grep $HostAPDIP; then
                 ifdown wlan0; ifup wlan0
             # if online via BT, cycle wlan0
             elif ! has_ip wlan0; then
@@ -41,10 +56,13 @@ main() {
         if ! check_ip; then
             bt_connect $MACs
         fi
-        print_wifi_name
-        if check_ip; then
+        #print_wifi_name
+        if check_ip >/dev/null; then
             # if we're online after activating bluetooth, shut down any local-access hotspot we're running
             stop_hotspot
+			if ! print_local_ip wlan0 | egrep -q "[A-Za-z0-9_]+" >/dev/null; then
+				wifi_dhcp_renew
+			fi
         else
             # if we can't get online via wifi or bluetooth, start our own local-access hotspot
             # and disconnect bluetooth
@@ -53,13 +71,19 @@ main() {
             #bt_disconnect $MACs
         fi
     fi
-    echo Finished oref0-online.
+    echo Finished oref0-online. 
+}
+
+function print_bluetooth_name {
+    echo -n "At $(date), my bluetooth is connected to "
+    echo -n ${MACs}
+    #echo -n ", and my public IP is: "
 }
 
 function print_wifi_name {
     echo -n "At $(date), my wifi network name is "
     iwgetid -r wlan0 | tr -d '\n'
-    echo -n ", and my public IP is: "
+    #echo -n ", and my public IP is: "
 }
 
 function print_local_ip {
@@ -76,27 +100,27 @@ function has_ip {
 
 function bt_connect {
     # loop over as many MACs as are provided as arguments
-    echo
+    #echo
     for MAC; do
-        echo -n "At $(date) my public IP is: "
-        if ! check_ip; then
-            echo; echo -n "Error, connecting BT to $MAC"
+        #echo -n "At $(date) my public IP is: "
+        if ! check_ip >/dev/null; then
+            echo; echo "No Public Network Detected, attempt connecting BT to $MAC"
             oref0-bluetoothup
             sudo bt-pan client $MAC -d
             sudo bt-pan client $MAC
-            echo -n ", getting bnep0 IP"
+            #echo  "Attempt to get bnep0 IP :"
             sudo dhclient bnep0
+			if ifconfig | egrep -q "bnep0" >/dev/null; then
+				print_local_ip bnep0
+			fi	
             # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
             if has_ip wlan0 && has_ip bnep0; then
-                echo -n " and releasing wifi IP"
-                sudo dhclient wlan0 -r
-                # echo Sleeping for 2 minutes before trying wifi again
-                # sleep 120
+                wifi_dhcp_renew
             fi
-            echo
+            #echo
         fi
     done
-    echo
+    #echo
 }
 
 function bt_disconnect {
@@ -129,7 +153,11 @@ function stop_hotspot {
         echo "Renewing IP Address for wlan0"
         dhclient_restart
     else
-        echo Local hotspot is not running.
+	if ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
+		echo Local hotspot not enabled, edit Preferences to turn on.
+	else
+		echo Local hotspot is not running.
+	fi
     fi
 }
 
