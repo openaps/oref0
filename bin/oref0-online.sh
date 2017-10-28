@@ -20,7 +20,7 @@ main() {
         # if we are back on normal wifi (and have connectivity to checkip.amazonaws.com), shut down bluetooth
         stop_hotspot
         if has_addr wlan0 && has_addr bnep0; then
-            if has_addr wlan0 | grep $HostAPDIP
+            if has_addr wlan0 | grep $HostAPDIP; then
                 ifdown wlan0; ifup wlan0
             else
                 bt_disconnect $MACs
