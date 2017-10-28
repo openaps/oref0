@@ -35,7 +35,9 @@ main() {
     else
         echo
         print_wifi_name
-        wifi_dhcp_renew
+        if ! has_addr wlan0; then
+            wifi_dhcp_renew
+        fi
         if ! check_ip; then
             bt_connect $MACs
         fi
@@ -115,7 +117,7 @@ function wifi_dhcp_renew {
 
 function stop_hotspot {
     if grep -q $HostAPDIP /etc/network/interfaces || iwconfig wlan0 | grep Mode:Master; then
-        echo "Bluetooth connectivity restored; shutting down local-only hotspot"
+        echo "Shutting down local-only hotspot"
         echo "Attempting to stop hostapd"
         /etc/init.d/hostapd stop
         echo "Attempting to stop dnsmasq"
@@ -134,14 +136,14 @@ function stop_hotspot {
 function start_hotspot {
     # if hostapd is not running (pid is null)
     echo
-    if [[ -z $1 ]]; then
-        echo "No BT MAC provided: not activating local-only hotspot"
-        echo "Cycling wlan0"
-        ifdown wlan0; ifup wlan0
-    elif ! ls preferences.json 2>/dev/null >/dev/null \
+    if ! ls preferences.json 2>/dev/null >/dev/null \
         || ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
         echo "Offline hotspot not enabled in preferences.json"
         stop_hotspot
+        echo "Cycling wlan0"
+        ifdown wlan0; ifup wlan0
+    elif [[ -z $1 ]]; then
+        echo "No BT MAC provided: not activating local-only hotspot"
         echo "Cycling wlan0"
         ifdown wlan0; ifup wlan0
     elif grep -q $HostAPDIP /etc/network/interfaces; then
