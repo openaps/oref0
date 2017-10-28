@@ -12,4 +12,3 @@ else
   echo "CGM Data $TIME_SINCE mins ago is fresh (< $OLD)"
   exit 0
 fi
-
