@@ -29,6 +29,7 @@ main() {
             # if online via wifi, disconnect BT
             else
                 bt_disconnect $MACs
+                wifi_dhcp_renew
             fi
         fi
     else
@@ -141,7 +142,9 @@ function start_hotspot {
         echo "Local hotspot is running."
         service hostapd status > /dev/null || service hostapd restart
         service dnsmasq status > /dev/null || service dnsmasq restart
-    elif cat preferences.json | jq -e .offline_hotspot; then
+    elif ! ls /etc/network/interfaces.ap 2>/dev/null >/dev/null; then
+        echo "Local-only hotspot not configured"
+    elif ls preferences.json 2>/dev/null >/dev/null && cat preferences.json | jq -e .offline_hotspot >/dev/null; then
         echo "Unable to connect via wifi or Bluetooth; activating local-only hotspot"
         echo "Killing wpa_supplicant"
         #killall wpa_supplicant
@@ -166,6 +169,9 @@ function start_hotspot {
         /sbin/ifconfig wlan0 $HostAPDIP netmask 255.255.255.0 up
     else
         echo "Offline hotspot not enabled in preferences.json"
+        stop_hotspot
+        echo "Cycling wlan0"
+        ifdown wlan0; ifup wlan0
     fi
 }
 
