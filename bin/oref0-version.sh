@@ -10,7 +10,7 @@ if [[ $1 =~ "update" ]]; then
 	behind=$(cd $HOME/src/oref0/ && git rev-list --count ${branch}...origin/${branch})
     if (("$behind" > "0")); then
 		# we are out of date
-		echo "Your instance of oref0 [${version}, ${branch}] is out-of-date by ${behind} commits, you may want to consider updating."
+		echo "Your instance of oref0 [${version}, ${branch}] is out-of-date by ${behind} commits: you may want to consider updating."
         if [ $branch != "master" ]; then
 			echo "You are currently running a development branch of oref0.  Such branches change frequently."
 			echo "Please read the latest PR notes and update with the latest commits to dev before reporting any issues."
