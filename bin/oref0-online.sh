@@ -17,7 +17,7 @@ main() {
 		print_local_ip bnep0
 	fi
     echo
-	echo -n "At $(date) my Public IP is: "
+	echo -n "At $(date) my public IP is: "
     check_ip
 	if [[ $(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip wlan0) ]]; then
 		print_wifi_name
@@ -28,7 +28,7 @@ main() {
 		fi
 	else
 		echo
-		echo "Bluetooth PAN Not connected"
+		echo "Bluetooth PAN not connected"
 	fi	
     if check_ip >/dev/null; then
         # if we are back on the Internet (and have connectivity to checkip.amazonaws.com), shut down bluetooth
@@ -81,7 +81,7 @@ function print_bluetooth_name {
 }
 
 function print_wifi_name {
-    echo -n "At $(date), my wifi network name is "
+    echo -n "At $(date) my wifi network name is "
     iwgetid -r wlan0 | tr -d '\n'
     #echo -n ", and my public IP is: "
 }
@@ -104,7 +104,7 @@ function bt_connect {
     for MAC; do
         #echo -n "At $(date) my public IP is: "
         if ! check_ip >/dev/null; then
-            echo; echo "No Public Network Detected, attempt connecting BT to $MAC"
+            echo; echo "No Internet access detected, attempting to connect BT to $MAC"
             oref0-bluetoothup
             sudo bt-pan client $MAC -d
             sudo bt-pan client $MAC
@@ -133,7 +133,7 @@ function bt_disconnect {
 }
 
 function wifi_dhcp_renew {
-    echo "Getting new wlan0 IP"
+    echo; echo "Getting new wlan0 IP"
     ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
     sudo dhclient wlan0 -r
     sudo dhclient wlan0
@@ -153,11 +153,10 @@ function stop_hotspot {
         echo "Renewing IP Address for wlan0"
         dhclient_restart
     else
-	if ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
-		echo Local hotspot not enabled, edit Preferences to turn on.
-	else
-		echo Local hotspot is not running.
-	fi
+        echo -n Local hotspot is not running
+        if ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
+            echo "(and not enabled in preferences.json)"
+        fi
     fi
 }
 
