@@ -23,14 +23,15 @@ main() {
             # if online but still configured with hotspot IP, cycle wlan0
             if has_ip wlan0 | grep $HostAPDIP; then
                 ifdown wlan0; ifup wlan0
-            # if online via BT, cycle wlan0
-            elif ! has_ip wlan0; then
-                ifdown wlan0; ifup wlan0
             # if online via wifi, disconnect BT
             else
                 bt_disconnect $MACs
                 wifi_dhcp_renew
             fi
+        fi
+        # if online via BT, cycle wlan0
+        if has_ip bnep0 && ! has_ip wlan0; then
+            ifdown wlan0; ifup wlan0
         fi
     else
         echo
