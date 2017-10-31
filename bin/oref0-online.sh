@@ -81,9 +81,12 @@ function print_bluetooth_name {
 }
 
 function print_wifi_name {
-    echo -n "At $(date) my wifi network name is "
-    iwgetid -r wlan0 | tr -d '\n'
-    #echo -n ", and my public IP is: "
+    SSID=$(iwgetid -r wlan0 | tr -d '\n')
+    if [[ ! -z $SSID ]]; then
+        echo -n "At $(date) my wifi network name is $SSID"
+    else
+        echo -n "At $(date) my wifi is not connected"
+    fi
 }
 
 function print_local_ip {
