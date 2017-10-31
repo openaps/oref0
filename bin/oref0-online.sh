@@ -64,11 +64,11 @@ main() {
 				wifi_dhcp_renew
 			fi
         else
+            # if we can't connect via BT, might as well try previously bad wifi networks again
+            rm /tmp/bad_wifi
             # if we can't get online via wifi or bluetooth, start our own local-access hotspot
-            # and disconnect bluetooth
             start_hotspot $@
             # don't disconnect bluetooth when starting local-only hotspot
-            #bt_disconnect $MACs
         fi
     fi
     echo Finished oref0-online at $(date).
