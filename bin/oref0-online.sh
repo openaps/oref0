@@ -35,17 +35,15 @@ main() {
     if check_ip; then
         stop_hotspot
         if has_ip wlan0 && has_ip bnep0; then
-            # if online but still configured with hotspot IP, cycle wlan0
-            if print_local_ip wlan0 | grep $HostAPDIP; then
+            # if online via BT w/o a DHCP IP, cycle wifi
+            if print_local_ip wlan0 | grep $HostAPDIP || ! has_ip wlan0; then
                 ifdown wlan0; ifup wlan0
-            # if online via BT, cycle wlan0
-            elif ! has_ip wlan0; then
-                ifdown wlan0; ifup wlan0
-            # if online via wifi, disconnect BT
-            else
-                bt_disconnect $MACs
-                wifi_dhcp_renew
             fi
+        fi
+        # if online via wifi, disconnect BT
+        if has_ip wlan0 && ifconfig | egrep -q "bnep0" >/dev/null; then
+            bt_disconnect $MACs
+            #wifi_dhcp_renew
         fi
     else
         echo
