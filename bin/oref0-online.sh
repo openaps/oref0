@@ -53,7 +53,7 @@ main() {
         if ! has_ip wlan0; then
             wifi_dhcp_renew
         fi
-        if ! check_ip; then
+        if ! check_ip >/dev/null; then
             bt_connect $MACs
         fi
         #print_wifi_name
