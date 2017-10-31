@@ -7,7 +7,7 @@ main() {
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
         if ! ip route | grep default | grep -q wlan0; then
-            if grep $(iwgetid -r wlan0) /tmp/badwifi; then
+            if grep -q $(iwgetid -r wlan0) /tmp/bad_wifi; then
                 echo Not renewing wlan0 IP due to previous connectivity failure:
                 ls -la /tmp/bad_wifi
             else
@@ -131,7 +131,7 @@ function bt_connect {
             if has_ip wlan0 && has_ip bnep0 && ! grep -q $HostAPDIP /etc/network/interfaces; then
                 # release the wifi IP/route but *don't* renew it, in case it's not working
                 sudo dhclient wlan0 -r
-                iwgetid -r wlan0 >> /tmp/badwifi
+                iwgetid -r wlan0 >> /tmp/bad_wifi
             fi
             #echo
         fi
@@ -148,10 +148,15 @@ function bt_disconnect {
 }
 
 function wifi_dhcp_renew {
-    echo; echo "Getting new wlan0 IP"
-    ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
-    sudo dhclient wlan0 -r
-    sudo dhclient wlan0
+    if grep -q $(iwgetid -r wlan0) /tmp/bad_wifi; then
+        echo Not renewing wlan0 IP due to previous connectivity failure:
+        ls -la /tmp/bad_wifi
+    else
+        echo; echo "Getting new wlan0 IP"
+        ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
+        sudo dhclient wlan0 -r
+        sudo dhclient wlan0
+    fi
 }
 
 function stop_hotspot {
