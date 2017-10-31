@@ -11,24 +11,25 @@ main() {
             sudo dhclient wlan0
         fi
     fi
-    echo -n "At $(date) my local IP is: "
-    print_local_ip wlan0
-	if ifconfig | egrep -q "bnep0" >/dev/null; then
-        print_local_ip bnep0
-	fi
-	echo -n "At $(date) my public IP is: "
-    check_ip
-	if [[ $(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip wlan0) ]]; then
+	if ifconfig | egrep -q "wlan0" >/dev/null; then
+	#if [[ $(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip wlan0) ]]; then
 		print_wifi_name
+        echo -n "At $(date) my local wifi IP is: "
+        print_local_ip wlan0
 		echo
 	fi
 	if ifconfig | egrep -q "bnep0" >/dev/null; then
-		if [[ $(ip -4 -o addr show dev bnep0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip bnep0) ]]; then
+		#if [[ $(ip -4 -o addr show dev bnep0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip bnep0) ]]; then
 			print_bluetooth_name
-		fi
+		#fi
+        echo -n "At $(date) my local Bluetooth IP is: "
+        print_local_ip bnep0
+        echo
 	else
 		echo "At $(date) my Bluetooth PAN is not connected"
 	fi
+	echo -n "At $(date) my public IP is: "
+    check_ip
     if check_ip >/dev/null; then
         stop_hotspot
         if has_ip wlan0 && has_ip bnep0; then
@@ -88,7 +89,7 @@ function print_wifi_name {
 function print_local_ip {
     $LOCAL_IP=$(ip -4 -o addr show dev $1 | awk '{split($4,a,"/");print a[1]}')
     if [[ -z $LOCAL_IP ]]; then
-        echo unassigned
+        echo unassigned $LOCAL_IP
     else
         echo $LOCAL_IP
     fi
