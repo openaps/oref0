@@ -7,7 +7,7 @@ main() {
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
         if ! ip route | grep default | grep -q wlan0; then
-            if grep $(iwgetid -r) /tmp/badwifi; then
+            if grep $(iwgetid -r wlan0) /tmp/badwifi; then
                 echo Not renewing wlan0 IP due to previous connectivity failure:
                 ls -la /tmp/bad_wifi
             else
@@ -131,7 +131,7 @@ function bt_connect {
             if has_ip wlan0 && has_ip bnep0 && ! grep -q $HostAPDIP /etc/network/interfaces; then
                 # release the wifi IP/route but *don't* renew it, in case it's not working
                 sudo dhclient wlan0 -r
-                iwgetid -r >> /tmp/badwifi
+                iwgetid -r wlan0 >> /tmp/badwifi
             fi
             #echo
         fi
