@@ -153,7 +153,7 @@ function stop_hotspot {
         echo "Renewing IP Address for wlan0"
         dhclient_restart
     else
-        echo -n Local hotspot is not running
+        echo -n "At $(date) my local hotspot is not running"
         if ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
             echo " (and not enabled in preferences.json)"
         else
