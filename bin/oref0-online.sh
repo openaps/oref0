@@ -16,7 +16,6 @@ main() {
 		print_wifi_name
         echo -n "At $(date) my local wifi IP is: "
         print_local_ip wlan0
-		echo
 	fi
 	if ifconfig | egrep -q "bnep0" >/dev/null; then
 		#if [[ $(ip -4 -o addr show dev bnep0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip bnep0) ]]; then
@@ -24,7 +23,6 @@ main() {
 		#fi
         echo -n "At $(date) my local Bluetooth IP is: "
         print_local_ip bnep0
-        echo
 	else
 		echo "At $(date) my Bluetooth PAN is not connected"
 	fi
@@ -73,8 +71,9 @@ main() {
 }
 
 function print_bluetooth_name {
-    echo -n "At $(date) my bluetooth is connected to "
-    echo ${MACs}
+    echo -n "At $(date) my Bluetooth is connected to "
+    grep Name /var/lib/bluetooth/*/*/info | awk -F = '{print $2}'
+    #echo ${MACs}
 }
 
 function print_wifi_name {
