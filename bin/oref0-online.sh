@@ -72,22 +72,26 @@ main() {
 }
 
 function print_bluetooth_name {
-    echo; echo -n "At $(date) my bluetooth is connected to "
-    echo -n ${MACs}
-    #echo -n ", and my public IP is: "
+    echo -n "At $(date) my bluetooth is connected to "
+    echo ${MACs}
 }
 
 function print_wifi_name {
     SSID=$(iwgetid -r wlan0 | tr -d '\n')
     if [[ ! -z $SSID ]]; then
-        echo -n "At $(date) my wifi network name is $SSID"
+        echo "At $(date) my wifi network name is $SSID"
     else
-        echo -n "At $(date) my wifi is not connected"
+        echo "At $(date) my wifi is not connected"
     fi
 }
 
 function print_local_ip {
-    ip -4 -o addr show dev $1 | awk '{split($4,a,"/");print a[1]}'
+    $LOCAL_IP=$(ip -4 -o addr show dev $1 | awk '{split($4,a,"/");print a[1]}')
+    if [[ -z $LOCAL_IP ]]; then
+        echo unassigned
+    else
+        echo $LOCAL_IP
+    fi
 }
 
 function check_ip {
