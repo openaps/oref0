@@ -3,35 +3,47 @@
 main() {
     MACs=$@
     HostAPDIP='10.29.29.1'
-    echo; echo Starting oref0-online.
+    echo; echo Starting oref0-online at $(date).
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
         if ! ip route | grep default | grep -q wlan0; then
-            echo Attempting to renew wlan0 IP
-            sudo dhclient wlan0
-        fi
-    fi
-    echo -n "At $(date) my local IP is: "
-    print_local_ip wlan0
-    print_local_ip bnep0
-    echo
-    print_wifi_name
-    if check_ip; then
-        # if we are back on normal wifi (and have connectivity to checkip.amazonaws.com), shut down bluetooth
-        stop_hotspot
-        if has_ip wlan0 && has_ip bnep0; then
-            # if online but still configured with hotspot IP, cycle wlan0
-            if has_ip wlan0 | grep $HostAPDIP; then
-                ifdown wlan0; ifup wlan0
-            # if online via wifi, disconnect BT
+            if grep -q $(iwgetid -r wlan0) /tmp/bad_wifi; then
+                echo Not renewing wlan0 IP due to previous connectivity failure:
+                ls -la /tmp/bad_wifi
             else
-                bt_disconnect $MACs
-                wifi_dhcp_renew
+                echo Attempting to renew wlan0 IP
+                sudo dhclient wlan0
             fi
         fi
-        # if online via BT, cycle wlan0
-        if has_ip bnep0 && ! has_ip wlan0; then
-            ifdown wlan0; ifup wlan0
+    fi
+	if ifconfig | egrep -q "wlan0" >/dev/null; then
+	#if [[ $(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip wlan0) ]]; then
+		print_wifi_name
+        echo -n "At $(date) my local wifi IP is: "
+        print_local_ip wlan0
+	fi
+	if ifconfig | egrep -q "bnep0" >/dev/null; then
+		#if [[ $(ip -4 -o addr show dev bnep0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip bnep0) ]]; then
+			print_bluetooth_name
+		#fi
+        echo -n "At $(date) my local Bluetooth IP is: "
+        print_local_ip bnep0
+	else
+		echo "At $(date) my Bluetooth PAN is not connected"
+	fi
+	echo -n "At $(date) my public IP is: "
+    if check_ip; then
+        stop_hotspot
+        if has_ip wlan0 && has_ip bnep0; then
+            # if online via BT w/o a DHCP IP, cycle wifi
+            if print_local_ip wlan0 | grep $HostAPDIP || ! has_ip wlan0; then
+                ifdown wlan0; ifup wlan0
+            fi
+        fi
+        # if online via wifi, disconnect BT
+        if has_ip wlan0 && ifconfig | egrep -q "bnep0" >/dev/null; then
+            bt_disconnect $MACs
+            #wifi_dhcp_renew
         fi
     else
         echo
@@ -39,36 +51,59 @@ main() {
         if ! has_ip wlan0; then
             wifi_dhcp_renew
         fi
-        if ! check_ip; then
+        if ! check_ip >/dev/null; then
             bt_connect $MACs
         fi
-        print_wifi_name
-        if check_ip; then
+        #print_wifi_name
+        if check_ip >/dev/null; then
             # if we're online after activating bluetooth, shut down any local-access hotspot we're running
             stop_hotspot
+			if ! print_local_ip wlan0 | egrep -q "[A-Za-z0-9_]+" >/dev/null; then
+				wifi_dhcp_renew
+			fi
         else
+            # if we can't connect via BT, might as well try previously bad wifi networks again
+            rm /tmp/bad_wifi
             # if we can't get online via wifi or bluetooth, start our own local-access hotspot
-            # and disconnect bluetooth
             start_hotspot $@
             # don't disconnect bluetooth when starting local-only hotspot
-            #bt_disconnect $MACs
         fi
     fi
-    echo Finished oref0-online.
+    echo Finished oref0-online at $(date).
+}
+
+function print_bluetooth_name {
+    echo -n "At $(date) my Bluetooth is connected to "
+    grep Name /var/lib/bluetooth/*/*/info | awk -F = '{print $2}'
+    #echo ${MACs}
 }
 
 function print_wifi_name {
-    echo -n "At $(date), my wifi network name is "
-    iwgetid -r wlan0 | tr -d '\n'
-    echo -n ", and my public IP is: "
+    SSID=$(iwgetid -r wlan0 | tr -d '\n')
+    if [[ ! -z $SSID ]]; then
+        echo "At $(date) my wifi network name is $SSID"
+    else
+        echo "At $(date) my wifi is not connected"
+    fi
 }
 
 function print_local_ip {
-    ip -4 -o addr show dev $1 | awk '{split($4,a,"/");print a[1]}'
+    LOCAL_IP=$(ip -4 -o addr show dev $1 | awk '{split($4,a,"/");print a[1]}')
+    if [[ -z $LOCAL_IP ]]; then
+        echo unassigned
+    else
+        echo $LOCAL_IP
+    fi
 }
 
 function check_ip {
-    curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$"
+    PUBLIC_IP=$(curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$")
+    if [[ -z $PUBLIC_IP ]]; then
+        echo not found
+        return 1
+    else
+        echo $PUBLIC_IP
+    fi
 }
 
 function has_ip {
@@ -77,27 +112,28 @@ function has_ip {
 
 function bt_connect {
     # loop over as many MACs as are provided as arguments
-    echo
     for MAC; do
-        echo -n "At $(date) my public IP is: "
-        if ! check_ip; then
-            echo; echo -n "Error, connecting BT to $MAC"
+        #echo -n "At $(date) my public IP is: "
+        if ! check_ip >/dev/null; then
+            echo; echo "No Internet access detected, attempting to connect BT to $MAC"
             oref0-bluetoothup
             sudo bt-pan client $MAC -d
             sudo bt-pan client $MAC
-            echo -n ", getting bnep0 IP"
+            #echo  "Attempt to get bnep0 IP :"
             sudo dhclient bnep0
-            # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route if it's from DHCP
-            if has_ip wlan0 && has_ip bnep0 && ! ifconfig wlan0 | grep -q $HostAPDIP; then
-                echo -n " and releasing wifi IP"
-                sudo dhclient wlan0 -r
-                # echo Sleeping for 2 minutes before trying wifi again
-                # sleep 120
+            if ifconfig | egrep -q "bnep0" >/dev/null; then
+                echo -n "Connected to Bluetooth with IP: "
+                print_local_ip bnep0
             fi
-            echo
+            # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
+            if has_ip wlan0 && has_ip bnep0 && ! grep -q $HostAPDIP /etc/network/interfaces; then
+                # release the wifi IP/route but *don't* renew it, in case it's not working
+                sudo dhclient wlan0 -r
+                iwgetid -r wlan0 >> /tmp/bad_wifi
+            fi
+            #echo
         fi
     done
-    echo
 }
 
 function bt_disconnect {
@@ -110,10 +146,15 @@ function bt_disconnect {
 }
 
 function wifi_dhcp_renew {
-    echo "Getting new wlan0 IP"
-    ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
-    sudo dhclient wlan0 -r
-    sudo dhclient wlan0
+    if grep -q $(iwgetid -r wlan0) /tmp/bad_wifi; then
+        echo Not renewing wlan0 IP due to previous connectivity failure:
+        ls -la /tmp/bad_wifi
+    else
+        echo; echo "Getting new wlan0 IP"
+        ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
+        sudo dhclient wlan0 -r
+        sudo dhclient wlan0
+    fi
 }
 
 function stop_hotspot {
@@ -130,7 +171,12 @@ function stop_hotspot {
         echo "Renewing IP Address for wlan0"
         dhclient_restart
     else
-        echo Local hotspot is not running.
+        echo -n "At $(date) my local hotspot is not running"
+        if ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
+            echo " (and not enabled in preferences.json)"
+        else
+            echo
+        fi
     fi
 }
 
