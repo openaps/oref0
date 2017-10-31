@@ -117,7 +117,7 @@ function bt_connect {
                 print_local_ip bnep0
             fi
             # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
-            if has_ip wlan0 && has_ip bnep0; then
+            if has_ip wlan0 && has_ip bnep0 && ! grep -q $HostAPDIP /etc/network/interfaces; then
                 wifi_dhcp_renew
             fi
             #echo
