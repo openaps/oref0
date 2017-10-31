@@ -75,7 +75,7 @@ main() {
 }
 
 function print_bluetooth_name {
-    echo -n "At $(date), my bluetooth is connected to "
+    echo; echo -n "At $(date), my bluetooth is connected to "
     echo -n ${MACs}
     #echo -n ", and my public IP is: "
 }
@@ -155,7 +155,7 @@ function stop_hotspot {
     else
         echo -n Local hotspot is not running
         if ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
-            echo "(and not enabled in preferences.json)"
+            echo " (and not enabled in preferences.json)"
         fi
     fi
 }
