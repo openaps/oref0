@@ -20,14 +20,14 @@ main() {
     check_ip
 	if [[ $(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip wlan0) ]]; then
 		print_wifi_name
+		echo
 	fi
 	if ifconfig | egrep -q "bnep0" >/dev/null; then
 		if [[ $(ip -4 -o addr show dev bnep0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip bnep0) ]]; then
 			print_bluetooth_name
 		fi
 	else
-		echo
-		echo "Bluetooth PAN not connected"
+		echo "At $(date) my Bluetooth PAN is not connected"
 	fi
     if check_ip >/dev/null; then
         echo
