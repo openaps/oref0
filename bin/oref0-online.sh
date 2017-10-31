@@ -75,7 +75,7 @@ main() {
 }
 
 function print_bluetooth_name {
-    echo; echo -n "At $(date), my bluetooth is connected to "
+    echo; echo -n "At $(date) my bluetooth is connected to "
     echo -n ${MACs}
     #echo -n ", and my public IP is: "
 }
