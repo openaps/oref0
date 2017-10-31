@@ -87,9 +87,9 @@ function print_wifi_name {
 }
 
 function print_local_ip {
-    $LOCAL_IP=$(ip -4 -o addr show dev $1 | awk '{split($4,a,"/");print a[1]}')
+    LOCAL_IP=$(ip -4 -o addr show dev $1 | awk '{split($4,a,"/");print a[1]}')
     if [[ -z $LOCAL_IP ]]; then
-        echo unassigned $LOCAL_IP
+        echo unassigned
     else
         echo $LOCAL_IP
     fi
