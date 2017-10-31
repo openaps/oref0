@@ -30,7 +30,6 @@ main() {
 		echo "At $(date) my Bluetooth PAN is not connected"
 	fi
     if check_ip >/dev/null; then
-        echo
         stop_hotspot
         if has_ip wlan0 && has_ip bnep0; then
             # if online but still configured with hotspot IP, cycle wlan0
