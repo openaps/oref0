@@ -156,6 +156,8 @@ function stop_hotspot {
         echo -n Local hotspot is not running
         if ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
             echo " (and not enabled in preferences.json)"
+        else
+            echo
         fi
     fi
 }
