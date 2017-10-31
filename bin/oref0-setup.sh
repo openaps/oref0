@@ -663,7 +663,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         update-rc.d -f hostapd remove 
         update-rc.d -f dnsmasq remove 
         # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
-        sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}-HotSpot/" /etc/hostapd/hostapd.conf
+        sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}/" /etc/hostapd/hostapd.conf
         # Add Commands to /etc/rc.local 
         # Interrupt Kernel Messages
         if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
