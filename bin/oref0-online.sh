@@ -87,8 +87,8 @@ function bt_connect {
             sudo bt-pan client $MAC
             echo -n ", getting bnep0 IP"
             sudo dhclient bnep0
-            # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
-            if has_ip wlan0 && has_ip bnep0; then
+            # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route if it's from DHCP
+            if has_ip wlan0 && has_ip bnep0 && ! ifconfig wlan0 | grep -q $HostAPDIP; then
                 echo -n " and releasing wifi IP"
                 sudo dhclient wlan0 -r
                 # echo Sleeping for 2 minutes before trying wifi again
