@@ -16,7 +16,6 @@ main() {
 	if ifconfig | egrep -q "bnep0" >/dev/null; then
         print_local_ip bnep0
 	fi
-    echo
 	echo -n "At $(date) my public IP is: "
     check_ip
 	if [[ $(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip wlan0) ]]; then
@@ -31,7 +30,6 @@ main() {
 		echo "Bluetooth PAN not connected"
 	fi
     if check_ip >/dev/null; then
-        # if we are back on the Internet (and have connectivity to checkip.amazonaws.com), shut down bluetooth
         echo
         stop_hotspot
         if has_ip wlan0 && has_ip bnep0; then
