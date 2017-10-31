@@ -14,7 +14,7 @@ main() {
     echo -n "At $(date) my local IP is: "
     print_local_ip wlan0
 	if ifconfig | egrep -q "bnep0" >/dev/null; then
-		print_local_ip bnep0
+        print_local_ip bnep0
 	fi
     echo
 	echo -n "At $(date) my public IP is: "
@@ -29,7 +29,7 @@ main() {
 	else
 		echo
 		echo "Bluetooth PAN not connected"
-	fi	
+	fi
     if check_ip >/dev/null; then
         # if we are back on the Internet (and have connectivity to checkip.amazonaws.com), shut down bluetooth
         echo
@@ -71,7 +71,7 @@ main() {
             #bt_disconnect $MACs
         fi
     fi
-    echo Finished oref0-online. 
+    echo Finished oref0-online.
 }
 
 function print_bluetooth_name {
@@ -100,7 +100,6 @@ function has_ip {
 
 function bt_connect {
     # loop over as many MACs as are provided as arguments
-    #echo
     for MAC; do
         #echo -n "At $(date) my public IP is: "
         if ! check_ip >/dev/null; then
@@ -110,9 +109,10 @@ function bt_connect {
             sudo bt-pan client $MAC
             #echo  "Attempt to get bnep0 IP :"
             sudo dhclient bnep0
-			if ifconfig | egrep -q "bnep0" >/dev/null; then
-				print_local_ip bnep0
-			fi	
+            if ifconfig | egrep -q "bnep0" >/dev/null; then
+                echo -n "Connected to Bluetooth with IP: "
+                print_local_ip bnep0
+            fi
             # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
             if has_ip wlan0 && has_ip bnep0; then
                 wifi_dhcp_renew
@@ -120,7 +120,6 @@ function bt_connect {
             #echo
         fi
     done
-    #echo
 }
 
 function bt_disconnect {
