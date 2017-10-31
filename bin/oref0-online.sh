@@ -3,7 +3,7 @@
 main() {
     MACs=$@
     HostAPDIP='10.29.29.1'
-    echo; echo Starting oref0-online.
+    echo; echo Starting oref0-online at $(date).
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
         if ! ip route | grep default | grep -q wlan0; then
@@ -66,7 +66,7 @@ main() {
             #bt_disconnect $MACs
         fi
     fi
-    echo Finished oref0-online.
+    echo Finished oref0-online at $(date).
 }
 
 function print_bluetooth_name {
