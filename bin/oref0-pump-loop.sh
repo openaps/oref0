@@ -77,7 +77,16 @@ main() {
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             echo
         else
-            fail "$@"
+            # don't treat suspended pump as a complete failure
+            if grep -q '"suspended": true' monitor/status.json; then
+                refresh_profile 15; refresh_pumphistory_24h
+                refresh_after_bolus_or_enact
+                echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
+                echo
+            else
+                # pump-loop errored out for some other reason
+                fail "$@"
+            fi
         fi
     fi
 }
