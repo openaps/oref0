@@ -77,7 +77,16 @@ main() {
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             echo
         else
-            fail "$@"
+            # don't treat suspended pump as a complete failure
+            if grep -q '"suspended": true' monitor/status.json; then
+                refresh_profile 15; refresh_pumphistory_24h
+                refresh_after_bolus_or_enact
+                echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
+                echo
+            else
+                # pump-loop errored out for some other reason
+                fail "$@"
+            fi
         fi
     fi
 }
@@ -242,7 +251,10 @@ function smb_bolus {
     # and administer the supermicrobolus
     find enact/ -mmin -5 | grep smb-suggested.json > /dev/null \
     && if (grep -q '"units":' enact/smb-suggested.json); then
-        openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
+        # press ESC three times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
+        echo -n "Sending ESC ESC ESC to exit any open menus before SMBing: "
+        openaps use pump press_keys esc esc esc | jq .completed | grep true \
+        && openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
