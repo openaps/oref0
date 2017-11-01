@@ -183,6 +183,7 @@ function autosens {
         else
             echo -n Failed to refresh autosens: using old autosens.json
         fi
+    else
         echo -n No need to refresh autosens yet
     fi
     cat settings/autosens.json | jq . -C -c
