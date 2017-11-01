@@ -14,7 +14,6 @@ SUBG_RFSPY_DIR=$HOME/src/subg_rfspy
 
 ################################################################################
 set -e
-set -x
 
 echo
 echo The CC111x is located at $SERIAL_PORT
