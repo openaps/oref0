@@ -242,7 +242,9 @@ function smb_bolus {
     # and administer the supermicrobolus
     find enact/ -mmin -5 | grep smb-suggested.json > /dev/null \
     && if (grep -q '"units":' enact/smb-suggested.json); then
-        openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
+        # press ESC three times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
+        openaps use pump press_keys esc esc esc | jq .completed | grep true \
+        && openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
