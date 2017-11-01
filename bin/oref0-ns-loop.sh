@@ -22,6 +22,14 @@ main() {
     ns_meal_carbs || die ", but ns_meal_carbs failed"
     battery_status
     upload
+    # only run autosens if we don't need to refresh glucose first
+    if glucose_fresh; then
+        autosens
+    fi
+    # check one last time to see if glucose got stale while running everything else
+    if ! glucose_fresh; then
+        get_ns_bg
+    fi
     touch /tmp/ns-loop-completed
     echo Completed oref0-ns-loop at $(date)
 }
@@ -162,6 +170,20 @@ function upload_recent_treatments {
 #nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
 function format_latest_nightscout_treatments {
     nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
+}
+
+# find settings/ -newer settings/autosens.json | grep -q pumphistory-24h-zoned.json || find settings/ -size -5c | grep -q autosens.json || ! find settings/ | grep -q autosens || ! find settings/autosens.json
+# openaps use detect-sensitivity shell monitor/glucose.json settings/pumphistory-24h-zoned.json settings/insulin_sensitivities.json settings/basal_profile.json settings/profile.json monitor/carbhistory.json settings/temptargets.json
+function autosens {
+    # only run autosens if pumphistory-24h is newer than autosens
+    if find settings/ -newer settings/autosens.json | grep -q pumphistory-24h-zoned.json \
+        || find settings/ -size -5c | grep -q autosens.json \
+        || ! find settings/ | grep -q autosens \
+        || ! find settings/autosens.json; then
+        if oref0-detect-sensitivity monitor/glucose.json settings/pumphistory-24h-zoned.json settings/insulin_sensitivities.json settings/basal_profile.json settings/profile.json monitor/carbhistory.json settings/temptargets.json > settings/autosens.json.new && cat settings/autosens.json.new | jq .ratio | grep [0-9]; then
+            mv settings/autosens.json.new settings/autosens.json
+        fi
+    fi
 }
 
 die() {
