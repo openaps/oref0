@@ -22,14 +22,11 @@ main() {
     ns_meal_carbs || die ", but ns_meal_carbs failed"
     battery_status
     upload
-    # only run autosens if we don't need to refresh glucose first
-    if glucose_fresh; then
-        autosens
-    fi
+    # if glucose is stale, refresh before running autosens
+    if ! glucose_fresh; then get_ns_bg; fi
+    autosens
     # check one last time to see if glucose got stale while running everything else
-    if ! glucose_fresh; then
-        get_ns_bg
-    fi
+    if ! glucose_fresh; then get_ns_bg; fi
     touch /tmp/ns-loop-completed
     echo Completed oref0-ns-loop at $(date)
 }
@@ -182,8 +179,13 @@ function autosens {
         || ! find settings/autosens.json; then
         if oref0-detect-sensitivity monitor/glucose.json settings/pumphistory-24h-zoned.json settings/insulin_sensitivities.json settings/basal_profile.json settings/profile.json monitor/carbhistory.json settings/temptargets.json > settings/autosens.json.new && cat settings/autosens.json.new | jq .ratio | grep [0-9]; then
             mv settings/autosens.json.new settings/autosens.json
+            echo -n Autosens refreshed
+        else
+            echo -n Failed to refresh autosens: using old autosens.json
         fi
+        echo -n No need to refresh autosens yet
     fi
+    cat settings/autosens.json | jq .
 }
 
 die() {
