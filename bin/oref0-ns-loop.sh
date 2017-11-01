@@ -185,7 +185,7 @@ function autosens {
         fi
         echo -n No need to refresh autosens yet
     fi
-    cat settings/autosens.json | jq .
+    cat settings/autosens.json | jq . -C -c
 }
 
 die() {
