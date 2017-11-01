@@ -105,7 +105,8 @@ function ns_temptargets {
 # openaps report invoke monitor/carbhistory.json; oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0
 function ns_meal_carbs {
     #openaps report invoke monitor/carbhistory.json >/dev/null
-    nightscout ns $NIGHTSCOUT_HOST $API_SECRET carb_history > monitor/carbhistory.json
+    nightscout ns $NIGHTSCOUT_HOST $API_SECRET carb_history > monitor/carbhistory.json.new
+    cat monitor/carbhistory.json.new | jq .[0].carbs | egrep [0-9] && mv monitor/carbhistory.json.new monitor/carbhistory.json
     oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new
     grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json
     echo -n "Refreshed carbhistory; COB: "
