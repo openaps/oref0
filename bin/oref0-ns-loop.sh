@@ -24,7 +24,7 @@ main() {
     upload
     # if glucose is stale, refresh before running autosens
     if ! glucose_fresh; then get_ns_bg; fi
-    autosens
+    autosens 2>&1
     # check one last time to see if glucose got stale while running everything else
     if ! glucose_fresh; then get_ns_bg; fi
     touch /tmp/ns-loop-completed
