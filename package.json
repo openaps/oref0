@@ -35,6 +35,7 @@
     "ns-upload-entries": "./bin/ns-upload-entries.sh",
     "oref0": "./bin/oref0.sh",
     "oref0-append-local-temptarget": "./bin/oref0-append-local-temptarget.sh",
+    "oref0-autosens-loop": "./bin/oref0-autosens-loop.sh",
     "oref0-autotune": "./bin/oref0-autotune.sh",
     "oref0-autotune-core": "./bin/oref0-autotune-core.js",
     "oref0-autotune-export-to-xlsx": "./bin/oref0-autotune-export-to-xlsx.py",
