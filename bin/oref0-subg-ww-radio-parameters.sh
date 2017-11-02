@@ -14,6 +14,8 @@ SUBG_RFSPY_DIR=$HOME/src/subg_rfspy
 
 ################################################################################
 set -e
+# use set -x to debug oref0 ww pump communication errors
+# set -x
 
 echo
 echo The CC111x is located at $SERIAL_PORT
