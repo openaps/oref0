@@ -26,7 +26,6 @@ DIR=""
 directory=""
 EXTRAS=""
 radio_locale="US"
-explorer1="NO"
 
 #this makes the confirmation echo text a color when you use echocolor instead of echo
 function echocolor() { # $1 = string
@@ -186,7 +185,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     read -p "Are you using an Explorer Board? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         ttyport=/dev/spidev5.1
-        explorer1="YES"
         echocolor "Ok, yay for Explorer Board! "
         echo
     else
@@ -542,7 +540,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     echo Checking mmeowlink installation
 #if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-    pip show mmeowlink | egrep "Version: 0.11." || (
+    pip show mmeowlink | egrep "Version: 0.11.1" || (
         echo Installing latest mmeowlink
         sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
     )
@@ -618,7 +616,31 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         else
             echo bluez v ${bluetoothdversion} already installed
         fi
-    fi
+        echo Installing prerequisites and configs for local-only hotspot
+        apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
+        ls /etc/dnsmasq.conf.bak 2>/dev/null || mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+        cp $HOME/src/oref0/headless/dnsmasq.conf /etc/dnsmasq.conf || die "Couldn't copy dnsmasq.conf"
+        ls /etc/hostapd/hostapd.conf.bak 2>/dev/null || mv /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.bak
+        cp $HOME/src/oref0/headless/hostapd.conf /etc/hostapd/hostapd.conf || die "Couldn't copy hostapd.conf"
+        sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
+        cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
+        cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
+        #Stop automatic startup of hostapd & dnsmasq
+        update-rc.d -f hostapd remove 
+        update-rc.d -f dnsmasq remove 
+        # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
+        sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}/" /etc/hostapd/hostapd.conf
+        # Add Commands to /etc/rc.local 
+        # Interrupt Kernel Messages
+        if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
+          sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
+        fi  
+        # Add to /etc/rc.local to check if in hotspot mode and turn back to client mode during bootup
+        if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
+          sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
+        fi
+    fi 
+    
     # add/configure devices
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
@@ -840,7 +862,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo sysctl -p
     
     # Install EdisonVoltage
-    if explorer1 == "YES"; then
+    if [[ "$ttyport" =~ "spidev5.1" ]]; then
         if egrep -i "edison" /etc/passwd 2>/dev/null; then
             echo "Checking if EdisonVoltage is already installed"
             if [ -d "$HOME/src/EdisonVoltage/" ]; then
@@ -853,6 +875,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             fi
             # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
             grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
+        fi
+        if [[ ${CGM,,} =~ "mdt" ]] || [[ ${CGM,,} =~ "xdrip" ]]; then # still need this for the old ns-loop for now
+            cd $directory || die "Can't cd $directory"
+            for type in edisonbattery; do
+                echo importing $type file
+                cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+            done
         fi
     fi
     # Install Pancreabble
@@ -959,7 +988,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-        (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
+        (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || cd '$directory' && oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
+        # temporarily disable hotspot for 1m every hour to allow it to try to connect via wifi again
+        (crontab -l; crontab -l | grep -q "touch /tmp/disable_hotspot" || echo '0 * * * * touch /tmp/disable_hotspot' ) | crontab -
+        (crontab -l; crontab -l | grep -q "rm /tmp/disable_hotspot" || echo '1 * * * * rm /tmp/disable_hotspot' ) | crontab -
         (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
@@ -977,7 +1009,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
         fi
-        if [[ ${CGM,,} =~ "mdt" ]]; then # use old ns-loop for now
+        if [[ ${CGM,,} =~ "mdt" ]] || [[ ${CGM,,} =~ "xdrip" ]]; then # use old ns-loop for now
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
         else
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
@@ -1000,7 +1032,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
         (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
         fi
-        if explorer1 == "YES"; then
+        if [[ "$ttyport" =~ "spidev5.1" ]]; then
            # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
            if egrep -i "edison" /etc/passwd 2>/dev/null; then
            (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
@@ -1010,6 +1042,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
             (crontab -l; crontab -l | grep -q "oref0-pushover" || echo "* * * * * cd $directory && oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log" ) | crontab -
         fi
+        (crontab -l; crontab -l | grep -q "cd $directory && oref0-version --check-for-updates" || echo "0 * * * * cd $directory && oref0-version --check-for-updates > /tmp/oref0-updates.txt") | crontab -
 
         crontab -l | tee $HOME/crontab.txt
     fi
