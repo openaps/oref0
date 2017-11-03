@@ -180,7 +180,7 @@ function smb_enact_temp {
     && if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json && ! smb_verify_enacted ); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
-        grep -q duration enact/smb-enacted.json || openaps invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
+        grep -q duration enact/smb-enacted.json || openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
         cp -up enact/smb-enacted.json enact/enacted.json
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c '. | "Rate: \(.rate) Duration: \(.duration)"'
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
@@ -205,7 +205,7 @@ function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
     echo -n "Checking reservoir: " \
-    && (openaps invoke monitor/reservoir.json || openaps invoke monitor/reservoir.json) 2>&1 >/dev/null | tail -1 \
+    && (openaps report invoke monitor/reservoir.json || openaps report invoke monitor/reservoir.json) 2>&1 >/dev/null | tail -1 \
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
     && echo -n ", suggested: " \
@@ -235,7 +235,7 @@ function smb_verify_status {
     # Read the pump status and verify it is not bolusing
     rm -rf monitor/status.json
     echo -n "Checking pump status (suspended/bolusing): "
-    ( openaps invoke monitor/status.json || openaps invoke monitor/status.json ) 2>&1 >/dev/null | tail -1 \
+    ( openaps report invoke monitor/status.json || openaps report invoke monitor/status.json ) 2>&1 >/dev/null | tail -1 \
     && cat monitor/status.json | jq -C -c . \
     && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
@@ -478,7 +478,7 @@ function enact {
     && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
         openaps report invoke enact/enacted.json 2>&1 >/dev/null | tail -1
-        grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
+        grep -q duration enact/enacted.json || openaps report invoke enact/enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>/dev/null
     echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
