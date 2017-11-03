@@ -339,53 +339,19 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 #       echo
 #    fi
 
-    read -p "Do you want any oref1 features (SMBs/UAM or SMB-related Pushover)? y/[N] " -r
+    read -p "Do you want to enable carbsReq Pushover alerts? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        read -p "Enable supermicrobolus (SMB)? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            echo
-            echo "WARNING! oref1-related features are considered to be super-advanced features."
-            echo "You should make sure you've read the docs so you know all of the risks of running oref1 features."
-            echo "To demonstrate you've read the docs, please enter the passphrases you read there."
-            echo
-            read -p "First phrase: " -r
-            if [[ $REPLY =~ ^s@fety$ ]]; then
-                echo "Ok, first phrase checked."
-                echo
-                read -p "Second phrase: " -r
-                if [[ $REPLY =~ ^gate$ ]]; then
-                    echo "Ok, second phrase checks out."
-                    echocolor "SMB will be enabled."
-                    ENABLE+=" microbolus "
-                else
-                   echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".
-                fi
-            else
-                echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".
-            fi
-            echo
-        else
-            echocolor "Ok, no SMB/UAM."
-            echo
-        fi
+        read -p "If so, what is your Pushover API Token? " -r
+        PUSHOVER_TOKEN=$REPLY
+        echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
+        echo
 
-        read -p "Are you planning on using Pushover for oref1-related push alerts? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            read -p "If so, what is your Pushover API Token? " -r
-            PUSHOVER_TOKEN=$REPLY
-            echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
-            echo
-
-            read -p "And what is your Pushover User Key? " -r
-            PUSHOVER_USER=$REPLY
-            echocolor "Ok, Pushover User Key $PUSHOVER_USER it is."
-            echo
-        else
-            echocolor "Ok, no Pushover for you."
-            echo
-        fi
+        read -p "And what is your Pushover User Key? " -r
+        PUSHOVER_USER=$REPLY
+        echocolor "Ok, Pushover User Key $PUSHOVER_USER it is."
+        echo
     else
-        echocolor "Ok, no oref1 features right now."
+        echocolor "Ok, no Pushover for you."
         echo
     fi
 
@@ -1059,11 +1025,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
             (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
         fi
-        if [[ $ENABLE =~ microbolus ]]; then
-            (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop --microbolus ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-        else
-            (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-        fi
+        (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         if [[ ! -z "$BT_PEB" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
         fi
