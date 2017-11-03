@@ -73,6 +73,7 @@ main() {
             fi
             refresh_profile 15; refresh_pumphistory_24h
             refresh_after_bolus_or_enact
+            cat /tmp/oref0-updates.txt 2>/dev/null
             echo Completed $looptype pump-loop at $(date)
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             echo
