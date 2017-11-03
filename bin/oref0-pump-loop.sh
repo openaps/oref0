@@ -458,13 +458,30 @@ function gather {
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
     && echo -n resh \
-    && ( openaps monitor-pump || openaps monitor-pump ) 2>&1 >/dev/null | tail -1 \
+    && monitor_pump \
     && echo -n ed \
     && merge_pumphistory \
     && echo -n " pumphistory" \
-    && openaps report invoke monitor/meal.json 2>&1 >/dev/null | tail -1 \
+    && oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json 2>&1 >/dev/null | tail -1 \
     && echo " and meal.json" \
     || (echo; exit 1) 2>/dev/null
+}
+
+# monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
+function monitor_pump {
+    invoke_pumphistory_etc || invoke_pumphistory_etc || (echo; echo "Couldn't refresh pumphistory etc"; fail "$@")
+    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || (echo; echo "Couldn't calculate IOB"; fail "$@")
+    invoke_reservoir_etc || invoke_reservoir_etc || (echo; echo "Couldn't refresh reservoir/battery/status"; fail "$@")
+}
+
+function invoke_pumphistory_etc {
+    openaps report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
+    test ${PIPESTATUS[0]} -eq 0
+}
+
+function invoke_reservoir_etc {
+    openaps report invoke monitor/reservoir.json monitor/battery.json monitor/status.json 2>&1 >/dev/null | tail -1
+    test ${PIPESTATUS[0]} -eq 0
 }
 
 function merge_pumphistory {
@@ -555,15 +572,23 @@ function refresh_temp_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     setglucosetimestamp
     # TODO: use pump_loop_completed logic as in refresh_smb_temp_and_enact
-    if( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
+    if ( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
-            (echo -n Temp refresh && openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1 && echo ed \
-            && if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
+            echo -n Temp refresh
+            invoke_temp_etc || invoke_temp_etc || (echo; echo "Couldn't refresh temp"; fail "$@")
+            echo ed
+            oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || (echo "Couldn't calculate IOB"; fail "$@")
+            if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
-            fi)
+            fi
     else
         echo -n "temp_basal.json less than 5m old. "
     fi
+}
+
+function invoke_temp_etc {
+    openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1
+    test ${PIPESTATUS[0]} -eq 0
 }
 
 function refresh_pumphistory_and_enact {
