@@ -650,7 +650,31 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         else
             echo bluez v ${bluetoothdversion} already installed
         fi
-    fi
+        echo Installing prerequisites and configs for local-only hotspot
+        apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
+        ls /etc/dnsmasq.conf.bak 2>/dev/null || mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+        cp $HOME/src/oref0/headless/dnsmasq.conf /etc/dnsmasq.conf || die "Couldn't copy dnsmasq.conf"
+        ls /etc/hostapd/hostapd.conf.bak 2>/dev/null || mv /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.bak
+        cp $HOME/src/oref0/headless/hostapd.conf /etc/hostapd/hostapd.conf || die "Couldn't copy hostapd.conf"
+        sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
+        cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
+        cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
+        #Stop automatic startup of hostapd & dnsmasq
+        update-rc.d -f hostapd remove 
+        update-rc.d -f dnsmasq remove 
+        # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
+        sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}/" /etc/hostapd/hostapd.conf
+        # Add Commands to /etc/rc.local 
+        # Interrupt Kernel Messages
+        if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
+          sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
+        fi  
+        # Add to /etc/rc.local to check if in hotspot mode and turn back to client mode during bootup
+        if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
+          sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
+        fi
+    fi 
+    
     # add/configure devices
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
@@ -998,7 +1022,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-        (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
+        (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || cd '$directory' && oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
+        # temporarily disable hotspot for 1m every hour to allow it to try to connect via wifi again
+        (crontab -l; crontab -l | grep -q "touch /tmp/disable_hotspot" || echo '0 * * * * touch /tmp/disable_hotspot' ) | crontab -
+        (crontab -l; crontab -l | grep -q "rm /tmp/disable_hotspot" || echo '1 * * * * rm /tmp/disable_hotspot' ) | crontab -
         (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
