@@ -65,12 +65,12 @@ main() {
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             if ! glucose-fresh; then
                 refresh_profile 15
-            fi
-            if ! glucose-fresh; then
-                refresh_pumphistory_24h
-            fi
-            if ! glucose-fresh; then
-                refresh_after_bolus_or_enact
+                if ! glucose-fresh; then
+                    refresh_pumphistory_24h
+                    if ! glucose-fresh; then
+                        refresh_after_bolus_or_enact
+                    fi
+                fi
             fi
             cat /tmp/oref0-updates.txt 2>/dev/null
             echo Completed oref0-pump-loop at $(date)
