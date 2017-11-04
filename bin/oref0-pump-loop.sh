@@ -167,11 +167,14 @@ function smb_suggest {
     ls enact/smb-suggested.json 2>/dev/null >/dev/null && die "enact/suggested.json present"
     # Run determine-basal
     echo -n Temp refresh
-    openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1
-    test ${PIPESTATUS[0]} -eq 0 && echo ed && \
-    oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json \
-    && cp -up enact/smb-suggested.json enact/suggested.json \
+    openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
+    test ${PIPESTATUS[0]} -eq 0 && calculate_iob && echo ed && \
+    determine_basal && cp -up enact/smb-suggested.json enact/suggested.json \
     && smb_verify_suggested
+}
+
+function determine_basal {
+    oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
 }
 
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails)
@@ -268,7 +271,7 @@ function refresh_after_bolus_or_enact {
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
         gather || ( wait_for_silence 10 && gather ) || ( wait_for_silence 20 && gather )
-        openaps report invoke monitor/iob.json enact/smb-suggested.json 2>/dev/null >/dev/null \
+        calculate_iob && determine_basal 2>/dev/null >/dev/null \
         && cp -up enact/smb-suggested.json enact/suggested.json \
         && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
         true
@@ -474,6 +477,10 @@ function monitor_pump {
     invoke_reservoir_etc || invoke_reservoir_etc || (echo; echo "Couldn't refresh reservoir/battery/status"; fail "$@")
 }
 
+function calculate_iob {
+    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || (echo; echo "Couldn't calculate IOB"; fail "$@")
+}
+
 function invoke_pumphistory_etc {
     openaps report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
     test ${PIPESTATUS[0]} -eq 0
@@ -501,6 +508,7 @@ function enact {
     echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
 }
 
+# used by old pump-loop only
 # refresh pumphistory if it's more than 15m old and enact
 function refresh_old_pumphistory_enact {
     find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
@@ -587,8 +595,9 @@ function refresh_temp_and_enact {
 }
 
 function invoke_temp_etc {
-    openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json monitor/iob.json 2>&1 >/dev/null | tail -1
+    openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
     test ${PIPESTATUS[0]} -eq 0
+    calculate_iob
 }
 
 function refresh_pumphistory_and_enact {
