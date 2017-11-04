@@ -465,7 +465,7 @@ function gather {
     && echo -n ed \
     && merge_pumphistory \
     && echo -n " pumphistory" \
-    && oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json 2>&1 >/dev/null | tail -1 \
+    && oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json 2>&1 | tail -1 \
     && echo " and meal.json" \
     || (echo; exit 1) 2>/dev/null
 }
@@ -473,12 +473,12 @@ function gather {
 # monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
 function monitor_pump {
     invoke_pumphistory_etc || invoke_pumphistory_etc || (echo; echo "Couldn't refresh pumphistory etc"; fail "$@")
-    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || (echo; echo "Couldn't calculate IOB"; fail "$@")
+    calculate_iob
     invoke_reservoir_etc || invoke_reservoir_etc || (echo; echo "Couldn't refresh reservoir/battery/status"; fail "$@")
 }
 
 function calculate_iob {
-    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || (echo; echo "Couldn't calculate IOB"; fail "$@")
+    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || (echo; echo "Couldn't calculate IOB"; fail "$@")
 }
 
 function invoke_pumphistory_etc {
