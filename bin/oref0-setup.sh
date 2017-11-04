@@ -339,53 +339,19 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 #       echo
 #    fi
 
-    read -p "Do you want any oref1 features (SMBs/UAM or SMB-related Pushover)? y/[N] " -r
+    read -p "Do you want to enable carbsReq Pushover alerts? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        read -p "Enable supermicrobolus (SMB)? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            echo
-            echo "WARNING! oref1-related features are considered to be super-advanced features."
-            echo "You should make sure you've read the docs so you know all of the risks of running oref1 features."
-            echo "To demonstrate you've read the docs, please enter the passphrases you read there."
-            echo
-            read -p "First phrase: " -r
-            if [[ $REPLY =~ ^s@fety$ ]]; then
-                echo "Ok, first phrase checked."
-                echo
-                read -p "Second phrase: " -r
-                if [[ $REPLY =~ ^gate$ ]]; then
-                    echo "Ok, second phrase checks out."
-                    echocolor "SMB will be enabled."
-                    ENABLE+=" microbolus "
-                else
-                   echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".
-                fi
-            else
-                echo "Hm, maybe you should try reading the docs again and coming back later to enable oref1-related features".
-            fi
-            echo
-        else
-            echocolor "Ok, no SMB/UAM."
-            echo
-        fi
+        read -p "If so, what is your Pushover API Token? " -r
+        PUSHOVER_TOKEN=$REPLY
+        echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
+        echo
 
-        read -p "Are you planning on using Pushover for oref1-related push alerts? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            read -p "If so, what is your Pushover API Token? " -r
-            PUSHOVER_TOKEN=$REPLY
-            echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
-            echo
-
-            read -p "And what is your Pushover User Key? " -r
-            PUSHOVER_USER=$REPLY
-            echocolor "Ok, Pushover User Key $PUSHOVER_USER it is."
-            echo
-        else
-            echocolor "Ok, no Pushover for you."
-            echo
-        fi
+        read -p "And what is your Pushover User Key? " -r
+        PUSHOVER_USER=$REPLY
+        echocolor "Ok, Pushover User Key $PUSHOVER_USER it is."
+        echo
     else
-        echocolor "Ok, no oref1 features right now."
+        echocolor "Ok, no Pushover for you."
         echo
     fi
 
@@ -640,8 +606,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         bluetoothdminversion=5.47
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
+            killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             cd $HOME/src/bluez-5.47 && ./configure --enable-experimental --disable-systemd && \
             make && sudo make install || die "Couldn't make bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
@@ -1022,10 +988,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-        (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || cd $directory && oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
+        (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || cd '$directory' && oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
         # temporarily disable hotspot for 1m every hour to allow it to try to connect via wifi again
         (crontab -l; crontab -l | grep -q "touch /tmp/disable_hotspot" || echo '0 * * * * touch /tmp/disable_hotspot' ) | crontab -
-        (crontab -l; crontab -l | grep -q "rm /tmp/disable_hotspot" echo '1 * * * * rm /tmp/disable_hotspot' ) | crontab -
+        (crontab -l; crontab -l | grep -q "rm /tmp/disable_hotspot" || echo '1 * * * * rm /tmp/disable_hotspot' ) | crontab -
         (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
@@ -1059,11 +1025,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
             (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
         fi
-        if [[ $ENABLE =~ microbolus ]]; then
-            (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop --microbolus ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-        else
-            (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-        fi
+        (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         if [[ ! -z "$BT_PEB" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
         fi
@@ -1080,6 +1042,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
             (crontab -l; crontab -l | grep -q "oref0-pushover" || echo "* * * * * cd $directory && oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log" ) | crontab -
         fi
+        (crontab -l; crontab -l | grep -q "cd $directory && oref0-version --check-for-updates" || echo "0 * * * * cd $directory && oref0-version --check-for-updates > /tmp/oref0-updates.txt") | crontab -
 
         crontab -l | tee $HOME/crontab.txt
     fi

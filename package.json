@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.6.0-dev4",
+  "version": "0.6.0-dev5",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -81,6 +81,7 @@
     "oref0-truncate-git-history": "bin/oref0-truncate-git-history.sh",
     "oref0-upload-entries": "./bin/oref0-upload-entries.sh",
     "oref0-upload-profile": "./bin/oref0-upload-profile.js",
+    "oref0-version": "./bin/oref0-version.sh",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "wifi": "./bin/oref0-tail-wifi.sh"
   },
