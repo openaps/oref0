@@ -35,7 +35,7 @@ function overtemp {
 
 function highload {
     # check whether system load average is high
-    uptime | awk '$NF > 2'
+    uptime | awk '$NF > 2' | grep load
 }
 
 
@@ -81,17 +81,33 @@ function find_valid_ns_glucose {
 }
 
 function ns_temptargets {
-    openaps report invoke settings/temptargets.json settings/profile.json >/dev/null
+    #openaps report invoke settings/temptargets.json settings/profile.json >/dev/null
+    nightscout ns $NIGHTSCOUT_HOST $API_SECRET temp_targets > settings/ns-temptargets.json.new
+    cat settings/ns-temptargets.json.new | jq .[0].duration | egrep -q [0-9] && mv settings/ns-temptargets.json.new settings/ns-temptargets.json
     # TODO: merge local-temptargets.json with ns-temptargets.json
     #openaps report invoke settings/ns-temptargets.json settings/profile.json
-    echo -n "Refreshed temptargets: "
-    cat settings/temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration }'
+    echo -n "Refreshed NS temptargets: "
+    cat settings/ns-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
+    # delete any local-temptarget files last modified more than 24h ago
+    find settings/local-temptarget* -mmin +1440 -exec rm {} \;
+    echo -n "Merging local temptargets: "
+    cat settings/local-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
+    jq -s '.[0] + .[1]|unique|sort_by(.created_at)|reverse' settings/ns-temptargets.json settings/local-temptargets.json > settings/temptargets.json
+    echo -n "Temptargets merged: "
+    cat settings/temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || die "Couldn't refresh profile"
+    if cat settings/profile.json.new | jq . | grep -q basal; then
+        mv settings/profile.json.new settings/profile.json
+    else
+        die "Invalid profile.json.new after refresh"
+    fi
 }
 
 # openaps report invoke monitor/carbhistory.json; oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new; grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json; exit 0
 function ns_meal_carbs {
     #openaps report invoke monitor/carbhistory.json >/dev/null
-    nightscout ns $NIGHTSCOUT_HOST $API_SECRET carb_history > monitor/carbhistory.json
+    nightscout ns $NIGHTSCOUT_HOST $API_SECRET carb_history > monitor/carbhistory.json.new
+    cat monitor/carbhistory.json.new | jq .[0].carbs | egrep -q [0-9] && mv monitor/carbhistory.json.new monitor/carbhistory.json
     oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new
     grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json
     echo -n "Refreshed carbhistory; COB: "
