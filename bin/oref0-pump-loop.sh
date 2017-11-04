@@ -62,6 +62,7 @@ main() {
                     )
                 fi
             fi
+            touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             if ! glucose-fresh; then
                 refresh_profile 15
             fi
@@ -73,7 +74,6 @@ main() {
             fi
             cat /tmp/oref0-updates.txt 2>/dev/null
             echo Completed oref0-pump-loop at $(date)
-            touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             echo
         else
             # don't treat suspended pump as a complete failure
