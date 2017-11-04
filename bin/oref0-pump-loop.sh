@@ -71,8 +71,15 @@ main() {
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                 fi
             fi
-            refresh_profile 15; refresh_pumphistory_24h
-            refresh_after_bolus_or_enact
+            if ! glucose-fresh; then
+                refresh_profile 15
+            fi
+            if ! glucose-fresh; then
+                refresh_pumphistory_24h
+            fi
+            if ! glucose-fresh; then
+                refresh_after_bolus_or_enact
+            fi
             cat /tmp/oref0-updates.txt 2>/dev/null
             echo Completed $looptype pump-loop at $(date)
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
@@ -630,17 +637,25 @@ function wait_for_bg {
     else
         echo -n "Waiting up to 4 minutes for new BG: "
         for i in `seq 1 24`; do
-            # set mtime of monitor/glucose.json to the time of its most recent glucose value
-            touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
-            if (! ls /tmp/pump_loop_completed >/dev/null ); then
-                break
-            elif (find monitor/ -newer /tmp/pump_loop_completed | grep -q glucose.json); then
-                echo glucose.json newer than pump_loop_completed
+            if glucose-fresh; then
                 break
             else
                 echo -n .; sleep 10
             fi
         done
+    fi
+}
+
+function glucose-fresh {
+    # set mtime of monitor/glucose.json to the time of its most recent glucose value
+    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
+    if (! ls /tmp/pump_loop_completed >/dev/null ); then
+        return 0;
+    elif (find monitor/ -newer /tmp/pump_loop_completed | grep -q glucose.json); then
+        echo glucose.json newer than pump_loop_completed
+        return 0;
+    else
+        return 1;
     fi
 }
 
