@@ -34,16 +34,11 @@ old_main() {
 
 # main pump-loop
 main() {
-    if [[ $1 == *"microbolus"* ]]; then
-        looptype="supermicrobolus";
-    else
-        looptype="basal-only";
-    fi
     prep
     if ! overtemp; then
         # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
         prep
-        echo && echo "Starting $looptype pump-loop at $(date) with $upto30s second wait_for_silence:"
+        echo && echo "Starting oref0-pump-loop at $(date) with $upto30s second wait_for_silence:"
         wait_for_bg || fail "$@"
         wait_for_silence $upto30s || fail "$@"
         preflight || preflight || fail "$@"
@@ -53,27 +48,24 @@ main() {
         touch /tmp/pump_loop_enacted -r monitor/glucose.json || fail "$@"
         if smb_check_everything; then
             if ( grep -q '"units":' enact/smb-suggested.json); then
-                if [[ $1 == *"microbolus"* ]] ; then
-                    if smb_bolus; then
-                        touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
-                    else
-                        smb_old_temp && ( \
-                        echo "Falling back to basal-only pump-loop" \
-                        && refresh_temp_and_enact \
-                        && refresh_pumphistory_and_enact \
-                        && refresh_profile \
-                        && refresh_pumphistory_24h \
-                        && echo Completed pump-loop at $(date) \
-                        && echo \
-                        )
-                    fi
-                else
+                if smb_bolus; then
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+                else
+                    smb_old_temp && ( \
+                    echo "Falling back to basal-only pump-loop" \
+                    && refresh_temp_and_enact \
+                    && refresh_pumphistory_and_enact \
+                    && refresh_profile \
+                    && refresh_pumphistory_24h \
+                    && echo Completed pump-loop at $(date) \
+                    && echo \
+                    )
                 fi
             fi
             refresh_profile 15; refresh_pumphistory_24h
             refresh_after_bolus_or_enact
-            echo Completed $looptype pump-loop at $(date)
+            cat /tmp/oref0-updates.txt 2>/dev/null
+            echo Completed oref0-pump-loop at $(date)
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             echo
         else
@@ -92,7 +84,7 @@ main() {
 }
 
 function fail {
-    echo -n "$looptype pump-loop failed. "
+    echo -n "oref0-pump-loop failed. "
     if grep -q "percent" monitor/temp_basal.json; then
         echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
     fi
@@ -100,7 +92,7 @@ function fail {
     if ! cat preferences.json | jq . >/dev/null; then
         echo Error: syntax error in preferences.json: please go correct your typo.
     fi
-    echo Unsuccessful $looptype pump-loop at $(date)
+    echo Unsuccessful oref0-pump-loop at $(date)
     exit 1
 }
 
@@ -258,7 +250,7 @@ function smb_bolus {
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
-        echo "No bolus needed (yet)"
+        echo "No bolus needed"
     fi
 }
 
@@ -641,8 +633,4 @@ die() {
     exit 1
 }
 
-#if [[ $1 == *"microbolus"* ]]; then
-    #smb_main "$@"
-#else
-    main "$@"
-#fi
+main "$@"
