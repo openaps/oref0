@@ -99,12 +99,12 @@ if (!module.parent) {
         , temptargets: temptarget_data
         //, clock: clock_data
     };
-    // calculate sensitivity using 8h of non-exluded data
+    console.error("Calculating sensitivity using 8h of non-exluded data");
     detection_inputs.deviations = 96;
     detect(detection_inputs);
     ratio8h = ratio;
     newisf8h = newisf;
-    // calculate sensitivity using all non-exluded data (up to 24h)
+    console.error("Calculating sensitivity using all non-exluded data (up to 24h)");
     detection_inputs.deviations = 288;
     detect(detection_inputs);
     ratio24h = ratio;
