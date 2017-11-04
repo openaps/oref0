@@ -1015,7 +1015,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
         fi
         if [[ $ENABLE =~ autosens ]]; then
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
         fi
         if [[ $ENABLE =~ autotune ]]; then
             # autotune nightly at 12:05am using data from NS
