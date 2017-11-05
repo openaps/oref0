@@ -5,7 +5,7 @@ old_main() {
     prep
     if ! overtemp; then
         until( \
-            echo && echo Starting pump-loop at $(date): \
+            echo && echo Starting basal-only pump-loop at $(date): \
             && wait_for_bg \
             && wait_for_silence \
             && if_mdt_get_bg \
@@ -17,10 +17,10 @@ old_main() {
             && refresh_pumphistory_and_enact \
             && refresh_profile \
             && refresh_pumphistory_24h \
-            && echo Completed pump-loop at $(date) \
+            && echo Completed basal-only pump-loop at $(date) \
             && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
             && echo); do
-
+                # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
                 if grep -q "percent" monitor/temp_basal.json; then
                     echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
                 fi
@@ -36,8 +36,6 @@ old_main() {
 main() {
     prep
     if ! overtemp; then
-        # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
-        prep
         echo && echo "Starting oref0-pump-loop at $(date) with $upto30s second wait_for_silence:"
         wait_for_bg || fail "$@"
         wait_for_silence $upto30s || fail "$@"
@@ -685,4 +683,8 @@ die() {
     exit 1
 }
 
-main "$@"
+if grep 12 settings/model.json; then
+    old_main "$@"
+else
+    main "$@"
+fi
