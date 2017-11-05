@@ -86,7 +86,7 @@ function ns_temptargets {
     cat settings/ns-temptargets.json.new | jq .[0].duration | egrep -q [0-9] && mv settings/ns-temptargets.json.new settings/ns-temptargets.json
     # TODO: merge local-temptargets.json with ns-temptargets.json
     #openaps report invoke settings/ns-temptargets.json settings/profile.json
-    echo -n "Refreshed NS temptargets: "
+    echo -n "Latest NS temptargets: "
     cat settings/ns-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
     # delete any local-temptarget files last modified more than 24h ago
     find settings/local-temptarget* -mmin +1440 -exec rm {} \;
