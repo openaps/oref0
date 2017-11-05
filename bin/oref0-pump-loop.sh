@@ -458,7 +458,8 @@ function gather {
     && ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-    && echo -n resh \
+         || (echo cat monitor/status.json | jq -C .; fail "$@")
+    echo -n resh \
     && monitor_pump \
     && echo -n ed \
     && merge_pumphistory \
