@@ -624,6 +624,8 @@ function refresh_profile {
 function wait_for_bg {
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo "MDT CGM configured; not waiting"
+    elif egrep -q "Warning:" enact/smb-suggested.json; then
+        echo "Retrying without waiting for new BG"
     elif egrep -q "Waiting [0].[0-9]m to microbolus again." enact/smb-suggested.json; then
         echo "Retrying microbolus without waiting for new BG"
     else
