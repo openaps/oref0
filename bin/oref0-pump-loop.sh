@@ -39,13 +39,13 @@ main() {
         # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
         prep
         echo && echo "Starting oref0-pump-loop at $(date) with $upto30s second wait_for_silence:"
-        wait_for_bg || fail "$@"
-        wait_for_silence $upto30s || fail "$@"
-        preflight || preflight || fail "$@"
-        if_mdt_get_bg || fail "$@"
-        refresh_old_pumphistory_24h || fail "$@"
-        refresh_old_profile || fail "$@"
-        touch /tmp/pump_loop_enacted -r monitor/glucose.json || fail "$@"
+        try wait_for_bg
+        try wait_for_silence $upto30s
+        retry  preflight
+        try if_mdt_get_bg
+        try refresh_old_pumphistory_24h
+        try refresh_old_profile
+        try touch /tmp/pump_loop_enacted -r monitor/glucose.json
         if smb_check_everything; then
             if ( grep -q '"units":' enact/smb-suggested.json); then
                 if smb_bolus; then
@@ -471,9 +471,9 @@ function gather {
 
 # monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
 function monitor_pump {
-    invoke_pumphistory_etc || invoke_pumphistory_etc || { echo; echo "Couldn't refresh pumphistory etc"; fail "$@"; }
+    retry invoke_pumphistory_etc
     calculate_iob
-    invoke_reservoir_etc || invoke_reservoir_etc || { echo; echo "Couldn't refresh reservoir/battery/status"; fail "$@"; }
+    retry invoke_reservoir_etc
 }
 
 function calculate_iob {
@@ -581,7 +581,7 @@ function refresh_temp_and_enact {
     if ( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
             echo -n Temp refresh
-            invoke_temp_etc || invoke_temp_etc || { echo; echo "Couldn't refresh temp"; fail "$@"; }
+            retry invoke_temp_etc
             echo ed
             oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
             if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
@@ -679,8 +679,11 @@ function setglucosetimestamp {
     fi
 }
 
+retry() {
+    "$@" || "$@" || { echo "cannot $*"; fail "$@"; }
+}
 try() {
-    "$@" || die "cannot $*"
+    "$@" || { echo "cannot $*"; fail "$@"; }
 }
 die() {
     echo "$@"
