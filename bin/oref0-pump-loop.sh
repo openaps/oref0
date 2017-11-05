@@ -550,7 +550,7 @@ function get_settings {
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
     if cat settings/profile.json.new | jq . >/dev/null; then
         mv settings/profile.json.new settings/profile.json
-        echo -n "Settings refreshed. "
+        echo -n "Settings refreshed"
     else
         echo "Invalid profile.json.new after refresh"
         ls -lart settings/profile.json.new
