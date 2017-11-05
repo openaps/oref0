@@ -441,7 +441,7 @@ function wait_for_silence {
       ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
       ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) )
     ) 2>&1 | tail -2 \
-        && echo -n "Radio ok. " || (echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune)
+        && echo -n "Radio ok. " || { echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune; }
     echo -n "Listening: "
     for i in $(seq 1 800); do
         echo -n .
@@ -458,7 +458,7 @@ function gather {
     && ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-         || (echo cat monitor/status.json | jq -C .; fail "$@")
+         || { echo cat monitor/status.json | jq -C .; fail "$@"; }
     echo -n resh \
     && monitor_pump \
     && echo -n ed \
@@ -466,18 +466,18 @@ function gather {
     && echo -n " pumphistory" \
     && oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json \
     && echo " and meal.json" \
-    || (echo; exit 1) 2>/dev/null
+    || { echo; exit 1; } 2>/dev/null
 }
 
 # monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
 function monitor_pump {
-    invoke_pumphistory_etc || invoke_pumphistory_etc || (echo; echo "Couldn't refresh pumphistory etc"; fail "$@")
+    invoke_pumphistory_etc || invoke_pumphistory_etc || { echo; echo "Couldn't refresh pumphistory etc"; fail "$@"; }
     calculate_iob
-    invoke_reservoir_etc || invoke_reservoir_etc || (echo; echo "Couldn't refresh reservoir/battery/status"; fail "$@")
+    invoke_reservoir_etc || invoke_reservoir_etc || { echo; echo "Couldn't refresh reservoir/battery/status"; fail "$@"; }
 }
 
 function calculate_iob {
-    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || (echo; echo "Couldn't calculate IOB"; fail "$@")
+    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
 }
 
 function invoke_pumphistory_etc {
@@ -531,7 +531,7 @@ function refresh_old_pumphistory_24h {
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old" \
-        || (echo -n "Old settings: " && get_settings )
+        || { echo -n "Old settings: " && get_settings; }
     if cat settings/profile.json | jq . >/dev/null; then
         echo -n " and valid. "
     else
@@ -546,9 +546,9 @@ function refresh_old_profile {
 function get_settings {
     openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json 2>&1 >/dev/null | tail -1
     # generate settings/pumpprofile.json without autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json | jq . > settings/pumpprofile.json || (echo "Couldn't refresh pumpprofile"; fail "$@")
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json | jq . > settings/pumpprofile.json || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     # generate settings/profile.json.new with autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || (echo "Couldn't refresh profile"; fail "$@")
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
     if cat settings/profile.json.new | jq . >/dev/null; then
         mv settings/profile.json.new settings/profile.json
         echo -n "Settings refreshed. "
@@ -556,7 +556,6 @@ function get_settings {
         echo "Invalid profile.json.new after refresh"
         ls -lart settings/profile.json.new
         #cat settings/profile.json.new | jq .current_basal
-        # fail "$@"
     fi
 }
 
@@ -582,9 +581,9 @@ function refresh_temp_and_enact {
     if ( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
             echo -n Temp refresh
-            invoke_temp_etc || invoke_temp_etc || (echo; echo "Couldn't refresh temp"; fail "$@")
+            invoke_temp_etc || invoke_temp_etc || { echo; echo "Couldn't refresh temp"; fail "$@"; }
             echo ed
-            oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || (echo "Couldn't calculate IOB"; fail "$@")
+            oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
             if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi
@@ -605,7 +604,7 @@ function refresh_pumphistory_and_enact {
     if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
         || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
         || ((! find monitor/ -mmin -5 | grep -q pumphistory-zoned || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
-            (echo -n ": " && gather && enact )
+            { echo -n ": " && gather && enact; }
     else
         echo Pumphistory less than 5m old
     fi
@@ -668,8 +667,8 @@ function refresh_pumphistory_24h {
         autosens_freq=15
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
-    || (echo -n pumphistory-24h refresh \
-        && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed)
+    || { echo -n pumphistory-24h refresh \
+        && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed; }
 }
 
 function setglucosetimestamp {
@@ -680,6 +679,9 @@ function setglucosetimestamp {
     fi
 }
 
+try() {
+    "$@" || die "cannot $*"
+}
 die() {
     echo "$@"
     exit 1
