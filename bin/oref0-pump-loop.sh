@@ -122,8 +122,8 @@ function smb_reservoir_before {
         oref0-set-device-clocks
        fi
     (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -60 )) \
-    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 60 )) || (echo "Error: pump clock mismatch"; fail "$@")
-    find monitor/ -mmin -1 -size +5c | grep -q pumphistory || (echo "Error: pumphistory too old"; fail "$@")
+    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 60 )) || { (echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
+    find monitor/ -mmin -1 -size +5c | grep -q pumphistory || { echo "Error: pumphistory too old"; fail "$@"; }
 }
 
 # check if the temp was read more than 5m ago, or has been running more than 10m
