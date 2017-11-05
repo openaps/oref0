@@ -680,10 +680,10 @@ function setglucosetimestamp {
 }
 
 retry() {
-    "$@" || "$@" || { echo "cannot $*"; fail "$@"; }
+    "$@" || "$@" || { echo "Couldn't $*"; fail "$@"; }
 }
 try() {
-    "$@" || { echo "cannot $*"; fail "$@"; }
+    "$@" || { echo "Couldn't $*"; fail "$@"; }
 }
 die() {
     echo "$@"
