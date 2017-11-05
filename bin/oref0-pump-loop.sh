@@ -76,16 +76,8 @@ main() {
             echo Completed oref0-pump-loop at $(date)
             echo
         else
-            # don't treat suspended pump as a complete failure
-            if grep -q '"suspended": true' monitor/status.json; then
-                refresh_profile 15; refresh_pumphistory_24h
-                refresh_after_bolus_or_enact
-                echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
-                echo
-            else
-                # pump-loop errored out for some other reason
-                fail "$@"
-            fi
+            # pump-loop errored out for some reason
+            fail "$@"
         fi
     fi
 }
@@ -99,7 +91,15 @@ function fail {
     if ! cat preferences.json | jq . >/dev/null; then
         echo Error: syntax error in preferences.json: please go correct your typo.
     fi
-    echo Unsuccessful oref0-pump-loop at $(date)
+    # don't treat suspended pump as a complete failure
+    if grep -q '"suspended": true' monitor/status.json; then
+        refresh_profile 15; refresh_pumphistory_24h
+        refresh_after_bolus_or_enact
+        echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
+    else
+        echo Unsuccessful oref0-pump-loop at $(date)
+    fi
+    echo
     exit 1
 }
 
@@ -110,14 +110,16 @@ function overtemp {
     && echo Rig is too hot: not running pump-loop at $(date)\
     && echo Please ensure rig is properly ventilated
 }
+
 function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
-    gather \
-    && cp monitor/reservoir.json monitor/lastreservoir.json \
-    && openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1 \
-    && echo -n "Checking pump clock: " && (cat monitor/clock-zoned.json; echo) | tr -d '\n' \
-    && echo -n " is within 1m of current time: " && date \
-    && if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -55 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 55 )); then
+    try gather
+    try cp monitor/reservoir.json monitor/lastreservoir.json
+    try openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
+    echo -n "Checking pump clock: "
+    (cat monitor/clock-zoned.json; echo) | tr -d '\n'
+    echo -n " is within 1m of current time: " && date
+    if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -55 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it
         oref0-set-device-clocks
        fi
@@ -136,10 +138,10 @@ function smb_old_temp {
 
 # make sure everything is in the right condition to SMB
 function smb_check_everything {
-    # wait_for_silence and retry if first attempt fails
-    smb_reservoir_before \
-    && smb_enact_temp \
-    && if (grep -q '"units":' enact/smb-suggested.json); then
+    try smb_reservoir_before
+    try smb_enact_temp
+    if (grep -q '"units":' enact/smb-suggested.json); then
+        # wait_for_silence and retry if first attempt fails
         ( smb_verify_suggested || smb_suggest ) \
         && echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s \
         && smb_verify_reservoir \
@@ -175,8 +177,8 @@ function determine_basal {
 
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails)
 function smb_enact_temp {
-    smb_suggest \
-    && if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json && ! smb_verify_enacted ); then (
+    try smb_suggest
+    if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json && ! smb_verify_enacted ); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
         grep -q duration enact/smb-enacted.json || openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
@@ -185,8 +187,8 @@ function smb_enact_temp {
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     else
         echo -n "No smb_enact needed. "
-    fi \
-    && ( smb_verify_enacted || ( smb_verify_status; smb_verify_enacted) )
+    fi
+    ( smb_verify_enacted || ( smb_verify_status; smb_verify_enacted) )
 }
 
 function smb_verify_enacted {
@@ -451,20 +453,19 @@ function wait_for_silence {
 
 # Refresh pumphistory etc.
 function gather {
-    openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1 \
-    && echo -n Ref \
-    && ( grep -q "model.*12" monitor/status.json || \
+    retry openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1
+    echo -n Ref
+    ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
          || { echo cat monitor/status.json | jq -C .; fail "$@"; }
-    echo -n resh \
-    && monitor_pump \
-    && echo -n ed \
-    && merge_pumphistory \
-    && echo -n " pumphistory" \
-    && oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json \
-    && echo " and meal.json" \
-    || { echo; exit 1; } 2>/dev/null
+    echo -n resh
+    try monitor_pump
+    echo -n ed
+    try merge_pumphistory
+    echo -n " pumphistory"
+    try oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json
+    echo " and meal.json"
 }
 
 # monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
