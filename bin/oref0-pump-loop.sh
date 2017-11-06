@@ -117,7 +117,7 @@ function overtemp {
 
 function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
-    try_fail gather
+    try_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
     try_fail openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
     echo -n "Checking pump clock: "
@@ -247,7 +247,7 @@ function smb_verify_status {
     && if grep -q '"suspended": true' monitor/status.json; then
         echo -n "Pump suspended; "
         unsuspend_if_no_temp
-        gather
+        refresh_pumphistory_and_meal
         false
     fi
 }
@@ -272,7 +272,9 @@ function refresh_after_bolus_or_enact {
     if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-        gather || ( wait_for_silence 10 && gather ) || ( wait_for_silence 20 && gather )
+        refresh_pumphistory_and_meal \
+            || ( wait_for_silence 10 && refresh_pumphistory_and_meal ) \
+            || ( wait_for_silence 20 && refresh_pumphistory_and_meal )
         calculate_iob && determine_basal 2>/dev/null >/dev/null \
         && cp -up enact/smb-suggested.json enact/suggested.json \
         && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
@@ -456,7 +458,7 @@ function wait_for_silence {
 }
 
 # Refresh pumphistory etc.
-function gather {
+function refresh_pumphistory_and_meal {
     retry_return openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1 || return 1
     echo -n Ref
     ( grep -q "model.*12" monitor/status.json || \
@@ -514,13 +516,13 @@ function enact {
 # refresh pumphistory if it's more than 15m old and enact
 function refresh_old_pumphistory_enact {
     find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
-    || ( echo -n "Old pumphistory: " && gather && enact )
+    || ( echo -n "Old pumphistory: " && refresh_pumphistory_and_meal && enact )
 }
 
 # refresh pumphistory if it's more than 30m old, but don't enact
 function refresh_old_pumphistory {
     find monitor/ -mmin -30 -size +100c | grep -q pumphistory-zoned \
-    || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && gather )
+    || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && refresh_pumphistory_and_meal )
 }
 
 # refresh pumphistory_24h if it's more than 2h old
@@ -605,7 +607,7 @@ function refresh_pumphistory_and_enact {
     if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
         || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
         || ((! find monitor/ -mmin -5 | grep -q pumphistory-zoned || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
-            { echo -n ": " && gather && enact; }
+            { echo -n ": " && refresh_pumphistory_and_meal && enact; }
     else
         echo Pumphistory less than 5m old
     fi
