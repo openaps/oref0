@@ -686,13 +686,13 @@ retry_fail() {
     "$@" || "$@" || { echo "Couldn't $*"; fail "$@"; }
 }
 retry_return() {
-    "$@" || "$@" || { echo "Couldn't $*"; return 1; }
+    "$@" || "$@" || { echo "Couldn't $* - continuing"; return 1; }
 }
 try_fail() {
     "$@" || { echo "Couldn't $*"; fail "$@"; }
 }
 try_return() {
-    "$@" || { echo "Couldn't $*"; return 1; }
+    "$@" || { echo "Couldn't $*" - continuing; return 1; }
 }
 die() {
     echo "$@"
