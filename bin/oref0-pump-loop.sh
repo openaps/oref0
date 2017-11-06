@@ -84,20 +84,23 @@ main() {
 
 function fail {
     echo -n "oref0-pump-loop failed. "
-    if grep -q "percent" monitor/temp_basal.json; then
-        echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
-    fi
-    maybe_mmtune
-    if ! cat preferences.json | jq . >/dev/null; then
-        echo Error: syntax error in preferences.json: please go correct your typo.
-    fi
+    if grep "too old" enact/smb-suggested.json; then
+        wait_for_bg
+        echo "Unsuccessful oref0-pump-loop (BG too old) at $(date)"
     # don't treat suspended pump as a complete failure
-    if grep -q '"suspended": true' monitor/status.json; then
+    elif grep -q '"suspended": true' monitor/status.json; then
         refresh_profile 15; refresh_pumphistory_24h
         refresh_after_bolus_or_enact
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
     else
+        maybe_mmtune
         echo Unsuccessful oref0-pump-loop at $(date)
+    fi
+    if grep -q "percent" monitor/temp_basal.json; then
+        echo "Error: pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Please change the pump to absolute u/hr so temporary basal rates will then be able to be set."
+    fi
+    if ! cat preferences.json | jq . >/dev/null; then
+        echo Error: syntax error in preferences.json: please go correct your typo.
     fi
     echo
     exit 1
