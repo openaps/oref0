@@ -165,10 +165,10 @@ function smb_suggest {
     ls enact/smb-suggested.json 2>/dev/null >/dev/null && die "enact/suggested.json present"
     # Run determine-basal
     echo -n Temp refresh
-    openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
-    test ${PIPESTATUS[0]} -eq 0 && calculate_iob && echo ed && \
-    determine_basal && cp -up enact/smb-suggested.json enact/suggested.json \
-    && smb_verify_suggested
+    try openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
+    try calculate_iob && echo ed
+    try determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
+    try smb_verify_suggested
 }
 
 function determine_basal {
@@ -177,7 +177,7 @@ function determine_basal {
 
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails)
 function smb_enact_temp {
-    try smb_suggest
+    smb_suggest
     if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json && ! smb_verify_enacted ); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
