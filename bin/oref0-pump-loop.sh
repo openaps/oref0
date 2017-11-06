@@ -182,7 +182,7 @@ function determine_basal {
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails)
 function smb_enact_temp {
     smb_suggest
-    if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json && ! smb_verify_enacted ); then (
+    if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json 2>/dev/null && ! smb_verify_enacted ); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
         grep -q duration enact/smb-enacted.json || openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
@@ -224,7 +224,7 @@ function smb_verify_reservoir {
 }
 
 function smb_verify_suggested {
-    if grep incorrectly enact/smb-suggested.json; then
+    if grep incorrectly enact/smb-suggested.json 2>/dev/null; then
         echo "Checking system clock against pump clock:"
         oref0-set-system-clock 2>&1 >/dev/null
     fi
@@ -256,7 +256,7 @@ function smb_bolus {
     # Verify that the suggested.json is less than 5 minutes old
     # and administer the supermicrobolus
     find enact/ -mmin -5 | grep smb-suggested.json > /dev/null \
-    && if (grep -q '"units":' enact/smb-suggested.json); then
+    && if (grep -q '"units":' enact/smb-suggested.json 2>/dev/null); then
         # press ESC three times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC to exit any open menus before SMBing: "
         openaps use pump press_keys esc esc esc | jq .completed | grep true \
@@ -626,9 +626,9 @@ function refresh_profile {
 function wait_for_bg {
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo "MDT CGM configured; not waiting"
-    elif egrep -q "Warning:" enact/smb-suggested.json; then
+    elif egrep -q "Warning:" enact/smb-suggested.json 2>/dev/null; then
         echo "Retrying without waiting for new BG"
-    elif egrep -q "Waiting [0].[0-9]m to microbolus again." enact/smb-suggested.json; then
+    elif egrep -q "Waiting [0].[0-9]m to microbolus again." enact/smb-suggested.json 2>/dev/null; then
         echo "Retrying microbolus without waiting for new BG"
     else
         echo -n "Waiting up to 4 minutes for new BG: "
