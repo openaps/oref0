@@ -1,4 +1,4 @@
-
+#!/bin/bash
 
 # old pump-loop
 old_main() {
