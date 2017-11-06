@@ -1,4 +1,4 @@
-#!/bin/bash
+
 
 # old pump-loop
 old_main() {
@@ -529,12 +529,12 @@ function refresh_old_pumphistory_24h {
 
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
-    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old" \
+    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old; " \
         || { echo -n "Old settings: " && get_settings; }
     if cat settings/profile.json | jq . >/dev/null; then
-        echo -n " and valid. "
+        echo -n "Profile valid. "
     else
-        echo -n " but invalid: "
+        echo -n "Profile invalid: "
         ls -lart settings/profile.json
         #cat settings/profile.json | jq -C -c .current_basal
         get_settings
@@ -550,7 +550,7 @@ function get_settings {
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
     if cat settings/profile.json.new | jq . >/dev/null; then
         mv settings/profile.json.new settings/profile.json
-        echo -n "Settings refreshed"
+        echo -n "Settings refreshed; "
     else
         echo "Invalid profile.json.new after refresh"
         ls -lart settings/profile.json.new
