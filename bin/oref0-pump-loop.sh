@@ -47,7 +47,7 @@ main() {
         try_fail refresh_old_profile
         try_fail touch /tmp/pump_loop_enacted -r monitor/glucose.json
         if smb_check_everything; then
-            if ( grep -q '"units":' enact/smb-suggested.json); then
+            if ( grep -q '"units":' enact/smb-suggested.json 2>/dev/null); then
                 if smb_bolus; then
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                 else
@@ -84,7 +84,7 @@ main() {
 
 function fail {
     echo -n "oref0-pump-loop failed. "
-    if grep "too old" enact/smb-suggested.json; then
+    if grep "too old" enact/smb-suggested.json 2>/dev/null; then
         touch /tmp/pump_loop_completed
         wait_for_bg
         echo "Unsuccessful oref0-pump-loop (BG too old) at $(date)"
@@ -144,7 +144,7 @@ function smb_old_temp {
 function smb_check_everything {
     try_fail smb_reservoir_before
     try_fail smb_enact_temp
-    if (grep -q '"units":' enact/smb-suggested.json); then
+    if (grep -q '"units":' enact/smb-suggested.json 2>/dev/null); then
         # wait_for_silence and retry if first attempt fails
         ( smb_verify_suggested || smb_suggest ) \
         && echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s \
