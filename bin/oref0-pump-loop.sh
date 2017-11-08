@@ -374,7 +374,7 @@ function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( openaps report invoke settings/model.json || openaps report invoke settings/model.json ) 2>&1 >/dev/null | tail -1 \
-    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && echo -n "error: pump model untested with SMB: "; false) ) \
+    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && echo -n "error: x12 pumps do support SMB safety checks: quitting to restart with basal-only pump-loop"; fail "$@") ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
 }
