@@ -84,7 +84,7 @@ main() {
 
 function fail {
     echo -n "oref0-pump-loop failed. "
-    if grep "too old" enact/smb-suggested.json 2>/dev/null; then
+    if find enact/ -mmin -5 | grep smb-suggested.json > /dev/null && grep "too old" enact/smb-suggested.json 3>/dev/null; then
         touch /tmp/pump_loop_completed
         wait_for_bg
         echo "Unsuccessful oref0-pump-loop (BG too old) at $(date)"
