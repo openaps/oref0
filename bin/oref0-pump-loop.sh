@@ -48,7 +48,7 @@ main() {
         try_fail touch /tmp/pump_loop_enacted -r monitor/glucose.json
         if smb_check_everything; then
             if ( grep -q '"units":' enact/smb-suggested.json 2>/dev/null); then
-                if smb_bolus; then
+                if try_return smb_bolus; then
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                 else
                     smb_old_temp && ( \
@@ -259,8 +259,8 @@ function smb_bolus {
     && if (grep -q '"units":' enact/smb-suggested.json 2>/dev/null); then
         # press ESC three times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC to exit any open menus before SMBing: "
-        openaps use pump press_keys esc esc esc | jq .completed | grep true \
-        && openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
+        try_return openaps use pump press_keys esc esc esc | jq .completed | grep true \
+        && try_return openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
