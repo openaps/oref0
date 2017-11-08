@@ -89,7 +89,7 @@ function fail {
         wait_for_bg
         echo "Unsuccessful oref0-pump-loop (BG too old) at $(date)"
     # don't treat suspended pump as a complete failure
-    elif grep -q '"suspended": true' monitor/status.json; then
+    elif find monitor/ -mmin -5 | grep status.json > /dev/null && grep -q '"suspended": true' monitor/status.json; then
         refresh_profile 15; refresh_pumphistory_24h
         refresh_after_bolus_or_enact
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
