@@ -477,7 +477,6 @@ function refresh_pumphistory_and_meal {
 # monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
 function monitor_pump {
     retry_return invoke_pumphistory_etc || return 1
-    calculate_iob
     retry_return invoke_reservoir_etc || return 1
 }
 
@@ -497,6 +496,7 @@ function invoke_reservoir_etc {
 
 function merge_pumphistory {
     jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
+    calculate_iob
 }
 
 # Calculate new suggested temp basal and enact it
