@@ -5,17 +5,22 @@ read -p "Enter your rig's new hostname (this will be your rig's "name" in the fu
 myrighostname=$REPLY
 echo $myrighostname > /etc/hostname
 sed -r -i"" "s/localhost( jubilinux)?$/localhost $myrighostname/" /etc/hosts
-sed -r -i"" "s/raspberrypi/$myrighostname/" /etc/hosts
+sed -r -i"" "s/127.0.1.1.*$/127.0.1.1       $myrighostname/" /etc/hosts
 
 # if passwords are old, force them to be changed at next login
-passwd -S edison | grep 20[01][0-6] && passwd -e root
+passwd -S edison 2>/dev/null | grep 20[01][0-6] && passwd -e root
 # automatically expire edison account if its password is not changed in 3 days
-passwd -S edison | grep 20[01][0-6] && passwd -e edison -i 3
+passwd -S edison 2>/dev/null | grep 20[01][0-6] && passwd -e edison -i 3
 
 if [ -e /run/sshwarn ] ; then
-    passwd -e root
-    passwd -e pi
+    echo Please select a secure password for ssh logins to your rig:
+    echo 'For the "root" account:'
+    passwd root
+    echo 'And for the "pi" account (same password is fine):'
+    passwd pi
 fi
+
+grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" > /etc/ssh/sshd_config
 
 # set timezone
 dpkg-reconfigure tzdata
