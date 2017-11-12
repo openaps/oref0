@@ -88,13 +88,13 @@
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
     "crypto": "0.0.3",
+    "json": "~9.0.4",
     "lodash": "^4.15.0",
     "moment": "^2.14.1",
     "request": "^2.79.0",
     "share2nightscout-bridge": "^0.1.5",
     "moment-timezone": "0.5.11",
-    "yargs": "~4.3.2",
-    "json": "~9.0.4"
+    "yargs": "~4.3.2"
   },
   "devDependencies": {
     "coveralls": "^2.11.12",
