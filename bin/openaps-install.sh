@@ -43,8 +43,8 @@ fi
 sed -i "s/daily/hourly/g" /etc/logrotate.conf
 sed -i "s/#compress/compress/g" /etc/logrotate.conf
 
-# TODO: change back to master after docs release
-curl -s https://raw.githubusercontent.com/openaps/docs/dev/scripts/quick-packages.sh | bash -
+# TODO: change to dev and then master after PR and release
+curl -s https://raw.githubusercontent.com/openaps/oref0/pi-install/bin/openaps-packages.sh | bash -
 mkdir -p ~/src; cd ~/src && git clone git://github.com/openaps/oref0.git || (cd oref0 && git checkout master && git pull)
 echo "Press Enter to run oref0-setup with the current release (master branch) of oref0,"
 read -p "or press ctrl-c to cancel. " -r
