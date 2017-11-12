@@ -1,15 +1,21 @@
 #!/bin/bash
 set -e
 
-read -p "Enter your Edison's new hostname (this will be your rig's "name" in the future, so make sure to write it down): " -r
-myedisonhostname=$REPLY
-echo $myedisonhostname > /etc/hostname
-sed -r -i"" "s/localhost( jubilinux)?$/localhost $myedisonhostname/" /etc/hosts
+read -p "Enter your rig's new hostname (this will be your rig's "name" in the future, so make sure to write it down): " -r
+myrighostname=$REPLY
+echo $myrighostname > /etc/hostname
+sed -r -i"" "s/localhost( jubilinux)?$/localhost $myrighostname/" /etc/hosts
+sed -r -i"" "s/raspberrypi/$myrighostname/" /etc/hosts
 
 # if passwords are old, force them to be changed at next login
 passwd -S edison | grep 20[01][0-6] && passwd -e root
 # automatically expire edison account if its password is not changed in 3 days
 passwd -S edison | grep 20[01][0-6] && passwd -e edison -i 3
+
+if [ -e /run/sshwarn ] ; then
+    passwd -e root
+    passwd -e pi
+fi
 
 # set timezone
 dpkg-reconfigure tzdata
@@ -25,8 +31,8 @@ if  getent passwd edison > /dev/null; then
   adduser edison sudo
   echo "Adding edison to dialout users"
   adduser edison dialout
- else
-  echo "User edison does not exist. Apparently, you are runnning a non-edison setup."
+ # else
+  # echo "User edison does not exist. Apparently, you are runnning a non-edison setup."
 fi
 
 sed -i "s/daily/hourly/g" /etc/logrotate.conf
