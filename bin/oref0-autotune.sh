@@ -27,8 +27,13 @@
 # THE SOFTWARE.
 
 die() {
-  echo "$@"
-  exit 1
+    if [[ -z "$API_SECRET" ]]; then
+        echo "Warning: API_SECRET is not set when calling oref0-autotune.sh"
+        echo "(this is only a problem if you have locked down read-only access to your NS)."
+    fi
+
+    echo "$@"
+    exit 1
 }
 
 # defaults
@@ -46,11 +51,6 @@ UNKNOWN_OPTION=""
 
 if [ -n "${API_SECRET_READ}" ]; then 
    echo "WARNING: API_SECRET_READ is deprecated starting with oref 0.6.x. The Nightscout authentication information is now used from the API_SECRET environment variable"
-fi
-
-if [[ -z "$API_SECRET" ]]; then
-  echo "Warning: API_SECRET is not set when calling oref0-autotune.sh"
-  # exit 1
 fi
 
 # If we are running OS X, we need to use a different version
