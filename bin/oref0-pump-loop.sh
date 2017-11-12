@@ -37,16 +37,16 @@ main() {
     prep
     if ! overtemp; then
         echo && echo "Starting oref0-pump-loop at $(date) with $upto30s second wait_for_silence:"
-        wait_for_bg || fail "$@"
-        wait_for_silence $upto30s || fail "$@"
-        preflight || preflight || fail "$@"
-        if_mdt_get_bg || fail "$@"
-        refresh_old_pumphistory_24h || fail "$@"
-        refresh_old_profile || fail "$@"
-        touch /tmp/pump_loop_enacted -r monitor/glucose.json || fail "$@"
+        try_fail wait_for_bg
+        try_fail wait_for_silence $upto30s
+        retry_fail preflight
+        try_fail if_mdt_get_bg
+        try_fail refresh_old_pumphistory_24h
+        try_fail refresh_old_profile
+        try_fail touch /tmp/pump_loop_enacted -r monitor/glucose.json
         if smb_check_everything; then
-            if ( grep -q '"units":' enact/smb-suggested.json); then
-                if smb_bolus; then
+            if ( grep -q '"units":' enact/smb-suggested.json 2>/dev/null); then
+                if try_return smb_bolus; then
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                 else
                     smb_old_temp && ( \
@@ -74,30 +74,34 @@ main() {
             echo Completed oref0-pump-loop at $(date)
             echo
         else
-            # don't treat suspended pump as a complete failure
-            if grep -q '"suspended": true' monitor/status.json; then
-                refresh_profile 15; refresh_pumphistory_24h
-                refresh_after_bolus_or_enact
-                echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
-                echo
-            else
-                # pump-loop errored out for some other reason
-                fail "$@"
-            fi
+            # pump-loop errored out for some reason
+            fail "$@"
         fi
     fi
 }
 
 function fail {
     echo -n "oref0-pump-loop failed. "
-    if grep -q "percent" monitor/temp_basal.json; then
-        echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
+    if find enact/ -mmin -5 | grep smb-suggested.json > /dev/null && grep "too old" enact/smb-suggested.json 3>/dev/null; then
+        touch /tmp/pump_loop_completed
+        wait_for_bg
+        echo "Unsuccessful oref0-pump-loop (BG too old) at $(date)"
+    # don't treat suspended pump as a complete failure
+    elif find monitor/ -mmin -5 | grep status.json > /dev/null && grep -q '"suspended": true' monitor/status.json; then
+        refresh_profile 15; refresh_pumphistory_24h
+        refresh_after_bolus_or_enact
+        echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
+    else
+        maybe_mmtune
+        echo Unsuccessful oref0-pump-loop at $(date)
     fi
-    maybe_mmtune
+    if grep -q "percent" monitor/temp_basal.json; then
+        echo "Error: pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Please change the pump to absolute u/hr so temporary basal rates will then be able to be set."
+    fi
     if ! cat preferences.json | jq . >/dev/null; then
         echo Error: syntax error in preferences.json: please go correct your typo.
     fi
-    echo Unsuccessful oref0-pump-loop at $(date)
+    echo
     exit 1
 }
 
@@ -108,22 +112,22 @@ function overtemp {
     && echo Rig is too hot: not running pump-loop at $(date)\
     && echo Please ensure rig is properly ventilated
 }
+
 function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
-    gather \
-    && cp monitor/reservoir.json monitor/lastreservoir.json \
-    && openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1 \
-    && echo -n "Checking pump clock: " && (cat monitor/clock-zoned.json; echo) | tr -d '\n' \
-    && echo -n " is within 1m of current time: " && date \
-    && if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -60 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 60 )); then
-        echo Pump clock is more than 1m off: attempting to reset it
+    try_fail refresh_pumphistory_and_meal
+    try_fail cp monitor/reservoir.json monitor/lastreservoir.json
+    try_fail openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
+    echo -n "Checking pump clock: "
+    (cat monitor/clock-zoned.json; echo) | tr -d '\n'
+    echo -n " is within 1m of current time: " && date
+    if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -55 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 55 )); then
+        echo Pump clock is more than 55s off: attempting to reset it
         oref0-set-device-clocks
-       fi \
-    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -60 )) \
-    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 60 )) \
-    && echo -n "and that pumphistory is less than 1m old.  " \
-    && (find monitor/ -mmin -1 -size +5c | grep -q pumphistory)
-
+       fi
+    (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -60 )) \
+    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 60 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
+    find monitor/ -mmin -1 -size +5c | grep -q pumphistory || { echo "Error: pumphistory too old"; fail "$@"; }
 }
 
 # check if the temp was read more than 5m ago, or has been running more than 10m
@@ -136,10 +140,10 @@ function smb_old_temp {
 
 # make sure everything is in the right condition to SMB
 function smb_check_everything {
-    # wait_for_silence and retry if first attempt fails
-    smb_reservoir_before \
-    && smb_enact_temp \
-    && if (grep -q '"units":' enact/smb-suggested.json); then
+    try_fail smb_reservoir_before
+    try_fail smb_enact_temp
+    if (grep -q '"units":' enact/smb-suggested.json 2>/dev/null); then
+        # wait_for_silence and retry if first attempt fails
         ( smb_verify_suggested || smb_suggest ) \
         && echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s \
         && smb_verify_reservoir \
@@ -163,10 +167,10 @@ function smb_suggest {
     ls enact/smb-suggested.json 2>/dev/null >/dev/null && die "enact/suggested.json present"
     # Run determine-basal
     echo -n Temp refresh
-    openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
-    test ${PIPESTATUS[0]} -eq 0 && calculate_iob && echo ed && \
-    determine_basal && cp -up enact/smb-suggested.json enact/suggested.json \
-    && smb_verify_suggested
+    try_fail openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
+    try_fail calculate_iob && echo ed
+    try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
+    try_fail smb_verify_suggested
 }
 
 function determine_basal {
@@ -175,8 +179,8 @@ function determine_basal {
 
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails)
 function smb_enact_temp {
-    smb_suggest \
-    && if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json && ! smb_verify_enacted ); then (
+    smb_suggest
+    if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json 2>/dev/null && ! smb_verify_enacted ); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
         grep -q duration enact/smb-enacted.json || openaps report invoke enact/smb-enacted.json 2>&1 >/dev/null | tail -1
@@ -185,8 +189,8 @@ function smb_enact_temp {
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     else
         echo -n "No smb_enact needed. "
-    fi \
-    && ( smb_verify_enacted || ( smb_verify_status; smb_verify_enacted) )
+    fi
+    ( smb_verify_enacted || ( smb_verify_status; smb_verify_enacted) )
 }
 
 function smb_verify_enacted {
@@ -218,7 +222,7 @@ function smb_verify_reservoir {
 }
 
 function smb_verify_suggested {
-    if grep incorrectly enact/smb-suggested.json; then
+    if grep incorrectly enact/smb-suggested.json 2>/dev/null; then
         echo "Checking system clock against pump clock:"
         oref0-set-system-clock 2>&1 >/dev/null
     fi
@@ -241,7 +245,7 @@ function smb_verify_status {
     && if grep -q '"suspended": true' monitor/status.json; then
         echo -n "Pump suspended; "
         unsuspend_if_no_temp
-        gather
+        refresh_pumphistory_and_meal
         false
     fi
 }
@@ -250,11 +254,11 @@ function smb_bolus {
     # Verify that the suggested.json is less than 5 minutes old
     # and administer the supermicrobolus
     find enact/ -mmin -5 | grep smb-suggested.json > /dev/null \
-    && if (grep -q '"units":' enact/smb-suggested.json); then
+    && if (grep -q '"units":' enact/smb-suggested.json 2>/dev/null); then
         # press ESC three times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC to exit any open menus before SMBing: "
-        openaps use pump press_keys esc esc esc | jq .completed | grep true \
-        && openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
+        try_return openaps use pump press_keys esc esc esc | jq .completed | grep true \
+        && try_return openaps report invoke enact/bolused.json 2>&1 >/dev/null | tail -1 \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
@@ -266,7 +270,9 @@ function refresh_after_bolus_or_enact {
     if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-        gather || ( wait_for_silence 10 && gather ) || ( wait_for_silence 20 && gather )
+        refresh_pumphistory_and_meal \
+            || ( wait_for_silence 10 && refresh_pumphistory_and_meal ) \
+            || ( wait_for_silence 20 && refresh_pumphistory_and_meal )
         calculate_iob && determine_basal 2>/dev/null >/dev/null \
         && cp -up enact/smb-suggested.json enact/suggested.json \
         && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
@@ -439,7 +445,7 @@ function wait_for_silence {
       ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
       ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) )
     ) 2>&1 | tail -2 \
-        && echo -n "Radio ok. " || (echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune)
+        && echo -n "Radio ok. " || { echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune; }
     echo -n "Listening: "
     for i in $(seq 1 800); do
         echo -n .
@@ -450,21 +456,40 @@ function wait_for_silence {
 }
 
 # Refresh pumphistory etc.
-function gather {
-    openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1 \
-    && echo -n Ref \
-    && ( grep -q "model.*12" monitor/status.json || \
+function refresh_pumphistory_and_meal {
+    retry_return openaps report invoke monitor/status.json 2>&1 >/dev/null | tail -1 || return 1
+    echo -n Ref
+    ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-         || (echo cat monitor/status.json | jq -C .; fail "$@")
-    echo -n resh \
-    && monitor_pump \
-    && echo -n ed \
-    && merge_pumphistory \
-    && echo -n " pumphistory" \
-    && oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json \
-    && echo " and meal.json" \
-    || (echo; exit 1) 2>/dev/null
+         || { echo; cat monitor/status.json | jq -C .; return 1; }
+    echo -n resh
+    retry_return monitor_pump || return 1
+    echo -n ed
+    retry_return merge_pumphistory || return 1
+    echo -n " pumphistory"
+    retry_return oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
+    echo " and meal.json"
+}
+
+# monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
+function monitor_pump {
+    retry_return invoke_pumphistory_etc || return 1
+    retry_return invoke_reservoir_etc || return 1
+}
+
+function calculate_iob {
+    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
+}
+
+function invoke_pumphistory_etc {
+    openaps report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json 2>&1 >/dev/null | tail -1
+    test ${PIPESTATUS[0]} -eq 0
+}
+
+function invoke_reservoir_etc {
+    openaps report invoke monitor/reservoir.json monitor/battery.json monitor/status.json 2>&1 >/dev/null | tail -1
+    test ${PIPESTATUS[0]} -eq 0
 }
 
 # monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
@@ -490,6 +515,7 @@ function invoke_reservoir_etc {
 
 function merge_pumphistory {
     jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
+    calculate_iob
 }
 
 # Calculate new suggested temp basal and enact it
@@ -509,13 +535,13 @@ function enact {
 # refresh pumphistory if it's more than 15m old and enact
 function refresh_old_pumphistory_enact {
     find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
-    || ( echo -n "Old pumphistory: " && gather && enact )
+    || ( echo -n "Old pumphistory: " && refresh_pumphistory_and_meal && enact )
 }
 
 # refresh pumphistory if it's more than 30m old, but don't enact
 function refresh_old_pumphistory {
     find monitor/ -mmin -30 -size +100c | grep -q pumphistory-zoned \
-    || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && gather )
+    || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && refresh_pumphistory_and_meal )
 }
 
 # refresh pumphistory_24h if it's more than 2h old
@@ -528,33 +554,30 @@ function refresh_old_pumphistory_24h {
 
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
-    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old" \
-        || (echo -n "Old settings: " && get_settings )
-    if cat settings/profile.json | jq . >/dev/null; then
-        echo -n " and valid. "
+    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old; " \
+        || { echo -n "Old settings: " && get_settings; }
+    if cat settings/profile.json | jq .current_basal >/dev/null; then
+        echo -n "Profile valid. "
     else
-        echo -n " but invalid: "
+        echo -n "Profile invalid: "
         ls -lart settings/profile.json
-        #cat settings/profile.json | jq -C -c .current_basal
         get_settings
     fi
 }
 
 # get-settings report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json
 function get_settings {
-    openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json 2>&1 >/dev/null | tail -1
+    retry_return openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json 2>&1 >/dev/null | tail -1 || return 1
     # generate settings/pumpprofile.json without autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json | jq . > settings/pumpprofile.json || (echo "Couldn't refresh pumpprofile"; fail "$@")
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json | jq . > settings/pumpprofile.json || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     # generate settings/profile.json.new with autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || (echo "Couldn't refresh profile"; fail "$@")
-    if cat settings/profile.json.new | jq . >/dev/null; then
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
+    if cat settings/profile.json.new | jq .current_basal >/dev/null; then
         mv settings/profile.json.new settings/profile.json
-        echo -n "Settings refreshed. "
+        echo -n "Settings refreshed; "
     else
         echo "Invalid profile.json.new after refresh"
         ls -lart settings/profile.json.new
-        #cat settings/profile.json.new | jq .current_basal
-        # fail "$@"
     fi
 }
 
@@ -580,9 +603,9 @@ function refresh_temp_and_enact {
     if ( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
         || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
             echo -n Temp refresh
-            invoke_temp_etc || invoke_temp_etc || (echo; echo "Couldn't refresh temp"; fail "$@")
+            retry_fail invoke_temp_etc
             echo ed
-            oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || (echo "Couldn't calculate IOB"; fail "$@")
+            oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
             if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi
@@ -603,7 +626,7 @@ function refresh_pumphistory_and_enact {
     if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
         || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
         || ((! find monitor/ -mmin -5 | grep -q pumphistory-zoned || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
-            (echo -n ": " && gather && enact )
+            { echo -n ": " && refresh_pumphistory_and_meal && enact; }
     else
         echo Pumphistory less than 5m old
     fi
@@ -622,9 +645,9 @@ function refresh_profile {
 function wait_for_bg {
     if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
         echo "MDT CGM configured; not waiting"
-    elif egrep -q "Warning:" enact/smb-suggested.json; then
+    elif egrep -q "Warning:" enact/smb-suggested.json 2>/dev/null; then
         echo "Retrying without waiting for new BG"
-    elif egrep -q "Waiting [0].[0-9]m to microbolus again." enact/smb-suggested.json; then
+    elif egrep -q "Waiting [0].[0-9]m to microbolus again." enact/smb-suggested.json 2>/dev/null; then
         echo "Retrying microbolus without waiting for new BG"
     else
         echo -n "Waiting up to 4 minutes for new BG: "
@@ -666,8 +689,8 @@ function refresh_pumphistory_24h {
         autosens_freq=15
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
-    || (echo -n pumphistory-24h refresh \
-        && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed)
+    || { echo -n pumphistory-24h refresh \
+        && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&1 >/dev/null | tail -1 && echo ed; }
 }
 
 function setglucosetimestamp {
@@ -678,6 +701,18 @@ function setglucosetimestamp {
     fi
 }
 
+retry_fail() {
+    "$@" || "$@" || { echo "Couldn't $*"; fail "$@"; }
+}
+retry_return() {
+    "$@" || "$@" || { echo "Couldn't $* - continuing"; return 1; }
+}
+try_fail() {
+    "$@" || { echo "Couldn't $*"; fail "$@"; }
+}
+try_return() {
+    "$@" || { echo "Couldn't $*" - continuing; return 1; }
+}
 die() {
     echo "$@"
     exit 1
