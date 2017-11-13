@@ -178,7 +178,8 @@ done
 echo "Compressing old json and log files to save space..."
 gzip -f ns-*.json
 gzip -f autotune*.json
-gzip -f autotune.*.log
+# TODO: figure out how to do this without gzipping the log we're currently writing to
+# gzip -f autotune.*.log
 echo "Autotune disk usage:"
 du -h .
 echo "Overall disk used/avail:"
