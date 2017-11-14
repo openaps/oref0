@@ -889,7 +889,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ! -z "$BT_PEB" ]]; then
         sudo apt-get -y install jq
         sudo pip install libpebble2
-        sudo pip install --user git+git://github.com/mddub/pancreabble.git
+        # TODO: change back to mddub once PR has been merged there
+        sudo pip install --user git+git://github.com/pietergit/pancreabble.git@pebble-fix 
         oref0-bluetoothup
         sudo rfcomm bind hci0 $BT_PEB
         for type in pancreabble; do

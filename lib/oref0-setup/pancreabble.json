@@ -27,7 +27,7 @@
       "cgm_clock": "monitor/clock.json",
       "action": "add",
       "device": "pbbl",
-      "glucose_history": "monitor/glucose-unzoned.json",
+      "glucose_history": "monitor/glucose.json",
       "status_text": "",
       "status_json": "upload/urchin-status.json"
     }
