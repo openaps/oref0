@@ -160,7 +160,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     serial=$REPLY
     echocolor "Ok, $serial it is."
     echo
-    
+
     read -p "Do you have an x12 (i.e. 512 or 712) pump? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         pumpmodel=x12
@@ -170,7 +170,16 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "You're using a different model pump. Got it."
     fi
 
-    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, G5-upload, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout:   " -r
+    echo "What kind of CGM would you like to configure for offline use? Options are:"
+    echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
+    echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
+    echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
+    echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
+    echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
+    echo "xdrip: will work with an xDrip receiver app on your Android phone"
+    echo "Note: no matter which option you choose, CGM data will also be downloaded from NS when available."
+    echo
+    read -p "What kind of CGM would you like to configure?:   " -r
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
     echo
@@ -627,21 +636,21 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
         cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
         #Stop automatic startup of hostapd & dnsmasq
-        update-rc.d -f hostapd remove 
-        update-rc.d -f dnsmasq remove 
+        update-rc.d -f hostapd remove
+        update-rc.d -f dnsmasq remove
         # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
         sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}/" /etc/hostapd/hostapd.conf
-        # Add Commands to /etc/rc.local 
+        # Add Commands to /etc/rc.local
         # Interrupt Kernel Messages
         if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
           sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
-        fi  
+        fi
         # Add to /etc/rc.local to check if in hotspot mode and turn back to client mode during bootup
         if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
           sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
         fi
-    fi 
-    
+    fi
+
     # add/configure devices
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
@@ -849,19 +858,19 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
         touch /tmp/reboot-required
     fi
-    
+
     # disable IPv6
     if ! grep -q 'net.ipv6.conf.all.disable_ipv6=1' /etc/sysctl.conf; then
         sudo echo 'net.ipv6.conf.all.disable_ipv6=1' >> /etc/sysctl.conf
-    fi    
+    fi
     if ! grep -q 'net.ipv6.conf.default.disable_ipv6=1' /etc/sysctl.conf; then
         sudo echo 'net.ipv6.conf.default.disable_ipv6=1' >> /etc/sysctl.conf
-    fi    
+    fi
     if ! grep -q 'net.ipv6.conf.lo.disable_ipv6=1' /etc/sysctl.conf; then
         sudo echo 'net.ipv6.conf.lo.disable_ipv6=1' >> /etc/sysctl.conf
-    fi    
+    fi
     sudo sysctl -p
-    
+
     # Install EdisonVoltage
     if [[ "$ttyport" =~ "spidev5.1" ]]; then
         if egrep -i "edison" /etc/passwd 2>/dev/null; then
