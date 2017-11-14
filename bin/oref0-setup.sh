@@ -197,7 +197,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "Ok, yay for Explorer Board! "
         echo
     else
-        read -p 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? ' -r
+        echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
+        read -p "What is your TTY port? " -r
         ttyport=$REPLY
         echocolor-n "Ok, "
         if [[ -z "$ttyport" ]]; then
@@ -228,9 +229,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       # check if user has a TI USB stick and a WorldWide pump and want's to reset the USB subsystem during mmtune if the TI USB fails
       ww_ti_usb_reset="no" # assume you don't want it by default
       if [[ $radio_locale =~ ^WW$ ]]; then
-        echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process"
+        echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process. If so, enter Y. Otherwise just hit enter (default no):"
         echo
-        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? Use y if so. Otherwise just hit enter (default no): " -r
+        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
           ww_ti_usb_reset="yes"
         else
@@ -259,7 +260,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echocolor "Ok, $NIGHTSCOUT_HOST it is."
     echo
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
-        read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET, but must first be configured in Nightscout. Do you want to use token based authentication? y/[N] " -r
+        echo "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET, but must first be configured in Nightscout."
+        read -p "Do you want to use token based authentication? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
             API_SECRET="token=${REPLY}"
@@ -275,7 +277,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         fi
     fi
 
-    read -p "Do you want to be able to setup BT tethering later? y/[N] " -r
+    read -p "Do you want to be able to set up BT tethering? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
     read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
         BT_MAC=$REPLY
@@ -307,7 +309,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
     echo
-    read -p "Type a number [i.e. 0] and hit enter:   " -r
+    read -p "Type a whole number (without a decimal) [i.e. 0] and hit enter:   " -r
       if [[ $REPLY =~ [0-9] ]]; then
         max_iob="$REPLY"
         echocolor "Ok, $max_iob units will be set as your max_iob."
@@ -339,15 +341,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
 #now always enabling AMA by default
- #   read -p "Enable advanced meal assist? y/[N]  " -r
- #   if [[ $REPLY =~ ^[Yy]$ ]]; then
     ENABLE+=" meal "
-#       echocolor "Ok, AMA will be enabled."
-#       echo
-#    else
-#       echocolor "Ok, no AMA."
-#       echo
-#    fi
 
     read -p "Do you want to enable carbsReq Pushover alerts? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
