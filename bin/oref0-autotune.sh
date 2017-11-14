@@ -178,8 +178,8 @@ done
 echo "Compressing old json and log files to save space..."
 gzip -f ns-*.json
 gzip -f autotune*.json
-# TODO: figure out how to do this without gzipping the log we're currently writing to
-# gzip -f autotune.*.log
+# only gzip autotune log files more than 2 days old
+find autotune.*.log -mtime +2 | while read file; do gzip -f $file; done
 echo "Autotune disk usage:"
 du -h .
 echo "Overall disk used/avail:"
