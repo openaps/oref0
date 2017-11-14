@@ -219,7 +219,7 @@ if (!module.parent) {
     }
 
     console.error(JSON.stringify(glucose_status));
-    console.error(JSON.stringify(currenttemp));
+    //console.error(JSON.stringify(currenttemp));
     //console.error(JSON.stringify(profile));
 
     var tempBasalFunctions = require('oref0/lib/basal-set-temp');

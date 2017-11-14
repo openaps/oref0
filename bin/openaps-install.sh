@@ -17,9 +17,17 @@ dpkg-reconfigure tzdata
 #dpkg -P nodejs nodejs-dev
 # TODO: remove the `-o Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
-apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim python-pip locate
-adduser edison sudo
-adduser edison dialout
+apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim python-pip locate ntpdate
+#check if edison user exists before trying to add it to groups
+
+if  getent passwd edison > /dev/null; then
+  echo "Adding edison to sudo users"
+  adduser edison sudo
+  echo "Adding edison to dialout users"
+  adduser edison dialout
+ else
+  echo "User edison does not exist. Apparently, you are runnning a non-edison setup."
+fi
 
 sed -i "s/daily/hourly/g" /etc/logrotate.conf
 sed -i "s/#compress/compress/g" /etc/logrotate.conf

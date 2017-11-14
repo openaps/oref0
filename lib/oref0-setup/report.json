@@ -6,7 +6,7 @@
       "use": "shell",
       "reporter": "JSON",
       "device": "ns",
-      "remainder": "-6hours",
+      "remainder": "-18hours",
       "json_default": "True"
     },
     "name": "settings/temptargets.json"
@@ -214,7 +214,7 @@
       "json_default": "True",
       "pumphistory": "monitor/pumphistory-merged.json",
       "device": "iob",
-      "remainder": ""
+      "remainder": "settings/autosens.json"
     }
   },
   {
@@ -244,7 +244,7 @@
       "json_default": "True",
       "pumphistory": "settings/pumphistory-24h-zoned.json",
       "device": "detect-sensitivity",
-      "remainder": "monitor/carbhistory.json",
+      "remainder": "monitor/carbhistory.json settings/temptargets.json",
       "isf": "settings/insulin_sensitivities.json",
       "glucose": "monitor/glucose.json"
     },
