@@ -433,28 +433,28 @@ describe('determine-basal', function ( ) {
         output.reason.should.match(/no temp, setting/);
     });
 
-    it('should set lower high-temp when high and falling almost fast enough with low insulin activity', function () {
-        var glucose_status = {"delta":-6,"glucose":300,"long_avgdelta":-5,"short_avgdelta":-5};
-        var iob_data = {"iob":0.5,"activity":0.005,"bolussnooze":0};
-        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
-        console.error(output);
-        output.rate.should.be.above(1);
-        output.rate.should.be.below(2);
-        output.duration.should.equal(30);
-        output.reason.should.match(/no temp, setting/);
-    });
-
-    it('should reduce high-temp when high and falling almost fast enough with low insulin activity', function () {
-        var glucose_status = {"delta":-6,"glucose":300,"long_avgdelta":-5,"short_avgdelta":-5};
-        var iob_data = {"iob":0.5,"activity":0.005,"bolussnooze":0};
-        var currenttemp = {"duration":30,"rate":3.5,"temp":"absolute"};
-        var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
+    //it('should set lower high-temp when high and falling almost fast enough with low insulin activity', function () {
+        //var glucose_status = {"delta":-6,"glucose":300,"long_avgdelta":-5,"short_avgdelta":-5};
+        //var iob_data = {"iob":0.5,"activity":0.005,"bolussnooze":0};
+        //var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         //console.error(output);
-        output.rate.should.be.above(1);
-        output.rate.should.be.below(2);
-        output.duration.should.equal(30);
-        output.reason.should.match(/.* > 2.*insulinReq. Setting temp.*/);
-    });
+        //output.rate.should.be.above(1);
+        //output.rate.should.be.below(2);
+        //output.duration.should.equal(30);
+        //output.reason.should.match(/no temp, setting/);
+    //});
+
+    //it('should reduce high-temp when high and falling almost fast enough with low insulin activity', function () {
+        //var glucose_status = {"delta":-6,"glucose":300,"long_avgdelta":-5,"short_avgdelta":-5};
+        //var iob_data = {"iob":0.5,"activity":0.005,"bolussnooze":0};
+        //var currenttemp = {"duration":30,"rate":3.5,"temp":"absolute"};
+        //var output = determine_basal(glucose_status, currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
+        //console.error(output);
+        //output.rate.should.be.above(1);
+        //output.rate.should.be.below(2);
+        //output.duration.should.equal(30);
+        //output.reason.should.match(/.* > 2.*insulinReq. Setting temp.*/);
+    //});
 
     it('should profile.current_basal be undefined return error', function () {
       var result = determine_basal(undefined,undefined,undefined,undefined);
