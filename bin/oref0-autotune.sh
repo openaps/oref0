@@ -181,7 +181,8 @@ echo "Grabbing NIGHTSCOUT treatments.json and entries/sgv.json for date range...
 # Get Nightscout BG (sgv.json) Entries
 for i in "${date_list[@]}"
 do 
-    query="find%5Bdate%5D%5B%24gte%5D=`(date -d $i +%s | tr -d '\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
+    # pull CGM data from 4am-4am
+    query="find%5Bdate%5D%5B%24gte%5D=`(date -d "$i +4 hours " +%s | tr -d '\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +28 hours" +%s | tr -d '\n'; echo 000)`&count=1000"
     echo Query: $NIGHTSCOUT_HOST $query
     ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
     ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
@@ -190,8 +191,8 @@ do
     # echo $i $START_DATE;
     #query="find%5Bdate%5D%5B%24gte%5D=`(date -d $i +%s | tr -d'\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
     # to capture UTC-dated treatments, we need to capture an extra 12h on either side, plus the DIA lookback
-    # 18h = 12h for timezones + 6h for DIA; 36h = 24h for end-of-day + 12h for timezones
-    query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$i -18 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$i +36 hours" -Iminutes`"
+    # 18h = 12h for timezones + 6h for DIA; 40h = 28h for 4am + 12h for timezones
+    query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$i -18 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$i +42 hours" -Iminutes`"
     echo Query: $NIGHTSCOUT_HOST/$query
     ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.$i.json || die "Couldn't download ns-treatments.$i.json"
     ls -la ns-treatments.$i.json || die "No ns-treatments.$i.json downloaded"
