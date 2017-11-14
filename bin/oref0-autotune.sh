@@ -155,7 +155,6 @@ fi
 # If a previous valid settings/autotune.json exists, use that; otherwise start from settings/profile.json
 cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | jq . | grep -q start || cp autotune/profile.pump.json autotune/profile.json
 cd autotune
-# TODO: Need to think through what to remove in the autotune folder...
 
 # Turn on stderr logging, if enabled (default to true)
 if [[ $TERMINAL_LOGGING = "true" ]]; then
@@ -175,6 +174,16 @@ do
     break
   fi
 done
+
+echo "Compressing old json and log files to save space..."
+gzip -f ns-*.json
+gzip -f autotune*.json
+# only gzip autotune log files more than 2 days old
+find autotune.*.log -mtime +2 | while read file; do gzip -f $file; done
+echo "Autotune disk usage:"
+du -h .
+echo "Overall disk used/avail:"
+df -h .
 
 echo "Grabbing NIGHTSCOUT treatments.json and entries/sgv.json for date range..."
 
