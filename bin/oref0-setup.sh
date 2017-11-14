@@ -237,17 +237,14 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       echo
     fi
 
-    echo "Are you using Nightscout? If not, press enter."
-    read -p "If so, what is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
-    # remove any trailing / from NIGHTSCOUT_HOST
-    NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
-    if [[ -z $NIGHTSCOUT_HOST ]]; then
-        echocolor "Ok, no Nightscout for you."
+    while [[ -z $NIGHTSCOUT_HOST ]]; do
+        read -p "What is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
+        # remove any trailing / from NIGHTSCOUT_HOST
+        NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
         echo
-    else
-        echocolor "Ok, $NIGHTSCOUT_HOST it is."
-        echo
-    fi
+    done
+    echocolor "Ok, $NIGHTSCOUT_HOST it is."
+    echo
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
         read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET. Do you want to use token based authentication? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
