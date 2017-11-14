@@ -156,12 +156,17 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     directory="$(readlink -m $DIR)"
     echo
 
-    read -p "What is your pump serial number (numbers only)? " -r
+    read -p "What is your pump serial number (six digits, numbers only)? " -r
     serial=$REPLY
+    while [[ -z $serial ]]; do
+        echo Pump serial number is required.
+        read -p "What is your pump serial number (six digits, numbers only)? " -r
+        serial=$REPLY
+    done
     echocolor "Ok, $serial it is."
     echo
 
-    read -p "Do you have an x12 (i.e. 512 or 712) pump? y/[N] " -r
+    read -p "Do you have a 512 or 712 model pump? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         pumpmodel=x12
         echocolor "Ok, you'll be using a 512 or 712 pump. Got it. "
@@ -272,6 +277,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo
             read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
             API_SECRET=$REPLY
+            while [[ -z $API_SECRET ]]; do
+                echo API_SECRET is required for interactive setup.
+                read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
+                API_SECRET=$REPLY
+            done
             echocolor "Ok, $API_SECRET it is."
             echo
         fi
@@ -336,11 +346,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        echo
     else
        ENABLE+=" autotune "
-       echocolor "Ok, autotune will be enabled. It will run around midnight."
+       echocolor "Ok, autotune will be enabled. It will run around 4am."
        echo
     fi
 
-#now always enabling AMA by default
+    #always enabling AMA by default
     ENABLE+=" meal "
 
     read -p "Do you want to enable carbsReq Pushover alerts? y/[N] " -r
