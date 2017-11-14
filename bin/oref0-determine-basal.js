@@ -182,6 +182,15 @@ if (!module.parent) {
         }
     }
 
+    if (warnings.length) {
+      console.error(JSON.stringify(warnings));
+    }
+
+    if (errors.length) {
+      console.log(JSON.stringify(errors));
+      process.exit(1);
+    }
+
     //if old reading from Dexcom do nothing
 
     var systemTime = new Date();
@@ -193,21 +202,11 @@ if (!module.parent) {
     } else { console.error("Could not determine last BG time"); }
     var minAgo = (systemTime - bgTime) / 60 / 1000;
 
-    if (warnings.length) {
-      console.error(JSON.stringify(warnings));
-    }
-
-    if (errors.length) {
-      console.log(JSON.stringify(errors));
-      process.exit(1);
-    }
-
     if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
         var reason = "BG data is too old (it's probably this), or clock set incorrectly.  The last BG data was read at "+bgTime+" but your system time currently is "+systemTime;
         console.error(reason);
         var msg = {reason: reason }
         console.log(JSON.stringify(msg));
-        // errors.push(msg);
         process.exit(1);
     }
 
