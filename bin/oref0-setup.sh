@@ -237,7 +237,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       echo
     fi
 
+    read -p "What is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
+    # remove any trailing / from NIGHTSCOUT_HOST
+    NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
     while [[ -z $NIGHTSCOUT_HOST ]]; do
+        echo Nightscout is required for interactive setup.
         read -p "What is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
         # remove any trailing / from NIGHTSCOUT_HOST
         NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
