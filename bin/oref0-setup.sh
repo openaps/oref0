@@ -250,7 +250,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echocolor "Ok, $NIGHTSCOUT_HOST it is."
     echo
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
-        read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET. Do you want to use token based authentication? y/[N] " -r
+        read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET, but must first be configured in Nightscout. Do you want to use token based authentication? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
             API_SECRET="token=${REPLY}"
