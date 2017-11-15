@@ -45,7 +45,8 @@ checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1
 
 if checkNTP; then
     sudo ntpdate -s -b time.nist.gov
-    echo Setting pump and CGM time to $(date)
-    openaps use $PUMP set_clock --to now
-    openaps use $CGM UpdateTime --to now
+    echo Setting pump time to $(date)
+    openaps use $PUMP set_clock --to now 2>&1 >/dev/null | tail -1
+    echo Setting CGM time to $(date)
+    openaps use $CGM UpdateTime --to now 2>&1 >/dev/null | tail -1
 fi

@@ -85,11 +85,6 @@ if (!module.parent) {
       basalprofile_data = temp;
     }
 
-    if (glucose_data.length < 36) {
-        console.error("Optional feature meal assist disabled: not enough glucose data to calculate carb absorption; found:", glucose_data.length);
-        return console.log('{ "carbs": 0, "reason": "not enough glucose data to calculate carb absorption" }');
-    }
-
     var inputs = {
         history: pumphistory_data
     , profile: profile_data
@@ -99,7 +94,14 @@ if (!module.parent) {
     , glucose: glucose_data
     };
 
-    var dia_carbs = generate(inputs);
-    console.log(JSON.stringify(dia_carbs));
+    var recentCarbs = generate(inputs);
+
+    if (glucose_data.length < 36) {
+        console.error("Not enough glucose data to calculate carb absorption; found:", glucose_data.length);
+        recentCarbs.mealCOB = 0;
+        recentCarbs.reason = "not enough glucose data to calculate carb absorption";
+    }
+
+    console.log(JSON.stringify(recentCarbs));
 }
 

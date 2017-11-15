@@ -27,9 +27,9 @@ function exportDefaults () {
 }
 
 function updatePreferences (prefs) {
-	var defaults = generate.defaults();
+	var defaults = generate.displayedDefaults();
 	
-	// check for any keys missing from current prefs and add from defaults
+	// check for any displayedDefaults missing from current prefs and add from defaults
 	
     for (var pref in defaults) {
       if (defaults.hasOwnProperty(pref) && !prefs.hasOwnProperty(pref)) {

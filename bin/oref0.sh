@@ -20,9 +20,6 @@ $self <cmd>
 Valid commands:
   oref0 device-helper - <name> <spec>  : create/template a device from bash commands easily
   oref0 alias-helper  - <name> <spec>  : create/template a alias from bash commands easily
-  oref0 cron-5-minute-helper  - <cmds> - generate a cron template for commands
-                                         to run every 5 minutes:
-                                         oref0 cron-5-minute-helper openaps do-everything
   oref0 env                            - print information about environment.
   oref0 pebble
   oref0 ifttt-notify
@@ -52,18 +49,6 @@ alias-helper)
   shift
   cat <<EOF
 {"type": "alias", "name": "$name", "$name": {"command": "! bash -c \"$*\" --"}}
-EOF
-  ;;
-cron-5-minute-helper)
-  name=${1-'openaps do-everything'}
-  shift
-  workdir=$(pwd)
-  cat <<EOF
-SHELL=/bin/bash
-PATH=$PATH
-
-*/5 * * * * (cd $workdir && time ${name} $*) 2>&1 | logger -t openaps-loop
-
 EOF
   ;;
 env)
