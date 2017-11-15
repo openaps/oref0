@@ -630,18 +630,20 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        bluetoothdminversion=5.47
+        # use packaged bluez with Rapsbian
+        if getent passwd pi > /dev/null; then
+            bluetoothdminversion=5.43
+        else
+            bluetoothdminversion=5.47
+        fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            # use packaged bluez with Rapsbian
-            if ! getent passwd pi > /dev/null; then
-                cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
-                killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-                cd $HOME/src/bluez-5.47 && ./configure --enable-experimental --disable-systemd && \
-                make && sudo make install || die "Couldn't make bluez"
-                killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-                sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
-            fi
+            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
+            killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+            cd $HOME/src/bluez-5.47 && ./configure --enable-experimental --disable-systemd && \
+            make && sudo make install || die "Couldn't make bluez"
+            killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+            sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
             oref0-bluetoothup
         else
             echo bluez v ${bluetoothdversion} already installed
