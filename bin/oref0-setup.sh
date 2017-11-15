@@ -156,12 +156,17 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     directory="$(readlink -m $DIR)"
     echo
 
-    read -p "What is your pump serial number (numbers only)? " -r
+    read -p "What is your pump serial number (six digits, numbers only)? " -r
     serial=$REPLY
+    while [[ -z $serial ]]; do
+        echo Pump serial number is required.
+        read -p "What is your pump serial number (six digits, numbers only)? " -r
+        serial=$REPLY
+    done
     echocolor "Ok, $serial it is."
     echo
-    
-    read -p "Do you have an x12 (i.e. 512 or 712) pump? y/[N] " -r
+
+    read -p "Do you have a 512 or 712 model pump? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         pumpmodel=x12
         echocolor "Ok, you'll be using a 512 or 712 pump. Got it. "
@@ -170,7 +175,16 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "You're using a different model pump. Got it."
     fi
 
-    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, G5-upload, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout:   " -r
+    echo "What kind of CGM would you like to configure for offline use? Options are:"
+    echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
+    echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
+    echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
+    echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
+    echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
+    echo "xdrip: will work with an xDrip receiver app on your Android phone"
+    echo "Note: no matter which option you choose, CGM data will also be downloaded from NS when available."
+    echo
+    read -p "What kind of CGM would you like to configure?:   " -r
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
     echo
@@ -188,7 +202,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "Ok, yay for Explorer Board! "
         echo
     else
-        read -p 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, what TTY port (full port address, looks like "/dev/ttySOMETHING" without the quotes - you probably want to copy paste it)? ' -r
+        echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
+        read -p "What is your TTY port? " -r
         ttyport=$REPLY
         echocolor-n "Ok, "
         if [[ -z "$ttyport" ]]; then
@@ -219,9 +234,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       # check if user has a TI USB stick and a WorldWide pump and want's to reset the USB subsystem during mmtune if the TI USB fails
       ww_ti_usb_reset="no" # assume you don't want it by default
       if [[ $radio_locale =~ ^WW$ ]]; then
-        echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process"
+        echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process. If so, enter Y. Otherwise just hit enter (default no):"
         echo
-        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? Use y if so. Otherwise just hit enter (default no): " -r
+        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
           ww_ti_usb_reset="yes"
         else
@@ -237,19 +252,21 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       echo
     fi
 
-    echo "Are you using Nightscout? If not, press enter."
-    read -p "If so, what is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
+    read -p "What is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
     # remove any trailing / from NIGHTSCOUT_HOST
     NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
-    if [[ -z $NIGHTSCOUT_HOST ]]; then
-        echocolor "Ok, no Nightscout for you."
+    while [[ -z $NIGHTSCOUT_HOST ]]; do
+        echo Nightscout is required for interactive setup.
+        read -p "What is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
+        # remove any trailing / from NIGHTSCOUT_HOST
+        NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
         echo
-    else
-        echocolor "Ok, $NIGHTSCOUT_HOST it is."
-        echo
-    fi
+    done
+    echocolor "Ok, $NIGHTSCOUT_HOST it is."
+    echo
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
-        read -p "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET. Do you want to use token based authentication? y/[N] " -r
+        echo "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET, but must first be configured in Nightscout."
+        read -p "Do you want to use token based authentication? y/[N] " -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
             API_SECRET="token=${REPLY}"
@@ -260,12 +277,17 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo
             read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
             API_SECRET=$REPLY
+            while [[ -z $API_SECRET ]]; do
+                echo API_SECRET is required for interactive setup.
+                read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
+                API_SECRET=$REPLY
+            done
             echocolor "Ok, $API_SECRET it is."
             echo
         fi
     fi
 
-    read -p "Do you want to be able to setup BT tethering later? y/[N] " -r
+    read -p "Do you want to be able to set up BT tethering? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
     read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
         BT_MAC=$REPLY
@@ -297,7 +319,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
     echo
-    read -p "Type a number [i.e. 0] and hit enter:   " -r
+    read -p "Type a whole number (without a decimal) [i.e. 0] and hit enter:   " -r
       if [[ $REPLY =~ [0-9] ]]; then
         max_iob="$REPLY"
         echocolor "Ok, $max_iob units will be set as your max_iob."
@@ -324,20 +346,12 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
        echo
     else
        ENABLE+=" autotune "
-       echocolor "Ok, autotune will be enabled. It will run around midnight."
+       echocolor "Ok, autotune will be enabled. It will run around 4am."
        echo
     fi
 
-#now always enabling AMA by default
- #   read -p "Enable advanced meal assist? y/[N]  " -r
- #   if [[ $REPLY =~ ^[Yy]$ ]]; then
+    #always enabling AMA by default
     ENABLE+=" meal "
-#       echocolor "Ok, AMA will be enabled."
-#       echo
-#    else
-#       echocolor "Ok, no AMA."
-#       echo
-#    fi
 
     read -p "Do you want to enable carbsReq Pushover alerts? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -626,21 +640,21 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
         cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
         #Stop automatic startup of hostapd & dnsmasq
-        update-rc.d -f hostapd remove 
-        update-rc.d -f dnsmasq remove 
+        update-rc.d -f hostapd remove
+        update-rc.d -f dnsmasq remove
         # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
         sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}/" /etc/hostapd/hostapd.conf
-        # Add Commands to /etc/rc.local 
+        # Add Commands to /etc/rc.local
         # Interrupt Kernel Messages
         if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
           sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
-        fi  
+        fi
         # Add to /etc/rc.local to check if in hotspot mode and turn back to client mode during bootup
         if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
           sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
         fi
-    fi 
-    
+    fi
+
     # add/configure devices
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
@@ -848,19 +862,19 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
         touch /tmp/reboot-required
     fi
-    
+
     # disable IPv6
     if ! grep -q 'net.ipv6.conf.all.disable_ipv6=1' /etc/sysctl.conf; then
         sudo echo 'net.ipv6.conf.all.disable_ipv6=1' >> /etc/sysctl.conf
-    fi    
+    fi
     if ! grep -q 'net.ipv6.conf.default.disable_ipv6=1' /etc/sysctl.conf; then
         sudo echo 'net.ipv6.conf.default.disable_ipv6=1' >> /etc/sysctl.conf
-    fi    
+    fi
     if ! grep -q 'net.ipv6.conf.lo.disable_ipv6=1' /etc/sysctl.conf; then
         sudo echo 'net.ipv6.conf.lo.disable_ipv6=1' >> /etc/sysctl.conf
-    fi    
+    fi
     sudo sysctl -p
-    
+
     # Install EdisonVoltage
     if [[ "$ttyport" =~ "spidev5.1" ]]; then
         if egrep -i "edison" /etc/passwd 2>/dev/null; then
@@ -927,7 +941,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "settings removed, getting ready to add x12 settings"
         openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json settings/profile.json" || die "Could not add x12 settings"
     else
-        sudo apt-get -y install bc jq
+        sudo apt-get -y install bc jq ntpdate
         cd $directory || die "Can't cd $directory"
         for type in supermicrobolus; do
         echo importing $type file
@@ -1018,14 +1032,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
         fi
         if [[ $ENABLE =~ autotune ]]; then
-            # autotune nightly at 12:05am using data from NS
-            (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 0 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | json | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
+            # autotune nightly at 4:05am using data from NS
+            (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 4 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | json | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
         fi
         if [[ "$ttyport" =~ "spi" ]]; then
             (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
             (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
+        # try to start oref0-pump-loop every 30s
+        (crontab -l; crontab -l | grep -q "cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         if [[ ! -z "$BT_PEB" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
         fi
