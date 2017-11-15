@@ -492,13 +492,6 @@ function invoke_reservoir_etc {
     test ${PIPESTATUS[0]} -eq 0
 }
 
-# monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
-function monitor_pump {
-    invoke_pumphistory_etc || invoke_pumphistory_etc || (echo; echo "Couldn't refresh pumphistory etc"; fail "$@")
-    calculate_iob
-    invoke_reservoir_etc || invoke_reservoir_etc || (echo; echo "Couldn't refresh reservoir/battery/status"; fail "$@")
-}
-
 function calculate_iob {
     oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || (echo; echo "Couldn't calculate IOB"; fail "$@")
 }
