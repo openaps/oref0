@@ -763,6 +763,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
                 if [[ "$ttyport" =~ "spidev0.0" ]]; then
                     echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
+                    sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
                 else
                     echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
                 fi
