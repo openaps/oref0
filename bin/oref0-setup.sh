@@ -213,7 +213,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         if  getent passwd edison > /dev/null; then
             echocolor "Yay! Configuring for Edison with Explorer Board. "
             ttyport=/dev/spidev5.1
-        elif getent passwd edison > /dev/null; then
+        elif getent passwd pi > /dev/null; then
             echocolor "Yay! Configuring for Pi with Explorer Board HAT. "
             ttyport=/dev/spidev0.0
         else
