@@ -196,12 +196,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
 
-    read -p "Are you using an Explorer Board? y/[N] " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ttyport=/dev/spidev5.1
-        echocolor "Ok, yay for Explorer Board! "
-        echo
-    else
+    read -p "Are you using an Explorer Board / HAT? [Y]/n " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
         echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
         read -p "What is your TTY port? " -r
         ttyport=$REPLY
@@ -212,6 +208,20 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo -n TTY $ttyport
         fi
         echocolor " it is. "
+        echo
+    else
+        if  getent passwd edison > /dev/null; then
+            echocolor "Yay! Configuring for Edison with Explorer Board. "
+            ttyport=/dev/spidev5.1
+        elif getent passwd edison > /dev/null; then
+            echocolor "Yay! Configuring for Pi with Explorer Board HAT. "
+            ttyport=/dev/spidev0.0
+        else
+            echo "Hmm, you don't seem to be using an Edison or Pi."
+            read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+            ttyport=$REPLY
+            echocolor "Ok, we'll try TTY $ttyport then."
+        fi
         echo
     fi
 
