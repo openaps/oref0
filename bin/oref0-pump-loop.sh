@@ -271,8 +271,8 @@ function refresh_after_bolus_or_enact {
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
         refresh_pumphistory_and_meal \
-            || ( wait_for_silence 10 && refresh_pumphistory_and_meal ) \
-            || ( wait_for_silence 20 && refresh_pumphistory_and_meal )
+            || ( wait_for_silence 15 && refresh_pumphistory_and_meal ) \
+            || ( wait_for_silence 30 && refresh_pumphistory_and_meal )
         calculate_iob && determine_basal 2>/dev/null >/dev/null \
         && cp -up enact/smb-suggested.json enact/suggested.json \
         && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
