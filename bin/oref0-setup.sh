@@ -927,7 +927,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "settings removed, getting ready to add x12 settings"
         openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json settings/profile.json" || die "Could not add x12 settings"
     else
-        sudo apt-get -y install bc jq ntpdate
+        sudo apt-get -y install bc jq ntpdate bash-completion
         cd $directory || die "Can't cd $directory"
         for type in supermicrobolus; do
         echo importing $type file
