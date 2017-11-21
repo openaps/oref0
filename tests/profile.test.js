@@ -43,19 +43,6 @@ describe('Profile', function ( ) {
         profile.carb_ratio.should.equal(20);
     });
 
-    it('should adjust carbratio with carbratio_adjustmentratio', function () {
-
-        var profile = require('../lib/profile')(baseInputs);
-        profile.carb_ratio.should.equal(20);
-
-        var profileA = require('../lib/profile')(_.merge({}, baseInputs, {
-            carbratio_adjustmentratio: .8
-        }));
-        profileA.carb_ratio.should.equal(16);
-
-    });
-
-
     it('should should honour wide_bg_target_range', function () {
         var profile = require('../lib/profile')(_.merge({}, baseInputs, {wide_bg_target_range: true}));
         profile.max_iob.should.equal(0);
