@@ -568,7 +568,7 @@ function get_settings {
         echo -n "Pump profile refreshed; "
     else
         echo "Invalid pumpprofile.json.new after refresh"
-        ls -lart settings/profile.json.new
+        ls -lart settings/pumpprofile.json.new
     fi
     # generate settings/profile.json.new with autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
