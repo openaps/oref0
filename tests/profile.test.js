@@ -34,7 +34,7 @@ describe('Profile', function ( ) {
 
 	var profile = require('../lib/profile')(baseInputs);
 
-    it('should should create a profile from inputs', function () {    
+    it('should should create a profile from inputs', function () {
         console.log(profile);
         profile.max_iob.should.equal(0);
         profile.dia.should.equal(3);
@@ -46,7 +46,7 @@ describe('Profile', function ( ) {
     });
 
     it('should should support multi-ISF profiles', function () {
-        
+
 		var isf = {
             sensitivities: [
                 { offset: 0, i: 0, x: 0, start: '00:00:00', sensitivity: 100 },
@@ -54,13 +54,13 @@ describe('Profile', function ( ) {
             ]};
 
         var isfLookup = require('../lib/profile/isf');
-        
+
         var result = isfLookup.isfLookup(isf,new Date('2016-06-19T01:00:00+00:00'));
 
         result.should.equal(101);
-        
+
     });
-    
+
     it('should should honour wide_bg_target_range', function () {
         var profile = require('../lib/profile')(_.merge({}, baseInputs, {wide_bg_target_range: true}));
         profile.max_iob.should.equal(0);
