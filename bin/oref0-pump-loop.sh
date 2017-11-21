@@ -549,7 +549,7 @@ function refresh_old_pumphistory_24h {
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old; " \
         || { echo -n "Old settings: " && get_settings; }
-    if ls settings/profile.json && cat settings/profile.json | jq -e .current_basal >/dev/null; then
+    if ls settings/profile.json >/dev/null && cat settings/profile.json | jq -e .current_basal >/dev/null; then
         echo -n "Profile valid. "
     else
         echo -n "Profile invalid: "
@@ -563,7 +563,7 @@ function get_settings {
     retry_return openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json 2>&1 >/dev/null | tail -1 || return 1
     # generate settings/pumpprofile.json without autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>/dev/null | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
-    if ls settings/pumpprofile.json.new && cat settings/pumpprofile.json.new | jq -e .current_basal >/dev/null; then
+    if ls settings/pumpprofile.json.new >/dev/null && cat settings/pumpprofile.json.new | jq -e .current_basal >/dev/null; then
         mv settings/pumpprofile.json.new settings/pumpprofile.json
         echo -n "Pump profile refreshed; "
     else
@@ -572,7 +572,7 @@ function get_settings {
     fi
     # generate settings/profile.json.new with autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
-    if ls settings/profile.json.new && cat settings/profile.json.new | jq -e .current_basal >/dev/null; then
+    if ls settings/profile.json.new >/dev/null && cat settings/profile.json.new | jq -e .current_basal >/dev/null; then
         mv settings/profile.json.new settings/profile.json
         echo -n "Settings refreshed; "
     else
