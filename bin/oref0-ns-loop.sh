@@ -6,17 +6,21 @@
 main() {
     echo
     echo Starting oref0-ns-loop at $(date):
-    if glucose_fresh; then
-        echo Glucose file is fresh
-        cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
-    else
-        get_ns_bg
-    fi
-    overtemp && exit 1
-    if highload && completed_recently; then
-        echo Load high at $(date): waiting up to 5m to continue
-        exit 2
-    fi
+	if [ mdt_check == 1 ]; then
+		check_mdt_upload
+	else
+		if glucose_fresh; then
+			echo Glucose file is fresh
+			cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
+		else
+			get_ns_bg
+		fi
+		overtemp && exit 1
+		if highload && completed_recently; then
+			echo Load high at $(date): waiting up to 5m to continue
+			exit 2
+		fi
+	fi
 
     ns_temptargets || die "ns_temptargets failed"
     ns_meal_carbs || die ", but ns_meal_carbs failed"
@@ -165,6 +169,38 @@ function upload_recent_treatments {
 function format_latest_nightscout_treatments {
     nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
 }
+
+function mdt_check {
+	if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
+		echo MDT CGM Detected
+		return 1
+	fi	
+}
+
+function check_mdt_upload {
+if [ -f /tmp/mdt_cgm_uploaded ]; then
+	if [ $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%s) > $(date -r /tmp/mdt_cgm_uploaded +%s) ];then
+		echo New CGM Data to Upload.
+		mdt_upload_bg
+	else
+		echo No New CGM data to Upload.
+	fi	
+elseif [ -f nightscout/glucose.json ]; then
+	mdt_upload_bg
+else
+	echo no cgm data available
+fi
+}
+
+function mdt_upload_bg {
+    openaps report invoke nightscout/recent-missing-entries.json 
+	openaps report invoke nightscout/uploaded-entries.json
+	touch -t $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%Y%m%d%H%M.%S) /tmp/mdt_cgm_uploaded
+	echo MDT CGM Data Uploaded
+}
+
+
+
 
 die() {
     echo "$@"
