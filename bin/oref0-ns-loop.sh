@@ -6,7 +6,8 @@
 main() {
     echo
     echo Starting oref0-ns-loop at $(date):
-	if [ mdt_check == 1 ]; then
+	#if [ mdt_check == 1 ]; then
+	if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
 		check_mdt_upload
 	else
 		if glucose_fresh; then
@@ -170,22 +171,16 @@ function format_latest_nightscout_treatments {
     nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
 }
 
-function mdt_check {
-	if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
-		echo MDT CGM Detected
-		return 1
-	fi	
-}
-
 function check_mdt_upload {
 if [ -f /tmp/mdt_cgm_uploaded ]; then
-	if [ $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%s) > $(date -r /tmp/mdt_cgm_uploaded +%s) ];then
-		echo New CGM Data to Upload.
+	if [ $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%s) -gt $(date -r /tmp/mdt_cgm_uploaded +%s) ];then
+		echo new MDT CGM data to upload
+		echo "BG: $(jq .[0].glucose nightscout/glucose.json)" "at $(jq .[0].dateString nightscout/glucose.json | tr -d '"')"
 		mdt_upload_bg
 	else
-		echo No New CGM data to Upload.
+		echo No new MDT CGM data to upload
 	fi	
-elseif [ -f nightscout/glucose.json ]; then
+elif [ -f nightscout/glucose.json ]; then
 	mdt_upload_bg
 else
 	echo no cgm data available
@@ -193,10 +188,17 @@ fi
 }
 
 function mdt_upload_bg {
-    openaps report invoke nightscout/recent-missing-entries.json 
-	openaps report invoke nightscout/uploaded-entries.json
-	touch -t $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%Y%m%d%H%M.%S) /tmp/mdt_cgm_uploaded
-	echo MDT CGM Data Uploaded
+	echo Formating recent-missing-entries
+    openaps report invoke nightscout/recent-missing-entries.json 2>&1 >/dev/null
+	if grep "dateString" nightscout/recent-missing-entries.json 2>&1 >/dev/null; then
+		echo "$(jq '. | length' nightscout/recent-missing-entries.json) missing entires found, uploading"
+		openaps report invoke nightscout/uploaded-entries.json 2>&1 >/dev/null
+		touch -t $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%Y%m%d%H%M.%S) /tmp/mdt_cgm_uploaded
+		echo "uploaded $(jq '. | length' nightscout/uploaded-entries.json) missing entries"
+		echo MDT CGM data uploaded
+	else
+		echo No missing entries found
+	fi	
 }
 
 
