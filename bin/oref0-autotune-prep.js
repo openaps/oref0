@@ -35,7 +35,7 @@ if (!module.parent) {
     var glucose_input = process.argv.slice(4, 5).pop();
     var pumpprofile_input = process.argv.slice(5, 6).pop()
     var carb_input = process.argv.slice(6, 7).pop()
-    var prepped_glucose_input = process.argv.slice(7, 8).pop()
+    //var prepped_glucose_input = process.argv.slice(7, 8).pop()
 
     if ( !pumphistory_input || !profile_input || !glucose_input ) {
         usage( );
@@ -85,21 +85,21 @@ if (!module.parent) {
             console.error("Warning: could not parse "+carb_input);
         }
     }
-    var prepped_glucose_data = { };
-    if (typeof prepped_glucose_input != 'undefined') {
-        try {
-            carb_data = JSON.parse(fs.readFileSync(prepped_glucose_input, 'utf8'));
-        } catch (e) {
-            console.error("Warning: could not parse "+prepped_glucose_input);
-        }
-    }
+    // var prepped_glucose_data = { };
+    // if (typeof prepped_glucose_input != 'undefined') {
+        // try {
+            // carb_data = JSON.parse(fs.readFileSync(prepped_glucose_input, 'utf8'));
+        // } catch (e) {
+            // console.error("Warning: could not parse "+prepped_glucose_input);
+        // }
+    // }
 
     var inputs = {
         history: pumphistory_data
     , profile: profile_data
     , carbs: carb_data
     , glucose: glucose_data
-    , prepped_glucose: prepped_glucose_data
+    //, prepped_glucose: prepped_glucose_data
     };
 
     var prepped_glucose = generate(inputs);
