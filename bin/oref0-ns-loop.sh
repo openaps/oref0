@@ -6,7 +6,6 @@
 main() {
     echo
     echo Starting oref0-ns-loop at $(date):
-	#if [ mdt_check == 1 ]; then
 	if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
 		check_mdt_upload
 	else
