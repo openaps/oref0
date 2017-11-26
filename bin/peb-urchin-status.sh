@@ -10,10 +10,10 @@ if [[ $(jq .urchin_loop_status pancreoptions.json) = "true" ]]; then
 	echo {"\"message\": "\"loop status at "'$(date +%-I:%M%P)'": Running\"} > upload/urchin-status.json
 fi 
 if [[ $(jq .urchin_iob pancreoptions.json) = "true" ]]; then
-   echo {"\"message\": "\""$(date +%R)": IOB: $(jq .openaps.iob.iob upload/ns-status.json) - BasalIOB: $(jq .openaps.iob.basaliob upload/ns-status.json)\"} > upload/urchin-status.json
+   echo {"\"message\": "\""$(date +%R)": IOB: $(jq .openaps.iob.iob upload/ns-status.json)\"} > upload/urchin-status.json
 fi
 if [[ $(jq .urchin_temp_rate pancreoptions.json) = "true" ]]; then
-   echo {"\"message\": "\""$(date +%-I:%M%P)": Basel: $(jq .rate monitor/temp_basal.json) U/hr for $(jq .duration monitor/temp_basal.json) mins\"} > upload/urchin-status.json
+   echo {"\"message\": "\""$(date +%-I:%M%P)": Basal: $(jq .rate monitor/temp_basal.json) U/hr for $(jq .duration monitor/temp_basal.json) mins\"} > upload/urchin-status.json
 fi
 
 #Notification Status

@@ -135,7 +135,7 @@ if (!module.parent) {
 
 //console.log("<!-- ");
 console.log( bgnow + requestedtemp.tick + " " + bgTime + ", "
-    + iob + "U -> " + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + ", "
+    + iob + "U -> " + requestedtemp.eventualBG + ", "
     + tempstring + "U/hr @ " + temp_time
     + " " + reqtempstring
     + ", " + requestedtemp.reason + ", "
@@ -157,7 +157,7 @@ console.log("<body>");
         console.log("<h1>");
         console.log( bgnow + " " + tick + " at " + bgTime );
         console.log("<br>");
-        console.log( "IOB: " + iob + "U, eventually " + requestedtemp.eventualBG + "-" + requestedtemp.snoozeBG + " mg/dL" );
+        console.log( "IOB: " + iob + "U, eventually " + requestedtemp.eventualBG + " mg/dL" );
         console.log("<br>");
         //+ "Act: " + enactedstring
         //+ " at " + enactedat + "\n"
