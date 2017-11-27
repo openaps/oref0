@@ -248,9 +248,8 @@ ns)
     format-recent-history-treatments)
       HISTORY=$1
       MODEL=$2
-      PROFILE=$3
       LAST_TIME=$(nightscout ns $NIGHTSCOUT_HOST $API_SECRET latest-treatment-time | json)
-      exec nightscout cull-latest-openaps-treatments $HISTORY $MODEL $PROFILE ${LAST_TIME}
+      exec nightscout cull-latest-openaps-treatments $HISTORY $MODEL ${LAST_TIME}
       exit 0
 
     ;;
@@ -343,9 +342,8 @@ autoconfigure-device-crud)
 cull-latest-openaps-treatments)
   INPUT=$1
   MODEL=$2
-  PROFILE=$3
-  LAST_TIME=$4
-  mm-format-ns-treatments $INPUT $MODEL $PROFILE |  json -c "this.created_at > '$LAST_TIME'"
+  LAST_TIME=$3
+  mm-format-ns-treatments $INPUT $MODEL |  json -c "this.created_at > '$LAST_TIME'"
   ;;
 help|--help|-h)
   help_message
