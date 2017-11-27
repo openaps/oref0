@@ -25,7 +25,7 @@ if [[ $1 =~ "update" ]]; then
     git remote -v | grep -q upstream
     exit_status=$?
     if [[ $exit_status -eq 0 ]]; then
-        timeout 30 git fetch upstream 2>/dev/null || echo git fetch failed # pull latest remote info
+        timeout 30 git fetch upstream 2>/dev/null || echo git fetch upstream failed # pull latest remote info
         behind=$(cd ${location}/ && git rev-list --count --right-only ${branch}...upstream/${branch})
         if (("$behind" > "0")); then
             # we are out of date
