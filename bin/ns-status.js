@@ -3,10 +3,9 @@
 
 var os = require("os");
 
-var requireUtils = require('../lib/require-utils')
-  , safeRequire = requireUtils.safeRequire
-  , requireWithTimestamp = requireUtils.requireWithTimestamp
-  ;
+var requireUtils = require('../lib/require-utils'),
+    safeRequire = requireUtils.safeRequire,
+    requireWithTimestamp = requireUtils.requireWithTimestamp;
 
 /*
   Prepare Status info to for upload to Nightscout
@@ -28,7 +27,7 @@ function mmtuneStatus (status) {
     if (mmtune_input) {
         var mmtune = requireWithTimestamp(cwd + '/' + mmtune_input);
         if (mmtune) {
-            if (mmtune.scanDetails && mmtune.scanDetails.length > 0) {
+            if (mmtune.scanDetails && mmtune.scanDetails.length) {
                 mmtune.scanDetails = mmtune.scanDetails.filter(function (d) {
                     return d[2] > -99;
                 });
