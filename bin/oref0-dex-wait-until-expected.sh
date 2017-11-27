@@ -10,7 +10,9 @@ if (( $(bc <<< "$TIME_SINCE >= $OLD") )); then
   echo "CGM Data $TIME_SINCE mins ago is old (>=$OLD), not waiting"
 else
   WAIT_MINS=$(bc <<< "$OLD - $TIME_SINCE")
-  if (( $(bc <<< "$WAIT_MINS >= $MAX_WAIT") )); then
+  if (( $(bc <<< "$WAIT_MINS > 6") )); then
+    echo "Clock mismatch ($WAIT_MINS > 6); not waiting"
+  elif (( $(bc <<< "$WAIT_MINS >= $MAX_WAIT") )); then
     echo "CGM Data $TIME_SINCE mins ago is fresh (< $OLD), $WAIT_MINS mins > max wait ($MAX_WAIT mins) waiting for next attempt"
     exit 1
   else
