@@ -6,21 +6,21 @@
 main() {
     echo
     echo Starting oref0-ns-loop at $(date):
-	if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
-		check_mdt_upload
-	else
-		if glucose_fresh; then
-			echo Glucose file is fresh
-			cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
-		else
-			get_ns_bg
-		fi
-		overtemp && exit 1
-		if highload && completed_recently; then
-			echo Load high at $(date): waiting up to 5m to continue
-			exit 2
-		fi
-	fi
+    if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
+        check_mdt_upload
+    else
+        if glucose_fresh; then
+            echo Glucose file is fresh
+            cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
+        else
+            get_ns_bg
+        fi
+        overtemp && exit 1
+        if highload && completed_recently; then
+            echo Load high at $(date): waiting up to 5m to continue
+            exit 2
+        fi
+    fi
 
     ns_temptargets || die "ns_temptargets failed"
     ns_meal_carbs || die ", but ns_meal_carbs failed"
@@ -171,33 +171,33 @@ function format_latest_nightscout_treatments {
 }
 
 function check_mdt_upload {
-if [ -f /tmp/mdt_cgm_uploaded ]; then
-	if [ $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%s) -gt $(date -r /tmp/mdt_cgm_uploaded +%s) ];then
-		echo new MDT CGM data to upload
-		echo "BG: $(jq .[0].glucose nightscout/glucose.json)" "at $(jq .[0].dateString nightscout/glucose.json | tr -d '"')"
-		mdt_upload_bg
-	else
-		echo No new MDT CGM data to upload
-	fi	
-elif [ -f nightscout/glucose.json ]; then
-	mdt_upload_bg
-else
-	echo no cgm data available
-fi
+    if [ -f /tmp/mdt_cgm_uploaded ]; then
+        if [ $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%s) -gt $(date -r /tmp/mdt_cgm_uploaded +%s) ];then
+            echo Found new MDT CGM data to upload:
+            echo "BG: $(jq .[0].glucose nightscout/glucose.json)" "at $(jq .[0].dateString nightscout/glucose.json | tr -d '"')"
+            mdt_upload_bg
+        else
+            echo No new MDT CGM data to upload
+        fi
+    elif [ -f nightscout/glucose.json ]; then
+        mdt_upload_bg
+    else
+        echo No cgm data available
+    fi
 }
 
 function mdt_upload_bg {
-	echo Formating recent-missing-entries
+    echo Formating recent-missing-entries
     openaps report invoke nightscout/recent-missing-entries.json 2>&1 >/dev/null
-	if grep "dateString" nightscout/recent-missing-entries.json 2>&1 >/dev/null; then
-		echo "$(jq '. | length' nightscout/recent-missing-entries.json) missing entires found, uploading"
-		openaps report invoke nightscout/uploaded-entries.json 2>&1 >/dev/null
-		touch -t $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%Y%m%d%H%M.%S) /tmp/mdt_cgm_uploaded
-		echo "uploaded $(jq '. | length' nightscout/uploaded-entries.json) missing entries"
-		echo MDT CGM data uploaded
-	else
-		echo No missing entries found
-	fi	
+    if grep "dateString" nightscout/recent-missing-entries.json 2>&1 >/dev/null; then
+        echo "$(jq '. | length' nightscout/recent-missing-entries.json) missing entires found, uploading"
+        openaps report invoke nightscout/uploaded-entries.json 2>&1 >/dev/null
+        touch -t $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%Y%m%d%H%M.%S) /tmp/mdt_cgm_uploaded
+        echo "Uploaded $(jq '. | length' nightscout/uploaded-entries.json) missing entries"
+        echo MDT CGM data uploaded
+    else
+        echo No missing entries found
+    fi
 }
 
 
