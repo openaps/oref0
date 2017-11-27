@@ -3,9 +3,9 @@
 
 var os = require("os");
 
-var requireUtils = require('../lib/require-utils'),
-    safeRequire = requireUtils.safeRequire,
-    requireWithTimestamp = requireUtils.requireWithTimestamp;
+var requireUtils = require('../lib/require-utils');
+var safeRequire = requireUtils.safeRequire;
+var requireWithTimestamp = requireUtils.requireWithTimestamp;
 
 /*
   Prepare Status info to for upload to Nightscout
@@ -60,17 +60,17 @@ if (!module.parent) {
         .strict(true)
         .help('help');
 
-    var params = argv.argv,
-        inputs = params._,
-        clock_input = inputs[0],
-        iob_input = inputs[1],
-        suggested_input = inputs[2],
-        enacted_input = inputs[3],
-        battery_input = inputs[4],
-        reservoir_input = inputs[5],
-        status_input = inputs[6],
-        mmtune_input = inputs[7],
-        uploader_input = params.uploader;
+    var params = argv.argv;
+    var inputs = params._;
+    var clock_input = inputs[0];
+    var iob_input = inputs[1];
+    var suggested_input = inputs[2];
+    var enacted_input = inputs[3];
+    var battery_input = inputs[4];
+    var reservoir_input = inputs[5];
+    var status_input = inputs[6];
+    var mmtune_input = inputs[7];
+    var uploader_input = params.uploader;
 
     if (inputs.length > 8) {
         uploader_input = params.uploader ? inputs[7] : false;
@@ -92,10 +92,10 @@ if (!module.parent) {
     }
 
     try {
-        var iob = null,
-            iobArray = requireWithTimestamp(cwd + iob_input),
-            suggested = requireWithTimestamp(cwd + suggested_input),
-            enacted = requireWithTimestamp(cwd + enacted_input);
+        var iob = null;
+        var iobArray = requireWithTimestamp(cwd + iob_input);
+        var suggested = requireWithTimestamp(cwd + suggested_input);
+        var enacted = requireWithTimestamp(cwd + enacted_input);
 
         if (iobArray && iobArray.length) {
             iob = iobArray[0];
