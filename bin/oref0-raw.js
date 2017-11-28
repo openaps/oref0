@@ -37,7 +37,6 @@ if (!module.parent) {
 
   //limit to prevent high temping
   var max_raw = process.argv.slice(4, 5).pop();
-  var raw_safety_multiplier = 0.75;
 
   if (!glucose_input || !cal_input) {
     usage( );
@@ -51,7 +50,7 @@ if (!module.parent) {
 
 
     glucose_data = glucose_data.map(function each (entry) {
-      return withRawGlucose(entry, cals, max_raw, raw_safety_multiplier);
+      return withRawGlucose(entry, cals, max_raw);
     });
 
     console.log(JSON.stringify(glucose_data));
