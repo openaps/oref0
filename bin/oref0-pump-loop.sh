@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# OREF0_DEBUG make this script much more verbose
-# and allow it to print additional debug information.
+# OREF0_DEBUG makes this script much more verbose
+# and allows it to print additional debug information.
 # OREF0_DEBUG=1 generally means to print everything that usually
-# to stderr. (It will will include stack traces in case
+# goes to stderr. (It will will include stack traces in case
 # of errors or exceptions in sub commands)
 # OREF0_DEBUG=2 is for debugging only. It will print all commands
 # being executed as well as all their output, (use with care as it
