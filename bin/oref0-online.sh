@@ -3,6 +3,7 @@
 main() {
     MACs=$@
     HostAPDIP='10.29.29.1'
+    PersistantBTPAN=true
     echo; echo Starting oref0-online at $(date).
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
@@ -40,10 +41,12 @@ main() {
                 ifdown wlan0; ifup wlan0
             fi
         fi
-        # if online via wifi, disconnect BT
+        # if online via wifi, disconnect BT if no persistant PAN
         if has_ip wlan0 && ifconfig | egrep -q "bnep0" >/dev/null; then
-            bt_disconnect $MACs
-            #wifi_dhcp_renew
+            if [ "$PersistantBTPAN" != true] ; then
+	    	bt_disconnect $MACs
+            	#wifi_dhcp_renew
+	    fi
         fi
     else
         echo
@@ -114,7 +117,7 @@ function bt_connect {
     # loop over as many MACs as are provided as arguments
     for MAC; do
         #echo -n "At $(date) my public IP is: "
-        if ! check_ip >/dev/null; then
+        if ! has_ip bnep0; then
             echo; echo "No Internet access detected, attempting to connect BT to $MAC"
             oref0-bluetoothup
             sudo bt-pan client $MAC -d
@@ -125,9 +128,18 @@ function bt_connect {
             fi
             # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
             if has_ip wlan0 && has_ip bnep0 && ! grep -q $HostAPDIP /etc/network/interfaces; then
-                # release the wifi IP/route but *don't* renew it, in case it's not working
-                sudo dhclient wlan0 -r
-                iwgetid -r wlan0 >> /tmp/bad_wifi
+	        #check if Persistant Pan
+		if [ "$PersistantBTPAN" = true] ; then
+		    #check if BT is routing traffic
+		    if ip route get 8.8.8.8 | egrep -q "bnep0" >/dev/null; then
+                        # release the wifi IP/route but *don't* renew it, in case it's not working
+                        sudo dhclient wlan0 -r
+                        iwgetid -r wlan0 >> /tmp/bad_wifi
+		    fi
+		else
+		    sudo dhclient wlan0 -r
+                    iwgetid -r wlan0 >> /tmp/bad_wifi	
+		fi
             fi
             #echo
         fi
@@ -135,12 +147,15 @@ function bt_connect {
 }
 
 function bt_disconnect {
-    echo "Disconnecting BT $MAC"
-    ifdown bnep0
-    # loop over as many MACs as are provided as arguments
-    for MAC; do
-        sudo bt-pan client $MAC -d
-    done
+    #check if Persistant Pan
+    if [ "$PersistantBTPAN" != true] ; then
+        echo "Disconnecting BT $MAC"
+        ifdown bnep0
+        # loop over as many MACs as are provided as arguments
+        for MAC; do
+            sudo bt-pan client $MAC -d
+        done
+    fi
 }
 
 function wifi_dhcp_renew {
