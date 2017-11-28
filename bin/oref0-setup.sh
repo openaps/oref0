@@ -557,9 +557,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
-        npm list -g oref0 | egrep oref0@0.5.[0-1] || (echo Installing latest oref0 package && sudo npm install -g oref0)
+        npm list -g oref0 | egrep oref0@0.6.[0] || (echo Installing latest oref0 package && sudo npm install -g oref0)
     else
-        npm list -g oref0 | egrep oref0@0.5.[2-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+        npm list -g oref0 | egrep oref0@0.6.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
 
     echo Checking mmeowlink installation
@@ -964,7 +964,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "settings removed, getting ready to add x12 settings"
         openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json settings/profile.json" || die "Could not add x12 settings"
     else
-        sudo apt-get -y install bc jq ntpdate
+        sudo apt-get -y install bc jq ntpdate bash-completion
         cd $directory || die "Can't cd $directory"
         for type in supermicrobolus; do
         echo importing $type file
@@ -1027,8 +1027,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
         (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || cd '$directory' && oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
         # temporarily disable hotspot for 1m every hour to allow it to try to connect via wifi again
-        (crontab -l; crontab -l | grep -q "touch /tmp/disable_hotspot" || echo '0 * * * * touch /tmp/disable_hotspot' ) | crontab -
-        (crontab -l; crontab -l | grep -q "rm /tmp/disable_hotspot" || echo '1 * * * * rm /tmp/disable_hotspot' ) | crontab -
+        (crontab -l; crontab -l | grep -q "touch /tmp/disable_hotspot" || echo '0,20,40 * * * * touch /tmp/disable_hotspot' ) | crontab -
+        (crontab -l; crontab -l | grep -q "rm /tmp/disable_hotspot" || echo '1,21,41 * * * * rm /tmp/disable_hotspot' ) | crontab -
         (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
@@ -1046,7 +1046,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
         fi
-        if [[ ${CGM,,} =~ "mdt" ]] || [[ ${CGM,,} =~ "xdrip" ]]; then # use old ns-loop for now
+        if [[ ${CGM,,} =~ "xdrip" ]]; then # use old ns-loop for now
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
         else
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -

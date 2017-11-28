@@ -7,8 +7,8 @@ main() {
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
         if ! ip route | grep default | grep -q wlan0; then
-            if grep -q $(iwgetid -r wlan0) /tmp/bad_wifi; then
-                echo Not renewing wlan0 IP due to previous connectivity failure:
+            if find /tmp/ -mmin -60 | grep bad_wifi && grep -q "$(iwgetid -r wlan0)" /tmp/bad_wifi; then
+                echo Not renewing wlan0 IP due to recent connectivity failure:
                 ls -la /tmp/bad_wifi
             else
                 echo Attempting to renew wlan0 IP
@@ -118,9 +118,7 @@ function bt_connect {
             echo; echo "No Internet access detected, attempting to connect BT to $MAC"
             oref0-bluetoothup
             sudo bt-pan client $MAC -d
-            sudo bt-pan client $MAC
-            #echo  "Attempt to get bnep0 IP :"
-            sudo dhclient bnep0
+            sudo bt-pan client $MAC && sudo dhclient bnep0
             if ifconfig | egrep -q "bnep0" >/dev/null; then
                 echo -n "Connected to Bluetooth with IP: "
                 print_local_ip bnep0
@@ -146,8 +144,8 @@ function bt_disconnect {
 }
 
 function wifi_dhcp_renew {
-    if grep -q $(iwgetid -r wlan0) /tmp/bad_wifi; then
-        echo Not renewing wlan0 IP due to previous connectivity failure:
+    if find /tmp/ -mmin -60 | grep bad_wifi && grep -q "$(iwgetid -r wlan0)" /tmp/bad_wifi; then
+        echo Not renewing wlan0 IP due to recent connectivity failure:
         ls -la /tmp/bad_wifi
     else
         echo; echo "Getting new wlan0 IP"

@@ -201,7 +201,7 @@ function smb_verify_enacted {
         && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
         2>&1 >/dev/null | tail -1 && echo -n "ed: " \
     ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
-    && jq --slurp --exit-status 'if .[1].rate then (.[0].rate > .[1].rate - 0.03 and .[0].rate < .[1].rate + 0.03 and .[0].duration > .[1].duration - 5) else true end' monitor/temp_basal.json enact/smb-suggested.json > /dev/null
+    && jq --slurp --exit-status 'if .[1].rate then (.[0].rate > .[1].rate - 0.03 and .[0].rate < .[1].rate + 0.03 and .[0].duration > .[1].duration - 5 and .[0].duration < .[1].duration + 20) else true end' monitor/temp_basal.json enact/smb-suggested.json > /dev/null
 }
 
 function smb_verify_reservoir {
@@ -271,8 +271,8 @@ function refresh_after_bolus_or_enact {
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
         refresh_pumphistory_and_meal \
-            || ( wait_for_silence 10 && refresh_pumphistory_and_meal ) \
-            || ( wait_for_silence 20 && refresh_pumphistory_and_meal )
+            || ( wait_for_silence 15 && refresh_pumphistory_and_meal ) \
+            || ( wait_for_silence 30 && refresh_pumphistory_and_meal )
         calculate_iob && determine_basal 2>/dev/null >/dev/null \
         && cp -up enact/smb-suggested.json enact/suggested.json \
         && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
@@ -462,7 +462,7 @@ function refresh_pumphistory_and_meal {
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-         || { echo; cat monitor/status.json | jq -C .; return 1; }
+         || { echo; cat monitor/status.json | jq -c -C .; return 1; }
     echo -n resh
     retry_return monitor_pump || return 1
     echo -n ed
@@ -490,13 +490,6 @@ function invoke_pumphistory_etc {
 function invoke_reservoir_etc {
     openaps report invoke monitor/reservoir.json monitor/battery.json monitor/status.json 2>&1 >/dev/null | tail -1
     test ${PIPESTATUS[0]} -eq 0
-}
-
-# monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
-function monitor_pump {
-    invoke_pumphistory_etc || invoke_pumphistory_etc || (echo; echo "Couldn't refresh pumphistory etc"; fail "$@")
-    calculate_iob
-    invoke_reservoir_etc || invoke_reservoir_etc || (echo; echo "Couldn't refresh reservoir/battery/status"; fail "$@")
 }
 
 function calculate_iob {
@@ -556,7 +549,7 @@ function refresh_old_pumphistory_24h {
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old; " \
         || { echo -n "Old settings: " && get_settings; }
-    if cat settings/profile.json | jq .current_basal >/dev/null; then
+    if ls settings/profile.json >/dev/null && cat settings/profile.json | jq -e .current_basal >/dev/null; then
         echo -n "Profile valid. "
     else
         echo -n "Profile invalid: "
@@ -569,10 +562,17 @@ function refresh_old_profile {
 function get_settings {
     retry_return openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json 2>&1 >/dev/null | tail -1 || return 1
     # generate settings/pumpprofile.json without autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json | jq . > settings/pumpprofile.json || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>/dev/null | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
+    if ls settings/pumpprofile.json.new >/dev/null && cat settings/pumpprofile.json.new | jq -e .current_basal >/dev/null; then
+        mv settings/pumpprofile.json.new settings/pumpprofile.json
+        echo -n "Pump profile refreshed; "
+    else
+        echo "Invalid pumpprofile.json.new after refresh"
+        ls -lart settings/pumpprofile.json.new
+    fi
     # generate settings/profile.json.new with autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
-    if cat settings/profile.json.new | jq .current_basal >/dev/null; then
+    if ls settings/profile.json.new >/dev/null && cat settings/profile.json.new | jq -e .current_basal >/dev/null; then
         mv settings/profile.json.new settings/profile.json
         echo -n "Settings refreshed; "
     else
@@ -702,10 +702,10 @@ function setglucosetimestamp {
 }
 
 retry_fail() {
-    "$@" || "$@" || { echo "Couldn't $*"; fail "$@"; }
+    "$@" || { echo Retrying $*; "$@"; } || { echo "Couldn't $*"; fail "$@"; }
 }
 retry_return() {
-    "$@" || "$@" || { echo "Couldn't $* - continuing"; return 1; }
+    "$@" || { echo Retrying $*; "$@"; } || { echo "Couldn't $* - continuing"; return 1; }
 }
 try_fail() {
     "$@" || { echo "Couldn't $*"; fail "$@"; }
