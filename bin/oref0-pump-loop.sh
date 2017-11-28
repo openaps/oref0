@@ -262,7 +262,7 @@ function smb_bolus {
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
-        echo "No bolus needed"
+        echo -n "No bolus needed. "
     fi
 }
 
