@@ -114,36 +114,44 @@ function has_ip {
 }
 
 function bt_connect {
-    # loop over as many MACs as are provided as arguments
-    for MAC; do
-        #echo -n "At $(date) my public IP is: "
-        if ! has_ip bnep0; then
-            echo; echo "No Internet access detected, attempting to connect BT to $MAC"
-            oref0-bluetoothup
-            sudo bt-pan client $MAC -d
-            sudo bt-pan client $MAC && sudo dhclient bnep0
-            if ifconfig | egrep -q "bnep0" >/dev/null; then
-                echo -n "Connected to Bluetooth with IP: "
-                print_local_ip bnep0
-            fi
-            # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
-            if has_ip wlan0 && has_ip bnep0 && ! grep -q $HostAPDIP /etc/network/interfaces; then
-	        #check if Persistant Pan
-		if [ "$PersistantBTPAN" = true] ; then
-		    #check if BT is routing traffic
-		    if ip route get 8.8.8.8 | egrep -q "bnep0" >/dev/null; then
-                        # release the wifi IP/route but *don't* renew it, in case it's not working
-                        sudo dhclient wlan0 -r
-                        iwgetid -r wlan0 >> /tmp/bad_wifi
-		    fi
+	# loop over as many MACs as are provided as arguments
+	for MAC; do
+		#echo -n "At $(date) my public IP is: "
+		if ["$PersistantBTPAN" = true]; then
+			if has_ip bnep0; then
+				break
+			fi
 		else
-		    sudo dhclient wlan0 -r
-                    iwgetid -r wlan0 >> /tmp/bad_wifi	
+			if check_ip > /dev/null; then
+				break
+			fi
 		fi
-            fi
-            #echo
-        fi
-    done
+		echo; echo "No Internet access detected, attempting to connect BT to $MAC"
+		oref0-bluetoothup
+		sudo bt-pan client $MAC -d
+		sudo bt-pan client $MAC && sudo dhclient bnep0
+		if ifconfig | egrep -q "bnep0" >/dev/null; then
+			echo -n "Connected to Bluetooth with IP: "
+			print_local_ip bnep0
+		fi
+		# if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
+		if has_ip wlan0 && has_ip bnep0 && ! grep -q $HostAPDIP /etc/network/interfaces; then
+			#check if Persistant Pan
+			if ["$PersistantBTPAN" = true] ; then
+				#check if BT is routing traffic
+				if ip route get 8.8.8.8 | egrep -q "bnep0" >/dev/null; then
+							# release the wifi IP/route but *don't* renew it, in case it's not working
+							sudo dhclient wlan0 -r
+							iwgetid -r wlan0 >> /tmp/bad_wifi
+				fi
+			else
+				sudo dhclient wlan0 -r
+						iwgetid -r wlan0 >> /tmp/bad_wifi   
+			fi
+		fi
+		#echo
+
+	done
 }
 
 function bt_disconnect {
