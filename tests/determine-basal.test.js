@@ -471,7 +471,7 @@ describe('determine-basal', function ( ) {
 
     it('should cancel high-temp when bg < 30 (Dexcom is in ???)', function () {
         var currenttemp = {"duration":30,"rate":2,"temp":"absolute"};
-        var output = determine_basal({glucose:18},currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
+        var output = determine_basal({glucose:10},currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         //console.log(output);
         output.rate.should.be.below(1);
         output.reason.should.match(/Canceling high temp/);
