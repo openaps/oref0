@@ -1051,7 +1051,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ "$ttyport" =~ "spidev5.1" ]]; then
            # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
            if egrep -i "edison" /etc/passwd 2>/dev/null; then
-           (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
+           (crontab -l; crontab -l | grep -q "cd $directory && sudo ~/src/EdisonVoltage/voltage" || echo "*/15 * * * * cd $directory && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
            fi
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
