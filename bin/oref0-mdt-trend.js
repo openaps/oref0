@@ -17,7 +17,7 @@ function usage ( ) {
 }
 
 if (!module.parent) {
-  var glucose_input = process.argv.slice(2, 3).pop();
+  var glucose_input = process.argv[2];
   if ([null, '--help', '-h', 'help'].indexOf(glucose_input) > 0) {
     usage( );
     process.exit(0)

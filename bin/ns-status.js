@@ -3,10 +3,9 @@
 
 var os = require("os");
 
-var requireUtils = require('../lib/require-utils')
-  , safeRequire = requireUtils.safeRequire
-  , requireWithTimestamp = requireUtils.requireWithTimestamp
-  ;
+var requireUtils = require('../lib/require-utils');
+var safeRequire = requireUtils.safeRequire;
+var requireWithTimestamp = requireUtils.requireWithTimestamp;
 
 /*
   Prepare Status info to for upload to Nightscout
@@ -25,30 +24,26 @@ var requireUtils = require('../lib/require-utils')
 */
 
 function mmtuneStatus (status) {
-    if (mmtune_input) {
-        var mmtune = requireWithTimestamp(cwd + '/' + mmtune_input);
-        if (mmtune) {
-            if (mmtune.scanDetails && mmtune.scanDetails.length > 0) {
-                mmtune.scanDetails = mmtune.scanDetails.filter(function (d) {
-                    return d[2] > -99;
-                });
-            }
-          status.mmtune = mmtune;
+    var mmtune = requireWithTimestamp(cwd + mmtune_input);
+    if (mmtune) {
+        if (mmtune.scanDetails && mmtune.scanDetails.length) {
+            mmtune.scanDetails = mmtune.scanDetails.filter(function (d) {
+                return d[2] > -99;
+            });
         }
+      status.mmtune = mmtune;
     }
 }
 
 function uploaderStatus (status) {
-    if (uploader_input ) {
-        var uploader = require(cwd + '/' + uploader_input);
-        if (uploader) {
-            if (typeof uploader === 'number') {
-                status.uploader = {
-                    battery: uploader
-                };
-            } else {
-                status.uploader = uploader;
-            }
+    var uploader = require(cwd + uploader_input);
+    if (uploader) {
+        if (typeof uploader === 'number') {
+            status.uploader = {
+                battery: uploader
+            };
+        } else {
+            status.uploader = uploader;
         }
     }
 }
@@ -66,21 +61,20 @@ if (!module.parent) {
         .help('help');
 
     var params = argv.argv;
-
-
-    var clock_input = params._.slice(0, 1).pop();
-    var iob_input = params._.slice(1, 2).pop();
-    var suggested_input = params._.slice(2, 3).pop();
-    var enacted_input = params._.slice(3, 4).pop();
-    var battery_input = params._.slice(4, 5).pop();
-    var reservoir_input = params._.slice(5, 6).pop();
-    var status_input = params._.slice(6, 7).pop();
-    var mmtune_input = params._.slice(7, 8).pop();
+    var inputs = params._;
+    var clock_input = inputs[0];
+    var iob_input = inputs[1];
+    var suggested_input = inputs[2];
+    var enacted_input = inputs[3];
+    var battery_input = inputs[4];
+    var reservoir_input = inputs[5];
+    var status_input = inputs[6];
+    var mmtune_input = inputs[7];
     var uploader_input = params.uploader;
 
-    if (params._.length > 8) {
-        uploader_input = params.uploader ? params._.slice(7, 8).pop() : false;
-        mmtune_input = params._.slice(8, 9).pop();
+    if (inputs.length > 8) {
+        uploader_input = params.uploader ? inputs[7] : false;
+        mmtune_input = inputs[8];
     }
 
     if (!clock_input || !iob_input || !suggested_input || !enacted_input || !battery_input || !reservoir_input || !status_input) {
@@ -88,7 +82,7 @@ if (!module.parent) {
         process.exit(1);
     }
 
-    var cwd = process.cwd();
+    var cwd = process.cwd() + '/';
 
     var hostname = 'unknown';
     try {
@@ -98,12 +92,12 @@ if (!module.parent) {
     }
 
     try {
-        var iob = null
-          , iobArray = requireWithTimestamp(cwd + '/' + iob_input)
-          , suggested = requireWithTimestamp(cwd + '/' + suggested_input)
-          , enacted = requireWithTimestamp(cwd + '/' + enacted_input);
+        var iob = null;
+        var iobArray = requireWithTimestamp(cwd + iob_input);
+        var suggested = requireWithTimestamp(cwd + suggested_input);
+        var enacted = requireWithTimestamp(cwd + enacted_input);
 
-        if (iobArray && iobArray.length && iobArray.length > 0) {
+        if (iobArray && iobArray.length) {
             iob = iobArray[0];
             iob.timestamp = iob.time;
             delete iob.time;
@@ -119,25 +113,30 @@ if (!module.parent) {
         }
 
         var status = {
-            device: 'openaps://' + os.hostname()
-            , openaps: {
-                iob: iob
-                , suggested: suggested
-                , enacted: enacted
-            }
-            , pump: {
-                clock: safeRequire(cwd + '/' + clock_input)
-                , battery: safeRequire(cwd + '/' + battery_input)
-                , reservoir: safeRequire(cwd + '/' + reservoir_input)
-                , status: requireWithTimestamp(cwd + '/' + status_input)
+            device: 'openaps://' + os.hostname(),
+            openaps: {
+                iob: iob,
+                suggested: suggested,
+                enacted: enacted
+            },
+            pump: {
+                clock: safeRequire(cwd + clock_input),
+                battery: safeRequire(cwd + battery_input),
+                reservoir: safeRequire(cwd + reservoir_input),
+                status: requireWithTimestamp(cwd + status_input)
             }
         };
 
-        mmtuneStatus(status);
-        uploaderStatus(status);
+        if (mmtune_input) {
+            mmtuneStatus(status);
+        }
+
+        if (uploader_input) {
+            uploaderStatus(status);
+        }
+
+        console.log(JSON.stringify(status));
     } catch (e) {
         return console.error("Could not parse input data: ", e);
     }
-
-    console.log(JSON.stringify(status));
 }

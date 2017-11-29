@@ -66,7 +66,7 @@ if (!module.parent) {
       })
 
     var params = argv.argv;
-    var pumpsettings_input = params._.slice(0, 1).pop()
+    var pumpsettings_input = params._[0]
     if ([null, '--help', '-h', 'help'].indexOf(pumpsettings_input) > 0) {
       usage( );
       process.exit(0);
@@ -83,12 +83,12 @@ if (!module.parent) {
         process.exit(0);
     }
 
-    var bgtargets_input = params._.slice(1, 2).pop()
-    var isf_input = params._.slice(2, 3).pop()
-    var basalprofile_input = params._.slice(3, 4).pop()
-    var preferences_input = params._.slice(4, 5).pop()
-    var carbratio_input = params._.slice(5, 6).pop()
-    var temptargets_input = params._.slice(6, 7).pop()
+    var bgtargets_input = params._[1]
+    var isf_input = params._[2]
+    var basalprofile_input = params._[3]
+    var preferences_input = params._[4]
+    var carbratio_input = params._[5]
+    var temptargets_input = params._[6]
     var model_input = params.model;
     var autotune_input = params.autotune;
 
