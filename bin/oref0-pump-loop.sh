@@ -702,6 +702,7 @@ function glucose-fresh {
 }
 
 function refresh_pumphistory_24h {
+    sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json 2>&3
     if (! ls monitor/edison-battery.json 2>&3 >&4); then
         echo -n "Edison battery level not found. "
         autosens_freq=15
