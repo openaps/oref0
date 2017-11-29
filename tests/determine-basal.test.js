@@ -463,7 +463,7 @@ describe('determine-basal', function ( ) {
 
     it('should let low-temp run when bg < 30 (Dexcom is in ???)', function () {
         var currenttemp = {"duration":30,"rate":0,"temp":"absolute"};
-        var output = determine_basal({glucose:18},currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
+        var output = determine_basal({glucose:10},currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         //console.log(output);
         (typeof output.rate).should.equal('undefined');
         output.reason.should.match(/CGM is calibrating/);
@@ -474,7 +474,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal({glucose:18},currenttemp, iob_data, profile, undefined, meal_data, tempBasalFunctions);
         //console.log(output);
         output.rate.should.be.below(1);
-        output.reason.should.match(/CGM is calibrating/);
+        output.reason.should.match(/Canceling high temp/);
     });
 
     it('profile should contain min_bg,max_bg', function () {
