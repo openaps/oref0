@@ -84,7 +84,7 @@ describe('IOB', function() {
             };
 
         var rightAfterBolus = require('../lib/iob')(inputs)[0];
-        
+
         rightAfterBolus.iob.should.equal(2);
         //rightAfterBolus.bolussnooze.should.equal(2);
 
@@ -93,7 +93,7 @@ describe('IOB', function() {
         var hourLater = require('../lib/iob')(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(1.6);
         hourLater.iob.should.be.greaterThan(1.3);
-        
+
         //hourLater.bolussnooze.should.be.lessThan(1.7);
         hourLater.iob.should.be.greaterThan(0);
         hourLater.activity.should.be.greaterThan(0.006);
@@ -251,7 +251,7 @@ describe('IOB', function() {
         //hourLater.bolussnooze.should.be.lessThan(0.5);
         hourLater.iob.should.be.greaterThan(0.76);
         //hourLater.bolussnooze.should.be.greaterThan(0.40);
-        
+
         hourLater.iob.should.be.greaterThan(0);
         hourLater.activity.should.be.greaterThan(0.0047);
         hourLater.activity.should.be.lessThan(0.007);
@@ -303,10 +303,10 @@ describe('IOB', function() {
         var hourLater = require('../lib/iob')(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(0.59);
         //hourLater.bolussnooze.should.be.lessThan(0.23);
-        
+
         hourLater.iob.should.be.greaterThan(0.57);
         //hourLater.bolussnooze.should.be.greaterThan(0.21);
-        
+
         hourLater.activity.should.be.greaterThan(0.007);
         hourLater.activity.should.be.lessThan(0.0085);
 
@@ -409,7 +409,7 @@ describe('IOB', function() {
                     _type: 'TempBasalDuration',
                     'duration (min)': 30,
                     date: timestamp60mAgo,
-		    timestamp: timestamp60mAgo
+                    timestamp: timestamp60mAgo
                 }, {
                     _type: 'TempBasal',
                     rate: 2,
@@ -424,7 +424,7 @@ describe('IOB', function() {
                     _type: 'TempBasalDuration',
                     'duration (min)': 30,
                     date: timestamp,
-		    timestamp: timestamp
+                    timestamp: timestamp
                 }],
                 profile: {
                     dia: 3,
@@ -470,7 +470,7 @@ describe('IOB', function() {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
                 date: timestampEarly,
-		timestamp: timestampEarly,
+                timestamp: timestampEarly,
             }, {
                 _type: 'TempBasal',
                 rate: 2,
@@ -485,7 +485,7 @@ describe('IOB', function() {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
                 date: timestamp,
-		timestamp: timestamp,
+                timestamp: timestamp,
             }],
             profile: {
                 dia: 3,
@@ -532,7 +532,7 @@ describe('IOB', function() {
                     _type: 'TempBasalDuration',
                     'duration (min)': 30,
                     date: timestampEarly,
-		    timestamp: timestampEarly
+                    timestamp: timestampEarly
                 }, {
                     _type: 'TempBasal',
                     rate: 2,
@@ -547,7 +547,7 @@ describe('IOB', function() {
                     _type: 'TempBasalDuration',
                     'duration (min)': 30,
                     date: timestamp,
-		    timestamp: timestamp
+                    timestamp: timestamp
                 }],
                 profile: {
                     dia: 3,
@@ -590,7 +590,7 @@ describe('IOB', function() {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
                 date: timestampEarly.unix(),
-		timestamp: timestampEarly.format()
+                timestamp: timestampEarly.format()
             }, {
                 _type: 'TempBasal',
                 rate: 2,
@@ -600,7 +600,7 @@ describe('IOB', function() {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
                 date: timestampEarly2.unix(),
-		timestamp: timestampEarly2.format()
+                timestamp: timestampEarly2.format()
             }, {
                 _type: 'TempBasal',
                 rate: 2,
@@ -610,7 +610,7 @@ describe('IOB', function() {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
                 date: timestampEarly3.unix(),
-		timestamp: timestampEarly3.format()
+                timestamp: timestampEarly3.format()
             }, {
                 _type: 'TempBasal',
                 rate: 2,
@@ -625,7 +625,7 @@ describe('IOB', function() {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
                 date: timestamp.unix(),
-		timestamp: timestamp.format()
+                timestamp: timestamp.format()
             }],
             profile: {
                 dia: 3,
@@ -683,7 +683,7 @@ describe('IOB', function() {
                     _type: 'TempBasalDuration',
                     'duration (min)': 60,
                     date: timestamp,
-		    timestamp: timestamp
+                    timestamp: timestamp
                 }, {
                     _type: 'TempBasal',
                     rate: 2,
@@ -781,7 +781,7 @@ describe('IOB', function() {
                     _type: 'TempBasalDuration',
                     'duration (min)': 30,
                     date: timestamp31mAgo,
-	     	    timestamp: timestamp31mAgo
+                    timestamp: timestamp31mAgo
                 }, {
                     _type: 'TempBasal',
                     rate: 2,
@@ -796,7 +796,7 @@ describe('IOB', function() {
                     _type: 'TempBasalDuration',
                     'duration (min)': 30,
                     date: timestamp30mAgo,
-	            timestamp: timestamp30mAgo
+                    timestamp: timestamp30mAgo
                 }],
                 profile: {
                     dia: 3,
@@ -833,7 +833,7 @@ describe('IOB', function() {
                     _type: 'TempBasalDuration',
                     'duration (min)': 30,
                     date: timestampEarly,
-		    timestamp: timestampEarly
+                    timestamp: timestampEarly
                 }, {
                     _type: 'TempBasal',
                     rate: 1,
@@ -848,7 +848,7 @@ describe('IOB', function() {
                     _type: 'TempBasalDuration',
                     'duration (min)': 30,
                     date: timestamp,
-		    timestamp: timestamp
+                    timestamp: timestamp
                 }],
                 profile: {
                     dia: 3,
