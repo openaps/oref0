@@ -876,7 +876,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo sysctl -p
 
     # Install EdisonVoltage
-    if [[ "$ttyport" =~ "spidev5.1" ]]; then
+    #if [[ "$ttyport" =~ "spidev5.1" ]]; then
         if egrep -i "edison" /etc/passwd 2>/dev/null; then
             echo "Checking if EdisonVoltage is already installed"
             if [ -d "$HOME/src/EdisonVoltage/" ]; then
@@ -897,7 +897,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
             done
         fi
-    fi
+    #fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
@@ -1048,11 +1048,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
         (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
         fi
-        if [[ "$ttyport" =~ "spidev5.1" ]]; then
+        #if [[ "$ttyport" =~ "spidev5.1" ]]; then
            # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
-           if egrep -i "edison" /etc/passwd 2>/dev/null; then
+        if egrep -i "edison" /etc/passwd 2>/dev/null; then
            (crontab -l; crontab -l | grep -q "cd $directory && sudo ~/src/EdisonVoltage/voltage" || echo "*/15 * * * * cd $directory && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
-           fi
+           #fi
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
         if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
