@@ -97,6 +97,7 @@ if (!module.parent) {
     var inputs = {
         history: pumphistory_data
     , profile: profile_data
+    , pumpprofile: pumpprofile_data
     , carbs: carb_data
     , glucose: glucose_data
     //, prepped_glucose: prepped_glucose_data
