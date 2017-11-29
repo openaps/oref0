@@ -54,13 +54,13 @@ if (!module.parent) {
     
     var fs = require('fs');
 
-    var glucose_input = process.argv.slice(2, 3).pop()
-    var iob_input = process.argv.slice(3, 4).pop()
-    var basalprofile_input = process.argv.slice(4, 5).pop()
-    var currenttemp_input = process.argv.slice(5, 6).pop()
-    var requestedtemp_input = process.argv.slice(6, 7).pop()
-    var enactedtemp_input = process.argv.slice(7, 8).pop()
-    var meal_input = process.argv.slice(8, 9).pop()
+    var glucose_input = process.argv[2]
+    var iob_input = process.argv[3]
+    var basalprofile_input = process.argv[4]
+    var currenttemp_input = process.argv[5]
+    var requestedtemp_input = process.argv[6]
+    var enactedtemp_input = process.argv[7]
+    var meal_input = process.argv[8]
     
     if (!glucose_input || !iob_input || !basalprofile_input || !currenttemp_input || !requestedtemp_input ) {
         console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json> [meal.json]');

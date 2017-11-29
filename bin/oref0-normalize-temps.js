@@ -22,7 +22,7 @@ function usage ( ) {
 }
 
 if (!module.parent) {
-  var iob_input = process.argv.slice(2, 3).pop();
+  var iob_input = process.argv[2];
 
   if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
     usage( );

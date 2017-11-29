@@ -26,13 +26,13 @@ function usage ( ) {
 }
 
 if (!module.parent) {
-    var prepped_glucose_input = process.argv.slice(2, 3).pop();
+    var prepped_glucose_input = process.argv[2];
     if ([null, '--help', '-h', 'help'].indexOf(prepped_glucose_input) > 0) {
       usage( );
       process.exit(0)
     }
-    var previous_autotune_input = process.argv.slice(3, 4).pop();
-    var pumpprofile_input = process.argv.slice(4, 5).pop();
+    var previous_autotune_input = process.argv[3];
+    var pumpprofile_input = process.argv[4];
 
     if (!prepped_glucose_input || !previous_autotune_input || !pumpprofile_input ) {
         usage( );
