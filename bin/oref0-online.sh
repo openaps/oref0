@@ -54,9 +54,13 @@ main() {
         if ! has_ip wlan0; then
             wifi_dhcp_renew
         fi
-        if ! check_ip >/dev/null; then
-            bt_connect $MACs
-        fi
+	if [ "$PersistantBTPAN" != true] ; then
+	    bt_connect $MACs
+	else
+            if ! check_ip >/dev/null; then
+                bt_connect $MACs
+            fi
+	fi
         #print_wifi_name
         if check_ip >/dev/null; then
             # if we're online after activating bluetooth, shut down any local-access hotspot we're running
