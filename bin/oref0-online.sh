@@ -13,7 +13,8 @@ main() {
                 ls -la /tmp/bad_wifi
             else
                 echo Attempting to renew wlan0 IP
-                sudo dhclient wlan0
+                sudo dhclient wlan0 -r -q
+		sudo dhclient wlan0
             fi
         fi
     fi
@@ -62,13 +63,16 @@ main() {
         if ! has_ip wlan0; then
             wifi_dhcp_renew
         fi
-	if [ "$PersistantBTPAN" == "true" ] ; then
-	    bt_connect $MACs
+	if ! has_ip bnep0; then
+	    if ! ip route get 8.8.8.8 | egrep -q "bnep0" >/dev/null; then
+	        ip route del 0/0
+	        sudo dhclient bnep0 -r -q
+	        sudo dhclient bnep0
+	    fi
 	else
-            if ! check_ip >/dev/null; then
-                bt_connect $MACs
-            fi
+	    bt_connect $MACs
 	fi
+	
         #print_wifi_name
         if check_ip >/dev/null; then
             # if we're online after activating bluetooth, shut down any local-access hotspot we're running
