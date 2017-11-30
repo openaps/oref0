@@ -3,7 +3,7 @@
 main() {
     MACs=$@
     HostAPDIP='10.29.29.1'
-    PersistantBTPAN=true
+    PersistantBTPAN="true"
     echo; echo Starting oref0-online at $(date).
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
@@ -27,8 +27,11 @@ main() {
 		#if [[ $(ip -4 -o addr show dev bnep0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip bnep0) ]]; then
 			print_bluetooth_name
 		#fi
-        echo -n "At $(date) my local Bluetooth IP is: "
-        print_local_ip bnep0
+            if ! has_ip bnep0; then
+	    	sudo dhclient bnep0
+	    fi
+	    echo -n "At $(date) my local Bluetooth IP is: "
+            print_local_ip bnep0
 	else
 		echo "At $(date) my Bluetooth PAN is not connected"
 	fi
@@ -43,7 +46,7 @@ main() {
         fi
         # if online via wifi, disconnect BT if no persistant PAN
         if has_ip wlan0 && ifconfig | egrep -q "bnep0" >/dev/null; then
-            if [ "$PersistantBTPAN" != true] ; then
+            if [ "$PersistantBTPAN" != "true" ] ; then
 	    	bt_disconnect $MACs
             	#wifi_dhcp_renew
 	    fi
@@ -54,7 +57,7 @@ main() {
         if ! has_ip wlan0; then
             wifi_dhcp_renew
         fi
-	if [ "$PersistantBTPAN" == true] ; then
+	if [ "$PersistantBTPAN" == "true" ] ; then
 	    bt_connect $MACs
 	else
             if ! check_ip >/dev/null; then
@@ -121,11 +124,11 @@ function bt_connect {
     # loop over as many MACs as are provided as arguments
     for MAC; do
         #echo -n "At $(date) my public IP is: "
-        if ["$PersistantBTPAN" == true]; then
+        if [ "$PersistantBTPAN" == "true" ]; then
             if has_ip bnep0; then
                 break
             fi
-            echo; echo "BT PAN detected, attempting to connect BT to $MAC"
+            echo; echo "No BT PAN detected, attempting to connect BT to $MAC"
         else
             if check_ip > /dev/null; then
                 break
@@ -136,13 +139,16 @@ function bt_connect {
         sudo bt-pan client $MAC -d
         sudo bt-pan client $MAC && sudo dhclient bnep0
         if ifconfig | egrep -q "bnep0" >/dev/null; then
+	    while [ !has_ip bnep0 ]; do
+	        sudo dhclient bnep0
+	    done
             echo -n "Connected to Bluetooth with IP: "
             print_local_ip bnep0
         fi
         # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
         if has_ip wlan0 && has_ip bnep0 && ! grep -q $HostAPDIP /etc/network/interfaces; then
             #check if Persistant Pan
-            if ["$PersistantBTPAN" == true] ; then
+            if [ "$PersistantBTPAN" == "true" ] ; then
                 #check if BT is routing traffic
                 if ip route get 8.8.8.8 | egrep -q "bnep0" >/dev/null; then
                             # release the wifi IP/route but *don't* renew it, in case it's not working
@@ -160,7 +166,7 @@ function bt_connect {
 
 function bt_disconnect {
     #check if Persistant Pan
-    if [ "$PersistantBTPAN" != true] ; then
+    if [ "$PersistantBTPAN" != "true" ] ; then
         echo "Disconnecting BT $MAC"
         ifdown bnep0
         # loop over as many MACs as are provided as arguments
