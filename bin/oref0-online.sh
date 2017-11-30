@@ -33,7 +33,12 @@ main() {
 	    echo -n "At $(date) my local Bluetooth IP is: "
             print_local_ip bnep0
 	else
-		echo "At $(date) my Bluetooth PAN is not connected"
+	    if [ "$PersistantBTPAN" = "true" ] ; then
+	    	echo "At $(date) my Bluetooth PAN is not connected, trying to connect now"
+		bt_connect $MACs
+	    else
+	        echo "At $(date) my Bluetooth PAN is not connected"
+	    fi
 	fi
 	echo -n "At $(date) my public IP is: "
     if check_ip; then
@@ -139,7 +144,7 @@ function bt_connect {
         sudo bt-pan client $MAC -d
         sudo bt-pan client $MAC && sudo dhclient bnep0
         if ifconfig | egrep -q "bnep0" >/dev/null; then
-	    while [ !has_ip bnep0 ]; do
+	    until !has_ip bnep0; do
 	        sudo dhclient bnep0
 	    done
             echo -n "Connected to Bluetooth with IP: "
