@@ -3,7 +3,7 @@
 main() {
     MACs=$@
     HostAPDIP='10.29.29.1'
-    if  ls preferences.json 2>/dev/null >/dev/null || ! cat preferences.json | jq -e .presistant_btpan >/dev/null; then
+    if  ls preferences.json 2>/dev/null >/dev/null || ! cat preferences.json | jq -e .persistent_btpan >/dev/null; then
         PersistentBTPAN="true"
     else
         PersistentBTPAN="false"
