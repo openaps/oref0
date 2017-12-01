@@ -4,6 +4,7 @@ main() {
     MACs=$@
     HostAPDIP='10.29.29.1'
     echo; echo Starting oref0-online at $(date).
+    #Need to add "presistent_btpan": true to the end of the preferences.json file to enable PersistentBT Pan
     if  cat preferences.json | jq -e .persistent_btpan > /dev/null; then
         PersistentBTPAN="true"
         echo "At $(date) PersistentBT Pan is enabled"
