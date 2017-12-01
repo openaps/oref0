@@ -3,12 +3,13 @@
 main() {
     MACs=$@
     HostAPDIP='10.29.29.1'
-    if  ls preferences.json 2>/dev/null >/dev/null || ! cat preferences.json | jq -e .persistent_btpan >/dev/null; then
+    echo; echo Starting oref0-online at $(date).
+    if  cat preferences.json | jq -e .persistent_btpan > /dev/null; then
         PersistentBTPAN="true"
+        echo "At $(date) PersistentBT Pan is enabled"
     else
         PersistentBTPAN="false"
     fi
-    echo; echo Starting oref0-online at $(date).
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
         if ! ip route | grep default | grep -q wlan0; then
@@ -18,34 +19,34 @@ main() {
             else
                 echo Attempting to renew wlan0 IP
                 sudo dhclient wlan0 -r -q
-		sudo dhclient wlan0
+                sudo dhclient wlan0
             fi
         fi
     fi
-	if ifconfig | egrep -q "wlan0" >/dev/null; then
-	#if [[ $(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip wlan0) ]]; then
-		print_wifi_name
+        if ifconfig | egrep -q "wlan0" >/dev/null; then
+        #if [[ $(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip wlan0) ]]; then
+                print_wifi_name
         echo -n "At $(date) my local wifi IP is: "
         print_local_ip wlan0
-	fi
-	if ifconfig | egrep -q "bnep0" >/dev/null; then
-		#if [[ $(ip -4 -o addr show dev bnep0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip bnep0) ]]; then
-			print_bluetooth_name
-		#fi
+        fi
+        if ifconfig | egrep -q "bnep0" >/dev/null; then
+                #if [[ $(ip -4 -o addr show dev bnep0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip bnep0) ]]; then
+                        print_bluetooth_name
+                #fi
             if ! has_ip bnep0; then
-	    	sudo dhclient bnep0
-	    fi
-	    echo -n "At $(date) my local Bluetooth IP is: "
+                sudo dhclient bnep0
+            fi
+            echo -n "At $(date) my local Bluetooth IP is: "
             print_local_ip bnep0
-	else
-	    if [ "$PersistentBTPAN" = "true" ] ; then
-	    	echo "At $(date) my Bluetooth PAN is not connected, trying to connect now"
-		bt_connect $MACs
-	    else
-	        echo "At $(date) my Bluetooth PAN is not connected"
-	    fi
-	fi
-	echo -n "At $(date) my public IP is: "
+        else
+            if [ "$PersistentBTPAN" = "true" ] ; then
+                echo "At $(date) my Bluetooth PAN is not connected, trying to connect now"
+                bt_connect $MACs
+            else
+                echo "At $(date) my Bluetooth PAN is not connected"
+            fi
+        fi
+        echo -n "At $(date) my public IP is: "
     if check_ip; then
         stop_hotspot
         if has_ip wlan0 && has_ip bnep0; then
@@ -57,9 +58,9 @@ main() {
         # if online via wifi, disconnect BT if no persistent PAN
         if has_ip wlan0 && ifconfig | egrep -q "bnep0" >/dev/null; then
             if [ "$PersistentBTPAN" != "true" ] ; then
-	    	bt_disconnect $MACs
-            	#wifi_dhcp_renew
-	    fi
+                bt_disconnect $MACs
+                #wifi_dhcp_renew
+            fi
         fi
     else
         echo
@@ -67,23 +68,24 @@ main() {
         if ! has_ip wlan0; then
             wifi_dhcp_renew
         fi
-	if ! has_ip bnep0; then
-	    if ! ip route get 8.8.8.8 | egrep -q "bnep0" >/dev/null; then
-	        ip route del 0/0
-	        sudo dhclient bnep0 -r -q
-	        sudo dhclient bnep0
-	    fi
-	else
-	    bt_connect $MACs
-	fi
-	
+        if has_ip bnep0; then
+	    #check if default route is using BT PAN, if not remove all gateways and release/renew bt dhcp lease
+            if ! ip route get 8.8.8.8 | egrep -q "bnep0" >/dev/null; then
+                ip route del 0/0
+                sudo dhclient bnep0 -r -q
+                sudo dhclient bnep0
+            fi
+        else
+            bt_connect $MACs
+        fi
+
         #print_wifi_name
         if check_ip >/dev/null; then
             # if we're online after activating bluetooth, shut down any local-access hotspot we're running
             stop_hotspot
-			if ! print_local_ip wlan0 | egrep -q "[A-Za-z0-9_]+" >/dev/null; then
-				wifi_dhcp_renew
-			fi
+                        if ! print_local_ip wlan0 | egrep -q "[A-Za-z0-9_]+" >/dev/null; then
+                                wifi_dhcp_renew
+                        fi
         else
             # if we can't connect via BT, might as well try previously bad wifi networks again
             rm /tmp/bad_wifi
@@ -152,9 +154,9 @@ function bt_connect {
         sudo bt-pan client $MAC -d
         sudo bt-pan client $MAC && sudo dhclient bnep0
         if ifconfig | egrep -q "bnep0" >/dev/null; then
-	    if !has_ip bnep0; then
-	        sudo dhclient bnep0
-	    done
+            if ! has_ip bnep0; then
+                sudo dhclient bnep0
+            fi
             echo -n "Connected to Bluetooth with IP: "
             print_local_ip bnep0
         fi
@@ -196,7 +198,7 @@ function wifi_dhcp_renew {
     else
         echo; echo "Getting new wlan0 IP"
         ps aux | grep -v grep | grep -q "dhclient wlan0" && sudo killall dhclient
-        sudo dhclient wlan0 -r
+        sudo dhclient wlan0 -r -q
         sudo dhclient wlan0
     fi
 }
