@@ -9,29 +9,33 @@ def index():
     myopenaps_dir = "/root/myopenaps/"
     data=dict()
     data['hostname']=socket.gethostname()
-    glucose = json.load(open(os.path.join(myopenaps_dir, "monitor/glucose.json")))
-    data['glucose']=glucose[0]
-    # TODO: calculate delta properly when glucose[1] isn't 5m ago
-    delta=glucose[0]['glucose']-glucose[1]['glucose']
-    tick=""
-    if delta >= 0:
-        tick += "+"
-    tick += str(delta)
-    data['tick']=tick
+    data['glucose'] = json.load(open(os.path.join(myopenaps_dir, "monitor/glucose.json")))
     iob = json.load(open(os.path.join(myopenaps_dir, "monitor/iob.json")))
     data['iob'] = iob[0]
+    data['battery'] = json.load(open(os.path.join(myopenaps_dir, "monitor/battery.json")))
+    data['edison_battery'] = json.load(open(os.path.join(myopenaps_dir, "monitor/edison-battery.json")))
     data['meal'] = json.load(open(os.path.join(myopenaps_dir, "monitor/meal.json")))
+    
+
     data['suggested'] = json.load(open(os.path.join(myopenaps_dir, "enact/suggested.json")))
+    data['smb_suggested'] = json.load(open(os.path.join(myopenaps_dir, "enact/smb-suggested.json")))
+    
+
     data['enacted'] = json.load(open(os.path.join(myopenaps_dir, "enact/enacted.json")))
+    data['smb_enacted'] = json.load(open(os.path.join(myopenaps_dir, "enact/smb-enacted.json")))
+
     data['temp_basal'] = json.load(open(os.path.join(myopenaps_dir, "monitor/temp_basal.json")))
-    # print(data)
     return render_template('index.html', data=data )
-    # return "Hello World!"
 
 @app.route("/enacted")
 def enacted():
-    #SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
     json_url = os.path.join("/root/myopenaps/enact/enacted.json")
+    data = json.load(open(json_url))
+    return jsonify(data)
+
+@app.route("/glucose")
+def glucose():
+    json_url = os.path.join("/root/myopenaps/monitor/glucose.json")
     data = json.load(open(json_url))
     return jsonify(data)
 
