@@ -89,7 +89,7 @@ then
       direction="--"
     fi
   fi
-  if [ "${carbsReq}" != "null" ]; then
+  if [ test cat $FILE | egrep "add'l" ]; then  
     subtext="cr ${carbsReq}g"
   else
     subtext="e${enactTime}"
