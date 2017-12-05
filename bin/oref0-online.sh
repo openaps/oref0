@@ -24,7 +24,8 @@ main() {
             fi
         fi
     fi
-        if ifconfig | egrep -q "wlan0" >/dev/null; then
+        echo -n "At $(date) my Gateway is: $(ip route | awk '/default/ {print $3}') via interface $(ip route | awk '/default/ {print $5}')
+	if ifconfig | egrep -q "wlan0" >/dev/null; then
         #if [[ $(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/");print a[1]}') = $(print_local_ip wlan0) ]]; then
                 print_wifi_name
         echo -n "At $(date) my local wifi IP is: "
