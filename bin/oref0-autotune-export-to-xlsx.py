@@ -155,9 +155,9 @@ PROFILE_FIELDS=['max_iob', 'carb_ratio', 'csf', 'max_basal', 'sens']
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Export oref0 autotune files to Microsoft Excel')
-    parser.add_argument('-d', '--dir', help='autotune directory', default='.')
+    parser.add_argument('-d', '--dir', help='openaps directory', default='.')
     parser.add_argument('-o', '--output', help='default autotune.xlsx', default='autotune.xlsx')
-    parser.add_argument('--version', action='version', version='%(prog)s 0.0.3-dev')
+    parser.add_argument('--version', action='version', version='%(prog)s 0.0.4-dev')
     args = parser.parse_args()
 
     # change to openaps directory
@@ -172,13 +172,20 @@ if __name__ == '__main__':
         f=open(filename, 'r')
         print "Adding %s to Excel" % filename
         j=json.load(f)
-        basalProfile=j['basalprofile']
-        isfProfile=j['isfProfile']['sensitivities']
-        expandedBasal=expandProfile(basalProfile, 'rate', 'minutes')
-        expandedIsf=expandProfile(isfProfile, 'sensitivity', 'offset')
-        write_timebased_profile(worksheetBasal, row, expandedBasal, excel_2decimals_format)
-        write_timebased_profile(worksheetIsf, row, expandedIsf, excel_integer_format)
-        write_profile(worksheetProfile, row, j, excel_integer_format)	
-        row=row+1
+        try:
+            basalProfile=j['basalprofile']
+            isfProfile=j['isfProfile']['sensitivities']
+            expandedBasal=expandProfile(basalProfile, 'rate', 'minutes')
+            expandedIsf=expandProfile(isfProfile, 'sensitivity', 'offset')
+            write_timebased_profile(worksheetBasal, row, expandedBasal, excel_2decimals_format)
+            write_timebased_profile(worksheetIsf, row, expandedIsf, excel_integer_format)
+            write_profile(worksheetProfile, row, j, excel_integer_format)	
+            row=row+1
+        except Exception as e:
+            if j.has_key('error'):
+               print "Skipping file. Error: %s " % j['error']
+            else:
+               print "Skipping file. Exception: %s" % e
+                
     workbook.close()  
     print "Written %d lines to Excel" % row

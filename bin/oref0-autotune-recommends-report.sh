@@ -18,6 +18,9 @@
 #
 # Example usage: ~/src/oref0/bin/oref0-autotune-recommends-report.sh <OpenAPS Loop Directory Path>
 
+# fix problems with locales with printf output
+LC_NUMERIC=en_US.UTF-8
+
 die() {
   echo "$@"
   exit 1
@@ -61,20 +64,20 @@ csf_new=$(cat $directory/autotune/profile.json | jq '.csf')
 carb_ratio_new=$(cat $directory/autotune/profile.json | jq '.carb_ratio')
 
 # Print Header Info
-printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}s\n" "Parameter" "Current" "Autotune" >> $report_file
+printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}s\n" "Parameter" "Pump" "Autotune" >> $report_file
 printf "%s\n" "-------------------------------------" >> $report_file
 
 # Print ISF, CSF and Carb Ratio Recommendations
-printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "ISF" $isf_current $isf_new >> $report_file
-if [ $csf_current != null ]; then
-  printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "CSF" $csf_current $csf_new >> $report_file
-else
-  printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}.3f\n" "CSF" "n/a" $csf_new >> $report_file
-fi
-printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "Carb Ratio" $carb_ratio_current $carb_ratio_new >> $report_file
+printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "ISF [mg/dL/U]" $isf_current $isf_new >> $report_file
+# if [ $csf_current != null ]; then
+  # printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "CSF [mg/dL/g]" $csf_current $csf_new >> $report_file
+# else
+  # printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}.3f\n" "CSF [mg/dL/g]" "n/a" $csf_new >> $report_file
+# fi
+printf "%-${parameter_width}s| %-${data_width}.3f| %-${data_width}.3f\n" "Carb Ratio[g/U]" $carb_ratio_current $carb_ratio_new >> $report_file
 
 # Print Basal Profile Recommendations
-printf "%-${parameter_width}s| %-${data_width}s| %-${data_width}s\n" "Basal Profile" "" "" >> $report_file
+printf "%-${parameter_width}s| %-${data_width}s|\n" "Basals [U/hr]" "-" >> $report_file
 
 # Build time_list array of H:M in 30 minute increments to mirror pump basal schedule
 time_list=()
@@ -82,16 +85,14 @@ minutes_list=()
 end_time=23:30
 time=00:00
 minutes=0
-while :
-do
-  time_list+=( "$time" )
-  minutes_list+=( "$minutes" )
-  if [ $time != "$end_time" ]; then
-    time="$(date --date="$time 30 minutes" +%R)";
-    minutes=$(expr $minutes + 30)
-  else
-    break
-  fi
+for h in $(seq -w 0 23); do
+    for m in 00 30; do
+        time="$h:$m"
+        minutes=$(echo "60 * $h + $m" | bc)
+        #echo $time $minutes
+        time_list+=( "$time" )
+        minutes_list+=( "$minutes" )
+    done
 done
 
 for (( i=0; i<${#minutes_list[@]}; i++ ))

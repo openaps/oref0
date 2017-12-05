@@ -17,19 +17,21 @@
 
 var basal = require('oref0/lib/profile/basal');
 var get_iob = require('oref0/lib/iob');
-var detect = require('oref0/lib/determine-basal/cob-autosens');
+var detect = require('oref0/lib/determine-basal/autosens');
 
 if (!module.parent) {
     var detectsensitivity = init();
 
-    var glucose_input = process.argv.slice(2, 3).pop();
-    var pumphistory_input = process.argv.slice(3, 4).pop();
-    var isf_input = process.argv.slice(4, 5).pop()
-    var basalprofile_input = process.argv.slice(5, 6).pop()
-    var profile_input = process.argv.slice(6, 7).pop();
+    var glucose_input = process.argv[2];
+    var pumphistory_input = process.argv[3];
+    var isf_input = process.argv[4]
+    var basalprofile_input = process.argv[5]
+    var profile_input = process.argv[6];
+    var carb_input = process.argv[7]
+    var temptarget_input = process.argv[8]
 
     if (!glucose_input || !pumphistory_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json>');
+        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json> [carbhistory.json] [temptargets.json]');
         process.exit(1);
     }
     
@@ -62,6 +64,24 @@ if (!module.parent) {
         }
         var basalprofile = require(cwd + '/' + basalprofile_input);
 
+        var carb_data = { };
+        if (typeof carb_input != 'undefined') {
+            try {
+                carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
+            } catch (e) {
+                console.error("Warning: could not parse "+carb_input);
+            }
+        }
+
+        var temptarget_data = { };
+        if (typeof temptarget_input != 'undefined') {
+            try {
+                temptarget_data = JSON.parse(fs.readFileSync(temptarget_input, 'utf8'));
+            } catch (e) {
+                console.error("Warning: could not parse "+temptarget_input);
+            }
+        }
+
         var iob_inputs = {
             history: pumphistory_data
             , profile: profile
@@ -73,13 +93,30 @@ if (!module.parent) {
 
     var detection_inputs = {
         iob_inputs: iob_inputs
-    , glucose_data: glucose_data
-    , basalprofile: basalprofile
-    //, clock: clock_data
+        , carbs: carb_data
+        , glucose_data: glucose_data
+        , basalprofile: basalprofile
+        , temptargets: temptarget_data
+        //, clock: clock_data
     };
+    console.error("Calculating sensitivity using 8h of non-exluded data");
+    detection_inputs.deviations = 96;
     detect(detection_inputs);
+    ratio8h = ratio;
+    newisf8h = newisf;
+    console.error("Calculating sensitivity using all non-exluded data (up to 24h)");
+    detection_inputs.deviations = 288;
+    detect(detection_inputs);
+    ratio24h = ratio;
+    newisf24h = newisf;
+    if ( ratio8h < ratio24h ) {
+        console.error("Using 8h autosens ratio of",ratio8h,"(ISF",newisf8h+")");
+    } else {
+        console.error("Using 24h autosens ratio of",ratio24h,"(ISF",newisf24h+")");
+    }
+    var lowestRatio = Math.min(ratio8h, ratio24h);
     var sensAdj = {
-        "ratio": ratio
+        "ratio": lowestRatio
     }
     return console.log(JSON.stringify(sensAdj));
 

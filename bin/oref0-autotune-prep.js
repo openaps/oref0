@@ -22,19 +22,20 @@
 
 var generate = require('oref0/lib/autotune-prep');
 function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <glucose.json> [carbhistory.json] [autotune/glucose.json]');
+        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <glucose.json> [pumpprofile.json] [carbhistory.json] [autotune/glucose.json]');
 }
 
 if (!module.parent) {
-    var pumphistory_input = process.argv.slice(2, 3).pop();
+    var pumphistory_input = process.argv[2];
     if ([null, '--help', '-h', 'help'].indexOf(pumphistory_input) > 0) {
       usage( );
       process.exit(0)
     }
-    var profile_input = process.argv.slice(3, 4).pop();
-    var glucose_input = process.argv.slice(4, 5).pop();
-    var carb_input = process.argv.slice(5, 6).pop()
-    var prepped_glucose_input = process.argv.slice(6, 7).pop()
+    var profile_input = process.argv[3];
+    var glucose_input = process.argv[4];
+    var pumpprofile_input = process.argv[5]
+    var carb_input = process.argv[6]
+    //var prepped_glucose_input = process.argv[7]
 
     if ( !pumphistory_input || !profile_input || !glucose_input ) {
         usage( );
@@ -51,10 +52,23 @@ if (!module.parent) {
         return console.error("Could not parse input data: ", e);
     }
 
+    var pumpprofile_data = { };
+    if (typeof pumpprofile_input != 'undefined') {
+        try {
+            pumpprofile_data = JSON.parse(fs.readFileSync(pumpprofile_input, 'utf8'));
+        } catch (e) {
+            console.error("Warning: could not parse "+pumpprofile_input);
+        }
+    }
+
     // disallow impossibly low carbRatios due to bad decoding
     if ( typeof(profile_data.carb_ratio) == 'undefined' || profile_data.carb_ratio < 2 ) {
-        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratio ' + profile_data.carb_ratio + ' out of bounds" }');
-        return console.error("Error: carb_ratio " + profile_data.carb_ratio + " out of bounds");
+        if ( typeof(pumpprofile_data.carb_ratio) == 'undefined' || pumpprofile_data.carb_ratio < 2 ) {
+            console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratios ' + profile_data.carb_ratio + ' and ' + pumpprofile_data.carb_ratio + ' out of bounds" }');
+            return console.error("Error: carb_ratios " + profile_data.carb_ratio + ' and ' + pumpprofile_data.carb_ratio + " out of bounds");
+        } else {
+            profile_data.carb_ratio = pumpprofile_data.carb_ratio;
+        }
     }
 
     try {
@@ -71,21 +85,22 @@ if (!module.parent) {
             console.error("Warning: could not parse "+carb_input);
         }
     }
-    var prepped_glucose_data = { };
-    if (typeof prepped_glucose_input != 'undefined') {
-        try {
-            carb_data = JSON.parse(fs.readFileSync(prepped_glucose_input, 'utf8'));
-        } catch (e) {
-            console.error("Warning: could not parse "+prepped_glucose_input);
-        }
-    }
+    // var prepped_glucose_data = { };
+    // if (typeof prepped_glucose_input != 'undefined') {
+        // try {
+            // carb_data = JSON.parse(fs.readFileSync(prepped_glucose_input, 'utf8'));
+        // } catch (e) {
+            // console.error("Warning: could not parse "+prepped_glucose_input);
+        // }
+    // }
 
     var inputs = {
         history: pumphistory_data
     , profile: profile_data
+    , pumpprofile: pumpprofile_data
     , carbs: carb_data
     , glucose: glucose_data
-    , prepped_glucose: prepped_glucose_data
+    //, prepped_glucose: prepped_glucose_data
     };
 
     var prepped_glucose = generate(inputs);

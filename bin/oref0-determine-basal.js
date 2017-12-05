@@ -65,20 +65,20 @@ if (!module.parent) {
     var errors = [ ];
     var warnings = [ ];
 
-    var iob_input = params._.slice(0, 1).pop();
+    var iob_input = params._[0];
     if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
 
       usage( );
       process.exit(0)
     }
-    var currenttemp_input = params._.slice(1, 2).pop();
-    var glucose_input = params._.slice(2, 3).pop();
-    var profile_input = params._.slice(3, 4).pop();
-    var meal_input = params._.slice(4, 5).pop();
+    var currenttemp_input = params._[1];
+    var glucose_input = params._[2];
+    var profile_input = params._[3];
+    var meal_input = params._[4];
     var autosens_input = params.autoSens;
     if (params._.length > 5) {
-      autosens_input = params.autoSens ? params._.slice(4, 5).pop() : false;
-      meal_input = params._.slice(5, 6).pop();
+      autosens_input = params.autoSens ? params._[4] : false;
+      meal_input = params._[5];
     }
     if (params.meal && params.meal !== true && !meal_input) {
       meal_input = params.meal;
@@ -100,6 +100,24 @@ if (!module.parent) {
         var glucose_status = determinebasal.getLastGlucose(glucose_data);
     } catch (e) {
         return console.error("Could not parse input data: ", e);
+    }
+
+    //attempting to provide a check for autotune
+    //if autotune directory does not exist, SMB/oref1 should not be able to run
+
+    // console.error("Printing this so you know it's getting to the check for autotune.")
+
+    //printing microbolus before attempting check
+    //console.error("Microbolus var is currently set to: ",params['microbolus']);
+
+    if (params['microbolus']) {
+        if (fs.existsSync("autotune")) {
+            console.error("Autotune exists! Hoorah! You can use microbolus-related features.")
+        } else {
+            console.error("Warning: Autotune has not been run. All microboluses will be disabled until you manually run autotune or add it to run nightly in your loop.");
+            params['microbolus'] = false;
+            //console.error("Microbolus var is currently set to: ",params['microbolus']);
+        }
     }
 
     //console.log(carbratio_data);
@@ -164,17 +182,6 @@ if (!module.parent) {
         }
     }
 
-    //if old reading from Dexcom do nothing
-
-    var systemTime = new Date();
-    var bgTime;
-    if (glucose_data[0].display_time) {
-        bgTime = new Date(glucose_data[0].display_time.replace('T', ' '));
-    } else if (glucose_data[0].dateString) {
-        bgTime = new Date(glucose_data[0].dateString);
-    } else { console.error("Could not determine last BG time"); }
-    var minAgo = (systemTime - bgTime) / 60 / 1000;
-
     if (warnings.length) {
       console.error(JSON.stringify(warnings));
     }
@@ -184,16 +191,6 @@ if (!module.parent) {
       process.exit(1);
     }
 
-    if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
-        var reason = "BG data is too old (it's probably this), or clock set incorrectly.  The last BG data was read at "+bgTime+" but your system time currently is "+systemTime;
-        console.error(reason);
-        var msg = {reason: reason }
-	console.log(JSON.stringify(msg));
-//        errors.push(msg);
-        process.exit(1);
-    }
-
-
     if (typeof(iob_data.length) && iob_data.length > 1) {
         console.error(JSON.stringify(iob_data[0]));
     } else {
@@ -201,7 +198,7 @@ if (!module.parent) {
     }
 
     console.error(JSON.stringify(glucose_status));
-    console.error(JSON.stringify(currenttemp));
+    //console.error(JSON.stringify(currenttemp));
     //console.error(JSON.stringify(profile));
 
     var tempBasalFunctions = require('oref0/lib/basal-set-temp');
