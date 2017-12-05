@@ -28,3 +28,76 @@ elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus"; then
 else
     curl -s -F "token=$TOKEN" -F "user=$USER" -F "sound=$SOUND" -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent
 fi
+
+# Enhance to send to pushover glances API
+#   For watch face updates once every 10 minutes
+#   Works for apple watch complications
+#   Not tested fo android wear notifications yet
+
+# Use file to make sure we don't update glances more often than every 10 mins
+# Apple watch disables any complication updates that happen more frequently
+
+pushoverGlances=$(cat preferences.json | jq -M '.pushoverGlances')
+
+if [ "${pushoverGlances}" == "null" -o "${pushoverGlances}" == "false" ]; then
+    echo "No preference or false preference for pushoverGlances"
+  exit
+fi
+
+
+GLANCES="monitor/last_glance"
+GLUCOSE="monitor/glucose.json"
+if [ ! -f $GLANCES ]; then
+  # First time through it will get created older than 10 minutes so it'll fire
+  touch $GLANCES && touch -r $GLANCES -d '-11 mins' $GLANCES
+fi
+
+if test `find $GLANCES -mmin +10`
+then
+  BAT="monitor/edison-battery.json"
+  carbsReq=`jq .carbsReq $FILE`
+  bgNow=$(cat $GLUCOSE | jq -M '.[0].glucose')
+  bgLast=$(cat $GLUCOSE | jq -M '.[1].glucose')
+  COB=`jq .COB $FILE`
+
+  IOB=$(cat $FILE | jq -M '.IOB')
+  IOB="${IOB%\"}"
+  IOB="${IOB#\"}"
+  enactTime=$(ls -l  --time-style=+"%l:%M" ${FILE} | awk '{printf ($6)}')
+  battery=0
+  if [ -e $BAT ]; then
+    battery=$(cat $BAT | jq -M '.battery')
+    battery="${battery%\"}"
+    battery="${battery#\"}"
+  fi
+
+
+
+  direction=""
+  if [ ${bgLast} -gt 0 ]; then
+    delta=$(expr ${bgNow} - ${bgLast})
+
+    if [ ${delta} -gt 8 ]; then
+      direction="++"
+    elif [ ${delta} -gt 3 ]; then
+      direction="+"
+    elif [ ${delta} -gt -3 ]; then
+      direction=""
+    elif [ ${delta} -gt -8 ]; then
+      direction="-"
+    else
+      direction="--"
+    fi
+  fi
+  if [ "${carbsReq}" != "null" ]; then
+    subtext="cr ${carbsReq}g"
+  else
+    subtext="e${enactTime}"
+  fi
+  text="${bgNow}${direction}"
+  title="cob ${COB}, iob ${IOB}"
+
+  echo "pushover glance text=${text}  subtext=${subtext}  delta=${delta} bgLast=${bgLast}  title=${title}  battery percent=${battery}"
+  touch $GLANCES
+  curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json
+fi
