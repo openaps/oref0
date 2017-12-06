@@ -7,7 +7,7 @@ app = Flask(__name__)
 @app.route("/")
 def index():
     try:
-      myopenaps_dir = os.environ['OPENAPSDIR']
+      myopenaps_dir = os.environ['OPENAPS_DIR']
     except KeyError:
         myopenaps_dir = "/root/myopenaps/"
     data=dict()
