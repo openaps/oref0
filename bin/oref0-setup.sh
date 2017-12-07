@@ -1077,7 +1077,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Press enter to begin editing settings.json, and then press Ctrl-X when done."
         nano $directory/settings/settings.json,
         read -p "Press enter to begin editing bg_targets_raw.json, and then press Ctrl-X when done."
-        nano $directory/settings/bg_targets_raw.json,
+        nano $directory/settings/bg_targets_raw.json
         echo To edit your basal_profile.json again in the future, run: nano $directory/settings/basal_profile.json
         echo To edit your settings.json to set maxBasal or DIA, run: nano $directory/settings/settings.json
         echo To edit your bg_targets_raw.json to set targets, run: nano $directory/settings/bg_targets_raw.json
