@@ -1,7 +1,6 @@
 #!/bin/bash
 
-[ -z "$OPENAPS_DIR" ] && OPENAPS_DIR="~/myopenaps"
-myopenaps="$OPENAPS_DIR"
+myopenaps=${OPENAPS_DIR:-"~/myopenaps"}
 
 # add crontab entries
 grep -q networklog ~/.bash_profile 2>/dev/null || echo "alias networklog="'"tail -n 100 -F /var/log/openaps/network.log"' >> ~/.bash_profile
