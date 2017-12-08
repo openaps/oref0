@@ -1075,7 +1075,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Press enter to begin editing basal_profile.json, and then press Ctrl-X when done."
         nano $directory/settings/basal_profile.json
         read -p "Press enter to begin editing settings.json, and then press Ctrl-X when done."
-        nano $directory/settings/settings.json,
+        nano $directory/settings/settings.json
         read -p "Press enter to begin editing bg_targets_raw.json, and then press Ctrl-X when done."
         nano $directory/settings/bg_targets_raw.json
         echo To edit your basal_profile.json again in the future, run: nano $directory/settings/basal_profile.json
