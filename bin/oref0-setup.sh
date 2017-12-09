@@ -196,12 +196,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
 
-    read -p "Are you using an Explorer Board? y/[N] " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ttyport=/dev/spidev5.1
-        echocolor "Ok, yay for Explorer Board! "
-        echo
-    else
+    read -p "Are you using an Explorer Board / HAT? [Y]/n " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
         echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
         read -p "What is your TTY port? " -r
         ttyport=$REPLY
@@ -212,6 +208,20 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo -n TTY $ttyport
         fi
         echocolor " it is. "
+        echo
+    else
+        if  getent passwd edison > /dev/null; then
+            echocolor "Yay! Configuring for Edison with Explorer Board. "
+            ttyport=/dev/spidev5.1
+        elif getent passwd pi > /dev/null; then
+            echocolor "Yay! Configuring for Pi with Explorer Board HAT. "
+            ttyport=/dev/spidev0.0
+        else
+            echo "Hmm, you don't seem to be using an Edison or Pi."
+            read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+            ttyport=$REPLY
+            echocolor "Ok, we'll try TTY $ttyport then."
+        fi
         echo
     fi
 
@@ -594,6 +604,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
 
+    #TODO: remove this when IPv6 works reliably
+    echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
+
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
@@ -617,7 +630,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        bluetoothdminversion=5.47
+        # use packaged bluez with Rapsbian
+        if getent passwd pi > /dev/null; then
+            bluetoothdminversion=5.43
+        else
+            bluetoothdminversion=5.47
+        fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
             cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
@@ -749,9 +767,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo Checking kernel for spi_serial installation
         if ! python -c "import spi_serial" 2>/dev/null; then
             if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
-            echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
+                echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
             else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
-            echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+                if [[ "$ttyport" =~ "spidev0.0" ]]; then
+                    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
+                    sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+                else
+                    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+                fi
             fi
             #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
         fi
@@ -877,7 +900,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo sysctl -p
 
     # Install EdisonVoltage
-    if [[ "$ttyport" =~ "spidev5.1" ]]; then
+    #if [[ "$ttyport" =~ "spidev5.1" ]]; then
         if egrep -i "edison" /etc/passwd 2>/dev/null; then
             echo "Checking if EdisonVoltage is already installed"
             if [ -d "$HOME/src/EdisonVoltage/" ]; then
@@ -898,7 +921,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
             done
         fi
-    fi
+    #fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
@@ -1049,11 +1072,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
         (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
         fi
-        if [[ "$ttyport" =~ "spidev5.1" ]]; then
+        #if [[ "$ttyport" =~ "spidev5.1" ]]; then
            # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
-           if egrep -i "edison" /etc/passwd 2>/dev/null; then
-           (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
-           fi
+        if egrep -i "edison" /etc/passwd 2>/dev/null; then
+           (crontab -l; crontab -l | grep -q "cd $directory && sudo ~/src/EdisonVoltage/voltage" || echo "*/15 * * * * cd $directory && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
+           #fi
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
         if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
@@ -1077,9 +1100,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Press enter to begin editing basal_profile.json, and then press Ctrl-X when done."
         nano $directory/settings/basal_profile.json
         read -p "Press enter to begin editing settings.json, and then press Ctrl-X when done."
-        nano $directory/settings/settings.json,
+        nano $directory/settings/settings.json
         read -p "Press enter to begin editing bg_targets_raw.json, and then press Ctrl-X when done."
-        nano $directory/settings/bg_targets_raw.json,
+        nano $directory/settings/bg_targets_raw.json
         echo To edit your basal_profile.json again in the future, run: nano $directory/settings/basal_profile.json
         echo To edit your settings.json to set maxBasal or DIA, run: nano $directory/settings/settings.json
         echo To edit your bg_targets_raw.json to set targets, run: nano $directory/settings/bg_targets_raw.json
