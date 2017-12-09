@@ -29,6 +29,8 @@ def index():
         data['temp_basal'] = json.load(open(os.path.join(myopenaps_dir, "monitor/temp_basal.json")))
     except ValueError:
         return render_template('indexError.html', data=data )
+    except IOError:
+        return render_template('indexError.html', data=data )
     else:
         return render_template('index.html', data=data )
 
