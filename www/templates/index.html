@@ -1,196 +1,196 @@
 <html>
-	<head>
-		<title>OpenAPS {{ data.hostname }}</title>
-		<meta http-equiv="refresh" content="120">
-		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0">
+    <head>
+        <title>OpenAPS {{ data.hostname }}</title>
+        <meta http-equiv="refresh" content="120">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0">
 
-		<link rel="stylesheet" href="/static/css/bootstrap.min.css" >
-		<link rel="stylesheet" href='/static/css/style.css' />
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css" >
+        <link rel="stylesheet" href='/static/css/style.css' />
 
-		<script src="/static/js/chart.js"></script>
-		<script src="/static/js/utils.js"></script>
-		<script src="/static/js/direction.js"></script>
-		<script src="/static/js/jquery.min.js"></script>
+        <script src="/static/js/chart.js"></script>
+        <script src="/static/js/utils.js"></script>
+        <script src="/static/js/direction.js"></script>
+        <script src="/static/js/jquery.min.js"></script>
 
-		<script>
-			var data_g = [];
+        <script>
+            var data_g = [];
 
-			$.ajax({
-				url: "glucose",
-				async: false,
-				dataType: 'json',
-				success: function(data) {
-					for(i = 0; i < 40; i++) {
-						var date1 = new Date(data[i].dateString);
-						data_g[i] = {x:date1,y:data[i].glucose};
-					}
-				}
-			});
+            $.ajax({
+                url: "glucose",
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    for(i = 0; i < 40; i++) {
+                        var date1 = new Date(data[i].dateString);
+                        data_g[i] = {x:date1,y:data[i].glucose};
+                    }
+                }
+            });
 
-			$.ajax({
-				url: "enacted",
-				async: false,
-				dataType: 'json',
-				success: function(data) {
-					var arr_data = [];
+            $.ajax({
+                url: "enacted",
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    var arr_data = [];
 
-					arr_data.push({
-						label: 'BG',
-						data: data_g,
-						backgroundColor: window.chartColors.red,
-						borderColor: window.chartColors.red,
-						fill: false,
-					});
+                    arr_data.push({
+                        label: 'BG',
+                        data: data_g,
+                        backgroundColor: window.chartColors.red,
+                        borderColor: window.chartColors.red,
+                        fill: false,
+                    });
 
-					$.each( data.predBGs, function( key, values ) {
-						var data_predBgs = [];
-						var deliverAt = new Date(data.deliverAt);
+                    $.each( data.predBGs, function( key, values ) {
+                        var data_predBgs = [];
+                        var deliverAt = new Date(data.deliverAt);
 
-						for (var i = 0; i < values.length; i++) {
-							var date1 = new Date(deliverAt);
-							data_predBgs[i] = {x:date1,y:values[i]};
-							deliverAt.setMinutes(deliverAt.getMinutes() + 5);
-							if(i>24) break;
-						};
+                        for (var i = 0; i < values.length; i++) {
+                            var date1 = new Date(deliverAt);
+                            data_predBgs[i] = {x:date1,y:values[i]};
+                            deliverAt.setMinutes(deliverAt.getMinutes() + 5);
+                            if(i>24) break;
+                        };
 
-						arr_data.push({
-							label: "Forecast Type: " + key,
-							data: data_predBgs,
-							backgroundColor: window.chartColors.white,
-							borderColor: window.chartColors.purple,
-							fill: false,
-						});
+                        arr_data.push({
+                            label: "Forecast Type: " + key,
+                            data: data_predBgs,
+                            backgroundColor: window.chartColors.white,
+                            borderColor: window.chartColors.purple,
+                            fill: false,
+                        });
 
-						data_predBgs = false;
-					});
+                        data_predBgs = false;
+                    });
 
-					var config = {
-						type: 'line',
-						data: {
-							datasets: arr_data
-						},
-						options: {
-							responsive: true,
-							legend: {
-								position: 'top',
-							},
-							hover: {
-								mode: 'index'
-							},
-							scales: {
-								xAxes: [{
-									type: 'time',
-									display: true,
-								}],
-								yAxes: [{
-									display: true,
-									scaleLabel: {
-										display: true,
-										labelString: 'BG'
-									},
-									ticks: {
-										min: 40,
-										max: 300,
-										stepSize: 40
-									}
-								}]
-							}
-						}
-					};
+                    var config = {
+                        type: 'line',
+                        data: {
+                            datasets: arr_data
+                        },
+                        options: {
+                            responsive: true,
+                            legend: {
+                                position: 'top',
+                            },
+                            hover: {
+                                mode: 'index'
+                            },
+                            scales: {
+                                xAxes: [{
+                                    type: 'time',
+                                    display: true,
+                                }],
+                                yAxes: [{
+                                    display: true,
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: 'BG'
+                                    },
+                                    ticks: {
+                                        min: 40,
+                                        max: 300,
+                                        stepSize: 40
+                                    }
+                                }]
+                            }
+                        }
+                    };
 
-					window.onload = function() {
-						var ctx = document.getElementById("canvas").getContext("2d");
-						window.myLine = new Chart(ctx, config);
+                    window.onload = function() {
+                        var ctx = document.getElementById("canvas").getContext("2d");
+                        window.myLine = new Chart(ctx, config);
 
-						$(".pill.direction").text(directionToChar($(".pill.direction").text()));
+                        $(".pill.direction").text(directionToChar($(".pill.direction").text()));
 
-						diffMinutes("{{ data.glucose.0.dateString }}", '.timeago-bg');
+                        diffMinutes("{{ data.glucose.0.dateString }}", '.timeago-bg');
 
-						diffMinutes("{{ data.enacted.deliverAt }}", '.timeago-enacted');
-						diffMinutes("{{ data.smb_enacted.deliverAt }}", '.timeago-smb_enacted');
+                        diffMinutes("{{ data.enacted.deliverAt }}", '.timeago-enacted');
+                        diffMinutes("{{ data.smb_enacted.deliverAt }}", '.timeago-smb_enacted');
 
-						diffMinutes("{{ data.suggested.deliverAt }}", '.timeago-suggested');
-						diffMinutes("{{ data.smb_suggested.deliverAt }}", '.timeago-smb_suggested');
-					};
-				}
-			});
+                        diffMinutes("{{ data.suggested.deliverAt }}", '.timeago-suggested');
+                        diffMinutes("{{ data.smb_suggested.deliverAt }}", '.timeago-smb_suggested');
+                    };
+                }
+            });
 
-			function diffMinutes(date, selector) {
-				var date1 = new Date(date);
-				var date2 = new Date();
-				var difference = date2.getTime() - date1.getTime();
-				var resultInMinutes = Math.round(difference / 60000);
-				$(selector).text(resultInMinutes + " min ago");
-			}
+            function diffMinutes(date, selector) {
+                var date1 = new Date(date);
+                var date2 = new Date();
+                var difference = date2.getTime() - date1.getTime();
+                var resultInMinutes = Math.round(difference / 60000);
+                $(selector).text(resultInMinutes + " min ago");
+            }
 
-		</script>
+        </script>
 
-	</head>
-
-
-	<body>
-		<div class="container">
-			<div class="row">
-				
-				<div class="col-4" style="background-color:#cccccc;border-radius:8px;">
-					<div class="row">
-						<div class="col-8 col-lg-5 bg">{{ data.glucose.0.glucose }}</div>
-						<div class="col-2 col-lg-2 offset-lg-0 offset-sm-1 bg pill direction" style="padding-left:0">{{ data.glucose.0.direction }}</div>
-						<div class="col-xs-12 offset-lg-1 col-lg-4 delta-box">
-							<div class="col-12 delta" style="margin-top:-8px;">({{ data.glucose.0.delta }}mg/dl)</div>
-							<div class="col-12 timeago-bg">.</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="offset-md-2 col-3">
-					<div class="col-12 topbox">
-						<b>IOB:</b> {{ data.iob.iob }}U
-					</div>
-					<div class="col-12 topbox">
-						<b>COB:</b> {{ data.meal.mealCOB }}
-					</div>
-				</div>
-
-				<div class="col-3">
-					<div class="col-12 topbox">
-						<b>BASAL T:</b> {{ data.temp_basal.rate }}U
-					</div>
-				</div>
-
-			</div>
-
-			<div class="row">
-				<div class="col-12">
-					<div style="width:100%;"><canvas id="canvas"></canvas></div>
-				</div>
-			</div>
-
-			<div class="row" style="margin-top:50px">
-				<div class="col-2 box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}min</div>
-				<div class="col-2 box2"><b>Insulin Req:</b> {{ data.enacted.insulinReq }}U</div>
-				<div class="col-2 box2"><b>Pump:</b> {{ data.enacted.reservoir }}U {{ data.battery.voltage }}v {{ data.battery.status }}</div>
-				<div class="col-2 box2"><b>Edison Battery:</b> {{ data.edison_battery.battery }}% ({{ data.edison_battery.batteryVoltage }}v)</div>
-			</div>
-
-			<div class="row">
-				<div class="col-2 box2"><b>Sensitivity Ratio:</b> {{ data.enacted.sensitivityRatio }}</div>
-				<div class="col-2 box2"><b>Eventual BG:</b> {{ data.suggested.eventualBG }}</div>
-				<div class="col-2 box2"><b>Enacted:</b> {{ data.enacted.rate }} for {{ data.enacted.duration }} min + SMB {{ data.enacted.units|default("0", true) }}U</div>
-			</div>
+    </head>
 
 
-			<div class="row">
-				<div class="col-12"><b>OpenAPS:</b></div>
-				<div class="col-12"><b>Enacted:</b> <span class="timeago-enacted"></span>. [BG: {{ data.enacted.bg}}, {{ data.enacted.reason}}]</div>
-				<div class="col-12"><b>Suggested:</b> <span class="timeago-suggested"></span>. [BG: {{ data.suggested.bg}}, {{ data.suggested.reason}}]</div>
-			</div>
+    <body>
+        <div class="container">
+            <div class="row">
+
+                <div class="col-4" style="background-color:#cccccc;border-radius:8px;">
+                    <div class="row">
+                        <div class="col-8 col-lg-5 bg">{{ data.glucose.0.glucose }}</div>
+                        <div class="col-2 col-lg-2 offset-lg-0 offset-sm-1 bg pill direction" style="padding-left:0">{{ data.glucose.0.direction }}</div>
+                        <div class="col-xs-12 offset-lg-1 col-lg-4 delta-box">
+                            <div class="col-12 delta" style="margin-top:-8px;">({{ data.glucose.0.delta }}mg/dl)</div>
+                            <div class="col-12 timeago-bg">.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="offset-md-2 col-3">
+                    <div class="col-12 topbox">
+                        <b>IOB:</b> {{ data.iob.iob }}U
+                    </div>
+                    <div class="col-12 topbox">
+                        <b>COB:</b> {{ data.meal.mealCOB }}
+                    </div>
+                </div>
+
+                <div class="col-3">
+                    <div class="col-12 topbox">
+                        <b>BASAL T:</b> {{ data.temp_basal.rate }}U
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div style="width:100%;"><canvas id="canvas"></canvas></div>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top:50px">
+                <div class="col-2 box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}min</div>
+                <div class="col-2 box2"><b>Insulin Req:</b> {{ data.enacted.insulinReq }}U</div>
+                <div class="col-2 box2"><b>Pump:</b> {{ data.enacted.reservoir }}U {{ data.battery.voltage }}v {{ data.battery.status }}</div>
+                <div class="col-2 box2"><b>Edison Battery:</b> {{ data.edison_battery.battery }}% ({{ data.edison_battery.batteryVoltage }}v)</div>
+            </div>
+
+            <div class="row">
+                <div class="col-2 box2"><b>Sensitivity Ratio:</b> {{ data.enacted.sensitivityRatio }}</div>
+                <div class="col-2 box2"><b>Eventual BG:</b> {{ data.suggested.eventualBG }}</div>
+                <div class="col-2 box2"><b>Enacted:</b> {{ data.enacted.rate }} for {{ data.enacted.duration }} min + SMB {{ data.enacted.units|default("0", true) }}U</div>
+            </div>
 
 
-			<div class="row">
-				<div class="col-12"><b>Running on {{ data.hostname }}</b></div>
-			</div>
+            <div class="row">
+                <div class="col-12"><b>OpenAPS:</b></div>
+                <div class="col-12"><b>Enacted:</b> <span class="timeago-enacted"></span>. [BG: {{ data.enacted.bg}}, {{ data.enacted.reason}}]</div>
+                <div class="col-12"><b>Suggested:</b> <span class="timeago-suggested"></span>. [BG: {{ data.suggested.bg}}, {{ data.suggested.reason}}]</div>
+            </div>
 
-		</div>
-	</body>
+
+            <div class="row">
+                <div class="col-12"><b>Running on {{ data.hostname }}</b></div>
+            </div>
+
+        </div>
+    </body>
 </html>
