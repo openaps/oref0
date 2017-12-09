@@ -11,24 +11,26 @@ def index():
     except KeyError:
         myopenaps_dir = "/root/myopenaps/"
     data=dict()
-    data['hostname']=socket.gethostname()
-    data['glucose'] = json.load(open(os.path.join(myopenaps_dir, "monitor/glucose.json")))
-    iob = json.load(open(os.path.join(myopenaps_dir, "monitor/iob.json")))
-    data['iob'] = iob[0]
-    data['battery'] = json.load(open(os.path.join(myopenaps_dir, "monitor/battery.json")))
-    data['edison_battery'] = json.load(open(os.path.join(myopenaps_dir, "monitor/edison-battery.json")))
-    data['meal'] = json.load(open(os.path.join(myopenaps_dir, "monitor/meal.json")))
-    
+    try:
+        data['hostname']=socket.gethostname()
+        data['glucose'] = json.load(open(os.path.join(myopenaps_dir, "monitor/glucose.json")))
+        iob = json.load(open(os.path.join(myopenaps_dir, "monitor/iob.json")))
+        data['iob'] = iob[0]
+        data['battery'] = json.load(open(os.path.join(myopenaps_dir, "monitor/battery.json")))
+        data['edison_battery'] = json.load(open(os.path.join(myopenaps_dir, "monitor/edison-battery.json")))
+        data['meal'] = json.load(open(os.path.join(myopenaps_dir, "monitor/meal.json")))
 
-    data['suggested'] = json.load(open(os.path.join(myopenaps_dir, "enact/suggested.json")))
-    data['smb_suggested'] = json.load(open(os.path.join(myopenaps_dir, "enact/smb-suggested.json")))
-    
+        data['suggested'] = json.load(open(os.path.join(myopenaps_dir, "enact/suggested.json")))
+        data['smb_suggested'] = json.load(open(os.path.join(myopenaps_dir, "enact/smb-suggested.json")))
 
-    data['enacted'] = json.load(open(os.path.join(myopenaps_dir, "enact/enacted.json")))
-    data['smb_enacted'] = json.load(open(os.path.join(myopenaps_dir, "enact/smb-enacted.json")))
+        data['enacted'] = json.load(open(os.path.join(myopenaps_dir, "enact/enacted.json")))
+        data['smb_enacted'] = json.load(open(os.path.join(myopenaps_dir, "enact/smb-enacted.json")))
 
-    data['temp_basal'] = json.load(open(os.path.join(myopenaps_dir, "monitor/temp_basal.json")))
-    return render_template('index.html', data=data )
+        data['temp_basal'] = json.load(open(os.path.join(myopenaps_dir, "monitor/temp_basal.json")))
+    except ValueError:
+        return render_template('indexError.html', data=data )
+    else:
+        return render_template('index.html', data=data )
 
 @app.route("/enacted")
 def enacted():
