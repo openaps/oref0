@@ -196,12 +196,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
 
-    read -p "Are you using an Explorer Board? y/[N] " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ttyport=/dev/spidev5.1
-        echocolor "Ok, yay for Explorer Board! "
-        echo
-    else
+    read -p "Are you using an Explorer Board / HAT? [Y]/n " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
         echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
         read -p "What is your TTY port? " -r
         ttyport=$REPLY
@@ -212,6 +208,20 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo -n TTY $ttyport
         fi
         echocolor " it is. "
+        echo
+    else
+        if  getent passwd edison > /dev/null; then
+            echocolor "Yay! Configuring for Edison with Explorer Board. "
+            ttyport=/dev/spidev5.1
+        elif getent passwd pi > /dev/null; then
+            echocolor "Yay! Configuring for Pi with Explorer Board HAT. "
+            ttyport=/dev/spidev0.0
+        else
+            echo "Hmm, you don't seem to be using an Edison or Pi."
+            read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+            ttyport=$REPLY
+            echocolor "Ok, we'll try TTY $ttyport then."
+        fi
         echo
     fi
 
@@ -594,6 +604,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
 
+    #TODO: remove this when IPv6 works reliably
+    echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
+
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
@@ -617,7 +630,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        bluetoothdminversion=5.47
+        # use packaged bluez with Rapsbian
+        if getent passwd pi > /dev/null; then
+            bluetoothdminversion=5.43
+        else
+            bluetoothdminversion=5.47
+        fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
             cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
@@ -749,9 +767,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo Checking kernel for spi_serial installation
         if ! python -c "import spi_serial" 2>/dev/null; then
             if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
-            echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
+                echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
             else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
-            echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+                if [[ "$ttyport" =~ "spidev0.0" ]]; then
+                    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
+                    sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+                else
+                    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+                fi
             fi
             #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
         fi
