@@ -587,7 +587,16 @@ function refresh_old_profile {
 
 # get-settings report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json
 function get_settings {
-    retry_return openaps report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json 2>&3 >&4 | tail -1 || return 1
+    if grep -q 12 settings/model.json
+    then
+        # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
+        # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
+        NON_X12_ITEMS=""
+    else
+        # On all other supported pumps, these reports work. 
+        NON_X12_ITEMS="settings/bg_targets_raw.json settings/basal_profile.json settings/settings.json"
+    fi
+    retry_return openaps report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
     # generate settings/pumpprofile.json without autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     if ls settings/pumpprofile.json.new >&4 && cat settings/pumpprofile.json.new | jq -e .current_basal >&4; then
