@@ -6,7 +6,10 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    myopenaps_dir = "/root/myopenaps/"
+    try:
+      myopenaps_dir = os.environ['OPENAPS_DIR']
+    except KeyError:
+        myopenaps_dir = "/root/myopenaps/"
     data=dict()
     data['hostname']=socket.gethostname()
     glucose = json.load(open(os.path.join(myopenaps_dir, "monitor/glucose.json")))
