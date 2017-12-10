@@ -34,6 +34,12 @@ def index():
     else:
         return render_template('index.html', data=data )
 
+@app.route("/suggested")
+def suggested():
+    json_url = os.path.join("/root/myopenaps/enact/suggested.json")
+    data = json.load(open(json_url))
+    return jsonify(data)
+
 @app.route("/enacted")
 def enacted():
     json_url = os.path.join("/root/myopenaps/enact/enacted.json")
@@ -43,6 +49,12 @@ def enacted():
 @app.route("/glucose")
 def glucose():
     json_url = os.path.join("/root/myopenaps/monitor/glucose.json")
+    data = json.load(open(json_url))
+    return jsonify(data)
+
+@app.route("/temptargets")
+def temptargets():
+    json_url = os.path.join("/root/myopenaps/settings/temptargets.json")
     data = json.load(open(json_url))
     return jsonify(data)
 
