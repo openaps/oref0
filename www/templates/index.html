@@ -2,7 +2,7 @@
     <head>
         <title>OpenAPS {{ data.hostname }}</title>
         <meta http-equiv="refresh" content="120">
-        <meta name="viewport" content="width=device-width, initial-scale=0.5, maximum-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=0.7, maximum-scale=1.0">
 
         <link rel="stylesheet" href="/static/css/bootstrap.min.css" >
         <link rel="stylesheet" href='/static/css/style.css' />
@@ -142,7 +142,7 @@
                                     display: true,
                                     scaleLabel: {
                                         display: true,
-                                        labelString: 'BG'
+                                        labelString: 'BG (mg/dL)'
                                     },
                                     ticks: {
                                         min: 40,
@@ -200,8 +200,8 @@
                 </div>
 
                 <div class="col">
-                    <div class="col-12 topbox"> <b>IOB:</b> {{ data.iob.iob }}U </div>
-                    <div class="col-12 topbox"> <b>COB:</b> {{ data.meal.mealCOB }} </div>
+                    <div class="col-12 topbox"> <b>IOB:</b> {{ data.iob.iob }} U </div>
+                    <div class="col-12 topbox"> <b>COB:</b> {{ data.meal.mealCOB }} g</div>
                     <div class="col-12 topbox"><b>Sensitivity Ratio:</b> {{ data.enacted.sensitivityRatio }}</div>
                 </div>
 
@@ -215,15 +215,17 @@
             </div>
 
             <div class="row" style="margin-top:50px">
-                <div class="col box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}min</div>
-                <div class="col box2"><b>Insulin Req:</b> {{ data.enacted.insulinReq }}U</div>
-                <div class="col box2"><b>Pump:</b> {{ data.enacted.reservoir }}U {{ data.battery.voltage }}v {{ data.battery.status }}</div>
+                <div class="col box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}} min</div>
+                <div class="col box2"><b>Enacted:</b> {{ data.enacted.rate }} for {{ data.enacted.duration }} min + SMB {{ data.enacted.units|default("0", true) }} U</div>
             </div>
 
             <div class="row">
-                <div class="col box2"><b>Enacted:</b> {{ data.enacted.rate }} for {{ data.enacted.duration }} min + SMB {{ data.enacted.units|default("0", true) }}U</div>
-                <div class="col box2"><b>Eventual BG:</b> {{ data.suggested.eventualBG }}</div>
-                <div class="col box2"><b>Edison Battery:</b> {{ data.edison_battery.battery }}% ({{ data.edison_battery.batteryVoltage }}v)</div>
+                <div class="col box2"><b>Insulin Req:</b> {{ data.enacted.insulinReq }} U</div>
+                <div class="col box2"><b>Eventual BG:</b> {{ data.suggested.eventualBG }} mg/dL</div>
+            </div>
+            <div class="row">
+                <div class="col box2"><b>Pump:</b> {{ data.enacted.reservoir }} U, {{ data.battery.voltage }} V, {{ data.battery.status }}</div>
+                <div class="col box2"><b>Edison Battery:</b> {{ data.edison_battery.battery }}% ({{ data.edison_battery.batteryVoltage }} mV)</div>
             </div>
 
 
