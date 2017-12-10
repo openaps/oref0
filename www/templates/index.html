@@ -14,7 +14,6 @@
 
         <script>
             var data_g = [];
-
             $.ajax({
                 url: "glucose",
                 async: false,
@@ -27,6 +26,38 @@
                         var resultInMinutes = Math.round(difference / 60000);
                         if(resultInMinutes > 240) { break; }
                         data_g[i] = {x:date1,y:data[i].glucose};
+                    }
+                }
+            });
+
+            var targets = [];
+            $.ajax({
+                url: "temptargets",
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    data.reverse();
+                    //console.log(data);
+                    for(i = 0; i < data.length; i++) {
+                        var date1 = new Date(data[i].created_at);
+                        var date2 = new Date();
+                        var difference = date2.getTime() - date1.getTime();
+                        var resultInMinutes = Math.round(difference / 60000);
+                        if(resultInMinutes > 240) {
+                            //console.log(resultInMinutes, data[i]);
+                            continue;
+                        }
+                        while(targets.length && targets[targets.length-1].x > date1) {
+                            //console.log(date1, targets[targets.length-1]);
+                            targets.pop();
+                        }
+                        for(t=0; t<=data[i].duration; t=t+5) {
+                            var date3 = new Date(date1.getTime()+t*60000);
+                            var target = (data[i].targetBottom+data[i].targetTop)/2;
+                            targets[targets.length] = {x:date3,y:target};
+                        }
+
+                        //targets[i] = {x:date1,y:data[i].targetBottom};
                     }
                 }
             });
@@ -45,6 +76,13 @@
                         borderColor: 'rgb(0,0,0)', // black
                         fill: false,
                     });
+                    arr_data.push({
+                        label: 'Temp Targets',
+                        data: targets,
+                        backgroundColor: 'rgb(255,255,255)', // white
+                        borderColor: 'rgb(0,0,0)', // black
+                        fill: false,
+                    });
 
                     $.each( data.predBGs, function( key, values ) {
                         var data_predBgs = [];
@@ -60,7 +98,7 @@
                         arr_data.push({
                             label: "Forecast Type: " + key,
                             data: data_predBgs,
-                            backgroundColor: window.chartColors.white,
+                            backgroundColor: 'rgb(255,255,255)', // white
                             borderColor: window.chartColors.purple,
                             fill: false,
                         });
