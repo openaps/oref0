@@ -193,7 +193,7 @@
                         <div class="col-6 col-md-5 bg">{{ data.glucose.0.glucose }} </div>
                         <div class="col-2 col-md-2 offset-md-0 offset-sm-1 bg pill direction" style="padding-left:0">{{ data.glucose.0.direction }}</div>
                         <div class="col-xs-12 col-md-5 delta-box">
-                            <div class="col delta" style="margin-top:-8px;">(<script>document.write(tick);</script> mg/dL)</div>
+                            <div class="col delta" style="margin-top:-8px;"><script>document.write(tick);</script> mg/dL</div>
                             <div class="col timeago-bg">.</div>
                         </div>
                     </div>
@@ -215,8 +215,8 @@
             </div>
 
             <div class="row" style="margin-top:50px">
-                <div class="col box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}} min</div>
-                <div class="col box2"><b>Enacted:</b> {{ data.enacted.rate }} for {{ data.enacted.duration }} min + SMB {{ data.enacted.units|default("0", true) }} U</div>
+                <div class="col box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}min</div>
+                <div class="col box2"><b>Enacted:</b> {{ data.enacted.rate }} for {{ data.enacted.duration }}min + SMB {{ data.enacted.units|default("0", true) }}U</div>
             </div>
 
             <div class="row">
