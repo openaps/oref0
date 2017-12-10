@@ -26,16 +26,19 @@
                         var date2 = new Date();
                         var difference = date2.getTime() - date1.getTime();
                         var resultInMinutes = Math.round(difference / 60000);
-                        if(resultInMinutes > 2.5 && resultInMinutes < 7.5) {
+                        if(resultInMinutes > 240) { break; }
+                        var lastBGdate = new Date(data[0].dateString);
+                        var minutes = Math.round((lastBGdate.getTime() - date1.getTime())/60000);
+                        if(minutes > 4 && minutes < 6) {
                             delta = data[0].glucose - data[i].glucose;
                             if ( delta >= 0 ) {
                                 tick = "+"+delta;
                             } else {
                                 tick = ""+delta;
                             }
+                            console.log(minutes, delta, tick);
 
                         }
-                        if(resultInMinutes > 240) { break; }
                         data_g[i] = {x:date1,y:data[i].glucose};
                     }
                 }
@@ -187,11 +190,11 @@
 
                 <div class="col" style="background-color:#cccccc;border-radius:8px;">
                     <div class="row">
-                        <div class="col-7 col-md-5 bg">{{ data.glucose.0.glucose }} {{ tick }}</div>
+                        <div class="col-6 col-md-5 bg">{{ data.glucose.0.glucose }} </div>
                         <div class="col-2 col-md-2 offset-md-0 offset-sm-1 bg pill direction" style="padding-left:0">{{ data.glucose.0.direction }}</div>
-                        <div class="col-xs-12 offset-md-1 col-md-4 delta-box">
-                            <div class="col-12 delta" style="margin-top:-8px;">({{ data.glucose.0.delta }}mg/dl)</div>
-                            <div class="col-12 timeago-bg">.</div>
+                        <div class="col-xs-12 col-md-5 delta-box">
+                            <div class="col delta" style="margin-top:-8px;">(<script>document.write(tick);</script> mg/dL)</div>
+                            <div class="col timeago-bg">.</div>
                         </div>
                     </div>
                 </div>
