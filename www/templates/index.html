@@ -132,29 +132,23 @@
         <div class="container">
             <div class="row">
 
-                <div class="col-4" style="background-color:#cccccc;border-radius:8px;">
+                <div class="col" style="background-color:#cccccc;border-radius:8px;">
                     <div class="row">
-                        <div class="col-8 col-lg-5 bg">{{ data.glucose.0.glucose }}</div>
-                        <div class="col-2 col-lg-2 offset-lg-0 offset-sm-1 bg pill direction" style="padding-left:0">{{ data.glucose.0.direction }}</div>
-                        <div class="col-xs-12 offset-lg-1 col-lg-4 delta-box">
+                        <div class="col-7 col-md-5 bg">{{ data.glucose.0.glucose }}</div>
+                        <div class="col-2 col-md-2 offset-md-0 offset-sm-1 bg pill direction" style="padding-left:0">{{ data.glucose.0.direction }}</div>
+                        <div class="col-xs-12 offset-md-1 col-md-4 delta-box">
                             <div class="col-12 delta" style="margin-top:-8px;">({{ data.glucose.0.delta }}mg/dl)</div>
                             <div class="col-12 timeago-bg">.</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="offset-md-2 col-3">
-                    <div class="col-12 topbox">
-                        <b>IOB:</b> {{ data.iob.iob }}U
-                    </div>
-                    <div class="col-12 topbox">
-                        <b>COB:</b> {{ data.meal.mealCOB }}
-                    </div>
-                </div>
-
-                <div class="col-3">
+                <div class="col">
+                    <div class="col-12 topbox"> <b>IOB:</b> {{ data.iob.iob }}U </div>
+                    <div class="col-12 topbox"> <b>COB:</b> {{ data.meal.mealCOB }} </div>
                     <div class="col-12 topbox"><b>Sensitivity Ratio:</b> {{ data.enacted.sensitivityRatio }}</div>
                 </div>
+
 
             </div>
 
@@ -165,16 +159,15 @@
             </div>
 
             <div class="row" style="margin-top:50px">
-                <div class="col-2 box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}min</div>
-                <div class="col-2 box2"><b>Insulin Req:</b> {{ data.enacted.insulinReq }}U</div>
-                <div class="col-2 box2"><b>Pump:</b> {{ data.enacted.reservoir }}U {{ data.battery.voltage }}v {{ data.battery.status }}</div>
-                <div class="col-2 box2"><b>Edison Battery:</b> {{ data.edison_battery.battery }}% ({{ data.edison_battery.batteryVoltage }}v)</div>
+                <div class="col box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}min</div>
+                <div class="col box2"><b>Insulin Req:</b> {{ data.enacted.insulinReq }}U</div>
+                <div class="col box2"><b>Pump:</b> {{ data.enacted.reservoir }}U {{ data.battery.voltage }}v {{ data.battery.status }}</div>
             </div>
 
             <div class="row">
-                <div class="col-2 box2"><b>Sensitivity Ratio:</b> {{ data.enacted.sensitivityRatio }}</div>
-                <div class="col-2 box2"><b>Eventual BG:</b> {{ data.suggested.eventualBG }}</div>
-                <div class="col-2 box2"><b>Enacted:</b> {{ data.enacted.rate }} for {{ data.enacted.duration }} min + SMB {{ data.enacted.units|default("0", true) }}U</div>
+                <div class="col box2"><b>Eventual BG:</b> {{ data.suggested.eventualBG }}</div>
+                <div class="col box2"><b>Enacted:</b> {{ data.enacted.rate }} for {{ data.enacted.duration }} min + SMB {{ data.enacted.units|default("0", true) }}U</div>
+                <div class="col box2"><b>Edison Battery:</b> {{ data.edison_battery.battery }}% ({{ data.edison_battery.batteryVoltage }}v)</div>
             </div>
 
 
