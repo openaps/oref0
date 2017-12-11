@@ -89,33 +89,6 @@ else
   fi
 fi
 
-    if [ test cat $FILE | egrep "add'l" ]; then
-      subtext="cr ${carbsReq}g"
-    else
-      subtext="e${enactTime}"
-    fi
-    text="${bgNow}${direction}"
-    title="cob ${cob}, iob ${iob}"
-
-#    echo "pushover glance text=${text}  subtext=${subtext}  delta=${delta} title=${title}  battery percent=${battery}"
-    curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json
-    touch $GLANCES
-  fi
-fi
-    if [ test cat $FILE | egrep "add'l" ]; then
-      subtext="cr ${carbsReq}g"
-    else
-      subtext="e${enactTime}"
-    fi
-    text="${bgNow}${direction}"
-    title="cob ${cob}, iob ${iob}"
-
-#    echo "pushover glance text=${text}  subtext=${subtext}  delta=${delta} title=${title}  battery percent=${battery}"
-    curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json
-    touch $GLANCES
-  fi
-fi
-
 # Send ifttt maker event "carbs-required" if additional carbs are required
 #   and if environment variable "MAKER_KEY" is set. This is teh ifttt webhooks Maker key
 #   https://ifttt.com/maker_webhooks
