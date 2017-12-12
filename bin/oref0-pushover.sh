@@ -2,7 +2,7 @@
 
 TOKEN=$1
 USER=$2
-FILE=${3-enact/smb-suggested.json}
+FILE=${3-enact/suggested.json}
 SOUND=${4-none}
 SNOOZE=${5-15}
 ONLYFOR=${6-carbs}
@@ -10,7 +10,7 @@ ONLYFOR=${6-carbs}
 #echo "Running: $0 $TOKEN $USER $FILE $SOUND $SNOOZE"
 
 if [ -z $TOKEN ] || [ -z $USER ]; then
-    echo "Usage: $0 <TOKEN> <USER> [enact/smb-suggested.json] [none] [15] [carbs|insulin]"
+    echo "Usage: $0 <TOKEN> <USER> [enact/suggested.json] [none] [15] [carbs|insulin]"
     exit
 fi
 
