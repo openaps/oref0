@@ -43,6 +43,8 @@ carbsReq=`jq .carbsReq ${FILE}`
 tick=`jq .tick ${FILE}`
 bgNow=`jq .bg ${FILE}`
 delta=`echo "${tick}" | tr -d +`
+delta="${delta%\"}"
+delta="${delta#\"}"
 cob=`jq .COB $FILE`
 iob=`jq .IOB $FILE`
 
