@@ -65,18 +65,19 @@ else
   then
     enactTime=$(ls -l  --time-style=+"%l:%M" ${FILE} | awk '{printf ($6)}')
 
-    direction=""
-    if [ ${delta} -gt 8 ]; then
-      direction="++"
-    elif [ ${delta} -gt 3 ]; then
-      direction="+"
-    elif [ ${delta} -gt -3 ]; then
-      direction=""
-    elif [ ${delta} -gt -8 ]; then
-      direction="-"
-    else
+   direction=""
+    if [ "${delta}" -lt "-7" ]; then
       direction="--"
+    elif [ "${delta}" -lt "-2" ]; then
+      direction="-"
+    elif [ "${delta}" -lt "3" ]; then
+      direction=""
+    elif [ "${delta}" -lt "8" ]; then
+      direction="+"
+    else
+      direction="++"
     fi
+
     if [ test cat $FILE | egrep "add'l" ]; then
       subtext="cr ${carbsReq}g"
     else
