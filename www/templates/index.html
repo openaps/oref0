@@ -1,18 +1,245 @@
 <html>
-<head>
-<title>OpenAPS {{ data.hostname }}</title>
-<meta http-equiv="refresh" content="30" >
-<link rel="stylesheet" href='/static/style.css' />
-</head>
-<body>
-<h1>OpenAPS</h1>
-<p>Running on {{ data.hostname }}</p>
-<p>BG: {{ data.glucose.glucose }} {{ data.tick }} {{ data.glucose.direction }} at {{ data.glucose.dateString }}</p>
-<p>IOB: {{ data.iob.iob }}, COB: {{ data.meal.mealCOB }}</p>
-<p>Eventual BG: {{ data.suggested.eventualBG }}</p>
-<p>Current temp: {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}m</p>
-<p>Enacted: {{ data.enacted.rate }} for {{ data.enacted.duration }} + SMB {{ data.enacted.units|default("0", true) }}U</p>
-<p>Reason: {{ data.enacted.reason}} at {{ data.enacted.timestamp }}</p>
-</body>
-</html>
+    <head>
+        <title>OpenAPS {{ data.hostname }}</title>
+        <meta http-equiv="refresh" content="120">
+        <meta name="viewport" content="width=device-width, initial-scale=0.7, maximum-scale=1.0">
 
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css" >
+        <link rel="stylesheet" href='/static/css/style.css' />
+
+        <script src="/static/js/chart.js"></script>
+        <script src="/static/js/utils.js"></script>
+        <script src="/static/js/direction.js"></script>
+        <script src="/static/js/jquery.min.js"></script>
+
+        <script>
+            var delta;
+            var tick = "";
+            var data_g = [];
+            $.ajax({
+                url: "glucose",
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    for(i = 0; i < 96; i++) {
+                        var date1 = new Date(data[i].dateString);
+                        var date2 = new Date();
+                        var difference = date2.getTime() - date1.getTime();
+                        var resultInMinutes = Math.round(difference / 60000);
+                        if(resultInMinutes > 240) { break; }
+                        var lastBGdate = new Date(data[0].dateString);
+                        var minutes = Math.round((lastBGdate.getTime() - date1.getTime())/60000);
+                        if(minutes > 4 && minutes < 6) {
+                            delta = data[0].glucose - data[i].glucose;
+                            if ( delta >= 0 ) {
+                                tick = "+"+delta;
+                            } else {
+                                tick = ""+delta;
+                            }
+                            console.log(minutes, delta, tick);
+
+                        }
+                        data_g[i] = {x:date1,y:data[i].glucose};
+                    }
+                }
+            });
+
+            var targets = [];
+            $.ajax({
+                url: "temptargets",
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    data.reverse();
+                    //console.log(data);
+                    for(i = 0; i < data.length; i++) {
+                        var date1 = new Date(data[i].created_at);
+                        var date2 = new Date();
+                        var difference = date2.getTime() - date1.getTime();
+                        var resultInMinutes = Math.round(difference / 60000);
+                        if(resultInMinutes > 240) {
+                            //console.log(resultInMinutes, data[i]);
+                            continue;
+                        }
+                        while(targets.length && targets[targets.length-1].x > date1) {
+                            //console.log(date1, targets[targets.length-1]);
+                            targets.pop();
+                        }
+                        for(t=0; t<=data[i].duration; t=t+5) {
+                            var date3 = new Date(date1.getTime()+t*60000);
+                            var target = (data[i].targetBottom+data[i].targetTop)/2;
+                            targets[targets.length] = {x:date3,y:target};
+                        }
+
+                        //targets[i] = {x:date1,y:data[i].targetBottom};
+                    }
+                }
+            });
+
+            $.ajax({
+                url: "suggested",
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    var arr_data = [];
+
+                    arr_data.push({
+                        label: 'BG',
+                        data: data_g,
+                        backgroundColor: 'rgb(0,0,0)', // black
+                        borderColor: 'rgb(0,0,0)', // black
+                        fill: false,
+                    });
+                    arr_data.push({
+                        label: 'Temp Targets',
+                        data: targets,
+                        backgroundColor: 'rgb(255,255,255)', // white
+                        borderColor: 'rgb(0,0,0)', // black
+                        fill: false,
+                    });
+
+                    $.each( data.predBGs, function( key, values ) {
+                        var data_predBgs = [];
+                        var deliverAt = new Date(data.deliverAt);
+
+                        for (var i = 0; i < values.length; i++) {
+     >>>>>>> dev                       var date1 = new Date(deliverAt);
+                            data_predBgs[i] = {x:date1,y:values[i]};
+                            deliverAt.setMinutes(deliverAt.getMinutes() + 5);
+     >>>>>>> dev                       //if(i>24) break;
+                        };
+
+                        arr_data.push({
+                            label: "Forecast: " + key,
+                            data: data_predBgs,
+                            backgroundColor: 'rgb(255,255,255)', // white
+                            borderColor: window.chartColors.purple,
+                            fill: false,
+                        });
+
+                        data_predBgs = false;
+                    });
+
+                    var config = {
+                        type: 'scatter',
+                        data: {
+                            datasets: arr_data
+                        },
+                        options: {
+                            responsive: true,
+     >>>>>>> dev                       legend: {
+                                position: 'top',
+                            },
+                            hover: {
+                                mode: 'index'
+                            },
+                            scales: {
+                                xAxes: [{
+                                    type: 'time',
+                                    display: true,
+                                }],
+                                yAxes: [{
+                                    display: true,
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: 'BG (mg/dL)'
+                                    },
+                                    ticks: {
+                                        min: 40,
+                                        max: 300,
+                                        stepSize: 40
+                                    }
+                                }]
+                            }
+                        }
+                    };
+
+                    window.onload = function() {
+                        var ctx = document.getElementById("canvas").getContext("2d");
+                        window.myLine = new Chart(ctx, config);
+
+                        $(".pill.direction").text(directionToChar($(".pill.direction").text()));
+
+                        diffMinutes("{{ data.glucose.0.dateString }}", '.timeago-bg');
+
+                        diffMinutes("{{ data.enacted.deliverAt }}", '.timeago-enacted');
+                        diffMinutes("{{ data.smb_enacted.deliverAt }}", '.timeago-smb_enacted');
+
+                        diffMinutes("{{ data.suggested.deliverAt }}", '.timeago-suggested');
+                        diffMinutes("{{ data.smb_suggested.deliverAt }}", '.timeago-smb_suggested');
+                    };
+                }
+            });
+
+            function diffMinutes(date, selector) {
+                var date1 = new Date(date);
+                var date2 = new Date();
+                var difference = date2.getTime() - date1.getTime();
+                var resultInMinutes = Math.round(difference / 60000);
+                $(selector).text(resultInMinutes + " min ago");
+            }
+
+        </script>
+
+    </head>
+
+
+    <body>
+        <div class="container">
+            <div class="row">
+
+                <div class="col" style="background-color:#cccccc;border-radius:8px;">
+                    <div class="row">
+                        <div class="col-6 col-md-5 bg">{{ data.glucose.0.glucose }} </div>
+                        <div class="col-2 col-md-2 offset-md-0 offset-sm-1 bg pill direction" style="padding-left:0">{{ data.glucose.0.direction }}</div>
+                        <div class="col-xs-12 col-md-5 delta-box">
+                            <div class="col delta" style="margin-top:-8px;"><script>document.write(tick);</script> mg/dL</div>
+                            <div class="col timeago-bg">.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <div class="col-12 topbox"> <b>IOB:</b> {{ data.iob.iob }} U </div>
+                    <div class="col-12 topbox"> <b>COB:</b> {{ data.meal.mealCOB }} g</div>
+                    <div class="col-12 topbox"><b>Sensitivity Ratio:</b> {{ data.enacted.sensitivityRatio }}</div>
+                </div>
+
+
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div style="width:100%;"><canvas id="canvas"></canvas></div>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top:50px">
+                <div class="col box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}min</div>
+                <div class="col box2"><b>Enacted:</b> {{ data.enacted.rate }} for {{ data.enacted.duration }}min + SMB {{ data.enacted.units|default("0", true) }}U</div>
+            </div>
+
+            <div class="row">
+                <div class="col box2"><b>Insulin Req:</b> {{ data.enacted.insulinReq }} U</div>
+                <div class="col box2"><b>Eventual BG:</b> {{ data.suggested.eventualBG }} mg/dL</div>
+            </div>
+            <div class="row">
+                <div class="col box2"><b>Pump:</b> {{ data.enacted.reservoir }} U, {{ data.battery.voltage }} V, {{ data.battery.status }}</div>
+                <div class="col box2"><b>Edison Battery:</b> {{ data.edison_battery.battery }}% ({{ data.edison_battery.batteryVoltage }} mV)</div>
+            </div>
+
+
+            <div class="row">
+                <div class="col-12"><b>OpenAPS:</b></div>
+                <div class="col-12"><b>Suggested:</b> <span class="timeago-suggested"></span>. [BG: {{ data.suggested.bg}}, {{ data.suggested.reason}}]</div>
+                <div class="col-12"><b>Enacted:</b> <span class="timeago-enacted"></span>. [BG: {{ data.enacted.bg}}, {{ data.enacted.reason}}]</div>
+            </div>
+
+
+            <div class="row">
+                <div class="col-12"><b>Running on {{ data.hostname }}</b></div>
+            </div>
+
+        </div>
+    </body>
+</html>
