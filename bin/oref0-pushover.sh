@@ -42,7 +42,7 @@ key=${MAKER_KEY:-"null"}
 carbsReq=`jq .carbsReq ${FILE}`
 tick=`jq .tick ${FILE}`
 bgNow=`jq .bg ${FILE}`
-delta=${tick}
+delta=`echo "${tick}" | tr -d +`
 cob=`jq .COB $FILE`
 iob=`jq .IOB $FILE`
 
