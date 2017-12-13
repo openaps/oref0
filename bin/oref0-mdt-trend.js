@@ -56,11 +56,15 @@ if (!module.parent) {
 		continue;
 	}
 
+    if (record.sgv == 0)
+    {
+        continue;
+    }
 	var used_records = 0;
 	for (var j = 0; j < max_entries; j++)
 	{
 		var past_record = last_entries[j];
-		if (typeof past_record == "undefined")
+		if (typeof past_record == "undefined" || past_record.sgv == 0)
 		{
 			continue;
 		}
