@@ -204,10 +204,10 @@ function determine_basal {
     oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
 }
 
-# enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails)
+# enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails or a 0 duration temp is requested)
 function smb_enact_temp {
     smb_suggest
-    if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json 2>&3 && ! smb_verify_enacted ); then (
+    if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json 2>&3 && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
         rm enact/smb-enacted.json
         openaps report invoke enact/smb-enacted.json 2>&3 >&4 | tail -1
         grep -q duration enact/smb-enacted.json || openaps report invoke enact/smb-enacted.json 2>&3 >&4 | tail -1
