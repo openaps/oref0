@@ -19,6 +19,7 @@ main() {
                 ls -la /tmp/bad_wifi
             else
                 echo Attempting to renew wlan0 IP
+		ip route del 0/0
                 sudo dhclient wlan0 -r -q
                 sudo dhclient wlan0
             fi
