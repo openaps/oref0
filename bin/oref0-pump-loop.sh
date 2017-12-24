@@ -120,6 +120,7 @@ function fail {
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
     else
         maybe_mmtune
+        echo "If pump and rig are close enough, this error usually self-resolves. Stand by for the next loop."
         echo Unsuccessful oref0-pump-loop at $(date)
     fi
     if grep -q "percent" monitor/temp_basal.json; then
