@@ -684,7 +684,7 @@ function wait_for_bg {
         echo "MDT CGM configured; not waiting"
     elif egrep -q "Warning:" enact/smb-suggested.json 2>&3; then
         echo "Retrying without waiting for new BG"
-    elif egrep -q "Waiting [0].[0-9]m to microbolus again." enact/smb-suggested.json 2>&3; then
+    elif egrep -q "Waiting [0](\.[0-9])?m ([0-6]?[0-9]s )?to microbolus again." enact/smb-suggested.json 2>&3; then
         echo "Retrying microbolus without waiting for new BG"
     else
         echo -n "Waiting up to 4 minutes for new BG: "
