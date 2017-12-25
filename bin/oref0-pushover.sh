@@ -29,10 +29,10 @@ else
     curl -s -F "token=$TOKEN" -F "user=$USER" -F "sound=$SOUND" -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent
 fi
 
-# Send to pushover glances API 
+# Send to Pushover glances API 
 #   For watch face updates once every 10 minutes
-#   Works for apple watch complications 
-#   Not tested fo android wear notifications yet
+#   Works for Apple Watch complications 
+#   Not tested for Android Wear notifications yet
 
 # Use file to make sure we don't update glances more often than every 10 mins
 # Apple watch disables any complication updates that happen more frequently
@@ -52,7 +52,7 @@ iob=`jq .IOB $FILE`
 pushoverGlances=$(cat preferences.json | jq -M '.pushoverGlances')
 
 if [ "${pushoverGlances}" == "null" -o "${pushoverGlances}" == "false" ]; then
-    echo "No preference or false preference for pushoverGlances"
+    echo "pushoverGlances not enabled in preferences.json"
 else
   GLANCES="monitor/last_glance"
   GLUCOSE="monitor/glucose.json"
@@ -92,17 +92,17 @@ else
   fi
 fi
 
-# Send ifttt maker event "carbs-required" if additional carbs are required
-#   and if environment variable "MAKER_KEY" is set. This is teh ifttt webhooks Maker key
+# Send IFTTT maker event "carbs-required" if additional carbs are required
+#   and if environment variable "MAKER_KEY" is set. This is the IFTTT webhooks Maker key
 #   https://ifttt.com/maker_webhooks
-#   The "carbs-required" event can then be used with a ifttt recipe to perform an action
-#   based on carbs required. A good use case is to use the ifttt phone action to get a phone
+#   The "carbs-required" event can then be used with a IFTTT recipe to perform an action
+#   based on carbs required. A good use case is to use the IFTTT phone action to get a phone
 #   call with this event that will read out in human language the additional carbs and other
-#   vital facts. It will leave a voice mail if not answered
+#   vital facts. It will leave a voice mail if not answered.
 
 if [[ "$MAKER_KEY" != "null" ]] && cat $FILE | egrep "add'l"; then
   if find monitor/ -mmin -15 | grep -q ifttt-sent; then
-     echo "carbsReq=${carbsReq} but last ifttt sent less than 15 minutes ago."
+     echo "carbsReq=${carbsReq} but last IFTTT event sent less than 15 minutes ago."
   else
      message="Carbs required = ${carbsReq}. Glucose = $bgNow Insulin on board = $iob Carbs on board = $cob grams."
      echo "posting message to carbs-required ... message=$message"
