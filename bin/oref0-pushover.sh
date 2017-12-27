@@ -19,6 +19,7 @@ if find monitor/ -mmin -$SNOOZE | grep -q pushover-sent; then
     echo "Last pushover sent less than $SNOOZE minutes ago."
 elif ! find $FILE -mmin -5 | grep -q $FILE; then
     echo "$FILE more than 5 minutes old"
+    exit
 elif ! cat $FILE | egrep "add'l|maxBolus"; then
     echo "No additional carbs or bolus required."
 elif [[ $ONLYFOR =~ "carb" ]] && ! cat $FILE | egrep "add'l"; then
