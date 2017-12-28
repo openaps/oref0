@@ -1064,7 +1064,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-version --check-for-updates" || echo "0 * * * * cd $directory && oref0-version --check-for-updates > /tmp/oref0-updates.txt") | crontab -
         (crontab -l; crontab -l | grep -q "flask run" || echo "@reboot cd ~/src/oref0/www && export FLASK_APP=app.py && flask run -p 80 --host=0.0.0.0" | tee -a /var/log/openaps/flask.log) | crontab -
-
         crontab -l | tee $HOME/crontab.txt
     fi
 
