@@ -103,10 +103,10 @@
                         var deliverAt = new Date(data.deliverAt);
 
                         for (var i = 0; i < values.length; i++) {
-     >>>>>>> dev                       var date1 = new Date(deliverAt);
+                            var date1 = new Date(deliverAt);
                             data_predBgs[i] = {x:date1,y:values[i]};
                             deliverAt.setMinutes(deliverAt.getMinutes() + 5);
-     >>>>>>> dev                       //if(i>24) break;
+                            //if(i>24) break;
                         };
 
                         arr_data.push({
@@ -127,7 +127,7 @@
                         },
                         options: {
                             responsive: true,
-     >>>>>>> dev                       legend: {
+                            legend: {
                                 position: 'top',
                             },
                             hover: {
