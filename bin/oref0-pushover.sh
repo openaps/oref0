@@ -67,8 +67,8 @@ else
     enactTime=$(ls -l  --time-style=+"%l:%M" ${FILE} | awk '{printf ($6)}')
     
     lastDirection=`jq -M '.[0] .direction' $GLUCOSE`
-    lastDirection="${lastDirection}%\"}"
-    lastDirection="${lastDirection}#\"}"
+    lastDirection="${lastDirection%\"}"
+    lastDirection="${lastDirection#\"}"
 
     #echo lastDirection=$lastDirection
 
