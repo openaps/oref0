@@ -111,8 +111,8 @@ fi
 #   vital facts. It will leave a voice mail if not answered.
 
 if [[ "$MAKER_KEY" != "null" ]] && cat $FILE | egrep "add'l"; then
-  if find monitor/ -mmin -15 | grep -q ifttt-sent; then
-     echo "carbsReq=${carbsReq} but last IFTTT event sent less than 15 minutes ago."
+  if find monitor/ -mmin -60 | grep -q ifttt-sent; then
+     echo "carbsReq=${carbsReq} but last IFTTT event sent less than 60 minutes ago."
   else
      message="Carbs required = ${carbsReq}. Glucose = $bgNow Insulin on board = $iob Carbs on board = $cob grams."
      echo "posting message to carbs-required ... message=$message"
