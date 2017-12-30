@@ -624,19 +624,20 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if getent passwd pi > /dev/null; then
             bluetoothdminversion=5.43
         else
-            bluetoothdminversion=5.47
+            bluetoothdminversion=5.48
         fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-            cd $HOME/src/bluez-5.47 && ./configure --enable-experimental --disable-systemd && \
-            make && sudo make install || die "Couldn't make bluez"
+            cd $HOME/src/bluez-5.48 && ./configure --disable-systemd && make || die "Couldn't make bluez"
+            killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+            sudo make install || die "Couldn't make install bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
             oref0-bluetoothup
         else
-            echo bluez v ${bluetoothdversion} already installed
+            echo bluez version ${bluetoothdversion} already installed
         fi
         echo Installing prerequisites and configs for local-only hotspot
         apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
@@ -691,9 +692,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
             sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
         fi
-        # add two lines to /etc/rc.local if they are missing.
-        if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
-            sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
+        # start bluetoothd in /etc/rc.local if it is missing.
+        if ! grep -q '/usr/local/bin/bluetoothd &' /etc/rc.local; then
+            sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
+        fi
+        # starting with bluez 5.48 the --experimental command line option is not needed. remove the --experimental if it still exists in /etc/rc.local. this is for rigs with version 0.6.0 or earlier
+        if grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
+            sed -i"" 's/^\/usr\/local\/bin\/bluetoothd --experimental \&/\/usr\/local\/bin\/bluetoothd \&/' /etc/rc.local
         fi
         if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
             sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
