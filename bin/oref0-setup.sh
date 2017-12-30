@@ -697,7 +697,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
         fi
         # starting with bluez 5.48 the --experimental command line option is not needed. remove the --experimental if it still exists in /etc/rc.local. this is for rigs with version 0.6.0 or earlier
-        if grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
+        if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
             sed -i"" 's/^\/usr\/local\/bin\/bluetoothd --experimental \&/\/usr\/local\/bin\/bluetoothd \&/' /etc/rc.local
         fi
         if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
