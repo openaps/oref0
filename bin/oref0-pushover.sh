@@ -3,27 +3,7 @@
 TOKEN=$1
 USER=$2
 FILE=${3-enact/suggested.json}
-SOUND=${4-none}   lastDirection=`jq -M '.[0] .direction' $GLUCOSE`
-
-    echo lastDirection=$lastDirection
-
-    if [ "${lastDirection}" == "SingleUp" ]; then
-      direction="+"
-    elif [ "${lastDirection}" == "FortyFiveUp" ]; then
-      direction="++"
-    elif [ "${lastDirection}" == "DoubleUp" ]; then
-      direction="+++"
-    elif [ "${lastDirection}" == "SingleDown" ]; then
-      direction="-"
-    elif [ "${lastDirection}" == "FortyFiveDown" ]; then
-      direction="--"
-    elif [ "${lastDirection}" == "DoubleDown" ]; then
-      direction="---"
-    else
-      direction="" # default for NONE or Flat
-    fi
-
-
+SOUND=${4-none}
 SNOOZE=${5-15}
 ONLYFOR=${6-carbs}
 
@@ -43,54 +23,14 @@ elif ! find $FILE -mmin -5 | grep -q $FILE; then
 elif ! cat $FILE | egrep "add'l|maxBolus"; then
     echo "No additional carbs or bolus required."
 elif [[ $ONLYFOR =~ "carb" ]] && ! cat $FILE | egrep "add'l"; then
-    echo "No additional carbs required."   lastDirection=`jq -M '.[0] .direction' $GLUCOSE`
-
-    echo lastDirection=$lastDirection
-
-    if [ "${lastDirection}" == "SingleUp" ]; then
-      direction="+"
-    elif [ "${lastDirection}" == "FortyFiveUp" ]; then
-      direction="++"
-    elif [ "${lastDirection}" == "DoubleUp" ]; then
-      direction="+++"
-    elif [ "${lastDirection}" == "SingleDown" ]; then
-      direction="-"
-    elif [ "${lastDirection}" == "FortyFiveDown" ]; then
-      direction="--"
-    elif [ "${lastDirection}" == "DoubleDown" ]; then
-      direction="---"
-    else
-      direction="" # default for NONE or Flat
-    fi
-
-
+    echo "No additional carbs required."   
 elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus"; then
     echo "No additional insulin required."
 else
     curl -s -F "token=$TOKEN" -F "user=$USER" -F "sound=$SOUND" -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent
 fi
 
-# Send to Pushover glances API    lastDirection=`jq -M '.[0] .direction' $GLUCOSE`
-
-    echo lastDirection=$lastDirection
-
-    if [ "${lastDirection}" == "SingleUp" ]; then
-      direction="+"
-    elif [ "${lastDirection}" == "FortyFiveUp" ]; then
-      direction="++"
-    elif [ "${lastDirection}" == "DoubleUp" ]; then
-      direction="+++"
-    elif [ "${lastDirection}" == "SingleDown" ]; then
-      direction="-"
-    elif [ "${lastDirection}" == "FortyFiveDown" ]; then
-      direction="--"
-    elif [ "${lastDirection}" == "DoubleDown" ]; then
-      direction="---"
-    else
-      direction="" # default for NONE or Flat
-    fi
-
-
+# Send to Pushover glances API    
 #   For watch face updates once every 10 minutes
 #   Works for Apple Watch complications 
 #   Not tested for Android Wear notifications yet
@@ -108,52 +48,12 @@ delta="${delta%\"}"
 delta="${delta#\"}"
 cob=`jq .COB $FILE`
 iob=`jq .IOB $FILE`
-   lastDirection=`jq -M '.[0] .direction' $GLUCOSE`
-
-    echo lastDirection=$lastDirection
-
-    if [ "${lastDirection}" == "SingleUp" ]; then
-      direction="+"
-    elif [ "${lastDirection}" == "FortyFiveUp" ]; then
-      direction="++"
-    elif [ "${lastDirection}" == "DoubleUp" ]; then
-      direction="+++"
-    elif [ "${lastDirection}" == "SingleDown" ]; then
-      direction="-"
-    elif [ "${lastDirection}" == "FortyFiveDown" ]; then
-      direction="--"
-    elif [ "${lastDirection}" == "DoubleDown" ]; then
-      direction="---"
-    else
-      direction="" # default for NONE or Flat
-    fi
-
 
 #echo "carbsReq=${carbsReq} tick=${tick} bgNow=${bgNow} delta=${delta} cob=${cob} iob=${iob}"
 pushoverGlances=$(cat preferences.json | jq -M '.pushoverGlances')
 
 if [ "${pushoverGlances}" == "null" -o "${pushoverGlances}" == "false" ]; then
-    echo "pushoverGlances not enabled in preferences.json"   lastDirection=`jq -M '.[0] .direction' $GLUCOSE`
-
-    echo lastDirection=$lastDirection
-
-    if [ "${lastDirection}" == "SingleUp" ]; then
-      direction="+"
-    elif [ "${lastDirection}" == "FortyFiveUp" ]; then
-      direction="++"
-    elif [ "${lastDirection}" == "DoubleUp" ]; then
-      direction="+++"
-    elif [ "${lastDirection}" == "SingleDown" ]; then
-      direction="-"
-    elif [ "${lastDirection}" == "FortyFiveDown" ]; then
-      direction="--"
-    elif [ "${lastDirection}" == "DoubleDown" ]; then
-      direction="---"
-    else
-      direction="" # default for NONE or Flat
-    fi
-
-
+    echo "pushoverGlances not enabled in preferences.json"
 else
   GLANCES="monitor/last_glance"
   GLUCOSE="monitor/glucose.json"
