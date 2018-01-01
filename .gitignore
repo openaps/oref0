@@ -21,3 +21,7 @@ coverage/
 
 npm-debug.log
 bin/__pycache__
+
+package-lock.json
+
+*.pyc

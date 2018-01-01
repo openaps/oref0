@@ -85,16 +85,14 @@ minutes_list=()
 end_time=23:30
 time=00:00
 minutes=0
-while :
-do
-  time_list+=( "$time" )
-  minutes_list+=( "$minutes" )
-  if [ $time != "$end_time" ]; then
-    time="$(date --date="$time 30 minutes" +%R)";
-    minutes=$(expr $minutes + 30)
-  else
-    break
-  fi
+for h in $(seq -w 0 23); do
+    for m in 00 30; do
+        time="$h:$m"
+        minutes=$(echo "60 * $h + $m" | bc)
+        #echo $time $minutes
+        time_list+=( "$time" )
+        minutes_list+=( "$minutes" )
+    done
 done
 
 for (( i=0; i<${#minutes_list[@]}; i++ ))

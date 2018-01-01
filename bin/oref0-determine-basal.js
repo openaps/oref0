@@ -182,17 +182,6 @@ if (!module.parent) {
         }
     }
 
-    //if old reading from Dexcom do nothing
-
-    var systemTime = new Date();
-    var bgTime;
-    if (glucose_data[0].display_time) {
-        bgTime = new Date(glucose_data[0].display_time.replace('T', ' '));
-    } else if (glucose_data[0].dateString) {
-        bgTime = new Date(glucose_data[0].dateString);
-    } else { console.error("Could not determine last BG time"); }
-    var minAgo = (systemTime - bgTime) / 60 / 1000;
-
     if (warnings.length) {
       console.error(JSON.stringify(warnings));
     }
@@ -202,16 +191,6 @@ if (!module.parent) {
       process.exit(1);
     }
 
-    if (minAgo > 10 || minAgo < -5) { // Dexcom data is too old, or way in the future
-        var reason = "BG data is too old (it's probably this), or clock set incorrectly.  The last BG data was read at "+bgTime+" but your system time currently is "+systemTime;
-        console.error(reason);
-        var msg = {reason: reason }
-        console.log(JSON.stringify(msg));
-        // errors.push(msg);
-        process.exit(1);
-    }
-
-
     if (typeof(iob_data.length) && iob_data.length > 1) {
         console.error(JSON.stringify(iob_data[0]));
     } else {
@@ -219,7 +198,7 @@ if (!module.parent) {
     }
 
     console.error(JSON.stringify(glucose_status));
-    console.error(JSON.stringify(currenttemp));
+    //console.error(JSON.stringify(currenttemp));
     //console.error(JSON.stringify(profile));
 
     var tempBasalFunctions = require('oref0/lib/basal-set-temp');
