@@ -396,13 +396,17 @@ describe('IOB', function() {
             };
 
         var hourLaterInputs = inputs;
-        hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+        hourLaterInputs.clock = new Date(now + (4 * 60 * 60 * 1000)).toISOString();
 
         var hourLaterWith5 = require('../lib/iob')(hourLaterInputs)[0];
 
-        hourLaterInputs.profile.dia = 4;
+        console.error(hourLaterWith5.iob);
+
+        hourLaterInputs.profile.dia = 3;
 
         var hourLaterWith4 = require('../lib/iob')(hourLaterInputs)[0];
+
+        console.error(hourLaterWith4.iob);
 
         hourLaterWith4.iob.should.equal(hourLaterWith5.iob);
     });
