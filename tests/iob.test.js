@@ -707,6 +707,112 @@ describe('IOB', function() {
         hourLater.iob.should.be.greaterThan(0.8);
     });
 
+    it('should calculate IOB without counting time pump suspended', function() {
+
+        var basalprofile = [{
+            'i': 0,
+            'start': '00:00:00',
+            'rate': 1,
+            'minutes': 0
+        }];
+        var now = Date.now(),
+            timestamp = new Date(now).toISOString(),
+            timestamp15mAgo = new Date(now - (15 * 60 * 1000)).toISOString(),
+            timestamp30mAgo = new Date(now - (30 * 60 * 1000)).toISOString(),
+            timestamp45mAgo = new Date(now - (45 * 60 * 1000)).toISOString(),
+            timestamp60mAgo = new Date(now - (60 * 60 * 1000)).toISOString(),
+            timestamp75mAgo = new Date(now - (75 * 60 * 1000)).toISOString(),
+
+            inputs = {
+                clock: timestamp,
+                history: [{
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 15,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
+                }, {
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
+                }],
+                profile: {
+                    dia: 3,
+                    current_basal: 1,
+                    max_daily_basal: 1,
+                    //bolussnooze_dia_divisor: 2,
+                    'basalprofile': basalprofile
+                }
+            };
+
+        var iobInputs = inputs;
+        iobInputs.clock = timestamp;
+
+        var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
+
+        iobInputs.history[0]['duration (min)'] = 30;
+
+        iobInputs.history.push({
+                    _type: 'PumpSuspend',
+                    date: timestamp45mAgo,
+                    timestamp: timestamp45mAgo
+                });
+
+        iobInputs.history.push({
+                    _type: 'PumpResume',
+                    date: timestamp30mAgo,
+                    timestamp: timestamp30mAgo
+                });
+
+        iobInputs.profile.suspend_zeros_iob = true;
+
+        var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+
+        // this test suspend at the end of a basal
+        iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
+
+        iobInputs.history[0]['duration (min)'] = 15;
+
+        iobInputs.history.push({
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestamp30mAgo,
+                    timestamp: timestamp30mAgo
+                });
+        iobInputs.history.push({
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 15,
+                    date: timestamp,
+                    timestamp: timestamp
+                });
+
+        iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
+
+        iobInputs.history.splice(4, 2);
+
+        iobInputs.history[0]['duration (min)'] = 45;
+
+        iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+
+        // this test suspend in the middle of a basal
+        iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
+
+        iobInputs.history[2].date = timestamp75mAgo;
+        iobInputs.history[2].timestamp = timestamp75mAgo;
+        iobInputs.history[3].date = timestamp;
+        iobInputs.history[3].timestamp = timestamp;
+        iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+
+        // this test a suspend that completely encompases a basal
+        iobNowWithSuspend.iob.should.equal(0);
+
+        // Need to add tests for:
+        //   1. Suspend at the beginning of a Basal
+        //   2. Suspend that spans two Basals
+        //   3. Resume with no matching prior Suspend (assumes history began suspended)
+        //   4. Suspend with no matching subsequent Resume (assumes pump remains suspended after Suspend)
+    });
+
 
     it('should not report negative IOB with Temp Basals and a basal profile with drastic changes', function() {
 
