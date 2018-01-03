@@ -367,6 +367,45 @@ describe('IOB', function() {
         //afterDIA.bolussnooze.should.equal(0);
     });
 
+    it('should force minimum 5 hour DIA with Rapid-acting', function() {
+
+        var basalprofile = [{
+            'i': 0,
+            'start': '00:00:00',
+            'rate': 1,
+            'minutes': 0
+        }];
+
+        var now = Date.now(),
+            timestamp = new Date(now).toISOString(),
+            inputs = {
+                clock: timestamp,
+                history: [{
+                    _type: 'Bolus',
+                    amount: 1,
+                    timestamp: timestamp
+                }],
+                profile: {
+                    dia: 5,
+                    //bolussnooze_dia_divisor: 2,
+                    basalprofile: basalprofile,
+                    current_basal: 1,
+                    max_daily_basal: 1,
+                    curve: 'rapid-acting'
+                }
+            };
+
+        var hourLaterInputs = inputs;
+        hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
+
+        var hourLaterWith5 = require('../lib/iob')(hourLaterInputs)[0];
+
+        hourLaterInputs.profile.dia = 4;
+
+        var hourLaterWith4 = require('../lib/iob')(hourLaterInputs)[0];
+
+        hourLaterWith4.iob.should.equal(hourLaterWith5.iob);
+    });
 
     //it('should snooze fast if bolussnooze_dia_divisor is high', function() {
 
