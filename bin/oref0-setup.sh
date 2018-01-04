@@ -151,7 +151,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     echo
     if [[ -z $DIR ]]; then
-        DIR="myopenaps"
+        DIR="$HOME/myopenaps"
     fi
     directory="$(readlink -m $DIR)"
     echo
@@ -480,8 +480,8 @@ read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Attempting to remove git to make install --nogit by default for existing users
-    echo Removing any existing git
-    rm -rf ~/myopenaps/.git
+    echo Removing any existing git in $directory/.git
+    rm -rf $directory/.git
     echo Removed any existing git
 
     # TODO: delete this after openaps 0.2.1 release
