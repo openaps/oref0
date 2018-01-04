@@ -94,20 +94,20 @@ if (!module.parent) {
 			output_record.trend_arrow = "45_UP";
 			output_record.direction = "FortyFiveUp";
 		}
-		else if (delta < -1)
+		else if (delta < -3)
 		{
-			output_record.trend_arrow = "45_DOWN";
-			output_record.direction = "FortyFiveDown";
+			output_record.trend_arrow = "DOUBLE_DOWN";
+			output_record.direction = "DoubleDown";
 		}
 		else if (delta < -2)
 		{
 			output_record.trend_arrow = "SINGLE_DOWN";
 			output_record.direction = "SingleDown";
 		}
-		else if (delta < -3)
+		else if (delta < -1)
 		{
-			output_record.trend_arrow = "DOUBLE_DOWN";
-			output_record.direction = "DoubleDown";
+			output_record.trend_arrow = "45_DOWN";
+			output_record.direction = "FortyFiveDown";
 		}
 		else
 		{
