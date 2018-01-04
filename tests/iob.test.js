@@ -707,7 +707,7 @@ describe('IOB', function() {
         hourLater.iob.should.be.greaterThan(0.8);
     });
 
-    it('should calculate IOB without counting time pump suspended', function() {
+    it('should calculate IOB without counting time pump suspended at end of basal', function() {
 
         var basalprofile = [{
             'i': 0,
@@ -739,6 +739,7 @@ describe('IOB', function() {
                 profile: {
                     dia: 3,
                     current_basal: 1,
+                    suspend_zeros_iob: true,
                     max_daily_basal: 1,
                     //bolussnooze_dia_divisor: 2,
                     'basalprofile': basalprofile
@@ -746,10 +747,12 @@ describe('IOB', function() {
             };
 
         var iobInputs = inputs;
-        iobInputs.clock = timestamp;
 
+        // Calculate IOB with inputs that will be the same as
         var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
 
+        // Change the basal duration to 30 minutes
+        // but cut off the last 15 with a pump suspend
         iobInputs.history[0]['duration (min)'] = 30;
 
         iobInputs.history.push({
@@ -764,55 +767,240 @@ describe('IOB', function() {
                     timestamp: timestamp30mAgo
                 });
 
-        iobInputs.profile.suspend_zeros_iob = true;
-
         var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
 
-        // this test suspend at the end of a basal
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
+    });
 
-        iobInputs.history[0]['duration (min)'] = 15;
+    it('should calculate IOB without counting time pump suspended in middle of basal', function() {
 
-        iobInputs.history.push({
+        var basalprofile = [{
+            'i': 0,
+            'start': '00:00:00',
+            'rate': 1,
+            'minutes': 0
+        }];
+        var now = Date.now(),
+            timestamp = new Date(now).toISOString(),
+            timestamp15mAgo = new Date(now - (15 * 60 * 1000)).toISOString(),
+            timestamp30mAgo = new Date(now - (30 * 60 * 1000)).toISOString(),
+            timestamp45mAgo = new Date(now - (45 * 60 * 1000)).toISOString(),
+            timestamp60mAgo = new Date(now - (60 * 60 * 1000)).toISOString(),
+            timestamp75mAgo = new Date(now - (75 * 60 * 1000)).toISOString(),
+
+            inputs = {
+                clock: timestamp,
+                history: [{
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 15,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
+                }, {
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
+                }, {
                     _type: 'TempBasal',
                     rate: 2,
                     date: timestamp30mAgo,
                     timestamp: timestamp30mAgo
-                });
-        iobInputs.history.push({
+                }, {
                     _type: 'TempBasalDuration',
                     'duration (min)': 15,
                     date: timestamp,
                     timestamp: timestamp
-                });
+                }],
+                profile: {
+                    dia: 3,
+                    current_basal: 1,
+                    suspend_zeros_iob: true,
+                    max_daily_basal: 1,
+                    //bolussnooze_dia_divisor: 2,
+                    'basalprofile': basalprofile
+                }
+            };
 
-        iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobInputs = inputs;
 
-        iobInputs.history.splice(4, 2);
+        var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
 
-        iobInputs.history[0]['duration (min)'] = 45;
+        inputs = {
+                clock: timestamp,
+                history: [{
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 45,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
+                }, {
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
+                }, {
+                    _type: 'PumpSuspend',
+                    date: timestamp45mAgo,
+                    timestamp: timestamp45mAgo
+                }, {
+                    _type: 'PumpResume',
+                    date: timestamp30mAgo,
+                    timestamp: timestamp30mAgo
+                }],
+                profile: {
+                    dia: 3,
+                    current_basal: 1,
+                    suspend_zeros_iob: true,
+                    max_daily_basal: 1,
+                    //bolussnooze_dia_divisor: 2,
+                    'basalprofile': basalprofile
+                }
+            };
 
-        iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+        iobInputs = inputs;
 
-        // this test suspend in the middle of a basal
+        var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
 
-        iobInputs.history[2].date = timestamp75mAgo;
-        iobInputs.history[2].timestamp = timestamp75mAgo;
-        iobInputs.history[3].date = timestamp;
-        iobInputs.history[3].timestamp = timestamp;
-        iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+    });
+
+    it('should calculate IOB without counting time pump suspended surrounding a basal', function() {
+
+        var basalprofile = [{
+            'i': 0,
+            'start': '00:00:00',
+            'rate': 1,
+            'minutes': 0
+        }];
+        var now = Date.now(),
+            timestamp = new Date(now).toISOString(),
+            timestamp15mAgo = new Date(now - (15 * 60 * 1000)).toISOString(),
+            timestamp30mAgo = new Date(now - (30 * 60 * 1000)).toISOString(),
+            timestamp45mAgo = new Date(now - (45 * 60 * 1000)).toISOString(),
+            timestamp60mAgo = new Date(now - (60 * 60 * 1000)).toISOString(),
+            timestamp75mAgo = new Date(now - (75 * 60 * 1000)).toISOString(),
+
+            inputs = {
+                clock: timestamp,
+                history: [{
+                    _type: 'PumpSuspend',
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
+                }, {
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 15,
+                    date: timestamp45mAgo,
+                    timestamp: timestamp45mAgo
+                }, {
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestamp45mAgo,
+                    timestamp: timestamp45mAgo
+                }, {
+                    _type: 'PumpResume',
+                    date: timestamp15mAgo,
+                    timestamp: timestamp15mAgo
+                }],
+                profile: {
+                    dia: 3,
+                    current_basal: 1,
+                    suspend_zeros_iob: true,
+                    max_daily_basal: 1,
+                    //bolussnooze_dia_divisor: 2,
+                    'basalprofile': basalprofile
+                }
+            };
+
+        var iobInputs = inputs;
+
+        var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
 
         // this test a suspend that completely encompases a basal
         iobNowWithSuspend.iob.should.equal(0);
-
-        // Need to add tests for:
-        //   1. Suspend at the beginning of a Basal
-        //   2. Suspend that spans two Basals
-        //   3. Resume with no matching prior Suspend (assumes history began suspended)
-        //   4. Suspend with no matching subsequent Resume (assumes pump remains suspended after Suspend)
     });
 
+    it('should calculate IOB without counting time pump suspended at beginning of basal', function() {
+
+        var basalprofile = [{
+            'i': 0,
+            'start': '00:00:00',
+            'rate': 1,
+            'minutes': 0
+        }];
+        var now = Date.now(),
+            timestamp = new Date(now).toISOString(),
+            timestamp15mAgo = new Date(now - (15 * 60 * 1000)).toISOString(),
+            timestamp30mAgo = new Date(now - (30 * 60 * 1000)).toISOString(),
+            timestamp45mAgo = new Date(now - (45 * 60 * 1000)).toISOString(),
+            timestamp60mAgo = new Date(now - (60 * 60 * 1000)).toISOString(),
+            timestamp75mAgo = new Date(now - (75 * 60 * 1000)).toISOString(),
+
+            inputs = {
+                clock: timestamp,
+                history: [{
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 15,
+                    date: timestamp45mAgo,
+                    timestamp: timestamp45mAgo
+                }, {
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestamp45mAgo,
+                    timestamp: timestamp45mAgo
+                }],
+                profile: {
+                    dia: 3,
+                    current_basal: 1,
+                    suspend_zeros_iob: true,
+                    max_daily_basal: 1,
+                    //bolussnooze_dia_divisor: 2,
+                    'basalprofile': basalprofile
+                }
+            };
+
+        var iobInputs = inputs;
+
+        var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
+
+        inputs = {
+            clock: timestamp,
+            history: [{
+                _type: 'PumpSuspend',
+                date: timestamp60mAgo,
+                timestamp: timestamp60mAgo
+            }, {
+                _type: 'TempBasalDuration',
+                'duration (min)': 30,
+                date: timestamp60mAgo,
+                timestamp: timestamp60mAgo
+            }, {
+                _type: 'TempBasal',
+                rate: 2,
+                date: timestamp60mAgo,
+                timestamp: timestamp60mAgo
+            }, {
+                _type: 'PumpResume',
+                date: timestamp45mAgo,
+                timestamp: timestamp45mAgo
+            }],
+            profile: {
+                dia: 3,
+                current_basal: 1,
+                suspend_zeros_iob: true,
+                max_daily_basal: 1,
+                'basalprofile': basalprofile
+            }
+        };
+
+        var iobInputs = inputs;
+
+        var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+
+        iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
+        // Need to add tests for:
+        //   1. Resume with no matching prior Suspend (assumes history began suspended)
+        //   2. Suspend with no matching subsequent Resume (assumes pump remains suspended after Suspend)
+    });
 
     it('should not report negative IOB with Temp Basals and a basal profile with drastic changes', function() {
 
