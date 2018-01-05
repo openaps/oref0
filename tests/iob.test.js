@@ -998,8 +998,11 @@ describe('IOB', function() {
 
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
         // Need to add tests for:
-        //   1. Resume with no matching prior Suspend (assumes history began suspended)
-        //   2. Suspend with no matching subsequent Resume (assumes pump remains suspended after Suspend)
+        //   1. Resume with no matching prior Suspend within a basal (assumes history began suspended)
+        //   2. Resume with no matching prior Suspend after a basal (assumes history began suspended)
+        //   3. Suspend with no matching subsequent Resume within a basal (assumes pump remains suspended after Suspend)
+        //   4. Resume with no matching prior Suspend before a basal (assumes history began suspended)
+        //   5. Suspend with no Temp Basals - normal basal
     });
 
     it('should not report negative IOB with Temp Basals and a basal profile with drastic changes', function() {
