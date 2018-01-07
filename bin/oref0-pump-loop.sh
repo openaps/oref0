@@ -520,20 +520,6 @@ function invoke_reservoir_etc {
     test ${PIPESTATUS[0]} -eq 0
 }
 
-function calculate_iob {
-    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || (echo; echo "Couldn't calculate IOB"; fail "$@")
-}
-
-function invoke_pumphistory_etc {
-    openaps report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
-    test ${PIPESTATUS[0]} -eq 0
-}
-
-function invoke_reservoir_etc {
-    openaps report invoke monitor/reservoir.json monitor/battery.json monitor/status.json 2>&3 >&4 | tail -1
-    test ${PIPESTATUS[0]} -eq 0
-}
-
 function merge_pumphistory {
     jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
     calculate_iob
