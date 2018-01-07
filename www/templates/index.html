@@ -14,29 +14,29 @@
 
         <script>
             var bgNow = 0;
-			var chartParam = {unit: "mg/dl", max: 300, min: 40, step: 40} ;
-			var deltaFix = 0;
-			var suggestedBg;
-			var eventualBg;
-			var enactedBg;
+            var chartParam = {unit: "mg/dl", max: 300, min: 40, step: 40} ;
+            var deltaFix = 0;
+            var suggestedBg;
+            var eventualBg;
+            var enactedBg;
             var delta;
             var tick = "";
-			
-			$.ajax({
+            
+            $.ajax({
                 url: "target",
                 async: false,
                 dataType: 'json',
                 success: function(data) {
-				    chartParam.unit = data.user_preferred_units;
-					if (chartParam.unit == 'mmol/L') {
-					    chartParam.max = 6;
-					    chartParam.min = 4;
-					    chartParam.step = 1;
-						deltaFix = 2;
-					}
-				}
-			});
-			
+                    chartParam.unit = data.user_preferred_units;
+                    if (chartParam.unit == 'mmol/L') {
+                        chartParam.max = 6;
+                        chartParam.min = 4;
+                        chartParam.step = 1;
+                        deltaFix = 2;
+                    }
+                }
+            });
+            
             var data_g = [];
             $.ajax({
                 url: "glucose",
@@ -54,7 +54,7 @@
                         var minutes = Math.round((lastBGdate.getTime() - date1.getTime())/60000);
                         data[i].glucose = bgUnitConvert(data[i].glucose,chartParam);
                         if(minutes > 4 && minutes < 6) {
-							delta = (data[0].glucose - data[i].glucose).toFixed(deltaFix);
+                            delta = (data[0].glucose - data[i].glucose).toFixed(deltaFix);
                             if ( delta >= 0 ) {
                                 tick = "+"+delta;
                             } else {
@@ -100,23 +100,23 @@
                 }
             });
 
-			$.ajax({
+            $.ajax({
                 url: "enacted",
                 async: false,
                 dataType: 'json',
                 success: function(data) {
-				    enactedBg = bgUnitConvert(data.bg,chartParam);
-				}
-			});
+                    enactedBg = bgUnitConvert(data.bg,chartParam);
+                }
+            });
 
-			
+            
             $.ajax({
                 url: "suggested",
                 async: false,
                 dataType: 'json',
                 success: function(data) {
-				    eventualBg = bgUnitConvert(data.eventualBG,chartParam);
-				    suggestedBg = bgUnitConvert(data.bg,chartParam);
+                    eventualBg = bgUnitConvert(data.eventualBG,chartParam);
+                    suggestedBg = bgUnitConvert(data.bg,chartParam);
                     var arr_data = [];
 
                     arr_data.push({
@@ -156,12 +156,12 @@
 
                         data_predBgs = false;
                     });
-					if ( chartParam.unit == 'mmol\/L' ) {
-						bgNow = bgNow.toFixed(1);
-						suggestedBg = suggestedBg.toFixed(1);
-						enactedBg = enactedBg.toFixed(1);
-						eventualBg = eventualBg.toFixed(1);
-					}
+                    if ( chartParam.unit == 'mmol\/L' ) {
+                        bgNow = bgNow.toFixed(1);
+                        suggestedBg = suggestedBg.toFixed(1);
+                        enactedBg = enactedBg.toFixed(1);
+                        eventualBg = eventualBg.toFixed(1);
+                    }
                     var config = {
                         type: 'scatter',
                         data: {
@@ -221,14 +221,14 @@
                 $(selector).text(resultInMinutes + " min ago");
             }
 
-			function bgUnitConvert(value,chartParam) {
-				if ( chartParam.unit == 'mmol\/L' ) {
+            function bgUnitConvert(value,chartParam) {
+                if ( chartParam.unit == 'mmol\/L' ) {
                     value = Math.round(value / 18 * 100) / 100 ;
-				    if ( parseInt(value) + 1  > chartParam.max ) { chartParam.max = parseInt(value) + 1;}
-				    if ( parseInt(value) < chartParam.min ) { chartParam.min = parseInt(value);}
-				}
-				return value
-			}
+                    if ( parseInt(value) + 1  > chartParam.max ) { chartParam.max = parseInt(value) + 1;}
+                    if ( parseInt(value) < chartParam.min ) { chartParam.min = parseInt(value);}
+                }
+                return value
+            }
         </script>
 
     </head>
