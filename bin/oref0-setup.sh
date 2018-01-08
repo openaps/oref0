@@ -1003,7 +1003,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "Installing socat..."
         apt-get install socat
         echo "Installing openaps-menu..."
-        cd $HOME/src && git clone git://github.com/cluckj/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+        cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
         cd $HOME/myopenaps && openaps alias remove battery-status && openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
