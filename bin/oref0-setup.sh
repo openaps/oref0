@@ -195,7 +195,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
-    if grep -a "Explorer HAT" /proc/device-tree/hat/product ; then
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product ; then
         echocolor "Explorer Board HAT detected. "
         ttyport=/dev/spidev0.0
     else
