@@ -195,34 +195,35 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
-
-    read -p "Are you using an Explorer Board / HAT? [Y]/n " -r
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-        echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
-        read -p "What is your TTY port? " -r
-        ttyport=$REPLY
-        echocolor-n "Ok, "
-        if [[ -z "$ttyport" ]]; then
-            echo -n Carelink
-        else
-            echo -n TTY $ttyport
-        fi
-        echocolor " it is. "
-        echo
+    if grep -a "Explorer HAT" /proc/device-tree/hat/product ; then
+        echocolor "Explorer Board HAT detected. "
+        ttyport=/dev/spidev0.0
     else
-        if  getent passwd edison > /dev/null; then
-            echocolor "Yay! Configuring for Edison with Explorer Board. "
-            ttyport=/dev/spidev5.1
-        elif getent passwd pi > /dev/null; then
-            echocolor "Yay! Configuring for Pi with Explorer Board HAT. "
-            ttyport=/dev/spidev0.0
-        else
-            echo "Hmm, you don't seem to be using an Edison or Pi."
-            read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+        read -p "Are you using an Explorer Board? [Y]/n " -r
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
+            read -p "What is your TTY port? " -r
             ttyport=$REPLY
-            echocolor "Ok, we'll try TTY $ttyport then."
+            echocolor-n "Ok, "
+            if [[ -z "$ttyport" ]]; then
+                echo -n Carelink
+            else
+                echo -n TTY $ttyport
+            fi
+            echocolor " it is. "
+            echo
+        else
+            if  getent passwd edison > /dev/null; then
+                echocolor "Yay! Configuring for Edison with Explorer Board. "
+                ttyport=/dev/spidev5.1
+            else
+                echo "Hmm, you don't seem to be using an Edison."
+                read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+                ttyport=$REPLY
+                echocolor "Ok, we'll try TTY $ttyport then."
+            fi
+            echo
         fi
-        echo
     fi
 
 
