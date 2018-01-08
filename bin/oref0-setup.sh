@@ -1091,6 +1091,26 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo To edit your settings.json to set maxBasal or DIA, run: nano $directory/settings/settings.json
         echo To edit your bg_targets_raw.json to set targets, run: nano $directory/settings/bg_targets_raw.json
     fi
+    
+  #Check to see if Explorer HAT is present, and install all necessary stuff
+  if grep -a "Explorer HAT" /proc/device-tree/hat/product ; then
+    echo "Looks like you're using an Explorer HAT!"
+    echo "Making sure SPI is enabled..."
+    sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+    echo "Enabling i2c device nodes..."
+    sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
+    echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
+    echo "i2c-dev" > /etc/modules-load.d/i2c.conf
+    echo "Installing socat..."
+    apt-get install socat
+    echo "Installing openaps-menu..."
+    cd $HOME/src && git clone -b explorer-hat git://github.com/cluckj/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+    cd $HOME/src/openaps-menu && sudo npm install
+    cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
+    cd $HOME/myopenaps && openaps alias remove battery-status && openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
+    read -p "Raspberry Pi firmware update, and reboot required. Press enter to continue or press ctrl+c to cancel." -r
+    rpi-update
+  fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
 
