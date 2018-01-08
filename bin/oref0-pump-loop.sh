@@ -698,8 +698,10 @@ function glucose-fresh {
 }
 
 function refresh_pumphistory_24h {
-    if  getent passwd edison > /dev/null; then
+    if [ -e ~/src/EdisonVoltage/voltage ]; then
         sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json 2>&3
+    elif [ -e /root/src/openaps-menu/scripts/getvoltage.sh ]; then
+        sudo /root/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json 2>&3
     else
         rm monitor/edison-battery.json 2>&3
     fi
