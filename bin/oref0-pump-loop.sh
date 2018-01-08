@@ -127,6 +127,7 @@ function fail {
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
     else
         maybe_mmtune
+        echo "If pump and rig are close enough, this error usually self-resolves. Stand by for the next loop."
         echo Unsuccessful oref0-pump-loop at $(date)
     fi
     if grep -q "percent" monitor/temp_basal.json; then
@@ -513,7 +514,7 @@ function monitor_pump {
 }
 
 function calculate_iob {
-    timerun oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || (echo; echo "Couldn't calculate IOB"; fail "$@")
+    timerun oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
 }
 
 function invoke_pumphistory_etc {
@@ -676,7 +677,7 @@ function wait_for_bg {
         echo "MDT CGM configured; not waiting"
     elif egrep -q "Warning:" enact/smb-suggested.json 2>&3; then
         echo "Retrying without waiting for new BG"
-    elif egrep -q "Waiting [0].[0-9]m to microbolus again." enact/smb-suggested.json 2>&3; then
+    elif egrep -q "Waiting [0](\.[0-9])?m ([0-6]?[0-9]s )?to microbolus again." enact/smb-suggested.json 2>&3; then
         echo "Retrying microbolus without waiting for new BG"
     else
         echo -n "Waiting up to 4 minutes for new BG: "

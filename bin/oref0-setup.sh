@@ -143,7 +143,7 @@ if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" |
     DIR="" # to force a Usage prompt
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     echo
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
@@ -340,16 +340,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
       fi
 
-    read -p "Enable automatic sensitivity adjustment? [Y]/n  " -r
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-       echocolor "Ok, no autosens."
-       echo
-    else
-       ENABLE+=" autosens "
-       echocolor "Ok, autosens will be enabled."
-       echo
-    fi
-
     read -p "Enable autotuning of basals and ratios? [Y]/n  " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
        echocolor "Ok, no autotune."
@@ -361,7 +351,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     #always enabling AMA by default
-    ENABLE+=" meal "
+    #ENABLE+=" meal "
 
     read -p "Do you want to enable carbsReq Pushover alerts? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -936,16 +926,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
-    # configure optional features passed to enact/suggested.json report
-    if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
-        EXTRAS="settings/autosens.json monitor/meal.json"
-    elif [[ $ENABLE =~ autosens ]]; then
-        EXTRAS="settings/autosens.json"
-    elif [[ $ENABLE =~ meal ]]; then
-        EXTRAS='"" monitor/meal.json'
-    fi
-    echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
-    openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
+    echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
+    openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
 
     # configure autotune if enabled
     if [[ $ENABLE =~ autotune ]]; then
@@ -1052,9 +1034,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         else
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
         fi
-        if [[ $ENABLE =~ autosens ]]; then
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
-        fi
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
         if [[ $ENABLE =~ autotune ]]; then
             # autotune nightly at 4:05am using data from NS
             (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 4 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | json | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
@@ -1084,7 +1064,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-version --check-for-updates" || echo "0 * * * * cd $directory && oref0-version --check-for-updates > /tmp/oref0-updates.txt") | crontab -
         (crontab -l; crontab -l | grep -q "flask run" || echo "@reboot cd ~/src/oref0/www && export FLASK_APP=app.py && flask run -p 80 --host=0.0.0.0" | tee -a /var/log/openaps/flask.log) | crontab -
-
         crontab -l | tee $HOME/crontab.txt
     fi
 
