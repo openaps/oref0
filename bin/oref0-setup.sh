@@ -998,7 +998,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Enabling i2c device nodes..."
     sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
     egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
-    egrep "^i2c-dev" /etc/modules-load.d/i2c.conf || echo "i2c-dev" > /etc/modules-load.d/i2c.conf
+    echo "i2c-dev" > /etc/modules-load.d/i2c.conf
     echo "Installing socat..."
     apt-get install socat
     echo "Installing openaps-menu..."
