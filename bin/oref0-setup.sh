@@ -1108,8 +1108,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     cd $HOME/src/openaps-menu && sudo npm install
     cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     cd $HOME/myopenaps && openaps alias remove battery-status && openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
-    read -p "Raspberry Pi firmware update, and reboot required. Press enter to continue or press ctrl+c to cancel." -r
-    rpi-update
   fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
