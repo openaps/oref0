@@ -122,6 +122,8 @@ function ns_meal_carbs {
 function battery_status {
     if [ -e ~/src/EdisonVoltage/voltage ]; then
         sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | tee monitor/edison-battery.json | jq -C -c .
+    elif [ -e /root/src/openaps-menu/scripts/getvoltage.sh ]; then
+        sudo /root/src/openaps-menu/scripts/getvoltage.sh | tee monitor/edison-battery.json | jq -C -c .
     fi
 }
 

@@ -581,9 +581,9 @@ function get_settings {
         NON_X12_ITEMS=""
     else
         # On all other supported pumps, these reports work. 
-        NON_X12_ITEMS="settings/bg_targets_raw.json settings/basal_profile.json settings/settings.json"
+        NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
     fi
-    retry_return openaps report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
+    retry_return openaps report invoke settings/model.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
     # generate settings/pumpprofile.json without autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     if ls settings/pumpprofile.json.new >&4 && cat settings/pumpprofile.json.new | jq -e .current_basal >&4; then
@@ -698,7 +698,13 @@ function glucose-fresh {
 }
 
 function refresh_pumphistory_24h {
-    sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json 2>&3
+    if [ -e ~/src/EdisonVoltage/voltage ]; then
+        sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json 2>&3
+    elif [ -e /root/src/openaps-menu/scripts/getvoltage.sh ]; then
+        sudo /root/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json 2>&3
+    else
+        rm monitor/edison-battery.json 2>&3
+    fi
     if (! ls monitor/edison-battery.json 2>&3 >&4); then
         echo -n "Edison battery level not found. "
         autosens_freq=15
