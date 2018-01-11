@@ -598,6 +598,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     #TODO: remove this when IPv6 works reliably
     echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
 
+    # update, upgrade, and autoclean apt-get
+    echo Running apt-get update
+    sudo apt-get update
+    echo Running apt-get upgrade
+    sudo apt-get upgrade
+    echo Running apt-get autoclean
+    sudo apt-get autoclean
+
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
