@@ -114,7 +114,7 @@ function fail {
         wait_for_bg
         echo "Unsuccessful oref0-pump-loop (BG too old) at $(date)"
     # don't treat suspended pump as a complete failure
-    elif find monitor/ -mmin -5 | grep status.json >&4 && grep -q '"suspended": true' monitor/status.json; then
+    elif find monitor/ -mmin -5 | grep status.json >&4 && grep -q '"Suspended": true' monitor/status.json; then
         refresh_profile 15; refresh_pumphistory_24h
         refresh_after_bolus_or_enact
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
@@ -236,7 +236,7 @@ function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
     echo -n "Checking reservoir: " \
-    && (openaps report invoke monitor/reservoir.json || openaps report invoke monitor/reservoir.json) 2>&3 >&4 | tail -1 \
+    && (reservoir_Go || reservoir_Go) 2>&3 >&4 | tail -1 \
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
     && echo -n ", suggested: " \
@@ -266,11 +266,11 @@ function smb_verify_status {
     # Read the pump status and verify it is not bolusing
     rm -rf monitor/status.json
     echo -n "Checking pump status (suspended/bolusing): "
-    ( openaps report invoke monitor/status.json || openaps report invoke monitor/status.json ) 2>&3 >&4 | tail -1 \
+    ( status_Go || status_Go ) 2>&3 >&4 | tail -1 \
     && cat monitor/status.json | jq -C -c . \
-    && grep -q '"status": "normal"' monitor/status.json \
-    && grep -q '"bolusing": false' monitor/status.json \
-    && if grep -q '"suspended": true' monitor/status.json; then
+    && grep -q '"Code": 3' monitor/status.json \
+    && grep -q '"Bolusing": false' monitor/status.json \
+    && if grep -q '"Suspended": true' monitor/status.json; then
         echo -n "Pump suspended; "
         unsuspend_if_no_temp
         refresh_pumphistory_and_meal
@@ -407,7 +407,7 @@ function mdt_get_bg {
 function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
-    ( openaps report invoke settings/model.json || openaps report invoke settings/model.json ) 2>&3 >&4 | tail -1 \
+    ( model_Go || model_Go ) 2>&3 >&4 | tail -1 \
     && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && die "error: x12 pumps do support SMB safety checks: quitting to restart with basal-only pump-loop") ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
@@ -485,11 +485,11 @@ function wait_for_silence {
 
 # Refresh pumphistory etc.
 function refresh_pumphistory_and_meal {
-    retry_return openaps report invoke monitor/status.json 2>&3 >&4 | tail -1 || return 1
+    retry_return status_Go 2>&3 >&4 | tail -1 || return 1
     echo -n Ref
     ( grep -q "model.*12" monitor/status.json || \
-         test $(cat monitor/status.json | json suspended) == true || \
-         test $(cat monitor/status.json | json bolusing) == false ) \
+         test $(cat monitor/status.json | json Suspended) == true || \
+         test $(cat monitor/status.json | json Bolusing) == false ) \
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
     echo -n resh
     retry_return monitor_pump || return 1
@@ -516,7 +516,9 @@ function invoke_pumphistory_etc {
 }
 
 function invoke_reservoir_etc {
-    openaps report invoke monitor/reservoir.json monitor/battery.json monitor/status.json 2>&3 >&4 | tail -1
+    reservoir_Go
+    status_Go
+    openaps report invoke monitor/battery.json 2>&3 >&4 | tail -1
     test ${PIPESTATUS[0]} -eq 0
 }
 
@@ -583,7 +585,8 @@ function get_settings {
         # On all other supported pumps, these reports work. 
         NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
     fi
-    retry_return openaps report invoke settings/model.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
+    retry_return model_Go 
+    retry_return openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
     # generate settings/pumpprofile.json without autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     if ls settings/pumpprofile.json.new >&4 && cat settings/pumpprofile.json.new | jq -e .current_basal >&4; then
@@ -746,6 +749,20 @@ try_return() {
 die() {
     echo "$@"
     exit 1
+}
+
+#These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
+#WORKING so far: reservoir, model, status
+
+reservoir_Go() {
+  mdt reservoir > monitor/reservoir.json
+}
+model_Go() {
+  mdt model > settings/model.json
+}
+#Code above was rewritten to accept the output of mdt status as-is; switch it back when it's been formatted...or not. It should work just fine the way it is.
+status_Go() {
+  mdt status > monitor/status.json
 }
 
 if grep 12 settings/model.json; then
