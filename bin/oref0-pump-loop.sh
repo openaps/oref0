@@ -145,7 +145,7 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     try_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
-    try_fail openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
+    try_fail clock_Go 2>&3 >&4 | tail -1
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
     echo -n " is within 1m of current time: " && date
@@ -195,7 +195,8 @@ function smb_suggest {
     ls enact/smb-suggested.json 2>&3 >&4 && die "enact/suggested.json present"
     # Run determine-basal
     echo -n Temp refresh
-    try_fail openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
+    try_fail clock_Go
+    try_fail openaps report invoke monitor/temp_basal.json 2>&3 >&4 | tail -1
     try_fail calculate_iob && echo ed
     try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
     try_fail smb_verify_suggested
@@ -428,7 +429,7 @@ function mmtune {
         && break
     done
     echo {} > monitor/mmtune.json
-    echo -n "mmtune: " && openaps report invoke monitor/mmtune.json 2>&3 >&4 | tail -1
+    echo -n "mmtune: " && mmtune_Go 2>&3 >&4 | tail -1
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
     done
@@ -511,7 +512,8 @@ function calculate_iob {
 }
 
 function invoke_pumphistory_etc {
-    openaps report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
+    clock_Go
+    openaps report invoke monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json 2>&3 >&4 | tail -1
     test ${PIPESTATUS[0]} -eq 0
 }
 
@@ -641,7 +643,8 @@ function refresh_temp_and_enact {
 }
 
 function invoke_temp_etc {
-    openaps report invoke monitor/temp_basal.json monitor/clock.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
+    clock_Go
+    openaps report invoke monitor/temp_basal.json 2>&3 >&4 | tail -1
     test ${PIPESTATUS[0]} -eq 0
     calculate_iob
 }
@@ -734,6 +737,31 @@ function setglucosetimestamp {
     fi
 }
 
+#These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
+#WORKING so far: reservoir, model, status
+function reservoir_Go() {
+  mdt reservoir | tee monitor/reservoir.json 2>&3 >&4
+}
+function model_Go() {
+  mdt model | tee settings/model.json 2>&3 >&4
+}
+#Code above was rewritten to accept the output of mdt status as-is; switch it back when it's been formatted...or not. It should work just fine the way it is.
+function status_Go() {
+  mdt status | tee monitor/status.json 2>&3 >&4
+}
+function mmtune_Go() {
+  Go-mmtune | tee monitor/mmtune.json 2>&3 >&4
+}
+function clock_Go() {
+  mdt clock | tee monitor/clock-zoned.json 2>&3 >&4
+}
+function battery_Go() {
+  mdt battery | tee monitor/battery.json 2>&3 >&4
+}
+function tempbasal_Go() {
+  mdt tempbasal | tee monitor/temp_basal.json 2>&3 >&4
+}
+
 retry_fail() {
     "$@" || { echo Retrying $*; "$@"; } || { echo "Couldn't $*"; fail "$@"; }
 }
@@ -749,20 +777,6 @@ try_return() {
 die() {
     echo "$@"
     exit 1
-}
-
-#These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
-#WORKING so far: reservoir, model, status
-
-reservoir_Go() {
-  mdt reservoir > monitor/reservoir.json
-}
-model_Go() {
-  mdt model > settings/model.json
-}
-#Code above was rewritten to accept the output of mdt status as-is; switch it back when it's been formatted...or not. It should work just fine the way it is.
-status_Go() {
-  mdt status > monitor/status.json
 }
 
 if grep 12 settings/model.json; then
