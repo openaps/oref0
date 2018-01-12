@@ -114,7 +114,7 @@ function fail {
         wait_for_bg
         echo "Unsuccessful oref0-pump-loop (BG too old) at $(date)"
     # don't treat suspended pump as a complete failure
-    elif find monitor/ -mmin -5 | grep status.json >&4 && grep -q '"Suspended": true' monitor/status.json; then
+    elif find monitor/ -mmin -5 | grep status.json >&4 && grep -q '"suspended": true' monitor/status.json; then
         refresh_profile 15; refresh_pumphistory_24h
         refresh_after_bolus_or_enact
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
@@ -136,16 +136,25 @@ function fail {
 
 function overtemp {
     # check for CPU temperature above 85°C
-    sensors -u 2>&3 | awk '$NF > 85' | grep input \
-    && echo Rig is too hot: not running pump-loop at $(date)\
-    && echo Please ensure rig is properly ventilated
+    # special temperature check for raspberry pi
+    if getent passwd pi > /dev/null; then
+        TEMPERATURE=`cat /sys/class/thermal/thermal_zone0/temp`
+        TEMPERATURE=`echo -n ${TEMPERATURE:0:2}; echo -n .; echo -n ${TEMPERATURE:2}`
+        echo $TEMPERATURE | awk '$NF > 70' | grep input \
+        && echo Rig is too hot: not running pump-loop at $(date)\
+        && echo Please ensure rig is properly ventilated
+    else
+        sensors -u 2>&3 | awk '$NF > 85' | grep input \
+        && echo Rig is too hot: not running pump-loop at $(date)\
+        && echo Please ensure rig is properly ventilated
+    fi
 }
 
 function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     try_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
-    try_fail clock_Go 2>&3 >&4 | tail -1
+    try_fail check_clock 2>&3 >&4 | tail -1
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
     echo -n " is within 1m of current time: " && date
@@ -195,8 +204,8 @@ function smb_suggest {
     ls enact/smb-suggested.json 2>&3 >&4 && die "enact/suggested.json present"
     # Run determine-basal
     echo -n Temp refresh
-    try_fail clock_Go
-    try_fail openaps report invoke monitor/temp_basal.json 2>&3 >&4 | tail -1
+    try_fail check_clock
+    try_fail check_tempbasal | tail -1
     try_fail calculate_iob && echo ed
     try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
     try_fail smb_verify_suggested
@@ -227,7 +236,7 @@ function smb_verify_enacted {
     # verify rate matches (within 0.03U/hr) and duration is no shorter than 5m less than smb-suggested.json
     rm -rf monitor/temp_basal.json
     ( echo -n Temp refresh \
-        && ( openaps report invoke monitor/temp_basal.json || openaps report invoke monitor/temp_basal.json ) \
+        && ( check_tempbasal || check_tempbasal ) \
         2>&3 >&4 | tail -1 && echo -n "ed: " \
     ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
     && jq --slurp --exit-status 'if .[1].rate then (.[0].rate > .[1].rate - 0.03 and .[0].rate < .[1].rate + 0.03 and .[0].duration > .[1].duration - 5 and .[0].duration < .[1].duration + 20) else true end' monitor/temp_basal.json enact/smb-suggested.json >&4
@@ -237,7 +246,7 @@ function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
     echo -n "Checking reservoir: " \
-    && (reservoir_Go || reservoir_Go) 2>&3 >&4 | tail -1 \
+    && ( check_reservoir || check_reservoir ) 2>&3 >&4 | tail -1 \
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
     && echo -n ", suggested: " \
@@ -267,11 +276,11 @@ function smb_verify_status {
     # Read the pump status and verify it is not bolusing
     rm -rf monitor/status.json
     echo -n "Checking pump status (suspended/bolusing): "
-    ( status_Go || status_Go ) 2>&3 >&4 | tail -1 \
+    ( check_status || check_status ) 2>&3 >&4 | tail -1 \
     && cat monitor/status.json | jq -C -c . \
-    && grep -q '"Code": 3' monitor/status.json \
-    && grep -q '"Bolusing": false' monitor/status.json \
-    && if grep -q '"Suspended": true' monitor/status.json; then
+    && grep -q '"string": "normal"' monitor/status.json \
+    && grep -q '"bolusing": false' monitor/status.json \
+    && if grep -q '"suspended": true' monitor/status.json; then
         echo -n "Pump suspended; "
         unsuspend_if_no_temp
         refresh_pumphistory_and_meal
@@ -408,7 +417,7 @@ function mdt_get_bg {
 function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
-    ( model_Go || model_Go ) 2>&3 >&4 | tail -1 \
+    ( check_model || check_model ) | tail -1 \
     && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && die "error: x12 pumps do support SMB safety checks: quitting to restart with basal-only pump-loop") ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
@@ -457,40 +466,43 @@ function maybe_mmtune {
 }
 
 function any_pump_comms {
-    mmeowlink-any-pump-comms.py --port $port --wait-for $1
+    echo "This is where we would check for pump comms..."
+    #mmeowlink-any-pump-comms.py --port $port --wait-for $1
+    return 
 }
 
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
-    if [ -z $1 ]; then
-        waitfor=40
-    else
-        waitfor=$1
-    fi
+    #if [ -z $1 ]; then
+    #    waitfor=40
+    #else
+    #    waitfor=$1
+    #fi
     # check radio multiple times, and mmtune if all checks fail
-    ( ( out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-      ( echo -n .; sleep 1; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-      ( echo -n .; sleep 2; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-      ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-      ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) )
-    ) 2>&1 | tail -2 \
-        && echo -n "Radio ok. " || { echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune; }
-    echo -n "Listening: "
-    for i in $(seq 1 800); do
-        echo -n .
-        any_pump_comms $waitfor 2>&3 | egrep -v subg | egrep -q No \
-        && echo "No interfering pump comms detected from other rigs (this is a good thing!)" \
-        && break
-    done
+    #( ( out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+    #  ( echo -n .; sleep 1; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+    #  ( echo -n .; sleep 2; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+    #  ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+    #  ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) )
+    #) 2>&1 | tail -2 \
+    #    && echo -n "Radio ok. " || { echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune; }
+    #echo -n "Listening: "
+    #for i in $(seq 1 800); do
+    #    echo -n .
+    #    any_pump_comms $waitfor 2>&3 | egrep -v subg | egrep -q No \
+    #    && echo "No interfering pump comms detected from other rigs (this is a good thing!)" \
+    #    && break
+    #done
+    echo "This is where we would check for pump comms..."
 }
 
 # Refresh pumphistory etc.
 function refresh_pumphistory_and_meal {
-    retry_return status_Go 2>&3 >&4 | tail -1 || return 1
+    retry_return check_status 2>&3 >&4 | tail -1 || return 1
     echo -n Ref
     ( grep -q "model.*12" monitor/status.json || \
-         test $(cat monitor/status.json | json Suspended) == true || \
-         test $(cat monitor/status.json | json Bolusing) == false ) \
+         test $(cat monitor/status.json | json suspended) == true || \
+         test $(cat monitor/status.json | json bolusing) == false ) \
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
     echo -n resh
     retry_return monitor_pump || return 1
@@ -512,15 +524,16 @@ function calculate_iob {
 }
 
 function invoke_pumphistory_etc {
-    clock_Go
-    openaps report invoke monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json 2>&3 >&4 | tail -1
+    check_clock
+    pumphistory -n 1 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4
+    check_tempbasal | tail -1
     test ${PIPESTATUS[0]} -eq 0
 }
 
 function invoke_reservoir_etc {
-    reservoir_Go
-    status_Go
-    openaps report invoke monitor/battery.json 2>&3 >&4 | tail -1
+    check_reservoir
+    check_status
+    check_battery | tail -1
     test ${PIPESTATUS[0]} -eq 0
 }
 
@@ -560,7 +573,7 @@ function refresh_old_pumphistory_24h {
     find settings/ -mmin -120 -size +100c | grep -q pumphistory-24h-zoned \
     || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s \
         && echo -n Old pumphistory-24h refresh \
-        && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&3 >&4 | tail -1 && echo ed )
+        && read_pumphistory_24h | tail -1 && echo ed )
 }
 
 # refresh settings/profile if it's more than 1h old
@@ -587,7 +600,7 @@ function get_settings {
         # On all other supported pumps, these reports work. 
         NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
     fi
-    retry_return model_Go 
+    retry_return check_model 
     retry_return openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
     # generate settings/pumpprofile.json without autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
@@ -643,8 +656,8 @@ function refresh_temp_and_enact {
 }
 
 function invoke_temp_etc {
-    clock_Go
-    openaps report invoke monitor/temp_basal.json 2>&3 >&4 | tail -1
+    check_clock
+    check_tempbasal | tail -1
     test ${PIPESTATUS[0]} -eq 0
     calculate_iob
 }
@@ -726,7 +739,7 @@ function refresh_pumphistory_24h {
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
     || { echo -n pumphistory-24h refresh \
-        && openaps report invoke settings/pumphistory-24h.json settings/pumphistory-24h-zoned.json 2>&3 >&4 | tail -1 && echo ed; }
+        && read_pumphistory_24h | tail -1 && echo ed; }
 }
 
 function setglucosetimestamp {
@@ -738,28 +751,29 @@ function setglucosetimestamp {
 }
 
 #These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
-#WORKING so far: reservoir, model, status
-function reservoir_Go() {
+function check_reservoir() {
   mdt reservoir | tee monitor/reservoir.json 2>&3 >&4
 }
-function model_Go() {
+function check_model() {
   mdt model | tee settings/model.json 2>&3 >&4
 }
-#Code above was rewritten to accept the output of mdt status as-is; switch it back when it's been formatted...or not. It should work just fine the way it is.
-function status_Go() {
+function check_status() {
   mdt status | tee monitor/status.json 2>&3 >&4
 }
 function mmtune_Go() {
   Go-mmtune | tee monitor/mmtune.json 2>&3 >&4
 }
-function clock_Go() {
+function check_clock() {
   mdt clock | tee monitor/clock-zoned.json 2>&3 >&4
 }
-function battery_Go() {
+function check_battery() {
   mdt battery | tee monitor/battery.json 2>&3 >&4
 }
-function tempbasal_Go() {
+function check_tempbasal() {
   mdt tempbasal | tee monitor/temp_basal.json 2>&3 >&4
+}
+function read_pumphistory_24h() {
+  pumphistory -n 27 | jq -f openaps.jq | tee settings/pumphistory-24h-zoned.json 2>&3 >&4
 }
 
 retry_fail() {
