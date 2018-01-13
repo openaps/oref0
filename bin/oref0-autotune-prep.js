@@ -22,24 +22,34 @@
 
 var generate = require('oref0/lib/autotune-prep');
 function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <glucose.json> [pumpprofile.json] [carbhistory.json] [autotune/glucose.json]');
+        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <glucose.json> [pumpprofile.json] [carbhistory.json] [autotune/glucose.json] [--categorize_uam_as_basal]');
 }
 
 if (!module.parent) {
     var pumphistory_input = process.argv[2];
     if ([null, '--help', '-h', 'help'].indexOf(pumphistory_input) > 0) {
       usage( );
-      process.exit(0)
+      process.exit(0);
     }
     var profile_input = process.argv[3];
     var glucose_input = process.argv[4];
-    var pumpprofile_input = process.argv[5]
-    var carb_input = process.argv[6]
+    var pumpprofile_input = process.argv[5];
+    var carb_input = process.argv[6];
+    var categorize_uam_as_basal_arg = process.argv[7];
+
+    var categorize_uam_as_basal = false;
     //var prepped_glucose_input = process.argv[7]
 
     if ( !pumphistory_input || !profile_input || !glucose_input ) {
         usage( );
         console.log('{ "error": "Insufficient arguments" }');
+        process.exit(1);
+    }
+
+    if (carb_input === '--categorize_uam_as_basal' || categorize_uam_as_basal_arg === '--categorize_uam_as_basal') {
+        categorize_uam_as_basal = true;
+    } else if (categorize_uam_as_basal_arg !== undefined) {
+        usage( );
         process.exit(1);
     }
 
@@ -78,7 +88,7 @@ if (!module.parent) {
     }
 
     var carb_data = { };
-    if (typeof carb_input != 'undefined') {
+    if ((typeof carb_input != 'undefined') && (carb_input !== '--categorize_uam_as_basal')) {
         try {
             carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
         } catch (e) {
@@ -100,6 +110,7 @@ if (!module.parent) {
     , pumpprofile: pumpprofile_data
     , carbs: carb_data
     , glucose: glucose_data
+    , categorize_uam_as_basal: categorize_uam_as_basal
     //, prepped_glucose: prepped_glucose_data
     };
 
