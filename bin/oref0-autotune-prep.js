@@ -46,9 +46,12 @@ if (!module.parent) {
         process.exit(1);
     }
 
-    if (carb_input === '--categorize_uam_as_basal' || categorize_uam_as_basal_arg === '--categorize_uam_as_basal') {
+    if (carb_input === '--categorize_uam_as_basal') {
         categorize_uam_as_basal = true;
-    } else if (categorize_uam_as_basal_arg !== undefined) {
+        carb_input = undefined;
+    } else if (categorize_uam_as_basal_arg === '--categorize_uam_as_basal') {
+        categorize_uam_as_basal = true;
+    } else if (typeof categorize_uam_as_basal_arg !== 'undefined') {
         usage( );
         process.exit(1);
     }
@@ -88,7 +91,7 @@ if (!module.parent) {
     }
 
     var carb_data = { };
-    if ((typeof carb_input != 'undefined') && (carb_input !== '--categorize_uam_as_basal')) {
+    if (typeof carb_input != 'undefined') {
         try {
             carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
         } catch (e) {
