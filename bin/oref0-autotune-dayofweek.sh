@@ -2,7 +2,8 @@
 
 # This script allows you to run autotune separately for each day of the week
 
-myopenaps=$1
+[ -z "$OPENAPS_DIR" ] && OPENAPS_DIR="$1"
+myopenaps="$OPENAPS_DIR"
 nsurl=$2
 DOW=$(date +%u)
 

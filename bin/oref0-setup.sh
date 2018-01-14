@@ -143,7 +143,7 @@ if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" |
     DIR="" # to force a Usage prompt
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     echo
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
@@ -196,12 +196,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
 
-    read -p "Are you using an Explorer Board? y/[N] " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ttyport=/dev/spidev5.1
-        echocolor "Ok, yay for Explorer Board! "
-        echo
-    else
+    read -p "Are you using an Explorer Board / HAT? [Y]/n " -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
         echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
         read -p "What is your TTY port? " -r
         ttyport=$REPLY
@@ -212,6 +208,20 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo -n TTY $ttyport
         fi
         echocolor " it is. "
+        echo
+    else
+        if  getent passwd edison > /dev/null; then
+            echocolor "Yay! Configuring for Edison with Explorer Board. "
+            ttyport=/dev/spidev5.1
+        elif getent passwd pi > /dev/null; then
+            echocolor "Yay! Configuring for Pi with Explorer Board HAT. "
+            ttyport=/dev/spidev0.0
+        else
+            echo "Hmm, you don't seem to be using an Edison or Pi."
+            read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+            ttyport=$REPLY
+            echocolor "Ok, we'll try TTY $ttyport then."
+        fi
         echo
     fi
 
@@ -330,16 +340,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
       fi
 
-    read -p "Enable automatic sensitivity adjustment? [Y]/n  " -r
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-       echocolor "Ok, no autosens."
-       echo
-    else
-       ENABLE+=" autosens "
-       echocolor "Ok, autosens will be enabled."
-       echo
-    fi
-
     read -p "Enable autotuning of basals and ratios? [Y]/n  " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
        echocolor "Ok, no autotune."
@@ -351,7 +351,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     #always enabling AMA by default
-    ENABLE+=" meal "
+    #ENABLE+=" meal "
 
     read -p "Do you want to enable carbsReq Pushover alerts? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -594,6 +594,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
 
+    #TODO: remove this when IPv6 works reliably
+    echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
+
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
@@ -617,18 +620,24 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        bluetoothdminversion=5.47
+        # use packaged bluez with Rapsbian
+        if getent passwd pi > /dev/null; then
+            bluetoothdminversion=5.43
+        else
+            bluetoothdminversion=5.48
+        fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-            cd $HOME/src/bluez-5.47 && ./configure --enable-experimental --disable-systemd && \
-            make && sudo make install || die "Couldn't make bluez"
+            cd $HOME/src/bluez-5.48 && ./configure --disable-systemd && make || die "Couldn't make bluez"
+            killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+            sudo make install || die "Couldn't make install bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
             oref0-bluetoothup
         else
-            echo bluez v ${bluetoothdversion} already installed
+            echo bluez version ${bluetoothdversion} already installed
         fi
         echo Installing prerequisites and configs for local-only hotspot
         apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
@@ -683,9 +692,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
             sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
         fi
-        # add two lines to /etc/rc.local if they are missing.
+        # start bluetoothd in /etc/rc.local if it is missing.
+        if ! grep -q '/usr/local/bin/bluetoothd &' /etc/rc.local; then
+            sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
+        fi
+        # starting with bluez 5.48 the --experimental command line option is not needed. remove the --experimental if it still exists in /etc/rc.local. this is for rigs with version 0.6.0 or earlier
         if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
-            sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
+            sed -i"" 's/^\/usr\/local\/bin\/bluetoothd --experimental \&/\/usr\/local\/bin\/bluetoothd \&/' /etc/rc.local
         fi
         if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
             sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
@@ -749,9 +762,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo Checking kernel for spi_serial installation
         if ! python -c "import spi_serial" 2>/dev/null; then
             if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
-            echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
+                echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
             else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
-            echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+                if [[ "$ttyport" =~ "spidev0.0" ]]; then
+                    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
+                    sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+                else
+                    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+                fi
             fi
             #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
         fi
@@ -848,12 +866,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
     fi
 
+    sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
+    sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
+
     # xdrip CGM (xDripAPS)
     if [[ ${CGM,,} =~ "xdrip" ]]; then
         echo xdrip selected as CGM, so configuring xDripAPS
         sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
-        sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
-        sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
         git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
         for type in xdrip-cgm; do
@@ -876,7 +895,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo sysctl -p
 
     # Install EdisonVoltage
-    if [[ "$ttyport" =~ "spidev5.1" ]]; then
+    #if [[ "$ttyport" =~ "spidev5.1" ]]; then
         if egrep -i "edison" /etc/passwd 2>/dev/null; then
             echo "Checking if EdisonVoltage is already installed"
             if [ -d "$HOME/src/EdisonVoltage/" ]; then
@@ -897,7 +916,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
             done
         fi
-    fi
+    #fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
@@ -912,16 +931,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
-    # configure optional features passed to enact/suggested.json report
-    if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
-        EXTRAS="settings/autosens.json monitor/meal.json"
-    elif [[ $ENABLE =~ autosens ]]; then
-        EXTRAS="settings/autosens.json"
-    elif [[ $ENABLE =~ meal ]]; then
-        EXTRAS='"" monitor/meal.json'
-    fi
-    echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
-    openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
+    echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
+    openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
 
     # configure autotune if enabled
     if [[ $ENABLE =~ autotune ]]; then
@@ -1028,9 +1039,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         else
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
         fi
-        if [[ $ENABLE =~ autosens ]]; then
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
-        fi
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
         if [[ $ENABLE =~ autotune ]]; then
             # autotune nightly at 4:05am using data from NS
             (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 4 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | json | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
@@ -1040,26 +1049,24 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-        # try to start oref0-pump-loop every 30s
-        (crontab -l; crontab -l | grep -q "cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         if [[ ! -z "$BT_PEB" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
         fi
         if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
         (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
         fi
-        if [[ "$ttyport" =~ "spidev5.1" ]]; then
+        #if [[ "$ttyport" =~ "spidev5.1" ]]; then
            # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
-           if egrep -i "edison" /etc/passwd 2>/dev/null; then
-           (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
-           fi
+        if egrep -i "edison" /etc/passwd 2>/dev/null; then
+           (crontab -l; crontab -l | grep -q "cd $directory && sudo ~/src/EdisonVoltage/voltage" || echo "*/15 * * * * cd $directory && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
+           #fi
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
         if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
             (crontab -l; crontab -l | grep -q "oref0-pushover" || echo "* * * * * cd $directory && oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log" ) | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-version --check-for-updates" || echo "0 * * * * cd $directory && oref0-version --check-for-updates > /tmp/oref0-updates.txt") | crontab -
-
+        (crontab -l; crontab -l | grep -q "flask run" || echo "@reboot cd ~/src/oref0/www && export FLASK_APP=app.py && flask run -p 80 --host=0.0.0.0" | tee -a /var/log/openaps/flask.log) | crontab -
         crontab -l | tee $HOME/crontab.txt
     fi
 
@@ -1075,9 +1082,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         read -p "Press enter to begin editing basal_profile.json, and then press Ctrl-X when done."
         nano $directory/settings/basal_profile.json
         read -p "Press enter to begin editing settings.json, and then press Ctrl-X when done."
-        nano $directory/settings/settings.json,
+        nano $directory/settings/settings.json
         read -p "Press enter to begin editing bg_targets_raw.json, and then press Ctrl-X when done."
-        nano $directory/settings/bg_targets_raw.json,
+        nano $directory/settings/bg_targets_raw.json
         echo To edit your basal_profile.json again in the future, run: nano $directory/settings/basal_profile.json
         echo To edit your settings.json to set maxBasal or DIA, run: nano $directory/settings/settings.json
         echo To edit your bg_targets_raw.json to set targets, run: nano $directory/settings/bg_targets_raw.json
