@@ -693,7 +693,7 @@ function wait_for_bg {
 
 function glucose-fresh {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
-    if jq  -e .[0].display_time >/dev/null; then
+    if jq  -e .[0].display_time monitor/glucose.json >/dev/null; then
         touch -d $(jq -r .[0].display_time monitor/glucose.json) monitor/glucose.json 2>&3
     else
         touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json 2>&3
