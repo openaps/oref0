@@ -251,7 +251,7 @@ function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
     echo -n "Checking reservoir: " \
-    && ( check_reservoir || check_reservoir )2>&3 >&4 \
+    && ( check_reservoir || check_reservoir ) 2>&3 >&4 | tail -1 \
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
     && echo -n ", suggested: " \
@@ -423,7 +423,7 @@ function mdt_get_bg {
 function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
-    retry_fail check_model 2>&3 >&4 | tail -1 \
+    ( check_model || check_model ) 2>&3 >&4 | tail -1 \
     && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && die "error: x12 pumps do support SMB safety checks: quitting to restart with basal-only pump-loop") ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
@@ -627,7 +627,7 @@ function get_settings {
 #    retry_return openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
 
     # generate settings/pumpprofile.json without autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     if ls settings/pumpprofile.json.new >&4 && cat settings/pumpprofile.json.new | jq -e .current_basal >&4; then
         mv settings/pumpprofile.json.new settings/pumpprofile.json
         echo -n "Pump profile refreshed; "
