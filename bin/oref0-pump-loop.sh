@@ -17,6 +17,7 @@
 export MEDTRONIC_PUMP_ID=`grep serial pump.ini | tr -cd 0-9`
 export MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
 OREF0_DEBUG=${OREF0_DEBUG:-0}
+#OREF0_DEBUG=1
 if [[ "$OREF0_DEBUG" -ge 1 ]] ; then
   exec 3>&1
 else
@@ -155,7 +156,7 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     try_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
-    try_fail check_clock
+    try_fail check_clock 2>&3 >&4 | tail -1
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
     echo -n " is within 1m of current time: " && date
@@ -206,8 +207,8 @@ function smb_suggest {
     ls enact/smb-suggested.json 2>&3 >&4 && die "enact/smb-suggested.json present"
     # Run determine-basal
     echo -n Temp refresh
-    try_fail check_clock
-    try_fail check_tempbasal
+    try_fail check_clock 2>&3 >&4 | tail -1
+    try_fail check_tempbasal 2>&3 >&4 | tail -1
     try_fail calculate_iob && echo ed
     try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
     try_fail smb_verify_suggested
@@ -241,7 +242,7 @@ function smb_verify_enacted {
     # verify rate matches (within 0.03U/hr) and duration is no shorter than 5m less than smb-suggested.json
     rm -rf monitor/temp_basal.json
     ( echo -n Temp refresh \
-        && ( check_tempbasal || check_tempbasal ) && echo -n "ed: " \
+        && ( check_tempbasal || check_tempbasal ) 2>&3 >&4 | tail -1 && echo -n "ed: " \
     ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
     && jq --slurp --exit-status 'if .[1].rate then (.[0].rate > .[1].rate - 0.03 and .[0].rate < .[1].rate + 0.03 and .[0].duration > .[1].duration - 5 and .[0].duration < .[1].duration + 20) else true end' monitor/temp_basal.json enact/smb-suggested.json >&4
 }
@@ -250,7 +251,7 @@ function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
     echo -n "Checking reservoir: " \
-    && ( check_reservoir || check_reservoir ) \
+    && ( check_reservoir || check_reservoir )2>&3 >&4 \
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json \
     && echo -n ", suggested: " \
@@ -280,7 +281,7 @@ function smb_verify_status {
     # Read the pump status and verify it is not bolusing
     rm -rf monitor/status.json
     echo -n "Checking pump status (suspended/bolusing): "
-    ( check_status || check_status ) \
+    ( check_status || check_status ) 2>&3 >&4 | tail -1 \
     && cat monitor/status.json | jq -C -c . \
     && grep -q '"string": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
@@ -422,7 +423,7 @@ function mdt_get_bg {
 function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
-    ( check_model || check_model ) \
+    retry_fail check_model 2>&3 >&4 | tail -1 \
     && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && die "error: x12 pumps do support SMB safety checks: quitting to restart with basal-only pump-loop") ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
@@ -504,13 +505,12 @@ function wait_for_silence {
 	  echo "No interfering pump comms detected from other rigs (this is a good thing!)" 
 	  return 0
 	fi
-#( listen -t $waitfor's' ) || ( echo "No interfering pump comms detected from other rigs (this is a good thing!)" )
     #done
 }
 
 # Refresh pumphistory etc.
 function refresh_pumphistory_and_meal {
-    retry_return check_status || return 1
+    retry_return check_status 2>&3 >&4 | tail -1 || return 1
     echo -n Ref
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
@@ -536,12 +536,16 @@ function calculate_iob {
 }
 
 function invoke_pumphistory_etc {
-    check_clock && read_pumphistory && check_tempbasal
+    check_clock 2>&3 >&4 | tail -1
+    read_pumphistory 2>&3 >&4 | tail -1
+    check_tempbasal 2>&3 >&4 | tail -1
     test ${PIPESTATUS[0]} -eq 0
 }
 
 function invoke_reservoir_etc {
-    check_reservoir && check_status && check_battery
+    check_reservoir 2>&3 >&4 | tail -1
+    check_status 2>&3 >&4 | tail -1
+    check_battery 2>&3 >&4 | tail -1
     test ${PIPESTATUS[0]} -eq 0
 }
 
@@ -582,7 +586,7 @@ function refresh_old_pumphistory_24h {
     find settings/ -mmin -120 -size +100c | grep -q pumphistory-24h-zoned \
     || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s \
         && echo -n Old pumphistory-24h refresh \
-        && read_pumphistory_24h && echo ed )
+        && read_pumphistory_24h 2>&3 >&4 | tail -1 && echo ed )
 }
 
 # refresh settings/profile if it's more than 1h old
@@ -604,19 +608,19 @@ function get_settings {
     then
         # If we have a 512 or 712, only get the data that the pump can provide.
         # On the x12 pumps, the rest of the files are simulated by static json files created during the oref0-setup.sh run.
-        retry_return check_model
-	retry_return read_insulin_sensitivities
-	retry_return read_carb_ratios
+        retry_return check_model 2>&3 >&4 | tail -1 || return 1
+	retry_return read_insulin_sensitivities 2>&3 >&4 | tail -1 || return 1
+	retry_return read_carb_ratios 2>&3 >&4 | tail -1 || return 1
         retry_return openaps report invoke settings/insulin_sensitivities.json 2>&3 >&4 | tail -1 || return 1
 	#NON_X12_ITEMS=""
     else
         # On all other supported pumps, we should be able to get all the data we need from the pump.
-	retry_return check_model
-	retry_return read_insulin_sensitivities
-	retry_return read_carb_ratios
-	retry_return read_bg_targets
-	retry_return read_basal_profile
-	retry_return read_settings
+	retry_return check_model 2>&3 >&4 | tail -1 || return 1
+	retry_return read_insulin_sensitivities 2>&3 >&4 | tail -1 || return 1
+	retry_return read_carb_ratios 2>&3 >&4 | tail -1 || return 1
+	retry_return read_bg_targets 2>&3 >&4 | tail -1 || return 1
+	retry_return read_basal_profile 2>&3 >&4 | tail -1 || return 1
+	retry_return read_settings 2>&3 >&4 | tail -1 || return 1
 	retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 | tail -1 || return 1
 #        NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
     fi
@@ -676,7 +680,8 @@ function refresh_temp_and_enact {
 }
 
 function invoke_temp_etc {
-    check_clock && check_tempbasal
+    check_clock 2>&3 >&4 | tail -1
+    check_tempbasal 2>&3 >&4 | tail -1
     test ${PIPESTATUS[0]} -eq 0
     calculate_iob
 }
@@ -758,7 +763,7 @@ function refresh_pumphistory_24h {
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
     || { echo -n pumphistory-24h refresh \
-        && read_pumphistory_24h && echo ed; }
+        && read_pumphistory_24h 2>&3 >&4 | tail -1 && echo ed; }
 }
 
 function setglucosetimestamp {
@@ -771,46 +776,46 @@ function setglucosetimestamp {
 
 #These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
 function check_reservoir() {
-  ( mdt reservoir | tee monitor/reservoir.json && tr -d "\n" < monitor/reservoir.json ) 2>&3 >&4
+  mdt reservoir 2>&3 | tee monitor/reservoir.json && tr -d "\n" < monitor/reservoir.json
 }
 function check_model() {
-  ( mdt model | tee settings/model.json ) 2>&3 >&4
+  mdt model 2>&3 | tee settings/model.json
 }
 function check_status() {
-  ( mdt status | tee monitor/status.json ) 2>&3 >&4
+  mdt status 2>&3 | tee monitor/status.json 2>&3 >&4
 }
 function mmtune_Go() {
-  ( Go-mmtune | tee monitor/mmtune.json )
+  Go-mmtune | tee monitor/mmtune.json
 }
 function check_clock() {
-  ( mdt clock | tee monitor/clock-zoned.json ) 2>&3 >&4
+  mdt clock 2>&3 | tee monitor/clock-zoned.json
 }
 function check_battery() {
-  ( mdt battery | tee monitor/battery.json ) 2>&3 >&4
+  mdt battery 2>&3 | tee monitor/battery.json
 }
 function check_tempbasal() {
-  ( mdt tempbasal | tee monitor/temp_basal.json ) 2>&3 >&4
+  mdt tempbasal 2>&3 | tee monitor/temp_basal.json
 }
 function read_pumphistory() {
-  ( pumphistory -n 1 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json ) 2>&3 >&4
+  pumphistory -n 1 2>&3 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4
 }
 function read_pumphistory_24h() {
-  ( pumphistory -n 27 | jq -f openaps.jq | tee settings/pumphistory-24h-zoned.json ) 2>&3 >&4
+  pumphistory -n 27 2>&3 | jq -f openaps.jq | tee settings/pumphistory-24h-zoned.json 2>&3 >&4
 }
 function read_bg_targets() {
-  ( mdt targets | tee settings/bg_targets_raw.json ) 2>&3 >&4
+  mdt targets 2>&3 | tee settings/bg_targets_raw.json
 }
 function read_insulin_sensitivities() {
-  ( mdt sensitivities | tee settings/insulin_sensitivities_raw.json ) 2>&3 >&4
+  mdt sensitivities 2>&3 | tee settings/insulin_sensitivities_raw.json
 }
 function read_basal_profile() {
-  ( mdt basal | tee settings/basal_profile.json ) 2>&3 >&4
+  mdt basal 2>&3 | tee settings/basal_profile.json
 }
 function read_settings() {
-  ( mdt settings | tee settings/settings.json ) 2>&3 >&4
+  mdt settings 2>&3 | tee settings/settings.json
 }
 function read_carb_ratios() {
-  ( mdt carbratios | tee settings/carb_ratios.json ) 2>&3 >&4
+  mdt carbratios 2>&3 | tee settings/carb_ratios.json
 }
 
 retry_fail() {
