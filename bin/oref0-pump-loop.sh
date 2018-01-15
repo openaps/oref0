@@ -497,7 +497,14 @@ function wait_for_silence {
 #        && echo -n "Radio ok. " || { echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune; }
     #for i in $(seq 1 10); do
         #echo -n .
-        ( listen -t $waitfor's' ) || ( echo "No interfering pump comms detected from other rigs (this is a good thing!)" )
+	if `listen -t $waitfor's'` ; then
+	  echo "Pump comms detected."
+	  return 1
+	else
+	  echo "No interfering pump comms detected from other rigs (this is a good thing!)" 
+	  return 0
+	fi
+#( listen -t $waitfor's' ) || ( echo "No interfering pump comms detected from other rigs (this is a good thing!)" )
     #done
 }
 
@@ -547,10 +554,11 @@ function merge_pumphistory {
 function enact {
     rm enact/suggested.json
     openaps report invoke enact/suggested.json \
-    && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
+    && if (cat enact/suggested.json && grep -q duration enact/suggested.json) ; then
         rm enact/enacted.json
-        openaps report invoke enact/enacted.json 2>&3 >&4 | tail -1
-        grep -q duration enact/enacted.json || openaps report invoke enact/enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
+        ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) 2>&3 >&4 | tail -1
+	#openaps report invoke enact/enacted.json 2>&3 >&4 | tail -1
+        grep -q duration enact/enacted.json || ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>&3
     echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
