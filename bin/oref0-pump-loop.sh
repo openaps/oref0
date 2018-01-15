@@ -14,6 +14,8 @@
 # -  when subcommand outputs are not needed in the main log file:
 #    - redirect the output to either fd >&3 or fd >&4 based on
 #    - when you want the output visible.
+export MEDTRONIC_PUMP_ID=`grep serial pump.ini | tr -cd 0-9`
+export MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
 OREF0_DEBUG=${OREF0_DEBUG:-0}
 if [[ "$OREF0_DEBUG" -ge 1 ]] ; then
   exec 3>&1
@@ -66,7 +68,6 @@ main() {
         echo && echo "Starting oref0-pump-loop at $(date) with $upto30s second wait_for_silence:"
         try_fail wait_for_bg
         try_fail wait_for_silence $upto30s
-	echo -n "Done waiting, starting Go-ref0-pump-loop at $(date):"
         retry_fail preflight
         try_fail if_mdt_get_bg
         try_fail refresh_old_pumphistory_24h
@@ -133,7 +134,6 @@ function fail {
     echo
     exit 1
 }
-
 
 function overtemp {
     # check for CPU temperature above 85°C
@@ -202,7 +202,8 @@ function smb_check_everything {
 
 function smb_suggest {
     rm -rf enact/smb-suggested.json
-    ls enact/smb-suggested.json 2>&3 >&4 && die "enact/suggested.json present"
+    #changed the check below to report the error for the correct file...
+    ls enact/smb-suggested.json 2>&3 >&4 && die "enact/smb-suggested.json present"
     # Run determine-basal
     echo -n Temp refresh
     try_fail check_clock
@@ -221,9 +222,12 @@ function smb_enact_temp {
     smb_suggest
     if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json 2>&3 && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
         rm enact/smb-enacted.json
-        openaps report invoke enact/smb-enacted.json 2>&3 >&4 | tail -1
-        grep -q duration enact/smb-enacted.json || openaps report invoke enact/smb-enacted.json 2>&3 >&4 | tail -1
-        cp -up enact/smb-enacted.json enact/enacted.json
+	( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4 | tail -1
+        #( mdt settempbasal enact/smb-suggested.json && ( cp enact/smb-suggested.json enact/smb-enacted.json ) ) 2>&3 >&4 | tail -1
+	#openaps report invoke enact/smb-enacted.json 2>&3 >&4 | tail -1
+        #grep -q duration enact/smb-enacted.json || openaps report invoke enact/smb-enacted.json 2>&3 >&4 | tail -1
+        grep -q duration enact/smb-enacted.json || ( mdt settempbasal enact/smb-suggested.json && ( cp enact/smb-suggested.json enact/smb-enacted.json ) ) 2>&3 >&4 | tail -1
+	cp -up enact/smb-enacted.json enact/enacted.json
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c '. | "Rate: \(.rate) Duration: \(.duration)"'
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     else
@@ -295,8 +299,9 @@ function smb_bolus {
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # press ESC three times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC to exit any open menus before SMBing: "
+#( mdt bolus enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json )
         try_return openaps use pump press_keys esc esc esc | jq .completed | grep true \
-        && try_return openaps report invoke enact/bolused.json 2>&3 >&4 | tail -1 \
+	&& try_return openaps report invoke enact/bolused.json 2>&3 >&4 | tail -1 \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
@@ -429,16 +434,19 @@ function mmtune {
     if [[ $port == "/dev/spidev5.1" ]]; then
         reset_spi_serial.py 2>&3
     fi
-    oref0_init_pump_comms.py
-    echo -n "Listening for 40s silence before mmtuning: "
-    #for i in $(seq 1 800); do
-    #    echo -n .
-        #(listen -t 40s) 2>&3 | egrep -q ErrorRXTimeout \
-    #    && echo "No interfering pump comms detected from other rigs (this is a good thing!)" \
-    #    && break
-    #done
+    #Line below is not necessary for Go-based comms
+    #oref0_init_pump_comms.py
+    echo -n "Listening for 40s silence before mmtuning: " && ( listen -t 40s ) || ( echo -n "No interfering pump comms detected from other rigs (this is a good thing!)" )
     echo {} > monitor/mmtune.json
-    echo -n "mmtune: " && mmtune_Go 2>&3 >&4 | tail -1
+    echo -n "mmtune: " && mmtune_Go | tail -1
+    #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it
+    freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
+    while [ ${#freq} -ne 9 ];
+      do
+       freq=$freq"0"
+      done
+    MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
+    #Determine how long to wait, based on the RSSI value of the best frequency
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
     done
@@ -467,41 +475,30 @@ function maybe_mmtune {
 
 #function any_pump_comms() {
 #    listen -t $1s
-    #mmeowlink-any-pump-comms.py --port $port --wait-for $1
+#    #mmeowlink-any-pump-comms.py --port $port --wait-for $1
 #    return
 #}
 
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
-    echo -n "This is where we would listen for other rigs..."
-#    if [ -z $1 ]; then
-#        waitfor=40
-#    else
-#        waitfor=$1
-#    fi
-    #check radio multiple times, and mmtune if all checks fail
-#    ( ( out=$(any_pump_comms 1) ; echo $out | grep -qi ErrorRXTimeout || (echo $out; true) ) || \
-#      ( echo -n .; sleep 1; out=$(any_pump_comms 1) ; echo $out | grep -qi ErrorRXTimeout || (echo $out; true) ) || \
-#      ( echo -n .; sleep 2; out=$(any_pump_comms 1) ; echo $out | grep -qi ErrorRXTimeout || (echo $out; true) ) || \
-#      ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi ErrorRXTimeout || (echo $out; true) ) || \
-#      ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi ErrorRXTimeout || (echo $out; true) )
+    if [ -z $1 ]; then
+        waitfor=40
+    else
+        waitfor=$1
+    fi
+    # check radio multiple times, and mmtune if all checks fail
+    #disabling radio check because I can't figure this part out yet
+#    ( ( out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+#      ( echo -n .; sleep 1; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+#      ( echo -n .; sleep 2; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+#      ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
+#      ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) )
 #    ) 2>&1 | tail -2 \
 #        && echo -n "Radio ok. " || { echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune; }
-
-#     ( (listen -t 1s | grep -qi ErrorRXTimeout) || (false) || \
-#       ( (echo -n .; sleep 1; listen -t 1s | grep -qi ErrorRXTimeout) || (false) ) || \
-#       ( (echo -n .; sleep 2; listen -t 1s | grep -qi ErrorRXTimeout) || (false) ) || \
-#       ( (echo -n .; sleep 4; listen -t 1s | grep -qi ErrorRXTimeout) || (false) ) || \
-#       ( (echo -n .; sleep 8; listen -t 1s | grep -qi ErrorRXTimeout) || (false) ) \
-#     ) 2>&1 | tail -2 && echo -n "Radio ok. " || ( echo -n "Radio check failed. "; (listen -t 1s) 2>&1 | tail -1; mmtune; )
-
-#    echo -n "Listening: "
-#    for i in $(seq 1 800); do
-#        echo -n .
-#        listen -t '$waitfor's 2>&3 | egrep -qi ErrorRXTimeout \
-#        && echo "No interfering pump comms detected from other rigs (this is a good thing!)" \
-#        && break
-#    done
+    #for i in $(seq 1 10); do
+        #echo -n .
+        ( listen -t $waitfor's' ) || ( echo "No interfering pump comms detected from other rigs (this is a good thing!)" )
+    #done
 }
 
 # Refresh pumphistory etc.
@@ -597,22 +594,22 @@ function refresh_old_profile {
 function get_settings {
     if grep -q 12 settings/model.json
     then
-        # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
-        # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
+        # If we have a 512 or 712, only get the data that the pump can provide.
+        # On the x12 pumps, the rest of the files are simulated by static json files created during the oref0-setup.sh run.
         retry_return check_model
 	retry_return read_insulin_sensitivities
 	retry_return read_carb_ratios
-        #retry_return openaps report invoke settings/insulin_sensitivities.json 2>&3 >&4 | tail -1 || return 1
+        retry_return openaps report invoke settings/insulin_sensitivities.json 2>&3 >&4 | tail -1 || return 1
 	#NON_X12_ITEMS=""
     else
-        # On all other supported pumps, these reports work. 
+        # On all other supported pumps, we should be able to get all the data we need from the pump.
 	retry_return check_model
 	retry_return read_insulin_sensitivities
 	retry_return read_carb_ratios
 	retry_return read_bg_targets
 	retry_return read_basal_profile
 	retry_return read_settings
-	#retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 | tail -1 || return 1
+	retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 | tail -1 || return 1
 #        NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
     fi
 #    retry_return openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
@@ -766,16 +763,16 @@ function setglucosetimestamp {
 
 #These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
 function check_reservoir() {
-  ( mdt reservoir | tee -i monitor/reservoir.json ) 2>&3 >&4
+  ( mdt reservoir | tee monitor/reservoir.json && tr -d "\n" < monitor/reservoir.json ) 2>&3 >&4
 }
 function check_model() {
-  ( mdt model | tee -i settings/model.json ) 2>&3 >&4
+  ( mdt model | tee settings/model.json ) 2>&3 >&4
 }
 function check_status() {
   ( mdt status | tee monitor/status.json ) 2>&3 >&4
 }
 function mmtune_Go() {
-  ( Go-mmtune | tee monitor/mmtune.json ) 2>&3 >&4
+  ( Go-mmtune | tee monitor/mmtune.json )
 }
 function check_clock() {
   ( mdt clock | tee monitor/clock-zoned.json ) 2>&3 >&4
@@ -793,10 +790,10 @@ function read_pumphistory_24h() {
   ( pumphistory -n 27 | jq -f openaps.jq | tee settings/pumphistory-24h-zoned.json ) 2>&3 >&4
 }
 function read_bg_targets() {
-  ( mdt targets | tee settings/bg_targets.json ) 2>&3 >&4
+  ( mdt targets | tee settings/bg_targets_raw.json ) 2>&3 >&4
 }
 function read_insulin_sensitivities() {
-  ( mdt sensitivities | tee settings/insulin_sensitivities.json ) 2>&3 >&4
+  ( mdt sensitivities | tee settings/insulin_sensitivities_raw.json ) 2>&3 >&4
 }
 function read_basal_profile() {
   ( mdt basal | tee settings/basal_profile.json ) 2>&3 >&4
