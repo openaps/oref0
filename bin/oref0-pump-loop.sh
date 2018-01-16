@@ -17,7 +17,6 @@
 export MEDTRONIC_PUMP_ID=`grep serial pump.ini | tr -cd 0-9`
 export MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
 OREF0_DEBUG=${OREF0_DEBUG:-0}
-#OREF0_DEBUG=1
 if [[ "$OREF0_DEBUG" -ge 1 ]] ; then
   exec 3>&1
 else
