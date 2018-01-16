@@ -227,7 +227,7 @@ function smb_enact_temp {
         #( mdt settempbasal enact/smb-suggested.json && ( cp enact/smb-suggested.json enact/smb-enacted.json ) ) 2>&3 >&4 | tail -1
 	#openaps report invoke enact/smb-enacted.json 2>&3 >&4 | tail -1
         #grep -q duration enact/smb-enacted.json || openaps report invoke enact/smb-enacted.json 2>&3 >&4 | tail -1
-        grep -q duration enact/smb-enacted.json || ( mdt settempbasal enact/smb-suggested.json && ( cp enact/smb-suggested.json enact/smb-enacted.json ) ) 2>&3 >&4 | tail -1
+        grep -q duration enact/smb-enacted.json || ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4 | tail -1
 	cp -up enact/smb-enacted.json enact/enacted.json
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c '. | "Rate: \(.rate) Duration: \(.duration)"'
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
@@ -562,7 +562,7 @@ function enact {
         rm enact/enacted.json
         ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) 2>&3 >&4 | tail -1
 	#openaps report invoke enact/enacted.json 2>&3 >&4 | tail -1
-        grep -q duration enact/enacted.json || ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
+        grep -q duration enact/enacted.json || ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>&3
     echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
