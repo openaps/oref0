@@ -1072,10 +1072,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             # autotune nightly at 4:05am using data from NS
             (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 4 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | json | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
         fi
-        if [[ "$ttyport" =~ "spi" ]]; then
-            (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
-            (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
-        fi
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         # try to start oref0-pump-loop every 30s
         (crontab -l; crontab -l | grep -q "cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
