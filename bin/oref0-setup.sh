@@ -1033,6 +1033,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd ../pumphistory && go install -tags cc111x
         cd ../listen && go install -tags cc111x
         cd $HOME/go/bin && cp * /usr/local/bin
+        mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune
         cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/
         #Necessary to "bootstrap" Go commands...
         if [[ $radio_locale =~ ^WW$ ]]; then
