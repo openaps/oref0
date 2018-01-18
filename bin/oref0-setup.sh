@@ -1014,7 +1014,32 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
-        cd $HOME/myopenaps && openaps alias remove battery-status && openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
+     #This part works, but really needs a more concise rewrite.
+        echo "Installing Golang..."
+        cd /tmp && wget https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
+        echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
+        echo 'export GOROOT' >> $HOME/.bash_profile
+        echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
+        echo 'export GOPATH' >> $HOME/.bash_profile
+        echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+        echo 'export PATH' >> $HOME/.bash_profile
+        mkdir $HOME/go
+        source /root/.bash_profile
+        go get -v github.com/ecc1/cc111x
+        go get -v github.com/ecc1/medtronic
+        cd $HOME/go/src/github.com/ecc1/medtronic/cmd
+        cd mdt && go install -tags cc111x
+        cd ../mmtune && go install -tags cc111x
+        cd ../pumphistory && go install -tags cc111x
+        cd ../listen && go install -tags cc111x
+        cd $HOME/go/bin && cp * /usr/local/bin
+        cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq #HOME/myopenaps/
+        #Necessary to "bootstrap" Go commands...
+        if [[ $radio_locale =~ ^WW$ ]]; then
+          cat 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+        else
+          cat 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+        fi
     fi
     
     if [[ "$ttyport" =~ "spi" ]]; then
