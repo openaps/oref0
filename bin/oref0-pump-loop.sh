@@ -447,7 +447,10 @@ function mmtune {
       do
        freq=$freq"0"
       done
-    MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
+    #Make sure we don't zero out the medtronic frequency. It will break everything.
+    if [ $freq != "000000000" ] ; then
+	 MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
+    fi
     #Determine how long to wait, based on the RSSI value of the best frequency
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
@@ -786,8 +789,11 @@ function check_status() {
   mdt status 2>&3 | tee monitor/status.json 2>&3 >&4
 }
 function mmtune_Go() {
-#needs a check for radio locale, setting it to ww because that is what I am currently testing it on
-  Go-mmtune -ww | tee monitor/mmtune.json
+  if ( grep "WW" pump.ini ); then
+  	Go-mmtune -ww | tee monitor/mmtune.json
+  else
+  	Go-mmtune | tee monitor/mmtune.json
+  fi
 }
 function check_clock() {
   mdt clock 2>&3 | tee monitor/clock-zoned.json
