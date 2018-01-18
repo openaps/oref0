@@ -1033,7 +1033,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd ../pumphistory && go install -tags cc111x
         cd ../listen && go install -tags cc111x
         cd $HOME/go/bin && cp * /usr/local/bin
-        cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq #HOME/myopenaps/
+        cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/
         #Necessary to "bootstrap" Go commands...
         if [[ $radio_locale =~ ^WW$ ]]; then
           cat 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
