@@ -295,19 +295,21 @@ function smb_verify_status {
 function smb_bolus {
     # Verify that the suggested.json is less than 5 minutes old
     # and administer the supermicrobolus
+   #mdt bolus does not work on the 723 yet. Only tested on 722 pump
     find enact/ -mmin -5 | grep smb-suggested.json >&4 \
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # press ESC three times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC to exit any open menus before SMBing: "
-#( mdt bolus enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json )
         try_return openaps use pump press_keys esc esc esc | jq .completed | grep true \
-	&& try_return openaps report invoke enact/bolused.json 2>&3 >&4 | tail -1 \
+	&& ( mdt bolus enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) | tail -1 \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
         echo -n "No bolus needed. "
     fi
 }
+# keeping this here in case mdt bolus command does not work, just swap the lines.
+# && try_return openaps report invoke enact/bolused.json 2>&3 >&4 | tail -1 \
 
 function refresh_after_bolus_or_enact {
     if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
