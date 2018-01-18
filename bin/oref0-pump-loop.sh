@@ -786,7 +786,8 @@ function check_status() {
   mdt status 2>&3 | tee monitor/status.json 2>&3 >&4
 }
 function mmtune_Go() {
-  Go-mmtune | tee monitor/mmtune.json
+#needs a check for radio locale, setting it to ww because that is what I am currently testing it on
+  Go-mmtune -ww | tee monitor/mmtune.json
 }
 function check_clock() {
   mdt clock 2>&3 | tee monitor/clock-zoned.json
