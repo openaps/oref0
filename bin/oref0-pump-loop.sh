@@ -562,7 +562,7 @@ function merge_pumphistory {
 function enact {
     rm enact/suggested.json
     openaps report invoke enact/suggested.json \
-    && if (cat enact/suggested.json && grep -q duration enact/suggested.json) ; then (
+    && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
         ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) 2>&3 >&4 | tail -1
 	#openaps report invoke enact/enacted.json 2>&3 >&4 | tail -1
