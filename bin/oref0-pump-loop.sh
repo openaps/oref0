@@ -282,7 +282,7 @@ function smb_verify_status {
     echo -n "Checking pump status (suspended/bolusing): "
     ( check_status || check_status ) 2>&3 >&4 | tail -1 \
     && cat monitor/status.json | jq -C -c . \
-    && grep -q '"string": "normal"' monitor/status.json \
+    && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
     && if grep -q '"suspended": true' monitor/status.json; then
         echo -n "Pump suspended; "
