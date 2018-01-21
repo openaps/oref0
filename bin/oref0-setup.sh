@@ -1015,6 +1015,33 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
         cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
+     #This part works, but really needs a more concise rewrite.
+        echo "Installing Golang..."
+        cd /tmp && wget https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
+        echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
+        echo 'export GOROOT' >> $HOME/.bash_profile
+        echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
+        echo 'export GOPATH' >> $HOME/.bash_profile
+        echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+        echo 'export PATH' >> $HOME/.bash_profile
+        mkdir $HOME/go
+        source /root/.bash_profile
+        go get -v github.com/ecc1/cc111x
+        go get -v github.com/ecc1/medtronic
+        cd $HOME/go/src/github.com/ecc1/medtronic/cmd
+        cd mdt && go install -tags cc111x
+        cd ../mmtune && go install -tags cc111x
+        cd ../pumphistory && go install -tags cc111x
+        cd ../listen && go install -tags cc111x
+        cd $HOME/go/bin && cp * /usr/local/bin
+        mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune
+        cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/
+        #Necessary to "bootstrap" Go commands...
+        if [[ $radio_locale =~ ^WW$ ]]; then
+          echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+        else
+          echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+        fi
     fi
     
     if [[ "$ttyport" =~ "spi" ]]; then
@@ -1071,10 +1098,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ $ENABLE =~ autotune ]]; then
             # autotune nightly at 4:05am using data from NS
             (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 4 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | jq . | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
-        fi
-        if [[ "$ttyport" =~ "spi" ]]; then
-            (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
-            (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         if [[ ! -z "$BT_PEB" ]]; then
