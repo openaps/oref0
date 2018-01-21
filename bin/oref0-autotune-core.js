@@ -21,6 +21,7 @@
 */
 
 var autotune = require('oref0/lib/autotune');
+var stringify = require('json-stable-stringify');
 function usage ( ) {
         console.error('usage: ', process.argv.slice(0, 2), '<autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>');
 }
@@ -57,6 +58,6 @@ if (!module.parent) {
     };
 
     var autotune_output = autotune(inputs);
-    console.log(JSON.stringify(autotune_output));
+    console.log(stringify(autotune_output, { space: '   '}));
 }
 
