@@ -195,34 +195,35 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
-
-    read -p "Are you using an Explorer Board / HAT? [Y]/n " -r
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-        echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
-        read -p "What is your TTY port? " -r
-        ttyport=$REPLY
-        echocolor-n "Ok, "
-        if [[ -z "$ttyport" ]]; then
-            echo -n Carelink
-        else
-            echo -n TTY $ttyport
-        fi
-        echocolor " it is. "
-        echo
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product ; then
+        echocolor "Explorer Board HAT detected. "
+        ttyport=/dev/spidev0.0
     else
-        if  getent passwd edison > /dev/null; then
-            echocolor "Yay! Configuring for Edison with Explorer Board. "
-            ttyport=/dev/spidev5.1
-        elif getent passwd pi > /dev/null; then
-            echocolor "Yay! Configuring for Pi with Explorer Board HAT. "
-            ttyport=/dev/spidev0.0
-        else
-            echo "Hmm, you don't seem to be using an Edison or Pi."
-            read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+        read -p "Are you using an Explorer Board? [Y]/n " -r
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
+            read -p "What is your TTY port? " -r
             ttyport=$REPLY
-            echocolor "Ok, we'll try TTY $ttyport then."
+            echocolor-n "Ok, "
+            if [[ -z "$ttyport" ]]; then
+                echo -n Carelink
+            else
+                echo -n TTY $ttyport
+            fi
+            echocolor " it is. "
+            echo
+        else
+            if  getent passwd edison > /dev/null; then
+                echocolor "Yay! Configuring for Edison with Explorer Board. "
+                ttyport=/dev/spidev5.1
+            else
+                echo "Hmm, you don't seem to be using an Edison."
+                read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+                ttyport=$REPLY
+                echocolor "Ok, we'll try TTY $ttyport then."
+            fi
+            echo
         fi
-        echo
     fi
 
 
@@ -597,6 +598,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     #TODO: remove this when IPv6 works reliably
     echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
 
+    # update, upgrade, and autoclean apt-get
+    echo Running apt-get update
+    sudo apt-get update
+    echo Running apt-get upgrade
+    sudo apt-get upgrade
+    echo Running apt-get autoclean
+    sudo apt-get autoclean
+
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
@@ -624,19 +633,20 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if getent passwd pi > /dev/null; then
             bluetoothdminversion=5.43
         else
-            bluetoothdminversion=5.47
+            bluetoothdminversion=5.48
         fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-            cd $HOME/src/bluez-5.47 && ./configure --enable-experimental --disable-systemd && \
-            make && sudo make install || die "Couldn't make bluez"
+            cd $HOME/src/bluez-5.48 && ./configure --disable-systemd && make || die "Couldn't make bluez"
+            killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+            sudo make install || die "Couldn't make install bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
             oref0-bluetoothup
         else
-            echo bluez v ${bluetoothdversion} already installed
+            echo bluez version ${bluetoothdversion} already installed
         fi
         echo Installing prerequisites and configs for local-only hotspot
         apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
@@ -691,9 +701,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
             sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
         fi
-        # add two lines to /etc/rc.local if they are missing.
+        # start bluetoothd in /etc/rc.local if it is missing.
+        if ! grep -q '/usr/local/bin/bluetoothd &' /etc/rc.local; then
+            sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
+        fi
+        # starting with bluez 5.48 the --experimental command line option is not needed. remove the --experimental if it still exists in /etc/rc.local. this is for rigs with version 0.6.0 or earlier
         if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
-            sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
+            sed -i"" 's/^\/usr\/local\/bin\/bluetoothd --experimental \&/\/usr\/local\/bin\/bluetoothd \&/' /etc/rc.local
         fi
         if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
             sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
@@ -984,6 +998,25 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export API_SECRET" >> $HOME/.bash_profile
 
     echo
+    
+    #Check to see if Explorer HAT is present, and install all necessary stuff
+    if grep -a "Explorer HAT" /proc/device-tree/hat/product ; then
+        echo "Looks like you're using an Explorer HAT!"
+        echo "Making sure SPI is enabled..."
+        sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+        echo "Enabling i2c device nodes..."
+        sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
+        egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
+        echo "i2c-dev" > /etc/modules-load.d/i2c.conf
+        echo "Installing socat..."
+        apt-get install socat
+        echo "Installing openaps-menu..."
+        cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+        cd $HOME/src/openaps-menu && sudo npm install
+        cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
+        cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
+    fi
+    
     if [[ "$ttyport" =~ "spi" ]]; then
         echo Resetting spi_serial
         reset_spi_serial.py
@@ -1044,8 +1077,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-        # try to start oref0-pump-loop every 30s
-        (crontab -l; crontab -l | grep -q "cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         if [[ ! -z "$BT_PEB" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
         fi
@@ -1064,7 +1095,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-version --check-for-updates" || echo "0 * * * * cd $directory && oref0-version --check-for-updates > /tmp/oref0-updates.txt") | crontab -
         (crontab -l; crontab -l | grep -q "flask run" || echo "@reboot cd ~/src/oref0/www && export FLASK_APP=app.py && flask run -p 80 --host=0.0.0.0" | tee -a /var/log/openaps/flask.log) | crontab -
-
         crontab -l | tee $HOME/crontab.txt
     fi
 
