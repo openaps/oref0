@@ -166,7 +166,7 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     try_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
-    try_fail check_clock 2>&3 >&4 | tail -1
+    try_fail check_clock 2>&3 >&4
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
     echo -n " is within 90s of current time: " && date
