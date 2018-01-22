@@ -456,7 +456,7 @@ function mmtune {
     echo -n "Listening for 40s silence before mmtuning: "
     wait_for_silence 40
     echo {} > monitor/mmtune.json
-    echo -n "mmtune: " && timerun mmtune_Go | tail -1
+    echo -n "mmtune: " && timerun mmtune_Go 2>&3
     #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it
     freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
     while [ ${#freq} -ne 9 ];
