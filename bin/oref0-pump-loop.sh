@@ -449,7 +449,8 @@ function mmtune {
     fi
     #Line below is not necessary for Go-based comms
     #oref0_init_pump_comms.py
-    echo -n "Listening for 40s silence before mmtuning: " && ( listen -t 40s ) || ( echo -n "No interfering pump comms detected from other rigs (this is a good thing!)" )
+    echo -n "Listening for 40s silence before mmtuning: "
+    wait_for_silence 40
     echo {} > monitor/mmtune.json
     echo -n "mmtune: " && timerun mmtune_Go | tail -1
     #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it
