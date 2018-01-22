@@ -92,9 +92,9 @@ main() {
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             if ! glucose-fresh; then
                 refresh_profile 15
-                if ! glucose-fresh; then
+                if ! glucose-fresh && ! highload; then
                     refresh_pumphistory_24h
-                    if ! glucose-fresh; then
+                    if ! glucose-fresh && ! highload; then
                         refresh_after_bolus_or_enact
                     fi
                 fi
@@ -716,6 +716,11 @@ function refresh_profile {
     fi
     find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
     || timerun get_settings
+}
+
+function highload {
+    # check whether system load average is high
+    uptime | awk '$NF > 2' | grep load
 }
 
 function wait_for_bg {
