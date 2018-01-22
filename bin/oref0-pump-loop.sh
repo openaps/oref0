@@ -91,7 +91,11 @@ main() {
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             if ! glucose-fresh; then
-                refresh_profile 15
+                if onbattery; then
+                    refresh_profile 30
+                else
+                    refresh_profile 15
+                fi
                 if ! glucose-fresh; then
                     refresh_pumphistory_24h
                     if ! glucose-fresh && ! onbattery; then
