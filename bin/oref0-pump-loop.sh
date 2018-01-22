@@ -92,7 +92,7 @@ main() {
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             if ! glucose-fresh; then
                 refresh_profile 15
-                if ! glucose-fresh && ! highload; then
+                if ! glucose-fresh; then
                     refresh_pumphistory_24h
                     if ! glucose-fresh && ! onbattery; then
                         refresh_after_bolus_or_enact
@@ -772,18 +772,15 @@ function refresh_pumphistory_24h {
     else
         rm monitor/edison-battery.json 2>&3
     fi
-    if (! ls monitor/edison-battery.json 2>&3 >&4); then
-        echo -n "Rig battery level not found. "
-        autosens_freq=15
-    elif (jq --exit-status ".battery >= 98 or (.battery <= 70 and .battery >= 60)" monitor/edison-battery.json >&4); then
-        echo -n "Rig battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-70%). "
-        autosens_freq=15
-    elif onbattery; then
+    if onbattery; then
         echo -n "Rig on battery: $(jq .battery monitor/edison-battery.json)%. "
         autosens_freq=30
     else
-        echo -n "Rig battery level unknown. "
-        autosens_freq=15
+        if highload; then
+            autosens_freq=30
+        else
+            autosens_freq=15
+        fi
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
     || { echo -n pumphistory-24h refresh \
