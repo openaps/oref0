@@ -813,6 +813,7 @@ function mmtune_Go() {
 }
 function check_clock() {
   timerun mdt clock 2>&3 | tee monitor/clock-zoned.json
+  grep -q T monitor/clock-zoned.json
 }
 function check_battery() {
   timerun mdt battery 2>&3 | tee monitor/battery.json
