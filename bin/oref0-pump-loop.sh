@@ -536,8 +536,10 @@ function refresh_pumphistory_and_meal {
     echo -n resh
     retry_return monitor_pump || return 1
     echo -n ed
+    # TODO: remove
     retry_return merge_pumphistory || return 1
     echo -n " pumphistory"
+    # TODO: replace pumphistory-merged with pumphistory-zoned + pumphistory-24h-zoned as in calculate_iob
     retry_return timerun oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
     echo " and meal.json"
 }
@@ -549,7 +551,7 @@ function monitor_pump {
 }
 
 function calculate_iob {
-    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
+    timerun oref0-calculate-iob monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json settings/pumphistory-24h-zoned.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
 }
 
 function invoke_pumphistory_etc {
@@ -566,6 +568,7 @@ function invoke_reservoir_etc {
     test ${PIPESTATUS[0]} -eq 0
 }
 
+#TODO: remove this
 function merge_pumphistory {
     jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
     timerun calculate_iob
@@ -687,7 +690,7 @@ function refresh_temp_and_enact {
             echo -n Temp refresh
             retry_fail invoke_temp_etc
             echo ed
-            oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
+            timerun oref0-calculate-iob monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json settings/pumphistory-24h-zoned.json || { echo "Couldn't calculate IOB"; fail "$@"; }
             if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi
