@@ -802,8 +802,8 @@ function setglucosetimestamp {
 #These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
 function check_reservoir() {
   set -o pipefail
-  timerun mdt reservoir 2>&3 | tee monitor/reservoir.json && tr -d "\n" < monitor/reservoir.json
-  egrep -q [0-9] monitor/reservoir.json
+  timerun mdt reservoir 2>&3 | tee monitor/reservoir.json && tr -d "\n" < monitor/reservoir.json \
+    && egrep -q [0-9] monitor/reservoir.json
 }
 function check_model() {
   set -o pipefail
@@ -811,8 +811,7 @@ function check_model() {
 }
 function check_status() {
   set -o pipefail
-  timerun mdt status 2>&3 | tee monitor/status.json 2>&3 >&4
-  cat monitor/status.json | jq -c -C .status
+  timerun mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | jq -c -C .status
 }
 function mmtune_Go() {
   set -o pipefail
@@ -824,53 +823,46 @@ function mmtune_Go() {
 }
 function check_clock() {
   set -o pipefail
-  timerun mdt clock 2>&3 | tee monitor/clock-zoned.json
-  grep -q T monitor/clock-zoned.json
+  timerun mdt clock 2>&3 | tee monitor/clock-zoned.json && grep -q T monitor/clock-zoned.json
 }
 function check_battery() {
   set -o pipefail
-  timerun mdt battery 2>&3 | tee monitor/battery.json
-  cat monitor/battery.json | jq .voltage
+  timerun mdt battery 2>&3 | tee monitor/battery.json && cat monitor/battery.json | jq .voltage
 }
 function check_tempbasal() {
   set -o pipefail
-  timerun mdt tempbasal 2>&3 | tee monitor/temp_basal.json
-  cat monitor/temp_basal.json | jq .temp
+  timerun mdt tempbasal 2>&3 | tee monitor/temp_basal.json && cat monitor/temp_basal.json | jq .temp
 }
 function read_pumphistory() {
   set -o pipefail
-  timerun pumphistory -n 1 2>&3 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4
-  cat monitor/pumphistory-zoned.json | jq .[0].timestamp
+  timerun pumphistory -n 1 2>&3 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4 \
+    && cat monitor/pumphistory-zoned.json | jq .[0].timestamp
 }
 function read_pumphistory_24h() {
   set -o pipefail
-  timerun pumphistory -n 27 2>&3 | jq -f openaps.jq | tee settings/pumphistory-24h-zoned.json 2>&3 >&4
-  cat settings/pumphistory-24h-zoned.json | jq .[0].timestamp
+  timerun pumphistory -n 27 2>&3 | jq -f openaps.jq | tee settings/pumphistory-24h-zoned.json 2>&3 >&4 \
+    && cat settings/pumphistory-24h-zoned.json | jq .[0].timestamp
 }
 function read_bg_targets() {
   set -o pipefail
-  timerun mdt targets 2>&3 | tee settings/bg_targets_raw.json
-  cat settings/bg_targets_raw.json | jq .units
+  timerun mdt targets 2>&3 | tee settings/bg_targets_raw.json && cat settings/bg_targets_raw.json | jq .units
 }
 function read_insulin_sensitivities() {
   set -o pipefail
-  timerun mdt sensitivities 2>&3 | tee settings/insulin_sensitivities_raw.json
-  cat settings/insulin_sensitivities_raw.json | jq .units
+  timerun mdt sensitivities 2>&3 | tee settings/insulin_sensitivities_raw.json \
+    && cat settings/insulin_sensitivities_raw.json | jq .units
 }
 function read_basal_profile() {
   set -o pipefail
-  timerun mdt basal 2>&3 | tee settings/basal_profile.json
-  cat settings/basal_profile.json | jq .[0].start
+  timerun mdt basal 2>&3 | tee settings/basal_profile.json && cat settings/basal_profile.json | jq .[0].start
 }
 function read_settings() {
   set -o pipefail
-  timerun mdt settings 2>&3 | tee settings/settings.json
-  cat settings/settings.json | jq .maxBolus
+  timerun mdt settings 2>&3 | tee settings/settings.json && cat settings/settings.json | jq .maxBolus
 }
 function read_carb_ratios() {
   set -o pipefail
-  timerun mdt carbratios 2>&3 | tee settings/carb_ratios.json
-  cat settings/carb_ratios.json | jq .units
+  timerun mdt carbratios 2>&3 | tee settings/carb_ratios.json && cat settings/carb_ratios.json | jq .units
 }
 
 retry_fail() {
