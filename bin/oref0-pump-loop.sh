@@ -355,6 +355,10 @@ function prep {
     upto10s=$[ ( $RANDOM / 3277 + 1) ]
     upto20s=$[ ( $RANDOM / 1638 + 1) ]
     upto30s=$[ ( $RANDOM / 1092 + 1) ]
+    # override random upto30s wait with contents of /tmp/wait_for_silence if it exists (for multi-rig testing)
+    if [ -f "/tmp/wait_for_silence" ]; then
+        upto30s=$(head -1 /tmp/wait_for_silence)
+    fi
     # read tty port from pump.ini
     eval $(grep port pump.ini | sed "s/ //g")
     # if that fails, try the Explorer board default port
