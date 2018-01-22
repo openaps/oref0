@@ -763,16 +763,16 @@ function refresh_pumphistory_24h {
         rm monitor/edison-battery.json 2>&3
     fi
     if (! ls monitor/edison-battery.json 2>&3 >&4); then
-        echo -n "Edison battery level not found. "
+        echo -n "Rig battery level not found. "
         autosens_freq=15
     elif (jq --exit-status ".battery >= 98 or (.battery <= 70 and .battery >= 60)" monitor/edison-battery.json >&4); then
-        echo -n "Edison battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-70%). "
+        echo -n "Rig battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-70%). "
         autosens_freq=15
     elif (jq --exit-status ".battery < 98" monitor/edison-battery.json >&4); then
-        echo -n "Edison on battery: $(jq .battery monitor/edison-battery.json)%. "
+        echo -n "Rig on battery: $(jq .battery monitor/edison-battery.json)%. "
         autosens_freq=30
     else
-        echo -n "Edison battery level unknown. "
+        echo -n "Rig battery level unknown. "
         autosens_freq=15
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
