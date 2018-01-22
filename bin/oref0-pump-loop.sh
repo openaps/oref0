@@ -80,7 +80,7 @@ main() {
                 else
                     smb_old_temp && ( \
                     echo "Falling back to basal-only pump-loop" \
-                    && refresh_temp_and_enact \
+                    && timerun refresh_temp_and_enact \
                     && refresh_pumphistory_and_enact \
                     && refresh_profile \
                     && refresh_pumphistory_24h \
@@ -215,7 +215,7 @@ function smb_suggest {
     echo -n Temp refresh
     try_fail check_clock 2>&3 >&4 | tail -1
     try_fail check_tempbasal 2>&3 >&4 | tail -1
-    try_fail calculate_iob && echo ed
+    try_fail timerun calculate_iob && echo ed
     try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
     try_fail smb_verify_suggested
 }
@@ -325,7 +325,7 @@ function refresh_after_bolus_or_enact {
         refresh_pumphistory_and_meal \
             || ( wait_for_silence 15 && refresh_pumphistory_and_meal ) \
             || ( wait_for_silence 30 && refresh_pumphistory_and_meal )
-        calculate_iob && determine_basal 2>&3 >&4 \
+        timerun calculate_iob && determine_basal 2>&3 >&4 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
         && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
         true
@@ -542,7 +542,7 @@ function monitor_pump {
 }
 
 function calculate_iob {
-    timerun oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
+    oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
 }
 
 function invoke_pumphistory_etc {
@@ -561,7 +561,7 @@ function invoke_reservoir_etc {
 
 function merge_pumphistory {
     jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
-    calculate_iob
+    timerun calculate_iob
 }
 
 # Calculate new suggested temp basal and enact it
@@ -602,13 +602,13 @@ function refresh_old_pumphistory_24h {
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old; " \
-        || { echo -n "Old settings: " && get_settings; }
+        || { echo -n "Old settings: " && timerun get_settings; }
     if ls settings/profile.json >&4 && cat settings/profile.json | jq -e .current_basal >&3; then
         echo -n "Profile valid. "
     else
         echo -n "Profile invalid: "
         ls -lart settings/profile.json
-        get_settings
+        timerun get_settings
     fi
 }
 
@@ -637,7 +637,7 @@ function get_settings {
 #    retry_return timerun openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
 
     # generate settings/pumpprofile.json without autotune
-    timerun oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     if ls settings/pumpprofile.json.new >&4 && cat settings/pumpprofile.json.new | jq -e .current_basal >&4; then
         mv settings/pumpprofile.json.new settings/pumpprofile.json
         echo -n "Pump profile refreshed; "
@@ -646,7 +646,7 @@ function get_settings {
         ls -lart settings/pumpprofile.json.new
     fi
     # generate settings/profile.json.new with autotune
-    timerun oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
     if ls settings/profile.json.new >&4 && cat settings/profile.json.new | jq -e .current_basal >&4; then
         mv settings/profile.json.new settings/profile.json
         echo -n "Settings refreshed; "
@@ -680,7 +680,7 @@ function refresh_temp_and_enact {
             echo -n Temp refresh
             retry_fail invoke_temp_etc
             echo ed
-            timerun oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
+            oref0-calculate-iob monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
             if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi
@@ -693,7 +693,7 @@ function invoke_temp_etc {
     check_clock 2>&3 >&4 | tail -1
     check_tempbasal 2>&3 >&4 | tail -1
     test ${PIPESTATUS[0]} -eq 0
-    calculate_iob
+    timerun calculate_iob
 }
 
 function refresh_pumphistory_and_enact {
@@ -715,7 +715,7 @@ function refresh_profile {
         profileage=$1
     fi
     find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
-    || get_settings
+    || timerun get_settings
 }
 
 function wait_for_bg {
