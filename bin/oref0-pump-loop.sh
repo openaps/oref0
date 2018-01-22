@@ -92,9 +92,9 @@ main() {
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             if ! glucose-fresh; then
                 refresh_profile 15
-                if ! glucose-fresh && ! { highload && onbattery }; then
+                if ! glucose-fresh && ! highload; then
                     refresh_pumphistory_24h
-                    if ! glucose-fresh && ! { highload && onbattery }; then
+                    if ! glucose-fresh && ! onbattery; then
                         refresh_after_bolus_or_enact
                     fi
                 fi
