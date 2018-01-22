@@ -797,6 +797,7 @@ function check_model() {
 }
 function check_status() {
   timerun mdt status 2>&3 | tee monitor/status.json 2>&3 >&4
+  cat monitor/status.json | jq -c -C .status
 }
 function mmtune_Go() {
   if ( grep "WW" pump.ini ); then
