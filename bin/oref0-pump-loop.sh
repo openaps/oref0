@@ -92,9 +92,9 @@ main() {
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             if ! glucose-fresh; then
                 refresh_profile 15
-                if ! glucose-fresh && ! highload; then
+                if ! glucose-fresh && ! { highload && onbattery }; then
                     refresh_pumphistory_24h
-                    if ! glucose-fresh && ! highload; then
+                    if ! glucose-fresh && ! { highload && onbattery }; then
                         refresh_after_bolus_or_enact
                     fi
                 fi
@@ -723,6 +723,11 @@ function highload {
     uptime | awk '$NF > 2' | grep load
 }
 
+function onbattery {
+    # check whether battery level is < 98%
+    jq --exit-status ".battery < 98" monitor/edison-battery.json >&4
+}
+
 function wait_for_bg {
     if grep "MDT cgm" openaps.ini 2>&3 >&4; then
         echo "MDT CGM configured; not waiting"
@@ -773,7 +778,7 @@ function refresh_pumphistory_24h {
     elif (jq --exit-status ".battery >= 98 or (.battery <= 70 and .battery >= 60)" monitor/edison-battery.json >&4); then
         echo -n "Rig battery at $(jq .battery monitor/edison-battery.json)% is charged (>= 98%) or likely charging (60-70%). "
         autosens_freq=15
-    elif (jq --exit-status ".battery < 98" monitor/edison-battery.json >&4); then
+    elif onbattery; then
         echo -n "Rig on battery: $(jq .battery monitor/edison-battery.json)%. "
         autosens_freq=30
     else
