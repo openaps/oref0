@@ -524,7 +524,7 @@ function wait_for_silence {
 
 # Refresh pumphistory etc.
 function refresh_pumphistory_and_meal {
-    retry_return check_status 2>&3 >&4 | tail -1 || return 1
+    retry_return check_status 2>&3 >&4 || return 1
     echo -n Ref
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
