@@ -457,15 +457,18 @@ function mmtune {
     wait_for_silence 40
     echo {} > monitor/mmtune.json
     echo -n "mmtune: " && timerun mmtune_Go 2>&3 | tail -1
-    #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it
-    freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
-    while [ ${#freq} -ne 9 ];
-      do
-       freq=$freq"0"
-      done
-    #Make sure we don't zero out the medtronic frequency. It will break everything.
-    if [ $freq != "000000000" ] ; then
-	 MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
+    #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
+    #but only if it's not the default frequency
+    if [ $(jq -e .usedDefault monitor/mmtune.json) == false ] ; then
+      freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
+      while [ ${#freq} -ne 9 ];
+        do
+         freq=$freq"0"
+        done
+      #Make sure we don't zero out the medtronic frequency. It will break everything.
+      if [ $freq != "000000000" ] ; then
+	   MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
+      fi
     fi
     #Determine how long to wait, based on the RSSI value of the best frequency
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
