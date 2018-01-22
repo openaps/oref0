@@ -263,7 +263,7 @@ function smb_verify_reservoir {
     echo -n "Checking reservoir: " \
     && ( check_reservoir || check_reservoir ) 2>&3 >&4 | tail -1 \
     && echo -n "reservoir level before: " \
-    && cat monitor/lastreservoir.json \
+    && cat monitor/lastreservoir.json | tr -d '\n' \
     && echo -n ", suggested: " \
     && jq -r -C -c .reservoir enact/smb-suggested.json | tr -d '\n' \
     && echo -n " and after: " \
