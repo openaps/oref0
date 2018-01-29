@@ -833,11 +833,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
     fi
 
-    echo Checking openaps dev installation
-    if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
+    #echo Checking openaps dev installation
+    #if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
         # TODO: switch this back to master once https://github.com/openaps/openaps/pull/116 is merged/released
-        echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
-    fi
+        #echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
+    #fi
 
     cd $directory || die "Can't cd $directory"
     echo "Removing any existing pump device:"
