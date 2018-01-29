@@ -554,9 +554,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
-        npm list -g oref0 | egrep oref0@0.6.[0] || (echo Installing latest oref0 package && sudo npm install -g oref0)
+        npm list -g --depth=0 | egrep oref0@0.6.[0] || (echo Installing latest oref0 package && sudo npm install -g oref0)
     else
-        npm list -g oref0 | egrep oref0@0.6.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+        npm list -g --depth=0 | egrep oref0@0.6.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
 
     #echo Checking mmeowlink installation
