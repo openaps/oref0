@@ -225,7 +225,7 @@ function smb_suggest {
 }
 
 function determine_basal {
-    timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
+    timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json 2>&3 > enact/smb-suggested.json
 }
 
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails or a 0 duration temp is requested)
@@ -330,7 +330,7 @@ function refresh_after_bolus_or_enact {
         refresh_pumphistory_and_meal \
             || ( wait_for_silence 15 && refresh_pumphistory_and_meal ) \
             || ( wait_for_silence 30 && refresh_pumphistory_and_meal )
-        timerun calculate_iob && determine_basal 2>&3 >&4 \
+        timerun calculate_iob && determine_basal \
         && cp -up enact/smb-suggested.json enact/suggested.json \
         && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
         true
