@@ -578,8 +578,8 @@ function merge_pumphistory {
 # Calculate new suggested temp basal and enact it
 function enact {
     rm enact/suggested.json
-    timerun openaps report invoke enact/suggested.json \
-    && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
+    #timerun openaps report invoke enact/suggested.json \
+    determine_basal && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
         ( timerun mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) 2>&3 >&4 | tail -1
 	#openaps report invoke enact/enacted.json 2>&3 >&4 | tail -1
