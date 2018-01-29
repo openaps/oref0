@@ -1022,16 +1022,25 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
         cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
      #This part works, but really needs a more concise rewrite.
-        echo "Installing Golang..."
-        cd /tmp && wget https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
-        echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
-        echo 'export GOROOT' >> $HOME/.bash_profile
-        echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
-        echo 'export GOPATH' >> $HOME/.bash_profile
-        echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
-        echo 'export PATH' >> $HOME/.bash_profile
-        mkdir $HOME/go
-        source /root/.bash_profile
+        if go version | grep go1.9.2; then
+            echo Go already installed
+        else
+            echo "Installing Golang..."
+            cd /tmp && wget https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
+        fi
+        if ! grep GOROOT $HOME/.bash_profile; then
+            echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
+            echo 'export GOROOT' >> $HOME/.bash_profile
+        fi
+        if ! grep GOPATH $HOME/.bash_profile; then
+            echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
+            echo 'export GOPATH' >> $HOME/.bash_profile
+            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+            echo 'export PATH' >> $HOME/.bash_profile
+        fi
+        mkdir -p $HOME/go
+        source $HOME/.bash_profile
+        fi
         # TODO: remove `git checkout dev` lines when merged to master
         go get -vd github.com/ecc1/cc111x && cd $HOME/go/src/github.com/ecc1/cc111x && git checkout dev
         go get -vd github.com/ecc1/medtronic && cd $HOME/go/src/github.com/ecc1/medtronic && git checkout dev
