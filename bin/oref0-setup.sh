@@ -1080,6 +1080,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 #    openaps mmtune
 #    echo
 
+    # clear any extraneous input before prompting
+    while(read -r -t 0.1); do true; done
+
     read -p "Schedule openaps in cron? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
 
