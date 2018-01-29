@@ -1052,8 +1052,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         go get -v -d github.com/ecc1/cc111x && cd $HOME/go/src/github.com/ecc1/cc111x && git fetch && git checkout dev
         go get -v -d github.com/ecc1/medtronic && cd $HOME/go/src/github.com/ecc1/medtronic && git fetch && git checkout dev
         go get -v -d github.com/ecc1/radio && cd $HOME/go/src/github.com/ecc1/radio && git fetch && git checkout dev
-        go get -v github.com/ecc1/cc111x
-        go get -v github.com/ecc1/medtronic
+        go get -v -u github.com/ecc1/cc111x
+        go get -v -u github.com/ecc1/medtronic
         cd $HOME/go/src/github.com/ecc1/medtronic/cmd
         cd mdt && go install -tags cc111x
         cd ../mmtune && go install -tags cc111x
