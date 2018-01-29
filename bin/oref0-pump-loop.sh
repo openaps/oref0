@@ -217,8 +217,8 @@ function smb_suggest {
     ls enact/smb-suggested.json 2>&3 >&4 && die "enact/smb-suggested.json present"
     # Run determine-basal
     echo -n Temp refresh
-    try_fail check_clock 2>&3 >&4 | tail -1
-    try_fail check_tempbasal 2>&3 >&4 | tail -1
+    try_fail check_clock 2>&3 >&4
+    try_fail check_tempbasal 2>&3 >&4
     try_fail timerun calculate_iob && echo ed
     try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
     try_fail smb_verify_suggested
@@ -233,11 +233,11 @@ function smb_enact_temp {
     smb_suggest
     if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json 2>&3 && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
         rm enact/smb-enacted.json
-        ( timerun mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4 | tail -1
-        #( timerun mdt settempbasal enact/smb-suggested.json && ( cp enact/smb-suggested.json enact/smb-enacted.json ) ) 2>&3 >&4 | tail -1
-        #timerun openaps report invoke enact/smb-enacted.json 2>&3 >&4 | tail -1
-        #grep -q duration enact/smb-enacted.json || timerun openaps report invoke enact/smb-enacted.json 2>&3 >&4 | tail -1
-        grep -q duration enact/smb-enacted.json || ( timerun mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4 | tail -1
+        ( timerun mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
+        #( timerun mdt settempbasal enact/smb-suggested.json && ( cp enact/smb-suggested.json enact/smb-enacted.json ) ) 2>&3 >&4
+        #timerun openaps report invoke enact/smb-enacted.json 2>&3 >&4
+        #grep -q duration enact/smb-enacted.json || timerun openaps report invoke enact/smb-enacted.json 2>&3 >&4
+        grep -q duration enact/smb-enacted.json || ( timerun mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
 	cp -up enact/smb-enacted.json enact/enacted.json
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c '. | "Rate: \(.rate) Duration: \(.duration)"'
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
@@ -252,7 +252,7 @@ function smb_verify_enacted {
     # verify rate matches (within 0.03U/hr) and duration is no shorter than 5m less than smb-suggested.json
     rm -rf monitor/temp_basal.json
     ( echo -n Temp refresh \
-        && ( check_tempbasal || check_tempbasal ) 2>&3 >&4 | tail -1 && echo -n "ed: " \
+        && ( check_tempbasal || check_tempbasal ) 2>&3 >&4 && echo -n "ed: " \
     ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
     && jq --slurp --exit-status 'if .[1].rate then (.[0].rate > .[1].rate - 0.03 and .[0].rate < .[1].rate + 0.03 and .[0].duration > .[1].duration - 5 and .[0].duration < .[1].duration + 20) else true end' monitor/temp_basal.json enact/smb-suggested.json >&4
 }
@@ -261,7 +261,7 @@ function smb_verify_reservoir {
     # Read the pump reservoir volume and verify it is within 0.1U of the expected volume
     rm -rf monitor/reservoir.json
     echo -n "Checking reservoir: " \
-    && ( check_reservoir || check_reservoir ) 2>&3 >&4 | tail -1 \
+    && ( check_reservoir || check_reservoir ) 2>&3 >&4 \
     && echo -n "reservoir level before: " \
     && cat monitor/lastreservoir.json | tr -d '\n' \
     && echo -n ", suggested: " \
@@ -291,7 +291,7 @@ function smb_verify_status {
     # Read the pump status and verify it is not bolusing
     rm -rf monitor/status.json
     echo -n "Checking pump status (suspended/bolusing): "
-    ( check_status || check_status ) 2>&3 >&4 | tail -1 \
+    ( check_status || check_status ) 2>&3 >&4 \
     && cat monitor/status.json | jq -C -c . \
     && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
@@ -440,7 +440,7 @@ function mdt_get_bg {
 function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
-    ( check_model || check_model ) 2>&3 >&4 | tail -1 \
+    ( check_model || check_model ) 2>&3 >&4 \
     && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && die "error: x12 pumps do support SMB safety checks: quitting to restart with basal-only pump-loop") ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
@@ -457,7 +457,7 @@ function mmtune {
     echo -n "Listening for 40s silence before mmtuning: "
     wait_for_silence 40
     echo {} > monitor/mmtune.json
-    echo -n "mmtune: " && timerun mmtune_Go 2>&3 | tail -1
+    echo -n "mmtune: " && timerun mmtune_Go >&3 2>&3
     #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
     #but only if it's not the default frequency
     if [ $(jq -e .usedDefault monitor/mmtune.json) == false ] ; then
@@ -475,7 +475,7 @@ function mmtune {
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
     done
-    rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | tail -1 | awk '($1 < -60) {print -($1+60)*2}')
+    rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | awk '($1 < -60) {print -($1+60)*2}')
     if [[ $rssi_wait > 1 ]]; then
         echo "waiting for $rssi_wait second silence before continuing"
         wait_for_silence $rssi_wait
@@ -556,16 +556,16 @@ function calculate_iob {
 }
 
 function invoke_pumphistory_etc {
-    check_clock 2>&3 >&4 | tail -1
-    read_pumphistory 2>&3 >&4 | tail -1
-    check_tempbasal 2>&3 >&4 | tail -1
+    check_clock 2>&3 >&4
+    read_pumphistory 2>&3 >&4
+    check_tempbasal 2>&3 >&4
     test ${PIPESTATUS[0]} -eq 0
 }
 
 function invoke_reservoir_etc {
-    check_reservoir 2>&3 >&4 | tail -1
-    check_status 2>&3 >&4 | tail -1
-    check_battery 2>&3 >&4 | tail -1
+    check_reservoir 2>&3 >&4
+    check_status 2>&3 >&4
+    check_battery 2>&3 >&4
     test ${PIPESTATUS[0]} -eq 0
 }
 
@@ -581,8 +581,8 @@ function enact {
     #timerun openaps report invoke enact/suggested.json \
     determine_basal && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
-        ( timerun mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) 2>&3 >&4 | tail -1
-	#openaps report invoke enact/enacted.json 2>&3 >&4 | tail -1
+        ( timerun mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) 2>&3 >&4
+	#openaps report invoke enact/enacted.json 2>&3 >&4
         grep -q duration enact/enacted.json || ( timerun mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && timerun oref0-set-system-clock 2>&3
@@ -607,7 +607,7 @@ function refresh_old_pumphistory_24h {
     find settings/ -mmin -120 -size +100c | grep -q pumphistory-24h-zoned \
     || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s \
         && echo -n Old pumphistory-24h refresh \
-        && read_pumphistory_24h 2>&3 >&4 | tail -1 && echo ed )
+        && read_pumphistory_24h 2>&3 >&4 && echo ed )
 }
 
 # refresh settings/profile if it's more than 1h old
@@ -629,20 +629,20 @@ function get_settings {
     then
         # If we have a 512 or 712, only get the data that the pump can provide.
         # On the x12 pumps, the rest of the files are simulated by static json files created during the oref0-setup.sh run.
-        retry_return check_model 2>&3 >&4 | tail -1 || return 1
-        retry_return read_insulin_sensitivities 2>&3 >&4 | tail -1 || return 1
-        retry_return read_carb_ratios 2>&3 >&4 | tail -1 || return 1
-        retry_return openaps report invoke settings/insulin_sensitivities.json 2>&3 >&4 | tail -1 || return 1
+        retry_return check_model 2>&3 >&4 || return 1
+        retry_return read_insulin_sensitivities 2>&3 >&4 || return 1
+        retry_return read_carb_ratios 2>&3 >&4 || return 1
+        retry_return openaps report invoke settings/insulin_sensitivities.json 2>&3 >&4 || return 1
 	#NON_X12_ITEMS=""
     else
         # On all other supported pumps, we should be able to get all the data we need from the pump.
-        retry_return check_model 2>&3 >&4 | tail -1 || return 1
-        retry_return read_insulin_sensitivities 2>&3 >&4 | tail -1 || return 1
-        retry_return read_carb_ratios 2>&3 >&4 | tail -1 || return 1
-        retry_return read_bg_targets 2>&3 >&4 | tail -1 || return 1
-        retry_return read_basal_profile 2>&3 >&4 | tail -1 || return 1
-        retry_return read_settings 2>&3 >&4 | tail -1 || return 1
-        retry_return timerun openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 | tail -1 || return 1
+        retry_return check_model 2>&3 >&4 || return 1
+        retry_return read_insulin_sensitivities 2>&3 >&4 || return 1
+        retry_return read_carb_ratios 2>&3 >&4 || return 1
+        retry_return read_bg_targets 2>&3 >&4 || return 1
+        retry_return read_basal_profile 2>&3 >&4 || return 1
+        retry_return read_settings 2>&3 >&4 || return 1
+        retry_return timerun openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || return 1
 #        NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
     fi
 #    retry_return timerun openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
@@ -701,8 +701,8 @@ function refresh_temp_and_enact {
 }
 
 function invoke_temp_etc {
-    check_clock 2>&3 >&4 | tail -1
-    check_tempbasal 2>&3 >&4 | tail -1
+    check_clock 2>&3 >&4
+    check_tempbasal 2>&3 >&4
     test ${PIPESTATUS[0]} -eq 0
     timerun calculate_iob
 }
@@ -795,7 +795,7 @@ function refresh_pumphistory_24h {
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
     || { echo -n pumphistory-24h refresh \
-        && read_pumphistory_24h 2>&3 >&4 | tail -1 && echo ed; }
+        && read_pumphistory_24h 2>&3 >&4 && echo ed; }
 }
 
 function setglucosetimestamp {
