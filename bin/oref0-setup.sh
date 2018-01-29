@@ -608,7 +608,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Running apt-get update
     sudo apt-get update
     echo Running apt-get upgrade
-    sudo apt-get upgrade
+    sudo apt-get -y upgrade
     echo Running apt-get autoclean
     sudo apt-get autoclean
 
