@@ -311,8 +311,9 @@ function smb_bolus {
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # press ESC three times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC to exit any open menus before SMBing: "
-        try_return timerun openaps use pump press_keys esc esc esc | jq .completed | grep true \
-	&& ( try_return timerun mdt bolus enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) | tail -1 \
+        #try_return timerun openaps use pump press_keys esc esc esc | jq .completed | grep true \
+        mdt -f internal button esc esc esc \
+	&& ( try_return timerun mdt bolus enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
@@ -447,10 +448,10 @@ function preflight {
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
-    # TODO: remove reset_spi_serial.py once oref0_init_pump_comms.py is fixed to do it correctly
-    if [[ $port == "/dev/spidev5.1" ]]; then
-        reset_spi_serial.py 2>&3
-    fi
+#    # TODO: remove reset_spi_serial.py once oref0_init_pump_comms.py is fixed to do it correctly
+#    if [[ $port == "/dev/spidev5.1" ]]; then
+#        reset_spi_serial.py 2>&3
+#    fi
     #Line below is not necessary for Go-based comms
     #oref0_init_pump_comms.py
     echo -n "Listening for 40s silence before mmtuning: "
