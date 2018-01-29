@@ -117,7 +117,7 @@ function timerun {
     echo "$(date): running $@" >> /tmp/timefile.txt
     { time $@ 2> /tmp/stderr ; } 2>> /tmp/timefile.txt
     echo "$(date): completed $@" >> /tmp/timefile.txt
-    cat /tmp/stderr 1>&2
+    cat /tmp/stderr 1>&3
 }
 
 function fail {
