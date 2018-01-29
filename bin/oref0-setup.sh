@@ -1032,6 +1032,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo 'export PATH' >> $HOME/.bash_profile
         mkdir $HOME/go
         source /root/.bash_profile
+        # TODO: remove `git checkout dev` lines when merged to master
+        go get -vd github.com/ecc1/cc111x && cd $HOME/go/src/github.com/ecc1/cc111x && git checkout dev
+        go get -vd github.com/ecc1/medtronic && cd $HOME/go/src/github.com/ecc1/medtronic && git checkout dev
+        go get -vd github.com/ecc1/radio && cd $HOME/go/src/github.com/ecc1/radio && git checkout dev
         go get -v github.com/ecc1/cc111x
         go get -v github.com/ecc1/medtronic
         cd $HOME/go/src/github.com/ecc1/medtronic/cmd
