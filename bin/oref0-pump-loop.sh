@@ -460,7 +460,7 @@ function mmtune {
     echo -n "mmtune: " && timerun mmtune_Go >&3 2>&3
     #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
     #but only if it's not the default frequency
-    if [ $(jq -e .usedDefault monitor/mmtune.json) == false ] ; then
+    if ! $(jq -e .usedDefault monitor/mmtune.json); then
       freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
       while [ ${#freq} -ne 9 ];
         do
