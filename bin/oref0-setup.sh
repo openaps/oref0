@@ -525,24 +525,24 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     # check whether decocare-0.0.31 has been installed
-    if ! ls /usr/local/lib/python2.7/dist-packages/decocare-0.0.31-py2.7.egg/ 2>/dev/null >/dev/null; then
+    #if ! ls /usr/local/lib/python2.7/dist-packages/decocare-0.0.31-py2.7.egg/ 2>/dev/null >/dev/null; then
         # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
-        sudo easy_install -U decocare || die "Can't easy_install decocare"
-    fi
+        #sudo easy_install -U decocare || die "Can't easy_install decocare"
+    #fi
 
     mkdir -p $HOME/src/
 
     # TODO: remove this and switch back to easy_install or pip once decocare 0.1.0 is released
-    if [ -d "$HOME/src/decocare/" ]; then
-        echo "$HOME/src/decocare/ already exists; pulling latest 0.1.0-dev"
-        (cd $HOME/src/decocare && git fetch && git checkout 0.1.0-dev && git pull) || die "Couldn't pull latest decocare 0.1.0-dev"
-    else
-        echo -n "Cloning decocare 0.1.0-dev: "
-        (cd $HOME/src && git clone -b 0.1.0-dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare 0.1.0-dev"
-    fi
-    echo Installing decocare 0.1.0-dev
-    cd $HOME/src/decocare
-    sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
+    #if [ -d "$HOME/src/decocare/" ]; then
+        #echo "$HOME/src/decocare/ already exists; pulling latest 0.1.0-dev"
+        #(cd $HOME/src/decocare && git fetch && git checkout 0.1.0-dev && git pull) || die "Couldn't pull latest decocare 0.1.0-dev"
+    #else
+        #echo -n "Cloning decocare 0.1.0-dev: "
+        #(cd $HOME/src && git clone -b 0.1.0-dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare 0.1.0-dev"
+    #fi
+    #echo Installing decocare 0.1.0-dev
+    #cd $HOME/src/decocare
+    #sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
 
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
@@ -559,12 +559,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         npm list -g oref0 | egrep oref0@0.6.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
 
-    echo Checking mmeowlink installation
+    #echo Checking mmeowlink installation
 #if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-    pip show mmeowlink | egrep "Version: 0.11.1" || (
-        echo Installing latest mmeowlink
-        sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
-    )
+    #pip show mmeowlink | egrep "Version: 0.11.1" || (
+        #echo Installing latest mmeowlink
+        #sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
+    #)
 #fi
 
     cd $directory || die "Can't cd $directory"
