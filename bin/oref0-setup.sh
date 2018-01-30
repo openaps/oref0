@@ -1027,6 +1027,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
         cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
+     fi
+     if [[ "$ttyport" =~ "spidev" ]]; then
      #This part works, but really needs a more concise rewrite.
         if go version | grep go1.9.2; then
             echo Go already installed
