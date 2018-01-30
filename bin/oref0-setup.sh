@@ -1053,17 +1053,17 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         mkdir -p $HOME/go
         source $HOME/.bash_profile
-        go get -v -u github.com/ecc1/cc111x
-        go get -v -u github.com/ecc1/medtronic
+        go get -v -u github.com/ecc1/cc111x || die "Couldn't go get cc111x"
+        go get -v -u github.com/ecc1/medtronic || die "Couldn't go get medtronic"
         cd $HOME/go/src/github.com/ecc1/medtronic/cmd
-        cd mdt && go install -tags cc111x
-        cd ../mmtune && go install -tags cc111x
-        cd ../pumphistory && go install -tags cc111x
-        cd ../listen && go install -tags cc111x
+        cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
+        cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
+        cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
+        cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
         #cd $HOME/go/bin && cp * /usr/local/bin
-        rsync -rtuv $HOME/go/bin /usr/local/bin
-        mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune
-        cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/
+        rsync -rtuv $HOME/go/bin /usr/local/bin || die "Couldn't rsync go/bin"
+        mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
+        cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
         #Necessary to "bootstrap" Go commands...
         if [[ $radio_locale =~ ^WW$ ]]; then
           echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
@@ -1072,10 +1072,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
     fi
 
-    if [[ "$ttyport" =~ "spi" ]]; then
-        echo Resetting spi_serial
-        reset_spi_serial.py
-    fi
+    #if [[ "$ttyport" =~ "spi" ]]; then
+        #echo Resetting spi_serial
+        #reset_spi_serial.py
+    #fi
 # Commenting out the mmtune as attempt to stop the radio reboot errors that happen when re-setting up.
 #    echo Attempting to communicate with pump:
 #    ( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
