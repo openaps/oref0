@@ -237,7 +237,7 @@ function smb_enact_temp {
     && echo -n "COB: " && cat enact/smb-suggested.json | jq -C -c .predBGs.COB \
     && echo -n "UAM: " && cat enact/smb-suggested.json | jq -C -c .predBGs.UAM \
     && echo -n "IOB: " && cat enact/smb-suggested.json | jq -C -c .predBGs.IOB \
-    && echo -n "ZT: " && cat enact/smb-suggested.json | jq -C -c .predBGs.ZT \
+    && echo -n "ZT:  " && cat enact/smb-suggested.json | jq -C -c .predBGs.ZT \
     && grep -q duration enact/smb-suggested.json 2>&3 \
     && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
         rm enact/smb-enacted.json
@@ -322,7 +322,7 @@ function smb_bolus {
         echo -n "Sending ESC ESC ESC to exit any open menus before SMBing: "
         #try_return openaps use pump press_keys esc esc esc | jq .completed | grep true \
         mdt -f internal button esc esc esc 2>&3 \
-	&& ( try_return mdt bolus enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
+        && ( try_return mdt bolus enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
