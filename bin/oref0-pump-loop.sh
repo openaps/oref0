@@ -220,7 +220,7 @@ function smb_suggest {
     echo -n Temp refresh
     try_fail check_clock 2>&3 >&4
     try_fail check_tempbasal 2>&3 >&4
-    try_fail calculate_iob && echo ed
+    try_fail calculate_iob && echo -n "ed: "
     echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c .
     try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
     try_fail smb_verify_suggested
