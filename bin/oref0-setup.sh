@@ -1010,7 +1010,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export API_SECRET" >> $HOME/.bash_profile
 
     echo
-    
+
     #Check to see if Explorer HAT is present, and install all necessary stuff
     if grep -a "Explorer HAT" /proc/device-tree/hat/product || [[ "$ttyport" =~ "spidev0.0" ]]; then
         echo "Looks like you're using an Explorer HAT!"
@@ -1034,7 +1034,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo Go already installed
         else
             echo "Installing Golang..."
-            cd /tmp && wget https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
+            if uname -m | grep armv6l; then
+                cd /tmp && wget https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
+            elif uname -m | grep i686; then
+                cd /tmp && wget https://dl.google.com/go/go1.9.3.linux-amd64.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.3.linux-amd64.tar.gz
+            fi
+
         fi
         if ! grep GOROOT $HOME/.bash_profile; then
             echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
@@ -1070,7 +1075,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
         fi
     fi
-    
+
     if [[ "$ttyport" =~ "spi" ]]; then
         echo Resetting spi_serial
         reset_spi_serial.py
