@@ -326,10 +326,10 @@ function smb_bolus {
     find enact/ -mmin -5 | grep smb-suggested.json >&4 \
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
-        echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing: "
+        echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
         mdt -f internal button esc esc esc esc 2>&3 \
+        && echo -n "and bolusing " && jq .units enact/smb-suggested.json \
         && ( try_return mdt bolus enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
-        # && echo -n "enact/bolused.json: " && cat enact/bolused.json | jq -C -c . \
         && rm -rf enact/smb-suggested.json
     else
         echo -n "No bolus needed. "
