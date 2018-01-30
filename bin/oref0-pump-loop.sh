@@ -745,7 +745,7 @@ function refresh_profile {
 
 function highload {
     # check whether system load average is high
-    uptime | awk '$NF > 2' | grep load | awk '{print $NF}' && echo -n "load average"
+    uptime | awk '$NF > 2' | grep load | awk '{print $NF}' | tr -d '\n' && echo " load average"
 }
 
 function onbattery {
