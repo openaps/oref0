@@ -48,5 +48,5 @@ if checkNTP; then
     echo Setting pump time to $(date)
     mdt -f internal setclock now 2>&1 >/dev/null
     echo Setting CGM time to $(date)
-    openaps use $CGM UpdateTime --to now 2>&1 >/dev/null
+    openaps use $CGM UpdateTime --to now 2>&1 >/dev/null | tail -1
 fi
