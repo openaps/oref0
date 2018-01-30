@@ -1053,10 +1053,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         mkdir -p $HOME/go
         source $HOME/.bash_profile
-        # TODO: remove `git checkout dev` lines when merged to master
-        go get -v -d github.com/ecc1/cc111x && cd $HOME/go/src/github.com/ecc1/cc111x && git fetch && git checkout dev
-        go get -v -d github.com/ecc1/medtronic && cd $HOME/go/src/github.com/ecc1/medtronic && git fetch && git checkout dev
-        go get -v -d github.com/ecc1/radio && cd $HOME/go/src/github.com/ecc1/radio && git fetch && git checkout dev
         go get -v -u github.com/ecc1/cc111x
         go get -v -u github.com/ecc1/medtronic
         cd $HOME/go/src/github.com/ecc1/medtronic/cmd
