@@ -560,17 +560,15 @@ function calculate_iob {
 }
 
 function invoke_pumphistory_etc {
-    check_clock 2>&3 >&4
-    read_pumphistory 2>&3 >&4
-    check_tempbasal 2>&3 >&4
-    test ${PIPESTATUS[0]} -eq 0
+    check_clock 2>&3 >&4 || return 1
+    read_pumphistory 2>&3 >&4 || return 1
+    check_tempbasal 2>&3 >&4 || return 1
 }
 
 function invoke_reservoir_etc {
-    check_reservoir 2>&3 >&4
-    check_status 2>&3 >&4
-    check_battery 2>&3 >&4
-    test ${PIPESTATUS[0]} -eq 0
+    check_reservoir 2>&3 >&4 || return 1
+    check_status 2>&3 >&4 || return 1
+    check_battery 2>&3 >&4 || return 1
 }
 
 #TODO: remove this
