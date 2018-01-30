@@ -347,7 +347,7 @@ function unsuspend_if_no_temp {
     if (cat monitor/temp_basal.json | json -c "this.duration == 0" | grep -q duration); then
         if (grep -iq '"unsuspend_if_no_temp": true' preferences.json); then
             echo Temp basal has ended: unsuspending pump
-            openaps use pump resume_pump
+            mdt resume
         else
             echo unsuspend_if_no_temp not enabled in preferences.json: leaving pump suspended
         fi
