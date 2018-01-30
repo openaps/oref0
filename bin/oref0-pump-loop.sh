@@ -231,12 +231,14 @@ function determine_basal {
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails or a 0 duration temp is requested)
 function smb_enact_temp {
     smb_suggest
-    if ( echo -n "enact/smb-suggested.json: " && cat enact/smb-suggested.json | jq -C -c . && grep -q duration enact/smb-suggested.json 2>&3 && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
+    if ( echo -n "enact/smb-suggested.json: " \
+    && cat enact/smb-suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)' \
+    && cat enact/smb-suggested.json | jq -C -c .reason \
+    && cat enact/smb-suggested.json | jq -C -c .predBGs \
+    && grep -q duration enact/smb-suggested.json 2>&3 \
+    && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
         rm enact/smb-enacted.json
         ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
-        #( mdt settempbasal enact/smb-suggested.json && ( cp enact/smb-suggested.json enact/smb-enacted.json ) ) 2>&3 >&4
-        #openaps report invoke enact/smb-enacted.json 2>&3 >&4
-        #grep -q duration enact/smb-enacted.json || openaps report invoke enact/smb-enacted.json 2>&3 >&4
         grep -q duration enact/smb-enacted.json || ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
 	cp -up enact/smb-enacted.json enact/enacted.json
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c '. | "Rate: \(.rate) Duration: \(.duration)"'
