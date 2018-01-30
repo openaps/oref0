@@ -77,6 +77,7 @@ main() {
             if ( grep -q '"units":' enact/smb-suggested.json 2>&3); then
                 if try_return smb_bolus; then
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+                    smb_verify_status
                 else
                     smb_old_temp && ( \
                     echo "Falling back to basal-only pump-loop" \
@@ -328,7 +329,7 @@ function smb_bolus {
         # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
         mdt -f internal button esc esc esc esc 2>&3 \
-        && echo -n "and bolusing " && jq .units enact/smb-suggested.json \
+        && echo -n "and bolusing " && jq .units enact/smb-suggested.json | tr -d '\n' && echo " units" \
         && ( try_return mdt bolus enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && rm -rf enact/smb-suggested.json
     else
