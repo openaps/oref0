@@ -250,7 +250,7 @@ function smb_enact_temp {
         rm enact/smb-enacted.json
         ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
         grep -q duration enact/smb-enacted.json || ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
-	cp -up enact/smb-enacted.json enact/enacted.json
+        cp -up enact/smb-enacted.json enact/enacted.json
         echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c '. | "Rate: \(.rate) Duration: \(.duration)"'
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     else
@@ -715,9 +715,8 @@ function refresh_temp_and_enact {
 }
 
 function invoke_temp_etc {
-    check_clock 2>&3 >&4
-    check_tempbasal 2>&3 >&4
-    test ${PIPESTATUS[0]} -eq 0
+    check_clock 2>&3 >&4 || return 1
+    check_tempbasal 2>&3 >&4 || return 1
     calculate_iob
 }
 
