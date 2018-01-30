@@ -231,15 +231,22 @@ function determine_basal {
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails or a 0 duration temp is requested)
 function smb_enact_temp {
     smb_suggest
-    if ( echo -n "enact/smb-suggested.json: " \
-    && cat enact/smb-suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)' \
-    && cat enact/smb-suggested.json | jq -C -c .reason \
-    && echo -n "COB: " && cat enact/smb-suggested.json | jq -C -c .predBGs.COB \
-    && echo -n "UAM: " && cat enact/smb-suggested.json | jq -C -c .predBGs.UAM \
-    && echo -n "IOB: " && cat enact/smb-suggested.json | jq -C -c .predBGs.IOB \
-    && echo -n "ZT:  " && cat enact/smb-suggested.json | jq -C -c .predBGs.ZT \
-    && grep -q duration enact/smb-suggested.json 2>&3 \
-    && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
+    echo -n "enact/smb-suggested.json: "
+    cat enact/smb-suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)'
+    cat enact/smb-suggested.json | jq -C -c .reason
+    if (jq --exit-status .predBGs.COB enact/smb-suggested.json >&4); then
+        echo -n "COB: " && jq -C -c .predBGs.COB enact/smb-suggested.json
+    fi
+    if (jq --exit-status .predBGs.UAM enact/smb-suggested.json >&4); then
+        echo -n "UAM: " && jq -C -c .predBGs.UAM enact/smb-suggested.json
+    fi
+    if (jq --exit-status .predBGs.IOB enact/smb-suggested.json >&4); then
+        echo -n "IOB: " && jq -C -c .predBGs.IOB enact/smb-suggested.json
+    fi
+    if (jq --exit-status .predBGs.ZT enact/smb-suggested.json >&4); then
+        echo -n "ZT:  " && jq -C -c .predBGs.ZT enact/smb-suggested.json
+    fi
+    if ( grep -q duration enact/smb-suggested.json 2>&3 && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
         rm enact/smb-enacted.json
         ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
         grep -q duration enact/smb-enacted.json || ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
