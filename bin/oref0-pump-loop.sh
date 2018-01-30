@@ -330,7 +330,7 @@ function smb_bolus {
         echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
         mdt -f internal button esc esc esc esc 2>&3 \
         && echo -n "and bolusing " && jq .units enact/smb-suggested.json | tr -d '\n' && echo " units" \
-        && ( try_return mdt bolus enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
+        && ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && rm -rf enact/smb-suggested.json
     else
         echo -n "No bolus needed. "
@@ -359,7 +359,7 @@ function unsuspend_if_no_temp {
     if (cat monitor/temp_basal.json | json -c "this.duration == 0" | grep -q duration); then
         if (grep -iq '"unsuspend_if_no_temp": true' preferences.json); then
             echo Temp basal has ended: unsuspending pump
-            mdt resume
+            mdt resume 2>&3
         else
             echo unsuspend_if_no_temp not enabled in preferences.json: leaving pump suspended
         fi
