@@ -234,7 +234,10 @@ function smb_enact_temp {
     if ( echo -n "enact/smb-suggested.json: " \
     && cat enact/smb-suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)' \
     && cat enact/smb-suggested.json | jq -C -c .reason \
-    && cat enact/smb-suggested.json | jq -C -c .predBGs \
+    && echo -n "COB: " && cat enact/smb-suggested.json | jq -C -c .predBGs.COB \
+    && echo -n "UAM: " && cat enact/smb-suggested.json | jq -C -c .predBGs.UAM \
+    && echo -n "IOB: " && cat enact/smb-suggested.json | jq -C -c .predBGs.IOB \
+    && echo -n "ZT: " && cat enact/smb-suggested.json | jq -C -c .predBGs.ZT \
     && grep -q duration enact/smb-suggested.json 2>&3 \
     && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
         rm enact/smb-enacted.json
