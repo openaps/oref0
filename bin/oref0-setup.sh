@@ -651,7 +651,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             cd $HOME/src/bluez-5.48 && ./configure --disable-systemd && make || die "Couldn't make bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
@@ -1035,9 +1035,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         else
             echo "Installing Golang..."
             if uname -m | grep armv6l; then
-                cd /tmp && wget https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
+                cd /tmp && wget -c https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
             elif uname -m | grep i686; then
-                cd /tmp && wget https://dl.google.com/go/go1.9.3.linux-amd64.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.3.linux-amd64.tar.gz
+                cd /tmp && wget -c https://dl.google.com/go/go1.9.3.linux-amd64.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.3.linux-amd64.tar.gz
             fi
 
         fi
