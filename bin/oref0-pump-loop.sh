@@ -279,7 +279,7 @@ function smb_verify_reservoir {
     && echo -n ", suggested: " \
     && jq -r -C -c .reservoir enact/smb-suggested.json | tr -d '\n' \
     && echo -n " and after: " \
-    && cat monitor/reservoir.json && echo \
+    && cat monitor/reservoir.json \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") )) \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) >= 0") )) \
     && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) <= 0.1") )) \
