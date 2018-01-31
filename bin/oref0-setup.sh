@@ -1025,7 +1025,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
         echo "Installing socat and ntp..."
-        apt-get install socat ntp
+        apt-get install -y socat ntp
         echo "Installing openaps-menu..."
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
