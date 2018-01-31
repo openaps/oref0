@@ -559,6 +559,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         npm list -g --depth=0 | egrep oref0@0.6.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
 
+    cd $directory || die "Can't cd $directory"
+
     #echo Checking mmeowlink installation
     if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
         pip show mmeowlink | egrep "Version: 0.11.1" || (
@@ -567,7 +569,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         )
     fi
 
-    cd $directory || die "Can't cd $directory"
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
         cp preferences.json old_preferences.json
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
