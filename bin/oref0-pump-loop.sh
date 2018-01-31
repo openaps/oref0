@@ -848,7 +848,7 @@ function mmtune_Go() {
 }
 function check_clock() {
   set -o pipefail
-  mdt clock 2>&3 | tee monitor/clock-zoned.json && grep -q T monitor/clock-zoned.json
+  mdt clock 2>&3 | tee monitor/clock-zoned.json >&4 && grep -q T monitor/clock-zoned.json
 }
 function check_battery() {
   set -o pipefail
