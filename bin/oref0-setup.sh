@@ -876,6 +876,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
             fi
         fi
+    else
+        echo "serial = $serial" > pump.ini
     fi
 
     # Medtronic CGM
