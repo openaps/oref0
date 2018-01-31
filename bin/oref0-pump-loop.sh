@@ -167,7 +167,7 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     try_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
-    try_fail check_clock 2>&3 >&4
+    try_fail check_clock
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
     echo -n " is within 90s of current time: " && date
@@ -218,8 +218,8 @@ function smb_suggest {
     ls enact/smb-suggested.json 2>&3 >&4 && die "enact/smb-suggested.json present"
     # Run determine-basal
     echo -n Temp refresh
-    try_fail check_clock 2>&3 >&4
-    try_fail check_tempbasal 2>&3 >&4
+    try_fail check_clock
+    try_fail check_tempbasal
     try_fail calculate_iob && echo -n "ed: "
     echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c .
     try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
