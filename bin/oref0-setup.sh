@@ -781,7 +781,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $directory || die "Can't cd $directory"
     fi
 
-    if [[ "$ttyport" =~ "spi" ]]; then
+    # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
+    if [[ "$ttyport" =~ "spi" ]] && [[ ${CGM,,} =~ "mdt" ]]; then
         echo Checking kernel for spi_serial installation
         if ! python -c "import spi_serial" 2>/dev/null; then
             if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
@@ -839,37 +840,40 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         #echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
     #fi
 
-    cd $directory || die "Can't cd $directory"
-    echo "Removing any existing pump device:"
-    ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
-    if [[ -z "$ttyport" ]]; then
-        openaps device add pump medtronic $serial || die "Can't add pump"
-        #openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
-        #openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
-        #openaps alias add mmtune 'report invoke monitor/temp_basal.json'
-    else
-        # radio_locale requires openaps 0.2.0-dev or later
-        openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
-        #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
-        #openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
-        if [[ ${radio_locale,,} =~ "ww" ]]; then
-        if [ -d "$HOME/src/subg_rfspy/" ]; then
-            echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
-            (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
+    # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
+    if [[ ${CGM,,} =~ "mdt" ]]; then
+        cd $directory || die "Can't cd $directory"
+        echo "Removing any existing pump device:"
+        ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
+        if [[ -z "$ttyport" ]]; then
+            openaps device add pump medtronic $serial || die "Can't add pump"
+            #openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
+            #openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
+            #openaps alias add mmtune 'report invoke monitor/temp_basal.json'
         else
-            echo -n "Cloning subg_rfspy: "
-            (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
-        fi
+            # radio_locale requires openaps 0.2.0-dev or later
+            openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
+            #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
+            #openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
+            if [[ ${radio_locale,,} =~ "ww" ]]; then
+            if [ -d "$HOME/src/subg_rfspy/" ]; then
+                echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
+                (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
+            else
+                echo -n "Cloning subg_rfspy: "
+                (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
+            fi
 
-        # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-        # this will be called when mmtune is use with a WW pump.
-        # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-        # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
+            # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
+            # this will be called when mmtune is use with a WW pump.
+            # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
+            # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
 
-        # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
-        # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-        # TODO: remove once https://github.com/openaps/openaps/pull/112 has been released in a openaps version
-        grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+            # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
+            # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+            # TODO: remove once https://github.com/openaps/openaps/pull/112 has been released in a openaps version
+            grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+            fi
         fi
     fi
 
@@ -1027,6 +1031,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
         cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
      fi
+
+     # install Go for Explorer Board/HAT
      if [[ "$ttyport" =~ "spidev" ]]; then
      #This part works, but really needs a more concise rewrite.
         if go version | grep go1.9.2; then
