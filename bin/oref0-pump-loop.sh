@@ -802,7 +802,7 @@ function refresh_pumphistory_24h {
         rm monitor/edison-battery.json 2>&3
     fi
     if onbattery; then
-        echo -n "Rig on battery: $(jq .battery monitor/edison-battery.json)%. "
+        echo -n "Rig on/charging battery: $(jq .battery monitor/edison-battery.json)%. "
         autosens_freq=30
     else
         if highload; then
