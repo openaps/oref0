@@ -856,7 +856,7 @@ function check_battery() {
 }
 function check_tempbasal() {
   set -o pipefail
-  mdt tempbasal 2>&3 | tee monitor/temp_basal.json && cat monitor/temp_basal.json | jq .temp
+  mdt tempbasal 2>&3 | tee monitor/temp_basal.json && cat monitor/temp_basal.json | jq .temp >&4
 }
 function read_pumphistory() {
   set -o pipefail
