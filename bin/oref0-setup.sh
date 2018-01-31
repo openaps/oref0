@@ -877,7 +877,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             fi
         fi
     else
-        echo "serial = $serial" > pump.ini
+        echo '[device "pump"]' > pump.ini
+        echo "serial = $serial" >> pump.ini
     fi
 
     # Medtronic CGM
