@@ -560,12 +560,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     #echo Checking mmeowlink installation
-#if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-    #pip show mmeowlink | egrep "Version: 0.11.1" || (
-        #echo Installing latest mmeowlink
-        #sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
-    #)
-#fi
+    if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
+        pip show mmeowlink | egrep "Version: 0.11.1" || (
+            echo Installing latest mmeowlink
+            sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
+        )
+    fi
 
     cd $directory || die "Can't cd $directory"
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
