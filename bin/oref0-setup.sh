@@ -962,9 +962,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
     openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
 
+    if egrep -qi "edison" /etc/passwd 2>/dev/null; then
+        sudo apt-get -y -t jessie-backports install jq
+    else
+        sudo apt-get -y install jq
+    fi
     # configure autotune if enabled
     if [[ $ENABLE =~ autotune ]]; then
-        sudo apt-get -y install jq
         cd $directory || die "Can't cd $directory"
         for type in autotune; do
             echo importing $type file
