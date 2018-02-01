@@ -539,7 +539,7 @@ function wait_for_silence {
     for i in $(seq 1 800); do
         echo -n .
         # returns true if it hears pump comms, false otherwise
-        if ! listen -t $waitfor's' 2>&3 ; then
+        if ! listen -t $waitfor's' 2>&4 ; then
             echo "No interfering pump comms detected from other rigs (this is a good thing!)"
             echo -n "Continuing oref0-pump-loop at "; date
             break
