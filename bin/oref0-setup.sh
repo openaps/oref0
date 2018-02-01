@@ -176,6 +176,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     echo "What kind of CGM would you like to configure for offline use? Options are:"
+    echo "G4-go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
     echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
     echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
@@ -188,7 +189,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
     echo
-    if [[ ${CGM,,} =~ "shareble" ]]; then
+    if [[ ${CGM,,} =~ "shareble" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
         read -p "What is your G4 Share Serial Number? (i.e. SM12345678) " -r
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
@@ -1038,11 +1039,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
         cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
-     fi
+    fi
 
-     # install Go for Explorer Board/HAT
-     if [[ "$ttyport" =~ "spidev" ]]; then
-     #This part works, but really needs a more concise rewrite.
+    # install Go for Explorer Board/HAT
+    if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
         if go version | grep go1.9.2; then
             echo Go already installed
         else
@@ -1066,14 +1066,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         mkdir -p $HOME/go
         source $HOME/.bash_profile
-        go get -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
-        go get -v github.com/ecc1/medtronic || die "Couldn't go get medtronic"
-        cd $HOME/go/src/github.com/ecc1/medtronic/cmd
-        cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
-        cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
-        cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
-        cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
-        #cd $HOME/go/bin && cp * /usr/local/bin
+    fi
+    if [[ "$ttyport" =~ "spidev" ]]; then
+        #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
+        go get -u -v -tags cc111x github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+        #cd $HOME/go/src/github.com/ecc1/medtronic/cmd
+        #cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
+        #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
+        #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
+        #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
         rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
         mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
@@ -1083,6 +1084,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         else
           echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
         fi
+    fi
+    if [[ ${CGM,,} =~ "g4-go" ]]; then
+        if egrep -i "edison" /etc/passwd 2>/dev/null; then
+            go get -u -v -tags nofilter github.com/ecc1/dexcom/...
+        else
+            go get -u -v github.com/ecc1/dexcom/...
+        fi
+        rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
     fi
 
     #if [[ "$ttyport" =~ "spi" ]]; then
