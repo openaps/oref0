@@ -1043,7 +1043,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # install Go for Explorer Board/HAT
     if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
-        if go version | grep go1.9.2; then
+        if go version | grep go1.9.; then
             echo Go already installed
         else
             echo "Installing Golang..."
