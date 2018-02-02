@@ -297,12 +297,18 @@ function smb_verify_suggested {
         echo Pumphistory/temp mismatch: retrying
         return false
     fi
-    echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | tr -d '\n' \
-    && echo -n " is within 1m of current time: " && date \
-    && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") > -60 )) \
-    && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") < 60 )) \
-    && echo "and that smb-suggested.json is less than 1m old" \
-    && (find enact/ -mmin -1 -size +5c | grep -q smb-suggested.json)
+    if jq -e -r .deliverAt enact/smb-suggested.json; then
+        echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | tr -d '\n' \
+        && echo -n " is within 1m of current time: " && date \
+        && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") > -60 )) \
+        && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") < 60 )) \
+        && echo "and that smb-suggested.json is less than 1m old" \
+        && (find enact/ -mmin -1 -size +5c | grep -q smb-suggested.json)
+    else
+        echo No deliverAt found.
+        cat enact/smb-suggested.json
+        false
+    fi
 }
 
 function smb_verify_status {
