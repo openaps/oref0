@@ -13,14 +13,37 @@
         <script src="/static/js/jquery.min.js"></script>
 
         <script>
+            var bgNow = 0;
+            var chartParam = {unit: "mg/dl", max: 300, min: 40, step: 40} ;
+            var deltaFix = 0;
+            var suggestedBg;
+            var eventualBg;
+            var enactedBg;
             var delta;
             var tick = "";
+            
+            $.ajax({
+                url: "target",
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    chartParam.unit = data.user_preferred_units;
+                    if (chartParam.unit == 'mmol/L') {
+                        chartParam.max = 6;
+                        chartParam.min = 4;
+                        chartParam.step = 1;
+                        deltaFix = 2;
+                    }
+                }
+            });
+            
             var data_g = [];
             $.ajax({
                 url: "glucose",
                 async: false,
                 dataType: 'json',
                 success: function(data) {
+                    bgNow = bgUnitConvert(data[0].glucose,chartParam);
                     for(i = 0; i < 96; i++) {
                         var date1 = new Date(data[i].dateString);
                         var date2 = new Date();
@@ -29,8 +52,9 @@
                         if(resultInMinutes > 240) { break; }
                         var lastBGdate = new Date(data[0].dateString);
                         var minutes = Math.round((lastBGdate.getTime() - date1.getTime())/60000);
+                        data[i].glucose = bgUnitConvert(data[i].glucose,chartParam);
                         if(minutes > 4 && minutes < 6) {
-                            delta = data[0].glucose - data[i].glucose;
+                            delta = (data[0].glucose - data[i].glucose).toFixed(deltaFix);
                             if ( delta >= 0 ) {
                                 tick = "+"+delta;
                             } else {
@@ -67,7 +91,7 @@
                         }
                         for(t=0; t<=data[i].duration; t=t+5) {
                             var date3 = new Date(date1.getTime()+t*60000);
-                            var target = (data[i].targetBottom+data[i].targetTop)/2;
+                            var target = bgUnitConvert((data[i].targetBottom+data[i].targetTop)/2,chartParam);
                             targets[targets.length] = {x:date3,y:target};
                         }
 
@@ -77,10 +101,22 @@
             });
 
             $.ajax({
+                url: "enacted",
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    enactedBg = bgUnitConvert(data.bg,chartParam);
+                }
+            });
+
+            
+            $.ajax({
                 url: "suggested",
                 async: false,
                 dataType: 'json',
                 success: function(data) {
+                    eventualBg = bgUnitConvert(data.eventualBG,chartParam);
+                    suggestedBg = bgUnitConvert(data.bg,chartParam);
                     var arr_data = [];
 
                     arr_data.push({
@@ -104,7 +140,8 @@
 
                         for (var i = 0; i < values.length; i++) {
                             var date1 = new Date(deliverAt);
-                            data_predBgs[i] = {x:date1,y:values[i]};
+                            var predBG = bgUnitConvert(values[i],chartParam) ;
+                            data_predBgs[i] = {x:date1,y:predBG};
                             deliverAt.setMinutes(deliverAt.getMinutes() + 5);
                             //if(i>24) break;
                         };
@@ -119,7 +156,12 @@
 
                         data_predBgs = false;
                     });
-
+                    if ( chartParam.unit == 'mmol\/L' ) {
+                        bgNow = bgNow.toFixed(1);
+                        suggestedBg = suggestedBg.toFixed(1);
+                        enactedBg = enactedBg.toFixed(1);
+                        eventualBg = eventualBg.toFixed(1);
+                    }
                     var config = {
                         type: 'scatter',
                         data: {
@@ -142,12 +184,12 @@
                                     display: true,
                                     scaleLabel: {
                                         display: true,
-                                        labelString: 'BG (mg/dL)'
+                                        labelString: 'BG (' + chartParam.unit + ')'
                                     },
                                     ticks: {
-                                        min: 40,
-                                        max: 300,
-                                        stepSize: 40
+                                        min: chartParam.min,
+                                        max: chartParam.max,
+                                        stepSize: chartParam.step
                                     }
                                 }]
                             }
@@ -179,6 +221,14 @@
                 $(selector).text(resultInMinutes + " min ago");
             }
 
+            function bgUnitConvert(value,chartParam) {
+                if ( chartParam.unit == 'mmol\/L' ) {
+                    value = Math.round(value / 18 * 100) / 100 ;
+                    if ( parseInt(value) + 1  > chartParam.max ) { chartParam.max = parseInt(value) + 1;}
+                    if ( parseInt(value) < chartParam.min ) { chartParam.min = parseInt(value);}
+                }
+                return value
+            }
         </script>
 
     </head>
@@ -190,10 +240,10 @@
 
                 <div class="col" style="background-color:#cccccc;border-radius:8px;">
                     <div class="row">
-                        <div class="col-6 col-md-5 bg">{{ data.glucose.0.glucose }} </div>
+                        <div class="col-6 col-md-5 bg"><script>document.write(bgNow)</script></div>
                         <div class="col-2 col-md-2 offset-md-0 offset-sm-1 bg pill direction" style="padding-left:0">{{ data.glucose.0.direction }}</div>
                         <div class="col-xs-12 col-md-5 delta-box">
-                            <div class="col delta" style="margin-top:-8px;"><script>document.write(tick);</script> mg/dL</div>
+                            <div class="col delta" style="margin-top:-8px;"><script>document.write(tick);</script> {{ data.target.user_preferred_units }}</div>
                             <div class="col timeago-bg">.</div>
                         </div>
                     </div>
@@ -214,14 +264,14 @@
                 </div>
             </div>
 
-            <div class="row" style="margin-top:50px">
+            <div class="row">
                 <div class="col box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}min</div>
                 <div class="col box2"><b>Enacted:</b> {{ data.enacted.rate }} for {{ data.enacted.duration }}min + SMB {{ data.enacted.units|default("0", true) }}U</div>
             </div>
 
             <div class="row">
                 <div class="col box2"><b>Insulin Req:</b> {{ data.enacted.insulinReq }} U</div>
-                <div class="col box2"><b>Eventual BG:</b> {{ data.suggested.eventualBG }} mg/dL</div>
+                <div class="col box2"><b>Eventual BG:</b> <script>document.write(eventualBg);</script> {{ data.target.user_preferred_units }}</div>
             </div>
             <div class="row">
                 <div class="col box2"><b>Pump:</b> {{ data.enacted.reservoir }} U, {{ data.battery.voltage }} V, {{ data.battery.status }}</div>
@@ -231,8 +281,8 @@
 
             <div class="row">
                 <div class="col-12"><b>OpenAPS:</b></div>
-                <div class="col-12"><b>Suggested:</b> <span class="timeago-suggested"></span>. [BG: {{ data.suggested.bg}}, {{ data.suggested.reason}}]</div>
-                <div class="col-12"><b>Enacted:</b> <span class="timeago-enacted"></span>. [BG: {{ data.enacted.bg}}, {{ data.enacted.reason}}]</div>
+                <div class="col-12"><b>Enacted:</b> <span class="timeago-enacted"></span>. [BG: <script>document.write(enactedBg);</script>, {{ data.enacted.reason}}]</div>
+                <div class="col-12"><b>Suggested:</b> <span class="timeago-suggested"></span>. [BG: <script>document.write(suggestedBg);</script>, {{ data.suggested.reason}}]</div>
             </div>
 
 
