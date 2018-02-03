@@ -27,6 +27,7 @@ def index():
         data['smb_enacted'] = json.load(open(os.path.join(myopenaps_dir, "enact/smb-enacted.json")))
 
         data['temp_basal'] = json.load(open(os.path.join(myopenaps_dir, "monitor/temp_basal.json")))
+        data['target'] = json.load(open(os.path.join(myopenaps_dir, "settings/bg_targets.json")))
     except ValueError:
         return render_template('indexError.html', data=data )
     except IOError:
@@ -55,6 +56,12 @@ def glucose():
 @app.route("/temptargets")
 def temptargets():
     json_url = os.path.join("/root/myopenaps/settings/temptargets.json")
+    data = json.load(open(json_url))
+    return jsonify(data)
+
+@app.route("/target")
+def target():
+    json_url = os.path.join("/root/myopenaps/settings/bg_targets.json")
     data = json.load(open(json_url))
     return jsonify(data)
 
