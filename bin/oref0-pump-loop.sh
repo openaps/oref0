@@ -177,7 +177,7 @@ function smb_reservoir_before {
        fi
     (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -90 )) \
     && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
-    find monitor/ -mmin -2 -size +5c | grep -q pumphistory || { echo "Error: pumphistory >2m old"; fail "$@"; }
+    find monitor/ -mmin -2 -size +5c | grep -q pumphistory || { echo "Error: pumphistory >2m old (or empty)"; fail "$@"; }
 }
 
 # check if the temp was read more than 5m ago, or has been running more than 10m
