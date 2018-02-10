@@ -591,7 +591,7 @@ function get_settings {
     then
         # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
         # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
-        NON_X12_ITEMS=""
+        NON_X12_ITEMS="settings/bg_targets.json"
     else
         # On all other supported pumps, these reports work. 
         NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
