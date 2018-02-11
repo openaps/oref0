@@ -22,7 +22,7 @@
 
 var generate = require('oref0/lib/autotune-prep');
 function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <glucose.json> [pumpprofile.json] [carbhistory.json] [autotune/glucose.json] [--categorize_uam_as_basal]');
+        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <glucose.json> [pumpprofile.json] [carbhistory.json] [--categorize_uam_as_basal]');
 }
 
 if (!module.parent) {
@@ -38,7 +38,6 @@ if (!module.parent) {
     var categorize_uam_as_basal_arg = process.argv[7];
 
     var categorize_uam_as_basal = false;
-    //var prepped_glucose_input = process.argv[7]
 
     if ( !pumphistory_input || !profile_input || !glucose_input ) {
         usage( );
@@ -98,14 +97,6 @@ if (!module.parent) {
             console.error("Warning: could not parse "+carb_input);
         }
     }
-    // var prepped_glucose_data = { };
-    // if (typeof prepped_glucose_input != 'undefined') {
-        // try {
-            // carb_data = JSON.parse(fs.readFileSync(prepped_glucose_input, 'utf8'));
-        // } catch (e) {
-            // console.error("Warning: could not parse "+prepped_glucose_input);
-        // }
-    // }
 
     var inputs = {
         history: pumphistory_data
@@ -114,7 +105,6 @@ if (!module.parent) {
     , carbs: carb_data
     , glucose: glucose_data
     , categorize_uam_as_basal: categorize_uam_as_basal
-    //, prepped_glucose: prepped_glucose_data
     };
 
     var prepped_glucose = generate(inputs);
