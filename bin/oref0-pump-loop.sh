@@ -156,12 +156,12 @@ function smb_reservoir_before {
     try_fail timerun openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
-    echo -n " is within 90s of current time: " && date
+    echo -n " is within 55s of current time: " && date
     let DTG_DIFFERENCE=$CURRENT_DTG-$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g'))
     DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
-    if [ "$DTG_DIFFERENCE" -gt "90" ]
+    if [ "$DTG_DIFFERENCE" -gt "55" ]
     then
-	echo Pump clock is more than 90s off: attempting to reset it
+	echo Pump clock is more than 55s off: attempting to reset it
         timerun oref0-set-device-clocks
         # Refresh current-date, since we just reset device clock.
         $CURRENT_DTG=$(date +%s)
@@ -172,6 +172,8 @@ function smb_reservoir_before {
 	then
 		echo "Error: pump clock refresh error / mismatch"
 		fail "$@"
+	else
+		echo "Pump clock is now within 90s of current time. Proceeding."
 	fi
     fi
     find monitor/ -mmin -1 -size +5c | grep -q pumphistory || { echo "Error: pumphistory too old"; fail "$@"; }
