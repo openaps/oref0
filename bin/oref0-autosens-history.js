@@ -46,17 +46,25 @@ if (!module.parent) {
         var profile = require(cwd + '/' + profile_input);
 
         var isf_data = profile.isfProfile;
-        if (isf_data.units !== 'mg/dL') {
-            if (isf_data.units == 'mmol/L') {
-                for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
-                    isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
+        var units;
+        if (typeof(isf_data) != "undefined" && typeof(isf_data.units == "string")) {
+            units = isf_data.units;
+            if (isf_data.units !== 'mg/dL') {
+                if (isf_data.units == 'mmol/L') {
+                    for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
+                        isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
+                    }
+                    isf_data.units = 'mg/dL';
+                } else {
+                    console.log('ISF is expected to be expressed in mg/dL or mmol/L.'
+                            , 'Found', isf_data.units, 'in', isf_input, '.');
+                    process.exit(2);
                 }
-               isf_data.units = 'mg/dL';
-            } else {
-                console.log('ISF is expected to be expressed in mg/dL or mmol/L.'
-                        , 'Found', isf_data.units, 'in', isf_input, '.');
-                process.exit(2);
             }
+        } else if (typeof(profile[0].store.Default.units == "string")) {
+            units = profile[0].store.Default.units;
+        } else {
+            console.error("Unable to determine units.");
         }
         var basalprofile = profile.basalprofile;
 
