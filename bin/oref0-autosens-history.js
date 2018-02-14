@@ -24,12 +24,10 @@ if (!module.parent) {
 
     var glucose_input = process.argv[2];
     var pumphistory_input = process.argv[3];
-    var isf_input = process.argv[4];
-    var basalprofile_input = process.argv[5];
-    var profile_input = process.argv[6];
+    var profile_input = process.argv[4];
 
     if (!glucose_input || !pumphistory_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json>');
+        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <profile.json>');
         process.exit(1);
     }
     
@@ -47,7 +45,7 @@ if (!module.parent) {
         var pumphistory_data = require(cwd + '/' + pumphistory_input);
         var profile = require(cwd + '/' + profile_input);
 
-        var isf_data = require(cwd + '/' + isf_input);
+        var isf_data = profile.isfProfile;
         if (isf_data.units !== 'mg/dL') {
             if (isf_data.units == 'mmol/L') {
                 for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
@@ -60,7 +58,7 @@ if (!module.parent) {
                 process.exit(2);
             }
         }
-        var basalprofile = require(cwd + '/' + basalprofile_input);
+        var basalprofile = profile.basalprofile;
 
         var iob_inputs = {
             history: pumphistory_data
