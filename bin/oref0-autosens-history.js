@@ -30,7 +30,7 @@ if (!module.parent) {
         console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <profile.json>');
         process.exit(1);
     }
-    
+
     var fs = require('fs');
     try {
         var cwd = process.cwd();
@@ -45,24 +45,49 @@ if (!module.parent) {
         var pumphistory_data = require(cwd + '/' + pumphistory_input);
         var profile = require(cwd + '/' + profile_input);
 
+        if (typeof(profile.isfProfile == "undefined")) {
+            //console.error(profile[0].store.Default.basal);
+            profile =
+            {
+                "min_5m_carbimpact": 8,
+                "dia": profile[0].store.Default.dia,
+                "basalprofile": profile[0].store.Default.basal.map(convertBasal),
+                "isfProfile": {
+                    "units": profile[0].store.Default.units,
+                    "sensitivities": [
+                    {
+                        "i": 0,
+                        "start": profile[0].store.Default.sens[0].time + ":00",
+                        "sensitivity": profile[0].store.Default.sens[0].value,
+                        "offset": 0,
+                        "x": 0,
+                        "endOffset": 1440
+                    }
+                    ]
+                },
+                "carb_ratio": profile[0].store.Default.carbratio[0].value,
+                "autosens_max": 2.0,
+                "autosens_min": 0.5
+            };
+          //console.error(profile);
+        }
         var isf_data = profile.isfProfile;
-        var units;
         if (typeof(isf_data) != "undefined" && typeof(isf_data.units == "string")) {
-            units = isf_data.units;
             if (isf_data.units !== 'mg/dL') {
-                if (isf_data.units == 'mmol/L') {
+                if (isf_data.units == 'mg/dl') {
+                    isf_data.units = 'mg/dL';
+                    profile.isfProfile.units = 'mg/dL';
+                } else if (isf_data.units == 'mmol/L') {
                     for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                         isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
                     }
                     isf_data.units = 'mg/dL';
                 } else {
                     console.log('ISF is expected to be expressed in mg/dL or mmol/L.'
-                            , 'Found', isf_data.units, 'in', isf_input, '.');
+                            , 'Found', isf_data.units, '.');
                     process.exit(2);
                 }
             }
-        } else if (typeof(profile[0].store.Default.units == "string")) {
-            units = profile[0].store.Default.units;
         } else {
             console.error("Unable to determine units.");
         }
@@ -82,6 +107,7 @@ if (!module.parent) {
         , glucose_data: glucose_data
         , basalprofile: basalprofile
         , temptargets: {}
+        , retrospective: true
     };
     var ratioArray = [];
     do {
@@ -115,6 +141,17 @@ function init() {
 
 }
 module.exports = init;
+
+
+function convertBasal(item)
+{
+    var convertedBasal = {
+      "start": item.time + ":00",
+      "minutes": Math.round(item.timeAsSeconds / 60),
+      "rate": item.value
+  };
+  return convertedBasal;
+}
 
 // From https://gist.github.com/IceCreamYou/6ffa1b18c4c8f6aeaad2
 // Returns the value at a given percentile in a sorted numeric array.
