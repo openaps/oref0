@@ -457,7 +457,7 @@
                         param.direction = data[0].direction;
                         param.bgTimeAgo = data[0].dateString;
                         var date1 = param.minDate;
-                        for(i = 0; i < 96; i++) {
+                        for(i = 0; i < data.length ; i++) {
                             
                             if ( new Date(data[i].dateString) >= param.minDate) {
                                 var date1 = new Date(data[i].dateString);
@@ -474,6 +474,10 @@
                                     }
                                 }
                                 param.data.bg[i] = {t:date1,y:data[i].glucose};
+                            }
+                            else 
+                            {
+                                break;
                             }
                         }
                     }
