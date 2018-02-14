@@ -133,8 +133,8 @@ contributors from liability.
 *Note:* This is intended to be a set of tools to support a self-driven DIY
 implementation and any person choosing to use these tools is solely
 responsible for testing and implement these tools independently or
-together as a system.  The [DIY part of OpenAPS is important]
-(http://bit.ly/1NBbZtO). While formal training or experience as an
+together as a system.  The [DIY part of OpenAPS is important](http://bit.ly/1NBbZtO).
+While formal training or experience as an
 engineer or a developer is not required, what *is* required is a growth
 mindset to learn what are essentially "building blocks" to implement an
 OpenAPS instance. This is not a "set and forget" system; it requires
