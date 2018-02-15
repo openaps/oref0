@@ -599,7 +599,7 @@ function invoke_reservoir_etc {
 
 #TODO: remove this
 function merge_pumphistory {
-    jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
+    jq -s '.[0] + .[1]|unique|sort_by(.timestamp)' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
     calculate_iob
 }
 
