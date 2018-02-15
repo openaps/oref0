@@ -164,9 +164,9 @@ function smb_reservoir_before {
 	echo Pump clock is more than 55s off: attempting to reset it
         timerun oref0-set-device-clocks
         # Refresh current-date, since we just reset device clock.
-        CURRENT_DTG=$(date +%s)
+        $CURRENT_DTG=$(date +%s)
 	try_fail timerun openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
-	DTG_DIFFERENCE=$CURRENT_DTG-$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g"'))
+	let DTG_DIFFERENCE=$CURRENT_DTG-$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g"'))
 	DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
 	if [ "$DTG_DIFFERENCE" -gt "90" ]
 	then
