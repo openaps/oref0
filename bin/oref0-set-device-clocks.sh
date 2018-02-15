@@ -26,10 +26,7 @@ CGM=${4-cgm}
 die() { echo "$@" ; exit 1; }
 self=$(basename $0)
 function usage ( ) {
-echo $CLOCK
-echo $GLUCOSE
-echo $PUMP
-echo $CGM
+
 cat <<EOF
 $self
 $self - Set pump and CGM clocks based on NTP time if avaialble.
@@ -50,10 +47,6 @@ if checkNTP; then
     sudo ntpdate -s -b time.nist.gov
     echo Setting pump time to $(date)
     openaps use $PUMP set_clock --to now 2>&1 >/dev/null | tail -1
-    #xdrip CGM doesn't have a clock.
-    if [ ! -f "xdrip.ini" ]
-    then
-	   echo Setting CGM time to $(date)
-	   openaps use $CGM UpdateTime --to now 2>&1 >/dev/null | tail -1
-    fi
+    echo Setting CGM time to $(date)
+    openaps use $CGM UpdateTime --to now 2>&1 >/dev/null | tail -1
 fi

@@ -152,30 +152,16 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     try_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
-    CURRENT_DTG=$(date +%s)
     try_fail timerun openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
-    echo -n " is within 55s of current time: " && date
-    let DTG_DIFFERENCE=$CURRENT_DTG-$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g'))
-    DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
-    if [ "$DTG_DIFFERENCE" -gt "55" ]
-    then
-	echo Pump clock is more than 55s off: attempting to reset it
+    echo -n " is within 90s of current time: " && date
+    if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -55 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 55 )); then
+        echo Pump clock is more than 55s off: attempting to reset it
         timerun oref0-set-device-clocks
-        # Refresh current-date, since we just reset device clock.
-        $CURRENT_DTG=$(date +%s)
-	try_fail timerun openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
-	let DTG_DIFFERENCE=$CURRENT_DTG-$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g"'))
-	DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
-	if [ "$DTG_DIFFERENCE" -gt "90" ]
-	then
-		echo "Error: pump clock refresh error / mismatch"
-		fail "$@"
-	else
-		echo "Pump clock is now within 90s of current time. Proceeding."
-	fi
-    fi
+       fi
+    (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -90 )) \
+    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
     find monitor/ -mmin -1 -size +5c | grep -q pumphistory || { echo "Error: pumphistory too old"; fail "$@"; }
 }
 
