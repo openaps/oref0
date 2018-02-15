@@ -149,6 +149,7 @@ function overtemp {
 }
 
 function smb_reservoir_before {
+    
     # Refresh reservoir.json and pumphistory.json
     try_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
@@ -157,8 +158,17 @@ function smb_reservoir_before {
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
     echo -n " is within 55s of current time: " && date
-    let DTG_DIFFERENCE=$CURRENT_DTG-$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g'))
+    # To prevent a BASH arithmetic syntax-error, initialize pump-DTG to 999. 
+    # This will cause the loop to detect an invalid clock-zoned.json and respond with something other than a syntax error
+    PUMP_DTG=999
+    PUMP_DTG=$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g'))
+    let DTG_DIFFERENCE=$CURRENT_DTG-$PUMP_DTG
     DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
+    if [ "$PUMP_DTG" == "999" ] 
+    then
+		echo "Error: pump clock data (monitor/clock-zoned.json) invalid. This is probably caused by the pump being out-of-range"
+		fail "$@"    
+    else
     if [ "$DTG_DIFFERENCE" -gt "55" ]
     then
 	echo Pump clock is more than 55s off: attempting to reset it
@@ -166,9 +176,11 @@ function smb_reservoir_before {
         # Refresh current-date, since we just reset device clock.
         $CURRENT_DTG=$(date +%s)
 	try_fail timerun openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
-	let DTG_DIFFERENCE=$CURRENT_DTG-$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g"'))
+	PUMP_DTG=999
+        PUMP_DTG=$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g'))
+	let DTG_DIFFERENCE=$CURRENT_DTG-$PUMP_DTG
 	DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
-	if [ "$DTG_DIFFERENCE" -gt "90" ]
+	if [ [ "$DTG_DIFFERENCE" -gt "90" ] || [ PUMP_DTG == 999 ] ]
 	then
 		echo "Error: pump clock refresh error / mismatch"
 		fail "$@"
