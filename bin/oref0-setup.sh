@@ -1078,12 +1078,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
         mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+        #Store radio_locale for later use
+        grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
         #Necessary to "bootstrap" Go commands...
         if [[ $radio_locale =~ ^WW$ ]]; then
-          grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
           echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
         else
-          grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
           echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
         fi
     fi
