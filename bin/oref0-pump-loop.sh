@@ -218,8 +218,8 @@ function smb_suggest {
     ls enact/smb-suggested.json 2>&3 >&4 && die "enact/smb-suggested.json present"
     # Run determine-basal
     echo -n Temp refresh
-    try_fail check_clock
-    try_fail check_tempbasal
+    retry_fail check_clock
+    retry_fail check_tempbasal
     try_fail calculate_iob && echo -n "ed: "
     echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c .
     try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
