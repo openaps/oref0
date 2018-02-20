@@ -1168,7 +1168,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             (crontab -l; crontab -l | grep -q "oref0-pushover" || echo "* * * * * cd $directory && oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log" ) | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-version --check-for-updates" || echo "0 * * * * cd $directory && oref0-version --check-for-updates > /tmp/oref0-updates.txt") | crontab -
-        (crontab -l; crontab -l | grep -q "flask run" || echo "@reboot cd ~/src/oref0/www && export FLASK_APP=app.py && flask run -p 80 --host=0.0.0.0" | tee -a /var/log/openaps/flask.log) | crontab -
+        (crontab -l; crontab -l | grep -q "flask run" || echo "@reboot cd ~/src/oref0/www && export FLASK_APP=app.py && flask run -p 80 --host=0.0.0.0 | tee -a /var/log/openaps/flask.log") | crontab -
+        # disable HDMI on Explorer HAT rigs to save battery
+        if [[ "$ttyport" =~ "spidev0.0" ]]; then
+            (crontab -l; crontab -l | grep -q "tvservice" || echo "@reboot /usr/bin/tvservice -o") | crontab -
+        fi
         crontab -l | tee $HOME/crontab.txt
     fi
 
