@@ -618,6 +618,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     else
         echo Running apt-get upgrade
         sudo apt-get -y upgrade
+        # make sure hostapd and dnsmasq don't get re-enabled
+        update-rc.d -f hostapd remove
+        update-rc.d -f dnsmasq remove
     fi
     echo Running apt-get autoclean
     sudo apt-get autoclean
