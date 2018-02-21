@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # start bluetoothd if bluetoothd is not running
-if ! ( ps -fC bluetoothd ) ; then
+if ! ( ps -fC bluetoothd >/dev/null ) ; then
    sudo /usr/local/bin/bluetoothd &
 fi
 
