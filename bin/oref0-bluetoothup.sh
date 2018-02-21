@@ -5,7 +5,7 @@ if ! ( ps -fC bluetoothd ) ; then
    sudo /usr/local/bin/bluetoothd &
 fi
 
-if ! ( hciconfig -a | grep -q "PSCAN" ) ; then
+if getent passwd edison && ! ( hciconfig -a | grep -q "PSCAN" ) ; then
    sudo killall bluetoothd
    sudo /usr/local/bin/bluetoothd &
 fi
