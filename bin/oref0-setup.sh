@@ -1130,7 +1130,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
-        (crontab -l; crontab -l | grep -q "killall -g --older-than 5m oref0" || echo '* * * * * find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && ( killall -g --older-than 5m openaps; killall -g --older-than 5m oref0-pump-loop; killall -g --older-than 5m openaps-report )') | crontab -
+        (crontab -l; crontab -l | grep -q "find /var/log/openaps/pump-loop.log -mmin" || echo '* * * * * find /var/log/openaps/pump-loop.log -mmin +10 | grep pump && ( echo No updates to pump-loop.log in 10m - killing processes; killall -g --older-than 10m openaps; killall -g --older-than 10m oref0-pump-loop; killall -g --older-than 10m openaps-report ) | tee -a /var/log/openaps/pump-loop.log') | crontab -
         if [[ ${CGM,,} =~ "g5-upload" ]]; then
             (crontab -l; crontab -l | grep -q "oref0-upload-entries" || echo "* * * * * cd $directory && oref0-upload-entries" ) | crontab -
         fi
