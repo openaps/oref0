@@ -46,26 +46,32 @@ if (!module.parent) {
         var profile = require(cwd + '/' + profile_input);
 
         if (typeof(profile.isfProfile == "undefined")) {
-            //console.error(profile[0].store.Default.basal);
+            for (prop in profile[0].store) {
+                profilename = prop;
+            }
+            //console.error(profilename);
+            //console.error(profile[0].store[profilename].basal);
+            //namedprofile = profile[0].store[profilename];
+            //console.error(profilename, namedprofile);
             profile =
             {
                 "min_5m_carbimpact": 8,
-                "dia": profile[0].store.Default.dia,
-                "basalprofile": profile[0].store.Default.basal.map(convertBasal),
+                "dia": profile[0].store[profilename].dia,
+                "basalprofile": profile[0].store[profilename].basal.map(convertBasal),
                 "isfProfile": {
-                    "units": profile[0].store.Default.units,
+                    "units": profile[0].store[profilename].units,
                     "sensitivities": [
                     {
                         "i": 0,
-                        "start": profile[0].store.Default.sens[0].time + ":00",
-                        "sensitivity": profile[0].store.Default.sens[0].value,
+                        "start": profile[0].store[profilename].sens[0].time + ":00",
+                        "sensitivity": profile[0].store[profilename].sens[0].value,
                         "offset": 0,
                         "x": 0,
                         "endOffset": 1440
                     }
                     ]
                 },
-                "carb_ratio": profile[0].store.Default.carbratio[0].value,
+                "carb_ratio": profile[0].store[profilename].carbratio[0].value,
                 "autosens_max": 2.0,
                 "autosens_min": 0.5
             };
@@ -77,6 +83,9 @@ if (!module.parent) {
                 if (isf_data.units == 'mg/dl') {
                     isf_data.units = 'mg/dL';
                     profile.isfProfile.units = 'mg/dL';
+                } else if (isf_data.units == 'mmol') {
+                    isf_data.units = 'mmol/L';
+                    profile.isfProfile.units = 'mmol/L';
                 } else if (isf_data.units == 'mmol/L') {
                     for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                         isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
