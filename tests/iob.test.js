@@ -423,8 +423,8 @@ describe('IOB', function() {
                 }, {
                     _type: 'TempBasalDuration',
                     'duration (min)': 30,
-                    date: timestamp,
-                    timestamp: timestamp
+                    date: timestamp30mAgo,
+                    timestamp: timestamp30mAgo
                 }],
                 profile: {
                     dia: 3,
@@ -436,7 +436,6 @@ describe('IOB', function() {
             };
 
         var iobInputs = inputs;
-        iobInputs.clock = timestamp
         var iobNow = require('../lib/iob')(iobInputs)[0];
 
         //console.log(iobNow);
@@ -733,7 +732,8 @@ describe('IOB', function() {
             history: [{
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
-                date: startingPoint
+                date: startingPoint,
+                timestamp: startingPoint
             }, {
                 _type: 'TempBasal',
                 rate: 0.1,
@@ -747,7 +747,8 @@ describe('IOB', function() {
             }, {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
-                date: startingPoint2
+                date: startingPoint2,
+                timestamp: startingPoint2
             }],
             profile: {
                 dia: 3,
@@ -876,6 +877,7 @@ describe('IOB', function() {
             inputs = {
                 clock: timestamp,
                 history: [{
+                    debug: "should show 0 IOB with Temp Basals if duration is not found",
                     _type: 'TempBasal',
                     rate: 2,
                     date: timestamp,
@@ -913,7 +915,8 @@ describe('IOB', function() {
                     {
                         _type: 'TempBasalDuration',
                         'duration (min)': 30,
-                        date: timestamp
+                        date: timestamp,
+                        timestamp: timestamp
                     }
                 ],
                 profile: {
