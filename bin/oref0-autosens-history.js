@@ -83,10 +83,7 @@ if (!module.parent) {
                 if (isf_data.units == 'mg/dl') {
                     isf_data.units = 'mg/dL';
                     profile.isfProfile.units = 'mg/dL';
-                } else if (isf_data.units == 'mmol') {
-                    isf_data.units = 'mmol/L';
-                    profile.isfProfile.units = 'mmol/L';
-                } else if (isf_data.units == 'mmol/L') {
+                } else if (isf_data.units == 'mmol' || isf_data.units == 'mmol/L') {
                     for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                         isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
                     }
