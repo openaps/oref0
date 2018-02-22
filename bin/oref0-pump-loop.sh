@@ -583,7 +583,7 @@ function monitor_pump {
 }
 
 function calculate_iob {
-    oref0-calculate-iob monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json settings/pumphistory-24h-zoned.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
+    oref0-calculate-iob settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
 }
 
 function invoke_pumphistory_etc {
@@ -720,7 +720,7 @@ function refresh_temp_and_enact {
             echo -n Temp refresh
             retry_fail invoke_temp_etc
             echo ed
-            oref0-calculate-iob monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json settings/pumphistory-24h-zoned.json || { echo "Couldn't calculate IOB"; fail "$@"; }
+            oref0-calculate-iob settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
             if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi
@@ -738,8 +738,8 @@ function invoke_temp_etc {
 function refresh_pumphistory_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     setglucosetimestamp
-    if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
-        || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
+    if ((find monitor/ -newer settings/pumphistory-24h-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
+        || (find enact/ -newer settings/pumphistory-24h-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
         || ((! find monitor/ -mmin -5 | grep -q pumphistory-zoned || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
             { echo -n ": " && refresh_pumphistory_and_meal && enact; }
     else
@@ -869,9 +869,10 @@ function check_tempbasal() {
   mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp >&4
 }
 function read_pumphistory() {
-  set -o pipefail
-  pumphistory -n 1 2>&3 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4 \
-    && cat monitor/pumphistory-zoned.json | jq .[0].timestamp
+    read_pumphistory_24h
+  #set -o pipefail
+  #pumphistory -n 1 2>&3 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4 \
+    #&& cat monitor/pumphistory-zoned.json | jq .[0].timestamp
 }
 function read_pumphistory_24h() {
   set -o pipefail
