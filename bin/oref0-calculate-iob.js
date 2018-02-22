@@ -20,7 +20,7 @@
 
 var generate = require('oref0/lib/iob');
 function usage ( ) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory-zoned.json> <profile.json> <clock-zoned.json> [autosens.json]');
+    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory-zoned.json> <profile.json> <clock-zoned.json> [autosens.json] [pumphistory-24h-zoned.json]');
 
 }
 
@@ -33,6 +33,7 @@ if (!module.parent) {
   var profile_input = process.argv[3];
   var clock_input = process.argv[4];
   var autosens_input = process.argv[5];
+  var pumphistory_24_input = process.argv[6];
 
   if (!pumphistory_input || !profile_input) {
     usage( );
@@ -40,7 +41,7 @@ if (!module.parent) {
   }
 
   var cwd = process.cwd();
-  var all_data = require(cwd + '/' + pumphistory_input);
+  var pumphistory_data = require(cwd + '/' + pumphistory_input);
   var profile_data = require(cwd + '/' + profile_input);
   var clock_data = require(cwd + '/' + clock_input);
 
@@ -51,11 +52,18 @@ if (!module.parent) {
     } catch (e) {}
     //console.error(autosens_input, JSON.stringify(autosens_data));
   }
+  var pumphistory_24_data = null;
+  if (pumphistory_24_input) {
+    try {
+        var pumphistory_24_data = require(cwd + '/' + pumphistory_24_input);
+    } catch (e) {}
+  }
 
-  // all_data.sort(function (a, b) { return a.date > b.date });
+  // pumphistory_data.sort(function (a, b) { return a.date > b.date });
 
   var inputs = {
-    history: all_data
+    history: pumphistory_data
+  , history24: pumphistory_24_data
   , profile: profile_data
   , clock: clock_data
   };
