@@ -58,6 +58,7 @@ if (!module.parent) {
                 "min_5m_carbimpact": 8,
                 "dia": profile[0].store[profilename].dia,
                 "basalprofile": profile[0].store[profilename].basal.map(convertBasal),
+                "sens": profile[0].store[profilename].sens[0].value,
                 "isfProfile": {
                     "units": profile[0].store[profilename].units,
                     "sensitivities": [
@@ -75,6 +76,8 @@ if (!module.parent) {
                 "autosens_max": 2.0,
                 "autosens_min": 0.5
             };
+            var inputs = { "basals": profile.basalprofile };
+            profile.max_daily_basal = basal.maxDailyBasal(inputs);
           //console.error(profile);
         }
         var isf_data = profile.isfProfile;
@@ -86,6 +89,7 @@ if (!module.parent) {
                 } else if (isf_data.units == 'mmol' || isf_data.units == 'mmol/L') {
                     for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                         isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
+                        profile.sens = profile.sens * 18;
                     }
                     isf_data.units = 'mg/dL';
                 } else {
@@ -119,11 +123,17 @@ if (!module.parent) {
     do {
         detection_inputs.deviations = 96;
         detect(detection_inputs);
-        for(var i=0; i<10; i++) {
+        for(var i=0; i<48; i++) {
             detection_inputs.glucose_data.shift();
         }
-        console.error(ratio, newisf);
-        ratioArray.unshift(ratio);
+        console.error(ratio, newisf, detection_inputs.glucose_data[0].dateString);
+        var obj = {
+            "dateString": detection_inputs.glucose_data[0].dateString,
+            "sensitivityRatio": ratio,
+            "ISF": newisf
+        }
+        ratioArray.unshift(obj);
+        console.error(JSON.stringify(ratioArray));
     }
     while(detection_inputs.glucose_data.length > 96);
     //var lowestRatio = Math.min(ratio8h, ratio24h);
