@@ -154,9 +154,11 @@ module.exports = init;
 
 function convertBasal(item)
 {
+    var start = item.time.split(":")
     var convertedBasal = {
       "start": item.time + ":00",
-      "minutes": Math.round(item.timeAsSeconds / 60),
+      "minutes": parseInt(start[0])*60 + parseInt(start[1]),
+      //"minutes": Math.round(item.timeAsSeconds / 60),
       "rate": item.value
   };
   return convertedBasal;
