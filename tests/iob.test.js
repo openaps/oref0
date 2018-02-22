@@ -406,16 +406,6 @@ describe('IOB', function() {
             inputs = {
                 clock: timestamp,
                 history: [{
-                    _type: 'TempBasalDuration',
-                    'duration (min)': 30,
-                    date: timestamp60mAgo,
-                    timestamp: timestamp60mAgo
-                }, {
-                    _type: 'TempBasal',
-                    rate: 2,
-                    date: timestamp60mAgo,
-                    timestamp: timestamp60mAgo
-                }, {
                     _type: 'TempBasal',
                     rate: 2,
                     date: timestamp30mAgo,
@@ -425,6 +415,16 @@ describe('IOB', function() {
                     'duration (min)': 30,
                     date: timestamp30mAgo,
                     timestamp: timestamp30mAgo
+                }, {
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 30,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
+                }, {
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
                 }],
                 profile: {
                     dia: 3,
@@ -466,16 +466,6 @@ describe('IOB', function() {
         var inputs = {
             clock: timestamp,
             history: [{
-                _type: 'TempBasalDuration',
-                'duration (min)': 30,
-                date: timestampEarly,
-                timestamp: timestampEarly,
-            }, {
-                _type: 'TempBasal',
-                rate: 2,
-                date: timestampEarly,
-                timestamp: timestampEarly
-            }, {
                 _type: 'TempBasal',
                 rate: 2,
                 date: timestamp,
@@ -485,6 +475,16 @@ describe('IOB', function() {
                 'duration (min)': 30,
                 date: timestamp,
                 timestamp: timestamp,
+            }, {
+                _type: 'TempBasalDuration',
+                'duration (min)': 30,
+                date: timestampEarly,
+                timestamp: timestampEarly,
+            }, {
+                _type: 'TempBasal',
+                rate: 2,
+                date: timestampEarly,
+                timestamp: timestampEarly
             }],
             profile: {
                 dia: 3,
@@ -528,16 +528,6 @@ describe('IOB', function() {
             inputs = {
                 clock: timestamp,
                 history: [{
-                    _type: 'TempBasalDuration',
-                    'duration (min)': 30,
-                    date: timestampEarly,
-                    timestamp: timestampEarly
-                }, {
-                    _type: 'TempBasal',
-                    rate: 2,
-                    date: timestampEarly,
-                    timestamp: timestampEarly
-                }, {
                     _type: 'TempBasal',
                     rate: 2,
                     date: timestamp,
@@ -547,6 +537,16 @@ describe('IOB', function() {
                     'duration (min)': 30,
                     date: timestamp,
                     timestamp: timestamp
+                }, {
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 30,
+                    date: timestampEarly,
+                    timestamp: timestampEarly
+                }, {
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestampEarly,
+                    timestamp: timestampEarly
                 }],
                 profile: {
                     dia: 3,
