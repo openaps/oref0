@@ -568,10 +568,11 @@ function refresh_pumphistory_and_meal {
     retry_return monitor_pump || return 1
     echo -n ed
     # TODO: remove
-    retry_return merge_pumphistory || return 1
+    # retry_return merge_pumphistory || return 1
     echo -n " pumphistory"
-    # TODO: replace pumphistory-merged with pumphistory-zoned + pumphistory-24h-zoned as in calculate_iob
-    retry_return oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
+    # TODO: include pumphistory-zoned + pumphistory-24h-zoned as in calculate_iob
+    # with just pumphistory-24h-zoned here, COB will be slightly overestimated until it refreshes every 10-30m
+    retry_return oref0-meal settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
     echo " and meal.json"
 }
 
@@ -598,10 +599,10 @@ function invoke_reservoir_etc {
 }
 
 #TODO: remove this
-function merge_pumphistory {
-    jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
-    calculate_iob
-}
+#function merge_pumphistory {
+    #jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
+    #calculate_iob
+#}
 
 # Calculate new suggested temp basal and enact it
 function enact {
@@ -630,9 +631,9 @@ function refresh_old_pumphistory {
     || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && refresh_pumphistory_and_meal )
 }
 
-# refresh pumphistory_24h if it's more than 2h old
+# refresh pumphistory_24h if it's more than 30m old
 function refresh_old_pumphistory_24h {
-    find settings/ -mmin -120 -size +100c | grep -q pumphistory-24h-zoned \
+    find settings/ -mmin -30 -size +100c | grep -q pumphistory-24h-zoned \
     || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s \
         && echo -n Old pumphistory-24h refresh \
         && read_pumphistory_24h 2>&3 >&4 && echo ed )
@@ -812,12 +813,12 @@ function refresh_pumphistory_24h {
     fi
     if onbattery; then
         echo -n "Rig charging / on battery: $(jq .battery monitor/edison-battery.json)%. "
-        autosens_freq=30
+        autosens_freq=25
     else
         if highload; then
-            autosens_freq=30
+            autosens_freq=25
         else
-            autosens_freq=15
+            autosens_freq=10
         fi
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
