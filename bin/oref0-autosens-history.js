@@ -141,7 +141,7 @@ if (!module.parent) {
         ratioArray.unshift(obj);
         if (output_file) {
             //console.error(output_file);
-            fs.writeFileSync(output_file, JSON.stringify(ratioArray));
+            fs.writeFileSync(output_file, JSON.stringify(ratioArray)+"\n");
         } else {
             console.error(JSON.stringify(ratioArray));
         }
