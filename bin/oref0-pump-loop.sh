@@ -159,22 +159,21 @@ function smb_reservoir_before {
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
     echo -n " is within 55s of current time: " && date
     PUMP_DTG=$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g'))
-    # To prevent a BASH arithmetic syntax-error, initialize pump-DTG to 999 if P                                                                                                                                                                              UMP_DTG is not a valid epoch number.
+    # To prevent a BASH arithmetic syntax-error, initialize pump-DTG to 999 if it's not a valid unix-epoch time                                                                                                                                                                              UMP_DTG is not a valid epoch number.
     # This will cause the loop to detect an invalid clock-zoned.json and respond                                                                                                                                                                               with something other than a syntax error
     if [ ! "$PUMP_DTG" -gt "10" ]
     then
         PUMP_DTG=999
         echo Pump clock retrieval error - clock-zoned.json invalid
     fi
-
-    let DTG_DIFFERENCE=$CURRENT_DTG-$PUMP_DTG
-    DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
     if [ "$PUMP_DTG" == "999" ]
     then
                 #We know clock-zoned is corrupt. Don't bother with the rest of the process!
                 echo "Error: pump clock data (monitor/clock-zoned.json) invalid.                                                                                                                                                                               This is probably caused by the pump being out-of-range"
                 fail "$@"
     else
+            let DTG_DIFFERENCE=$CURRENT_DTG-$PUMP_DTG
+            DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
             if [ "$DTG_DIFFERENCE" -gt "55" ]
             then
                     echo Pump clock is more than 55s off: attempting to reset it
@@ -187,9 +186,10 @@ function smb_reservoir_before {
                     then
                             PUMP_DTG=999
                             echo Pump clock retrieval error - clock-zoned.json invalid
+                    else
+                            let DTG_DIFFERENCE=$CURRENT_DTG-$PUMP_DTG
+                            DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
                     fi
-                    let DTG_DIFFERENCE=$CURRENT_DTG-$PUMP_DTG
-                    DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
                     if [ [ "$DTG_DIFFERENCE" -gt "90" ] || [ PUMP_DTG == 999 ] ]
                     then
                             echo "Error: pump clock refresh error / mismatch"
