@@ -25,13 +25,14 @@ if (!module.parent) {
     var glucose_input = process.argv[2];
     var pumphistory_input = process.argv[3];
     var profile_input = process.argv[4];
+    var readings_per_run = process.argv[5];
     var output_file;
     if (process.argv[5]) {
-        output_file = process.argv[5];
+        output_file = process.argv[6];
     }
 
-    if (!glucose_input || !pumphistory_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <profile.json> [outputfile.json]');
+    if (!glucose_input || !pumphistory_input || !profile_input || !readings_per_run) {
+        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <profile.json> <readings_per_run> [outputfile.json]');
         process.exit(1);
     }
 
@@ -128,7 +129,7 @@ if (!module.parent) {
     do {
         detection_inputs.deviations = 96;
         detect(detection_inputs);
-        for(var i=0; i<48; i++) {
+        for(var i=0; i<readings_per_run; i++) {
             detection_inputs.glucose_data.shift();
         }
         console.error(ratio, newisf, detection_inputs.glucose_data[0].dateString);
@@ -147,10 +148,6 @@ if (!module.parent) {
         }
     }
     while(detection_inputs.glucose_data.length > 96);
-    //var lowestRatio = Math.min(ratio8h, ratio24h);
-    //var sensAdj = {
-        //"ratio": lowestRatio
-    //}
     return console.log(JSON.stringify(ratioArray));
 
 }
