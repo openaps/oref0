@@ -39,13 +39,13 @@ old_main() {
             && wait_for_silence \
             && if_mdt_get_bg \
             && refresh_old_pumphistory_enact \
-            && refresh_old_pumphistory_24h \
             && refresh_old_profile \
             && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
             && ( refresh_temp_and_enact || ( smb_verify_status && refresh_temp_and_enact ) ) \
             && refresh_pumphistory_and_enact \
             && refresh_profile \
-            && refresh_pumphistory_24h \
+            && pumphistory_daily_refresh \
+            && touch /tmp/pump_loop_success \
             && echo Completed basal-only pump-loop at $(date) \
             && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
             && echo); do
@@ -70,7 +70,7 @@ main() {
         try_fail wait_for_silence $upto30s
         retry_fail preflight
         try_fail if_mdt_get_bg
-        try_fail refresh_old_pumphistory_24h
+        try_fail refresh_old_pumphistory
         try_fail refresh_old_profile
         try_fail touch /tmp/pump_loop_enacted -r monitor/glucose.json
         if smb_check_everything; then
@@ -84,7 +84,8 @@ main() {
                     && refresh_temp_and_enact \
                     && refresh_pumphistory_and_enact \
                     && refresh_profile \
-                    && refresh_pumphistory_24h \
+		    && pumphistory_daily_refresh \
+                    && touch /tmp/pump_loop_success \
                     && echo Completed pump-loop at $(date) \
                     && echo \
                     )
@@ -98,7 +99,7 @@ main() {
                     refresh_profile 15
                 fi
                 if ! glucose-fresh; then
-                    refresh_pumphistory_24h
+                    pumphistory_daily_refresh
                     if ! glucose-fresh && ! onbattery; then
                         refresh_after_bolus_or_enact
                     fi
@@ -129,7 +130,7 @@ function fail {
         echo "Unsuccessful oref0-pump-loop (BG too old) at $(date)"
     # don't treat suspended pump as a complete failure
     elif find monitor/ -mmin -5 | grep status.json >&4 && grep -q '"suspended": true' monitor/status.json; then
-        refresh_profile 15; refresh_pumphistory_24h
+        refresh_profile 15; pumphistory_daily_refresh
         refresh_after_bolus_or_enact
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
     else
@@ -559,21 +560,22 @@ function wait_for_silence {
 # Refresh pumphistory etc.
 function refresh_pumphistory_and_meal {
     retry_return check_status 2>&3 >&4 || return 1
-    echo -n Ref
+    echo -n "All ref"
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
     echo -n resh
     retry_return monitor_pump || return 1
-    echo -n ed
+    echo -n "ed. "
     # TODO: remove
     # retry_return merge_pumphistory || return 1
-    echo -n " pumphistory"
+    # echo -n " Pumphistory"
     # TODO: include pumphistory-zoned + pumphistory-24h-zoned as in calculate_iob
     # with just pumphistory-24h-zoned here, COB will be slightly overestimated until it refreshes every 10-30m
-    retry_return oref0-meal settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
-    echo " and meal.json"
+    echo -n "meal.json refresh"
+    retry_return oref0-meal settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || (echo "failed." && return 1)
+    echo "ed."
 }
 
 # monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
@@ -588,7 +590,7 @@ function calculate_iob {
 
 function invoke_pumphistory_etc {
     check_clock 2>&3 >&4 || return 1
-    read_pumphistory 2>&3 >&4 || return 1
+    read_pumphistory 2>&3  || return 1
     check_tempbasal 2>&3 >&4 || return 1
 }
 
@@ -600,7 +602,7 @@ function invoke_reservoir_etc {
 
 #TODO: remove this
 #function merge_pumphistory {
-    #jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
+    # jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
     #calculate_iob
 #}
 
@@ -625,18 +627,18 @@ function refresh_old_pumphistory_enact {
     || ( echo -n "Old pumphistory: " && refresh_pumphistory_and_meal && enact )
 }
 
-# refresh pumphistory if it's more than 30m old, but don't enact
-function refresh_old_pumphistory {
-    find monitor/ -mmin -30 -size +100c | grep -q pumphistory-zoned \
-    || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && refresh_pumphistory_and_meal )
-}
+## refresh pumphistory if it's more than 30m old, but don't enact
+#function refresh_old_pumphistory {
+#    find monitor/ -mmin -30 -size +100c | grep -q pumphistory-zoned \
+#    || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && refresh_pumphistory_and_meal )
+#}
 
-# refresh pumphistory_24h if it's more than 30m old
-function refresh_old_pumphistory_24h {
-    find settings/ -mmin -30 -size +100c | grep -q pumphistory-24h-zoned \
+# refresh pumphistory_24h if it's more than 5m old
+function refresh_old_pumphistory {
+    (find settings/ -mmin -5 -size +100c | grep -q pumphistory-24h-zoned \
+     && echo -n "Pumphistory-24h less than 5m old. ") \
     || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s \
-        && echo -n Old pumphistory-24h refresh \
-        && read_pumphistory_24h 2>&3 >&4 && echo ed )
+        && read_pumphistory )
 }
 
 # refresh settings/profile if it's more than 1h old
@@ -803,27 +805,28 @@ function glucose-fresh {
     fi
 }
 
-function refresh_pumphistory_24h {
-    if [ -e ~/src/EdisonVoltage/voltage ]; then
-        sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json 2>&3
-    elif [ -e /root/src/openaps-menu/scripts/getvoltage.sh ]; then
-        sudo /root/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json 2>&3
-    else
-        rm monitor/edison-battery.json 2>&3
-    fi
-    if onbattery; then
-        echo -n "Rig charging / on battery: $(jq .battery monitor/edison-battery.json)%. "
-        autosens_freq=25
-    else
-        if highload; then
-            autosens_freq=25
-        else
-            autosens_freq=10
-        fi
-    fi
-    find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
-    || { echo -n pumphistory-24h refresh \
-        && read_pumphistory_24h 2>&3 >&4 && echo ed; }
+function refresh_pumphistory {
+#    if [ -e ~/src/EdisonVoltage/voltage ]; then
+#        sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json 2>&3
+#    elif [ -e /root/src/openaps-menu/scripts/getvoltage.sh ]; then
+#        sudo /root/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json 2>&3
+#    else
+#        rm monitor/edison-battery.json 2>&3
+#    fi
+#    if onbattery; then
+#        echo -n "Rig charging / on battery: $(jq .battery monitor/edison-battery.json)%. "
+#        autosens_freq=25
+#    else
+#        if highload; then
+#            autosens_freq=25
+#        else
+#            autosens_freq=10
+#        fi
+#    fi
+#    find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
+#    || { echo -n pumphistory-24h refresh \
+#        && read_pumphistory_24h 2>&3 >&4 && echo ed; }
+    read_pumphistory;
 }
 
 function setglucosetimestamp {
@@ -868,16 +871,52 @@ function check_tempbasal() {
   set -o pipefail
   mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp >&4
 }
-function read_pumphistory() {
-    read_pumphistory_24h
-  #set -o pipefail
-  #pumphistory -n 1 2>&3 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4 \
-    #&& cat monitor/pumphistory-zoned.json | jq .[0].timestamp
+#function read_pumphistory() {
+#    read_pumphistory_24h
+#  #set -o pipefail
+#  #pumphistory -n 1 2>&3 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4 \
+#    #&& cat monitor/pumphistory-zoned.json | jq .[0].timestamp
+#}
+
+# clear and refresh the 24h pumphistory file approximatively every 6 hours.
+# It queries 27h of data, full refresh when oldest data is greater than 33 hours old.
+function pumphistory_daily_refresh() {
+  lastRecordTimestamp=$(jq -r '.[-1].timestamp' settings/pumphistory-24h-zoned.json 2>&3)
+  dateCutoff=$(date --date="33 hours ago" +%s)
+  echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
+  if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || "$(date -d $lastRecordTimestamp +%s)" -le $dateCutoff ]]; then
+    echo -n "daily " && read_full_pumphistory
+  fi
 }
-function read_pumphistory_24h() {
+function read_pumphistory() {
   set -o pipefail
-  pumphistory -n 27 2>&3 | jq -f openaps.jq | tee settings/pumphistory-24h-zoned.json 2>&3 >&4 \
-    && cat settings/pumphistory-24h-zoned.json | jq .[0].timestamp
+  topRecordTimestamp=$(jq -r '.[0].timestamp' settings/pumphistory-24h-zoned.json 2>&3)
+  echo "Quering pump for history since: $topRecordTimestamp" >&3
+  if [[ -z "$topRecordTimestamp" || "$topRecordTimestamp" == *"null"* ]]; then
+    read_full_pumphistory
+  else
+    # FIXME: the following logic queries the pump for all records since the
+    # timestamp of the top record in the existing history file.
+    # This might miss some records if the pump clock has been moved forward.
+    # A better approach might to get all reconds until that top record
+    # has been found and matched exactly by it's base64 data or some other identifier
+    # other than the timestamp.
+    # The logic could be improved once the pumphistory command support this feature.
+    echo -n "New history update" \
+    && mv settings/pumphistory-24h-zoned.json settings/pumphistory-24h-zoned-old.json \
+    && ((jq -s '.[0] + .[1]' <(pumphistory -s $topRecordTimestamp  2>&3 | jq -f openaps.jq 2>&3 ) settings/pumphistory-24h-zoned-old.json > settings/pumphistory-24h-zoned.json \
+        && rm settings/pumphistory-24h-zoned-old.json && echo "d. ")
+       || ( mv settings/pumphistory-24h-zoned-old.json settings/pumphistory-24h-zoned.json && echo " failed."; return 1))
+  fi
+  echo " until $(jq -r '.[0].timestamp' settings/pumphistory-24h-zoned.json)"
+}
+function read_full_pumphistory() {
+  set -o pipefail
+  echo -n "Full history refresh" \
+  && ((( pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee settings/pumphistory-24h-zoned.json 2>&3 >&4 ) \
+      && echo ed) \
+     || (echo " failed. "; return 1)) \
+  && echo " until $(jq -r '.[0].timestamp' settings/pumphistory-24h-zoned.json)"
 }
 function read_bg_targets() {
   set -o pipefail
