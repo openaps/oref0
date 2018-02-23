@@ -25,9 +25,13 @@ if (!module.parent) {
     var glucose_input = process.argv[2];
     var pumphistory_input = process.argv[3];
     var profile_input = process.argv[4];
+    var output_file;
+    if (process.argv[5]) {
+        output_file = process.argv[5];
+    }
 
     if (!glucose_input || !pumphistory_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <profile.json>');
+        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <profile.json> [outputfile.json]');
         process.exit(1);
     }
 
@@ -44,6 +48,7 @@ if (!module.parent) {
 
         var pumphistory_data = require(cwd + '/' + pumphistory_input);
         var profile = require(cwd + '/' + profile_input);
+
 
         if (typeof(profile.isfProfile == "undefined")) {
             for (prop in profile[0].store) {
@@ -127,13 +132,19 @@ if (!module.parent) {
             detection_inputs.glucose_data.shift();
         }
         console.error(ratio, newisf, detection_inputs.glucose_data[0].dateString);
+
         var obj = {
             "dateString": detection_inputs.glucose_data[0].dateString,
             "sensitivityRatio": ratio,
             "ISF": newisf
         }
         ratioArray.unshift(obj);
-        console.error(JSON.stringify(ratioArray));
+        if (output_file) {
+            //console.error(output_file);
+            fs.writeFileSync(output_file, JSON.stringify(ratioArray));
+        } else {
+            console.error(JSON.stringify(ratioArray));
+        }
     }
     while(detection_inputs.glucose_data.length > 96);
     //var lowestRatio = Math.min(ratio8h, ratio24h);
