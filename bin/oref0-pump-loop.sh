@@ -568,11 +568,6 @@ function refresh_pumphistory_and_meal {
     echo -n resh
     retry_return monitor_pump || return 1
     echo -n "ed. "
-    # TODO: remove
-    # retry_return merge_pumphistory || return 1
-    # echo -n " Pumphistory"
-    # TODO: include pumphistory-zoned + pumphistory-24h-zoned as in calculate_iob
-    # with just pumphistory-24h-zoned here, COB will be slightly overestimated until it refreshes every 10-30m
     echo -n "meal.json refresh"
     retry_return oref0-meal settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || (echo "failed." && return 1)
     echo "ed."
@@ -600,12 +595,6 @@ function invoke_reservoir_etc {
     check_battery 2>&3 >&4 || return 1
 }
 
-#TODO: remove this
-#function merge_pumphistory {
-    # jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
-    #calculate_iob
-#}
-
 # Calculate new suggested temp basal and enact it
 function enact {
     rm enact/suggested.json
@@ -626,12 +615,6 @@ function refresh_old_pumphistory_enact {
     find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
     || ( echo -n "Old pumphistory: " && refresh_pumphistory_and_meal && enact )
 }
-
-## refresh pumphistory if it's more than 30m old, but don't enact
-#function refresh_old_pumphistory {
-#    find monitor/ -mmin -30 -size +100c | grep -q pumphistory-zoned \
-#    || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && refresh_pumphistory_and_meal )
-#}
 
 # refresh pumphistory_24h if it's more than 5m old
 function refresh_old_pumphistory {
@@ -806,26 +789,6 @@ function glucose-fresh {
 }
 
 function refresh_pumphistory {
-#    if [ -e ~/src/EdisonVoltage/voltage ]; then
-#        sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json 2>&3
-#    elif [ -e /root/src/openaps-menu/scripts/getvoltage.sh ]; then
-#        sudo /root/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json 2>&3
-#    else
-#        rm monitor/edison-battery.json 2>&3
-#    fi
-#    if onbattery; then
-#        echo -n "Rig charging / on battery: $(jq .battery monitor/edison-battery.json)%. "
-#        autosens_freq=25
-#    else
-#        if highload; then
-#            autosens_freq=25
-#        else
-#            autosens_freq=10
-#        fi
-#    fi
-#    find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
-#    || { echo -n pumphistory-24h refresh \
-#        && read_pumphistory_24h 2>&3 >&4 && echo ed; }
     read_pumphistory;
 }
 
@@ -871,12 +834,6 @@ function check_tempbasal() {
   set -o pipefail
   mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp >&4
 }
-#function read_pumphistory() {
-#    read_pumphistory_24h
-#  #set -o pipefail
-#  #pumphistory -n 1 2>&3 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4 \
-#    #&& cat monitor/pumphistory-zoned.json | jq .[0].timestamp
-#}
 
 # clear and refresh the 24h pumphistory file approximatively every 6 hours.
 # It queries 27h of data, full refresh when oldest data is greater than 33 hours old.
