@@ -3,6 +3,7 @@ allowedload=${2:-5}
 
 main() {
     ls | while read participant; do
+      (
         echo "Processing participant $participant"
         cd $participant/direct-sharing-31/ || die "$participant/direct-sharing-31/ not found"
         gunzip *.gz 2>/dev/null
@@ -26,8 +27,10 @@ main() {
             date=$(echo $line | jq .dateString)
             year=$(echo $date | cut -b 2,3,4,5)
             month=$(echo $date | cut -b 7,8)
-            echo "Processing participant $participant entries for $year $month"
-            echo $line >> parts/entries-$year-$month.json
+            if [[ $year =~ 201. ]]; then
+                echo "Processing participant $participant entries for $year $month"
+                echo $line >> parts/entries-$year-$month.json
+            fi
         done | uniq
         for year in 2017 2016; do
             for month in 12 11 10 09 08 07 06 05 04 03 02 01; do
@@ -45,7 +48,8 @@ main() {
             done  # for month
         done # for year
         cd ../../
-    done & # while read participant
+      ) &
+    done # while read participant
     echo "Waiting 30 seconds before processing next participant"
     sleep 30
 }
