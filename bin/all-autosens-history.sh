@@ -9,7 +9,7 @@ ls | while read participant; do
         date=$(echo $line | jq .created_at)
         year=$(echo $date | cut -b 2,3,4,5)
         month=$(echo $date | cut -b 7,8)
-        echo -n "Processing treatments for $year $month "
+        echo "Processing treatments for $year $month "
         echo $line >> parts/treatments-$year-$month.json
     done | uniq &
     rm parts/entries*.json
@@ -17,7 +17,7 @@ ls | while read participant; do
         date=$(echo $line | jq .dateString)
         year=$(echo $date | cut -b 2,3,4,5)
         month=$(echo $date | cut -b 7,8)
-        echo -n "Processing treatments for $year $month "
+        echo "Processing treatments for $year $month "
         echo $line >> parts/entries-$year-$month.json
     done | uniq
     for year in 2017 2016; do
