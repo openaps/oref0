@@ -9,17 +9,17 @@ ls | while read participant; do
         date=$(echo $line | jq .created_at)
         year=$(echo $date | cut -b 2,3,4,5)
         month=$(echo $date | cut -b 7,8)
-        echo -n "$year $month "
+        echo -n "Processing treatments for $year $month "
         echo $line >> parts/treatments-$year-$month.json
-    done &
+    done | uniq &
     rm parts/entries*.json
     cat entries*.json | jq -cn --stream 'fromstream(1|truncate_stream(inputs))' | while read line; do
         date=$(echo $line | jq .dateString)
         year=$(echo $date | cut -b 2,3,4,5)
         month=$(echo $date | cut -b 7,8)
-        echo -n "$year $month "
+        echo -n "Processing treatments for $year $month "
         echo $line >> parts/entries-$year-$month.json
-    done
+    done | uniq
     for year in 2017 2016; do
         for month in 12 11 10 09 08 07 06 05 04 03 02 01; do
             echo Checking / waiting for system load to be below $allowedload before continuing
