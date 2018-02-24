@@ -34,14 +34,14 @@ main() {
             done | uniq
             for year in 2017 2016; do
                 for month in 12 11 10 09 08 07 06 05 04 03 02 01; do
-                    echo Checking / waiting for system load to be below $allowedload before continuing
-                    while highload; do
-                        sleep 30
-                    done
                     if [ -f parts/entries-$year-$month.json ]; then
                         cat parts/entries-$year-$month.json | jq -s . > $year-$month-entries.json
                         if [ -f parts/treatments-$year-$month.json ]; then
                             cat parts/treatments-$year-$month.json | jq -s . > $year-$month-treatments.json
+                            echo Checking / waiting for system load to be below $allowedload before continuing
+                            while highload; do
+                                sleep 30
+                            done
                             ~/src/oref0/bin/oref0-autosens-history.js $year-$month-entries.json $year-$month-treatments.json profile*.json 12 isf-$year-$month.json 2> $year-$month.out &
                         fi
                     fi
