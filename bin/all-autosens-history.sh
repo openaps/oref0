@@ -31,9 +31,13 @@ main() {
                 while highload; do
                     sleep 30
                 done
-                cat parts/entries-$year-$month.json | jq -s . > $year-$month-entries.json
-                cat parts/treatments-$year-$month.json | jq -s . > $year-$month-treatments.json
-                ~/src/oref0/bin/oref0-autosens-history.js $year-$month-entries.json $year-$month-treatments.json profile*.json 12 isf-$year-$month.json 2> $year-$month.out &
+                if [ -e parts/entries-$year-$month.json ]; then
+                    cat parts/entries-$year-$month.json | jq -s . > $year-$month-entries.json
+                    if [ -e parts/treatments-$year-$month.json ]; then
+                        cat parts/treatments-$year-$month.json | jq -s . > $year-$month-treatments.json
+                        ~/src/oref0/bin/oref0-autosens-history.js $year-$month-entries.json $year-$month-treatments.json profile*.json 12 isf-$year-$month.json 2> $year-$month.out &
+                    fi
+                fi
             done
         done
         cd ../../
