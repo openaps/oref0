@@ -4,9 +4,9 @@ allowedload=${2:-5}
 main() {
     ls | while read participant; do
         echo "Processing participant $participant"
-        cd $participant/direct-sharing-31/
+        cd $participant/direct-sharing-31/ || die "$participant/direct-sharing-31/ not found"
         gunzip *.gz 2>/dev/null
-        mkdir -p parts
+        mkdir -p parts || die "Couldn't mkdir parts"
         rm parts/treatments*.json 2>/dev/null
         # this assumes that there are always fewer treatment records than entries, so the treatments will finish first
         # (or at least finish before the oref0-autosens-history.js job for that month starts)
@@ -43,6 +43,11 @@ main() {
 function highload {
     # check whether system load average is high
     uptime | awk '$NF > 2' | grep load | awk '{print $NF}' | tr -d '\n' && echo " load average"
+}
+
+die() {
+    echo "$@"
+    exit 1
 }
 
 main "$@"
