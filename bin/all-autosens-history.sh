@@ -53,8 +53,8 @@ main() {
         while highload; do
             sleep 30
         done
-        echo "Waiting 30 seconds before processing next participant"
-        sleep 30
+        echo "Waiting 10 seconds before processing next participant"
+        sleep 10
     done # while read participant
 }
 
