@@ -6,7 +6,8 @@ if ! ( ps -fC bluetoothd ) ; then
 fi
 
 #Raspberry Pi doesn't keep PSCAN up the way Edison does. Check for ARM CPU (vs x86 on Edison) before executing this bloc
-if ! ( uname -m | grep arm > /dev/null)
+sys_arch=$(uname -m)
+if [ ! -z "${sys_arch##*arm*}" ]
 then
    if ! ( hciconfig -a | grep -q "PSCAN" ) ; then
       echo "On Edison and no PSCAN - restarting bluetoothd"
