@@ -5,7 +5,7 @@ ls | while read participant; do
     gunzip *.gz
     mkdir -p parts
     rm parts/treatments*.json
-    cat treatments_*.js-cn --stream 'fromstream(1|truncate_stream(inputs))' | while read line; do 
+    cat treatments_*.js | jq -cn --stream 'fromstream(1|truncate_stream(inputs))' | while read line; do 
         date=$(echo $line | jq .created_at)
         year=$(echo $date | cut -b 2,3,4,5)
         month=$(echo $date | cut -b 7,8)
