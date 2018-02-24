@@ -49,6 +49,10 @@ main() {
             done # for year
             cd ../../
         ) &
+        echo Checking / waiting for system load to be below $allowedload before continuing
+        while highload; do
+            sleep 30
+        done
         echo "Waiting 30 seconds before processing next participant"
         sleep 30
     done # while read participant
