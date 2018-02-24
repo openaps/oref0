@@ -42,7 +42,7 @@ main() {
 
 function highload {
     # check whether system load average is high
-    uptime | awk "\$NF > $allowedload" | grep load | awk '{print $NF}' | tr -d '\n' && echo " load average"
+    uptime | awk "\$NF > $allowedload" | grep load
 }
 
 die() {
