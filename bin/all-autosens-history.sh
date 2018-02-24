@@ -5,7 +5,7 @@ ls | while read participant; do
     gunzip *.gz 2>/dev/null
     mkdir -p parts
     rm parts/treatments*.json 2>/dev/null
-    cat treatments_*.json | jq -cn --stream 'fromstream(1|truncate_stream(inputs))' | while read line; do 
+    cat treatments*.json | jq -cn --stream 'fromstream(1|truncate_stream(inputs))' | while read line; do 
         date=$(echo $line | jq .created_at)
         year=$(echo $date | cut -b 2,3,4,5)
         month=$(echo $date | cut -b 7,8)
@@ -13,7 +13,7 @@ ls | while read participant; do
         echo $line >> parts/treatments-$year-$month.json
     done &
     rm parts/entries*.json
-    cat entries_*.json | jq -cn --stream 'fromstream(1|truncate_stream(inputs))' | while read line; do
+    cat entries*.json | jq -cn --stream 'fromstream(1|truncate_stream(inputs))' | while read line; do
         date=$(echo $line | jq .dateString)
         year=$(echo $date | cut -b 2,3,4,5)
         month=$(echo $date | cut -b 7,8)
