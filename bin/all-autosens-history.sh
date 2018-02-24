@@ -1,6 +1,7 @@
 interval=${1:-96}
 allowedload=${2:-2}
 ls | while read participant; do 
+    echo "Processing participant $participant"
     cd $participant/direct-sharing-31/
     gunzip *.gz 2>/dev/null
     mkdir -p parts
