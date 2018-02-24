@@ -1,5 +1,5 @@
 interval=${1:-96}
-allowedload=${2:-2}
+allowedload=${2:-5}
 ls | while read participant; do 
     echo "Processing participant $participant"
     cd $participant/direct-sharing-31/
@@ -32,6 +32,7 @@ ls | while read participant; do
             ~/src/oref0/bin/oref0-autosens-history.js $year-$month-entries.json $year-$month-treatments.json profile*.json 12 isf-$year-$month.json 2> $year-$month.out &
         done
     done
+    cd ../../
 done
 
 function highload {
