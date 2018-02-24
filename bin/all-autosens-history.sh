@@ -28,7 +28,7 @@ main() {
         for year in 2017 2016; do
             for month in 12 11 10 09 08 07 06 05 04 03 02 01; do
                 echo Checking / waiting for system load to be below $allowedload before continuing
-                while(highload); do
+                while highload; do
                     sleep 30
                 done
                 cat parts/entries-$year-$month.json | jq -s . > $year-$month-entries.json
