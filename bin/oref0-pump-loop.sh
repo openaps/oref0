@@ -190,7 +190,7 @@ function smb_reservoir_before {
                             let DTG_DIFFERENCE=$CURRENT_DTG-$PUMP_DTG
                             DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
                     fi
-                    if [ [ "$DTG_DIFFERENCE" -gt "90" ] || [ "$PUMP_DTG" == "999" ] ]
+                    if [ "$DTG_DIFFERENCE" -gt "90" ] || [ "$PUMP_DTG" == "999" ]
                     then
                             echo "Error: pump clock refresh error / mismatch"
                             fail "$@"
