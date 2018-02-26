@@ -175,6 +175,7 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     try_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
+    echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
     retry_fail check_clock
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
@@ -578,7 +579,6 @@ function refresh_pumphistory_and_meal {
     echo -n "meal.json "
     retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
     echo "refreshed"
-    echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
 }
 
 # monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
