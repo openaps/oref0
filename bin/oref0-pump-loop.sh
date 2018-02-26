@@ -176,7 +176,7 @@ function smb_reservoir_before {
        fi
     (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -90 )) \
     && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
-    find settings/ -mmin -2 -size +5c | grep -q pumphistory || { echo "Error: pumphistory-24h >2m old (or empty)"; fail "$@"; }
+    find monitor/ -mmin -2 -size +5c | grep -q pumphistory || { echo "Error: pumphistory-24h >2m old (or empty)"; fail "$@"; }
 }
 
 # check if the temp was read more than 5m ago, or has been running more than 10m
@@ -567,7 +567,7 @@ function refresh_pumphistory_and_meal {
     retry_return monitor_pump || return 1
     echo -n "ed. "
     echo -n "meal.json refresh"
-    retry_return oref0-meal settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || (echo "failed." && return 1)
+    retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || (echo "failed." && return 1)
     echo "ed."
 }
 
@@ -578,7 +578,7 @@ function monitor_pump {
 }
 
 function calculate_iob {
-    oref0-calculate-iob settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
+    oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
 }
 
 function invoke_pumphistory_etc {
@@ -616,7 +616,7 @@ function refresh_old_pumphistory_enact {
 
 # refresh pumphistory_24h if it's more than 5m old
 function refresh_old_pumphistory {
-    (find settings/ -mmin -5 -size +100c | grep -q pumphistory-24h-zoned \
+    (find monitor/ -mmin -5 -size +100c | grep -q pumphistory-24h-zoned \
      && echo -n "Pumphistory-24h less than 5m old. ") \
     || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s \
         && read_pumphistory )
@@ -703,7 +703,7 @@ function refresh_temp_and_enact {
             echo -n Temp refresh
             retry_fail invoke_temp_etc
             echo ed
-            oref0-calculate-iob settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
+            oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
             if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi
@@ -721,8 +721,8 @@ function invoke_temp_etc {
 function refresh_pumphistory_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     setglucosetimestamp
-    if ((find monitor/ -newer settings/pumphistory-24h-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
-        || (find enact/ -newer settings/pumphistory-24h-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
+    if ((find monitor/ -newer monitor/pumphistory-24h-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
+        || (find enact/ -newer monitor/pumphistory-24h-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
         || ((! find monitor/ -mmin -5 | grep -q pumphistory-zoned || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
             { echo -n ": " && refresh_pumphistory_and_meal && enact; }
     else
@@ -836,7 +836,7 @@ function check_tempbasal() {
 # clear and refresh the 24h pumphistory file approximatively every 6 hours.
 # It queries 27h of data, full refresh when oldest data is greater than 33 hours old.
 function pumphistory_daily_refresh() {
-  lastRecordTimestamp=$(jq -r '.[-1].timestamp' settings/pumphistory-24h-zoned.json 2>&3)
+  lastRecordTimestamp=$(jq -r '.[-1].timestamp' monitor/pumphistory-24h-zoned.json 2>&3)
   dateCutoff=$(date --date="33 hours ago" +%s)
   echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
   if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || "$(date -d $lastRecordTimestamp +%s)" -le $dateCutoff ]]; then
@@ -845,7 +845,7 @@ function pumphistory_daily_refresh() {
 }
 function read_pumphistory() {
   set -o pipefail
-  topRecordTimestamp=$(jq -r '.[0].timestamp' settings/pumphistory-24h-zoned.json 2>&3)
+  topRecordTimestamp=$(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json 2>&3)
   echo "Quering pump for history since: $topRecordTimestamp" >&3
   if [[ -z "$topRecordTimestamp" || "$topRecordTimestamp" == *"null"* ]]; then
     read_full_pumphistory
@@ -858,20 +858,20 @@ function read_pumphistory() {
     # other than the timestamp.
     # The logic could be improved once the pumphistory command support this feature.
     echo -n "New history update" \
-    && mv settings/pumphistory-24h-zoned.json settings/pumphistory-24h-zoned-old.json \
-    && ((jq -s '.[0] + .[1]' <(pumphistory -s $topRecordTimestamp  2>&3 | jq -f openaps.jq 2>&3 ) settings/pumphistory-24h-zoned-old.json > settings/pumphistory-24h-zoned.json \
-        && rm settings/pumphistory-24h-zoned-old.json && echo "d. ")
-       || ( mv settings/pumphistory-24h-zoned-old.json settings/pumphistory-24h-zoned.json && echo " failed."; return 1))
+    && mv monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json \
+    && ((jq -s '.[0] + .[1]' <(pumphistory -s $topRecordTimestamp  2>&3 | jq -f openaps.jq 2>&3 ) monitor/pumphistory-24h-zoned-old.json > monitor/pumphistory-24h-zoned.json \
+        && rm monitor/pumphistory-24h-zoned-old.json && echo "d. ")
+       || ( mv monitor/pumphistory-24h-zoned-old.json monitor/pumphistory-24h-zoned.json && echo " failed."; return 1))
   fi
-  echo " until $(jq -r '.[0].timestamp' settings/pumphistory-24h-zoned.json)"
+  echo " until $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
 }
 function read_full_pumphistory() {
   set -o pipefail
   echo -n "Full history refresh" \
-  && ((( pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee settings/pumphistory-24h-zoned.json 2>&3 >&4 ) \
+  && ((( pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee monitor/pumphistory-24h-zoned.json 2>&3 >&4 ) \
       && echo ed) \
      || (echo " failed. "; return 1)) \
-  && echo " until $(jq -r '.[0].timestamp' settings/pumphistory-24h-zoned.json)"
+  && echo " until $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
 }
 function read_bg_targets() {
   set -o pipefail
