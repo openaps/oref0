@@ -888,9 +888,9 @@ function read_full_pumphistory() {
   rm monitor/pumphistory-24h-zoned.json
   echo -n "Full history refresh" \
   && ((( pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee monitor/pumphistory-24h-zoned.json 2>&3 >&4 ) \
-      && echo ed) \
+      && echo -n ed) \
      || (echo " failed. "; return 1)) \
-  && echo " until $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
+  && echo " through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
 }
 function read_bg_targets() {
   set -o pipefail
