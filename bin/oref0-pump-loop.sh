@@ -575,7 +575,7 @@ function refresh_pumphistory_and_meal {
          test $(cat monitor/status.json | json bolusing) == false ) \
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
     retry_return monitor_pump || return 1
-    echo -n " Refreshed "
+    echo -n "Refreshed "
     retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
     echo "meal.json"
     echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
@@ -800,9 +800,9 @@ function glucose-fresh {
     fi
 }
 
-function refresh_pumphistory {
-    read_pumphistory;
-}
+#function refresh_pumphistory {
+    #read_pumphistory;
+#}
 
 function setglucosetimestamp {
     if grep "MDT cgm" openaps.ini 2>&3 >&4; then
@@ -875,7 +875,7 @@ function read_pumphistory() {
     try_fail mv monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json
     if jq -s '.[0] + .[1]' <(pumphistory -s $topRecordTimestamp  2>&3 | jq -f openaps.jq 2>&3 ) monitor/pumphistory-24h-zoned-old.json > monitor/pumphistory-24h-zoned.json; then
         try_fail rm monitor/pumphistory-24h-zoned-old.json
-        echo -n "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
+        echo -n "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json); "
     else
         try_fail mv monitor/pumphistory-24h-zoned-old.json monitor/pumphistory-24h-zoned.json
         echo " failed. Last record $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
