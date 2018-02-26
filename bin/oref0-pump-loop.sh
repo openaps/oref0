@@ -106,11 +106,19 @@ main() {
             fi
             cat /tmp/oref0-updates.txt 2>&3
             echo Completed oref0-pump-loop at $(date)
+            update_display
             echo
         else
             # pump-loop errored out for some reason
             fail "$@"
         fi
+    fi
+}
+
+function update_display {
+    # TODO: install this globally
+    if [ -e /root/src/openaps-menu/scripts/status.js ]; then
+        /root/src/openaps-menu/scripts/status.js
     fi
 }
 
@@ -143,6 +151,7 @@ function fail {
     if ! cat preferences.json | jq . >&4; then
         echo Error: syntax error in preferences.json: please go correct your typo.
     fi
+    update_display
     echo
     exit 1
 }
