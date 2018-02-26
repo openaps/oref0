@@ -575,9 +575,9 @@ function refresh_pumphistory_and_meal {
          test $(cat monitor/status.json | json bolusing) == false ) \
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
     retry_return monitor_pump || return 1
-    echo -n "Refreshed "
+    echo -n "meal.json "
     retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
-    echo "meal.json"
+    echo "refreshed"
     echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
 }
 
