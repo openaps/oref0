@@ -112,7 +112,7 @@ function ns_meal_carbs {
     #openaps report invoke monitor/carbhistory.json >/dev/null
     nightscout ns $NIGHTSCOUT_HOST $API_SECRET carb_history > monitor/carbhistory.json.new
     cat monitor/carbhistory.json.new | jq .[0].carbs | egrep -q [0-9] && mv monitor/carbhistory.json.new monitor/carbhistory.json
-    oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new
+    oref0-meal settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new
     grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json
     echo -n "Refreshed carbhistory; COB: "
     grep COB monitor/meal.json | jq .mealCOB
@@ -169,7 +169,7 @@ function upload_recent_treatments {
 
 #nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
 function format_latest_nightscout_treatments {
-    nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
+    nightscout cull-latest-openaps-treatments settings/pumphistory-24h-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
 }
 
 function check_mdt_upload {
