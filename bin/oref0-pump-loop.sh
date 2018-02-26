@@ -764,7 +764,11 @@ function highload {
 
 function onbattery {
     # check whether battery level is < 98%
-    jq --exit-status ".battery < 98" monitor/edison-battery.json >&4
+    if egrep -i "edison" /etc/passwd 2>/dev/null; then
+        jq --exit-status ".battery < 98 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
+    else
+        jq --exit-status ".battery < 98" monitor/edison-battery.json >&4
+    fi
 }
 
 function wait_for_bg {
