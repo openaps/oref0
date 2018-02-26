@@ -885,6 +885,7 @@ function read_pumphistory() {
 }
 function read_full_pumphistory() {
   set -o pipefail
+  rm monitor/pumphistory-24h-zoned.json
   echo -n "Full history refresh" \
   && ((( pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee monitor/pumphistory-24h-zoned.json 2>&3 >&4 ) \
       && echo ed) \
