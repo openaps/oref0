@@ -83,7 +83,7 @@ main() {
                     && refresh_temp_and_enact \
                     && refresh_pumphistory_and_enact \
                     && refresh_profile \
-		    && pumphistory_daily_refresh \
+                    && pumphistory_daily_refresh \
                     && echo Completed pump-loop at $(date) \
                     && echo \
                     )
@@ -850,13 +850,14 @@ function check_tempbasal() {
 # clear and refresh the 24h pumphistory file approximatively every 6 hours.
 # It queries 27h of data, full refresh when oldest data is greater than 33 hours old.
 function pumphistory_daily_refresh() {
-  lastRecordTimestamp=$(jq -r '.[-1].timestamp' monitor/pumphistory-24h-zoned.json 2>&3)
-  dateCutoff=$(date --date="33 hours ago" +%s)
-  echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
-  if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || "$(date -d $lastRecordTimestamp +%s)" -le $dateCutoff ]]; then
-    echo -n "daily " && read_full_pumphistory
-  fi
+    lastRecordTimestamp=$(jq -r '.[-1].timestamp' monitor/pumphistory-24h-zoned.json 2>&3)
+    dateCutoff=$(date --date="33 hours ago" +%s)
+    echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
+    if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || "$(date -d $lastRecordTimestamp +%s)" -le $dateCutoff ]]; then
+            echo -n "Pumphistory >33h long: " && read_full_pumphistory
+    fi
 }
+
 function read_pumphistory() {
   set -o pipefail
   topRecordTimestamp=$(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json 2>&3)
