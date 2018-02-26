@@ -45,7 +45,6 @@ old_main() {
             && refresh_pumphistory_and_enact \
             && refresh_profile \
             && pumphistory_daily_refresh \
-            && touch /tmp/pump_loop_success \
             && echo Completed basal-only pump-loop at $(date) \
             && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
             && echo); do
@@ -85,7 +84,6 @@ main() {
                     && refresh_pumphistory_and_enact \
                     && refresh_profile \
 		    && pumphistory_daily_refresh \
-                    && touch /tmp/pump_loop_success \
                     && echo Completed pump-loop at $(date) \
                     && echo \
                     )
