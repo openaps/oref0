@@ -169,7 +169,16 @@ function upload_recent_treatments {
 
 #nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
 function format_latest_nightscout_treatments {
-    nightscout cull-latest-openaps-treatments monitor/pumphistory-24h-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
+    latest_ns_treatment_time=$(openaps latest-ns-treatment-time)
+    historyfile=monitor/pumphistory-24h-zoned.json
+    if [[ $latest_ns_treatment_time > $(date -Is) ]]; then
+        echo "Latest NS treatment time $latest_ns_treatment_time is 'in the future' / from a timezone east of here."
+        latest_ns_treatment_time=$(date -Is -d "1 hour ago")
+        echo "Uploading the last 10 treatments since $latest_ns_treatment_time"
+        jq .[0:9] monitor/pumphistory-24h-zoned.json > upload/recent-pumphistory.json
+        historyfile=upload/recent-pumphistory.json
+    fi
+        nightscout cull-latest-openaps-treatments $historyfile settings/model.json $latest_ns_treatment_time > upload/latest-treatments.json
 }
 
 function check_mdt_upload {
