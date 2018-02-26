@@ -304,7 +304,7 @@ function smb_verify_suggested {
     fi
     if grep "!= lastTemp rate" enact/smb-suggested.json; then
         echo Pumphistory/temp mismatch: retrying
-        return false
+        return 1
     fi
     if jq -e -r .deliverAt enact/smb-suggested.json; then
         echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | tr -d '\n' \
