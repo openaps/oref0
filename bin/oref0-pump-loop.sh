@@ -390,11 +390,12 @@ function prep {
     set -o pipefail
 
     upto10s=$[ ( $RANDOM / 3277 + 1) ]
-    upto20s=$[ ( $RANDOM / 1638 + 1) ]
     upto30s=$[ ( $RANDOM / 1092 + 1) ]
-    # override random upto30s wait with contents of /tmp/wait_for_silence if it exists (for multi-rig testing)
+    upto45s=$[ ( $RANDOM / 728 + 1) ]
+    # override random upto30s and upto45s waits with contents of /tmp/wait_for_silence if it exists (for multi-rig testing)
     if [ -f "/tmp/wait_for_silence" ]; then
         upto30s=$(head -1 /tmp/wait_for_silence)
+        upto45s=$(head -1 /tmp/wait_for_silence)
     fi
     # read tty port from pump.ini
     eval $(grep port pump.ini | sed "s/ //g")
@@ -489,8 +490,8 @@ function mmtune {
 #    fi
     #Line below is not necessary for Go-based comms
     #oref0_init_pump_comms.py
-    echo -n "Listening for 40s silence before mmtuning: "
-    wait_for_silence 40
+    echo -n "Listening for $upto45 s silence before mmtuning: "
+    wait_for_silence $upto45s
     echo {} > monitor/mmtune.json
     echo -n "mmtune: " && mmtune_Go >&3 2>&3
     #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
@@ -530,9 +531,9 @@ function maybe_mmtune {
         [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
         && mmtune
     else
-        echo "pump_loop_completed more than 15m old; waiting for 40s silence before mmtuning"
+        echo "pump_loop_completed more than 15m old; waiting for $upto45s s silence before mmtuning"
         update_display
-        wait_for_silence 40
+        wait_for_silence $upto45s
         mmtune
     fi
 }
@@ -541,7 +542,7 @@ function maybe_mmtune {
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
     if [ -z $1 ]; then
-        waitfor=40
+        waitfor=$upto45s
     else
         waitfor=$1
     fi
