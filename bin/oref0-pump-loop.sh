@@ -872,13 +872,17 @@ function read_pumphistory() {
     # has been found and matched exactly by it's base64 data or some other identifier
     # other than the timestamp.
     # The logic could be improved once the pumphistory command support this feature.
-    echo -n "New history update" \
-    && mv monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json \
-    && ((jq -s '.[0] + .[1]' <(pumphistory -s $topRecordTimestamp  2>&3 | jq -f openaps.jq 2>&3 ) monitor/pumphistory-24h-zoned-old.json > monitor/pumphistory-24h-zoned.json \
-        && rm monitor/pumphistory-24h-zoned-old.json && echo "d. ")
-       || ( mv monitor/pumphistory-24h-zoned-old.json monitor/pumphistory-24h-zoned.json && echo " failed."; return 1))
+    echo -n "New history update"
+    try_fail mv monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json
+    if jq -s '.[0] + .[1]' <(pumphistory -s $topRecordTimestamp  2>&3 | jq -f openaps.jq 2>&3 ) monitor/pumphistory-24h-zoned-old.json > monitor/pumphistory-24h-zoned.json; then
+        try_fail rm monitor/pumphistory-24h-zoned-old.json
+        echo "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
+    else
+        try_fail mv monitor/pumphistory-24h-zoned-old.json monitor/pumphistory-24h-zoned.json
+        echo " failed. Last record $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
+        return 1
+    fi
   fi
-  echo " until $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
 }
 function read_full_pumphistory() {
   set -o pipefail
