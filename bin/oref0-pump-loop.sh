@@ -171,8 +171,9 @@ function smb_reservoir_before {
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
     echo -n " is within 90s of current time: " && date
     if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -55 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 55 )); then
-        echo Pump clock is more than 55s off: attempting to reset it
+        echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
         oref0-set-device-clocks
+	read_full_pumphistory
        fi
     (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -90 )) \
     && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
