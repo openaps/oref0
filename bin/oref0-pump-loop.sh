@@ -177,7 +177,7 @@ function smb_reservoir_before {
        fi
     (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -90 )) \
     && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
-    find monitor/ -mmin -2 -size +5c | grep -q pumphistory || { echo "Error: pumphistory >2m old (or empty)"; fail "$@"; }
+    find settings/ -mmin -2 -size +5c | grep -q pumphistory || { echo "Error: pumphistory-24h >2m old (or empty)"; fail "$@"; }
 }
 
 # check if the temp was read more than 5m ago, or has been running more than 10m
@@ -568,10 +568,11 @@ function refresh_pumphistory_and_meal {
     retry_return monitor_pump || return 1
     echo -n ed
     # TODO: remove
-    retry_return merge_pumphistory || return 1
+    # retry_return merge_pumphistory || return 1
     echo -n " pumphistory"
-    # TODO: replace pumphistory-merged with pumphistory-zoned + pumphistory-24h-zoned as in calculate_iob
-    retry_return oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
+    # TODO: include pumphistory-zoned + pumphistory-24h-zoned as in calculate_iob
+    # with just pumphistory-24h-zoned here, COB will be slightly overestimated until it refreshes every 10-30m
+    retry_return oref0-meal settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
     echo " and meal.json"
 }
 
@@ -582,7 +583,7 @@ function monitor_pump {
 }
 
 function calculate_iob {
-    oref0-calculate-iob monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json settings/pumphistory-24h-zoned.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
+    oref0-calculate-iob settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
 }
 
 function invoke_pumphistory_etc {
@@ -598,10 +599,10 @@ function invoke_reservoir_etc {
 }
 
 #TODO: remove this
-function merge_pumphistory {
-    jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
-    calculate_iob
-}
+#function merge_pumphistory {
+    #jq -s '.[0] + .[1]|unique|sort_by(.timestamp)|reverse' monitor/pumphistory-zoned.json settings/pumphistory-24h-zoned.json > monitor/pumphistory-merged.json
+    #calculate_iob
+#}
 
 # Calculate new suggested temp basal and enact it
 function enact {
@@ -630,9 +631,9 @@ function refresh_old_pumphistory {
     || ( echo -n "Old pumphistory, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s && refresh_pumphistory_and_meal )
 }
 
-# refresh pumphistory_24h if it's more than 2h old
+# refresh pumphistory_24h if it's more than 30m old
 function refresh_old_pumphistory_24h {
-    find settings/ -mmin -120 -size +100c | grep -q pumphistory-24h-zoned \
+    find settings/ -mmin -30 -size +100c | grep -q pumphistory-24h-zoned \
     || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s \
         && echo -n Old pumphistory-24h refresh \
         && read_pumphistory_24h 2>&3 >&4 && echo ed )
@@ -719,7 +720,7 @@ function refresh_temp_and_enact {
             echo -n Temp refresh
             retry_fail invoke_temp_etc
             echo ed
-            oref0-calculate-iob monitor/pumphistory-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json settings/pumphistory-24h-zoned.json || { echo "Couldn't calculate IOB"; fail "$@"; }
+            oref0-calculate-iob settings/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
             if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi
@@ -737,8 +738,8 @@ function invoke_temp_etc {
 function refresh_pumphistory_and_enact {
     # set mtime of monitor/glucose.json to the time of its most recent glucose value
     setglucosetimestamp
-    if ((find monitor/ -newer monitor/pumphistory-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
-        || (find enact/ -newer monitor/pumphistory-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
+    if ((find monitor/ -newer settings/pumphistory-24h-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
+        || (find enact/ -newer settings/pumphistory-24h-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
         || ((! find monitor/ -mmin -5 | grep -q pumphistory-zoned || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
             { echo -n ": " && refresh_pumphistory_and_meal && enact; }
     else
@@ -812,12 +813,12 @@ function refresh_pumphistory_24h {
     fi
     if onbattery; then
         echo -n "Rig charging / on battery: $(jq .battery monitor/edison-battery.json)%. "
-        autosens_freq=30
+        autosens_freq=25
     else
         if highload; then
-            autosens_freq=30
+            autosens_freq=25
         else
-            autosens_freq=15
+            autosens_freq=10
         fi
     fi
     find settings/ -mmin -$autosens_freq -size +100c | grep -q pumphistory-24h-zoned && echo "Pumphistory-24 < ${autosens_freq}m old" \
@@ -868,9 +869,10 @@ function check_tempbasal() {
   mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp >&4
 }
 function read_pumphistory() {
-  set -o pipefail
-  pumphistory -n 1 2>&3 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4 \
-    && cat monitor/pumphistory-zoned.json | jq .[0].timestamp
+    read_pumphistory_24h
+  #set -o pipefail
+  #pumphistory -n 1 2>&3 | jq -f openaps.jq | tee monitor/pumphistory-zoned.json 2>&3 >&4 \
+    #&& cat monitor/pumphistory-zoned.json | jq .[0].timestamp
 }
 function read_pumphistory_24h() {
   set -o pipefail
