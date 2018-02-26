@@ -490,7 +490,7 @@ function mmtune {
 #    fi
     #Line below is not necessary for Go-based comms
     #oref0_init_pump_comms.py
-    echo -n "Listening for $upto45 s silence before mmtuning: "
+    echo -n "Listening for $upto45s s silence before mmtuning: "
     wait_for_silence $upto45s
     echo {} > monitor/mmtune.json
     echo -n "mmtune: " && mmtune_Go >&3 2>&3
