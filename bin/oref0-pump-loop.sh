@@ -578,6 +578,7 @@ function refresh_pumphistory_and_meal {
     echo -n " Refreshed "
     retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
     echo " meal.json"
+    echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
 }
 
 # monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
