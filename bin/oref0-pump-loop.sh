@@ -363,6 +363,7 @@ function refresh_after_bolus_or_enact {
         refresh_pumphistory_and_meal \
             || ( wait_for_silence 15 && refresh_pumphistory_and_meal ) \
             || ( wait_for_silence 30 && refresh_pumphistory_and_meal )
+        # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
         && echo -n "IOB: " && cat enact/smb-suggested.json | jq .IOB
