@@ -22,12 +22,22 @@ main() {
         fi
     fi
 
+    pushover_snooze
     ns_temptargets || die "ns_temptargets failed"
     ns_meal_carbs || die ", but ns_meal_carbs failed"
     battery_status
     upload
     touch /tmp/ns-loop-completed
     echo Completed oref0-ns-loop at $(date)
+}
+
+function pushover_snooze {
+    if snooze=$(curl -s http://diyps.net:2929/api/v1/devicestatus.json?count=100 | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | tr -d '"'); then
+        echo $snooze
+        echo date -Is -d @$snooze; echo
+        touch -d $(date -Is -d @$snooze) monitor/pushover-sent
+        ls -la monitor/pushover-sent
+    fi
 }
 
 function overtemp {
