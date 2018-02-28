@@ -1203,6 +1203,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
 
+echo "Clearing retrieved apt packages to free space."
+apt-get autoclean && apt-get clean
+
 if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
   sudo reboot
