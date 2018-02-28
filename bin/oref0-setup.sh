@@ -232,6 +232,13 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo
         fi
     fi
+    read -p "Would you like to [D]ownload precompiled go pump communication library or build them from [S]ource? [D]/S " -r
+    buildgofromsource=false
+    if [[ $REPLY =~ ^[Ss]$ ]]; then
+      buildgofromsource=true
+      echo "Building go libs from source"
+    fi
+    
 
 
     if [[ ! -z "${ttyport}" ]]; then
@@ -1046,48 +1053,67 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # install Go for Explorer Board/HAT
     if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
-        if go version | grep go1.9.; then
-            echo Go already installed
-        else
-            echo "Installing Golang..."
-            if uname -m | grep armv6l; then
-                cd /tmp && wget -c https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
-            elif uname -m | grep i686; then
-                cd /tmp && wget -c https://dl.google.com/go/go1.9.3.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.3.linux-386.tar.gz
-            fi
+        if $buildgofromsource; then
+          if go version | grep go1.9.; then
+              echo Go already installed
+          else
+              echo "Installing Golang..."
+              if uname -m | grep armv6l; then
+                  cd /tmp && wget -c https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
+              elif uname -m | grep i686; then
+                  cd /tmp && wget -c https://dl.google.com/go/go1.9.3.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.3.linux-386.tar.gz
+              fi
 
+          fi
+          if ! grep GOROOT $HOME/.bash_profile; then
+              echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
+              echo 'export GOROOT' >> $HOME/.bash_profile
+          fi
+          if ! grep GOPATH $HOME/.bash_profile; then
+              echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
+              echo 'export GOPATH' >> $HOME/.bash_profile
+              echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+              echo 'export PATH' >> $HOME/.bash_profile
+          fi
+        else
+              echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+              echo 'export PATH' >> $HOME/.bash_profile
         fi
-        if ! grep GOROOT $HOME/.bash_profile; then
-            echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
-            echo 'export GOROOT' >> $HOME/.bash_profile
-        fi
-        if ! grep GOPATH $HOME/.bash_profile; then
-            echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
-            echo 'export GOPATH' >> $HOME/.bash_profile
-            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
-            echo 'export PATH' >> $HOME/.bash_profile
-        fi
+    fi
         mkdir -p $HOME/go
         source $HOME/.bash_profile
     fi
     if [[ "$ttyport" =~ "spidev" ]]; then
-        #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
-        go get -u -v -tags cc111x github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
-        #cd $HOME/go/src/github.com/ecc1/medtronic/cmd
-        #cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
-        #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
-        #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
-        #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
-        rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
-        mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
-        cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
-        #Store radio_locale for later use
-        grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
-        #Necessary to "bootstrap" Go commands...
-        if [[ $radio_locale =~ ^WW$ ]]; then
-          echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+        if $buildgofromsource; then
+          #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
+          go get -u -v -tags cc111x github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+          #cd $HOME/go/src/github.com/ecc1/medtronic/cmd
+          #cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
+          #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
+          #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
+          #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
+          rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
+          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
+          cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          #Store radio_locale for later use
+          grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
+          #Necessary to "bootstrap" Go commands...
+          if [[ $radio_locale =~ ^WW$ ]]; then
+            echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+          else
+            echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+          fi
         else
-          echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+          arch=arm
+          if egrep -i "edison" /etc/passwd 2>/dev/null; then
+            arch=386
+          fi
+          mkdir -p $HOME/go/bin && \
+          curl -s https://api.github.com/repos/ecc1/medtronic/releases/latest | \
+            jq --raw-output '.assets[] | select(.name | contains("386")) | .browser_download_url'  | \
+            xargs wget -qO- | tar xJv -C $HOME/go/bin || die "Couldn't download and extract go pump libs"
+          rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
+          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         fi
     fi
     if [[ ${CGM,,} =~ "g4-go" ]]; then
