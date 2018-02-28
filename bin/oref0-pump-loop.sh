@@ -875,7 +875,7 @@ function read_pumphistory() {
     # The logic could be improved once the pumphistory command support this feature.
     echo -n "Pump history update"
     try_fail mv monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json
-    if jq -s '.[0] + .[1]' <(pumphistory -s $topRecordTimestamp  2>&3 | jq -f openaps.jq 2>&3 ) monitor/pumphistory-24h-zoned-old.json > monitor/pumphistory-24h-zoned.json; then
+    if ((pumphistory -s $topRecordTimestamp  2>&3 | jq -f openaps.jq 2>&3 ) && cat monitor/pumphistory-24h-zoned-old.json) | jq -s '.[0] + .[1]'  > monitor/pumphistory-24h-zoned.json; then
         try_fail rm monitor/pumphistory-24h-zoned-old.json
         echo -n "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json); "
     else
