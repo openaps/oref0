@@ -49,7 +49,7 @@ function overtemp {
 
 function highload {
     # check whether system load average is high
-    uptime | awk '$NF > 2' | grep load
+    uptime | awk '$((NF-2)) > 4' | grep load
 }
 
 
