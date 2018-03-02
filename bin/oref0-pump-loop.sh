@@ -357,7 +357,22 @@ function smb_bolus {
 # && try_return openaps report invoke enact/bolused.json 2>&3 >&4 | tail -1 \
 
 function refresh_after_bolus_or_enact {
-    if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
+    last_treatment_time=$(date -d $(cat monitor/pumphistory-24h-zoned.json | jq .[0].timestamp | tr -d '"'))
+    newer_enacted=$(find enact -newermt "$last_treatment_time" -size +5c | egrep /enacted)
+    newer_bolused=$(find enact -newermt "$last_treatment_time" -size +5c | egrep /bolused)
+    enacted_duration=$(grep duration enact/enacted.json)
+    bolused_units=$(grep units enact/bolused.json)
+    if [[ $newer_enacted && $enacted_duration ]] || [[ $newer_bolused && $bolused_units ]]; then
+        echo -n "Refreshing pumphistory because: "
+        if [[ $newer_enacted && $enacted_duration ]]; then
+            echo -n "enacted since pumphistory record $last_treatment_time; "
+            stat enact/enacted.json | grep Mod
+        fi
+        if [[ $newer_bolused && $bolused_units ]]; then
+            echo -n "bolused since pumphistory record $last_treatment_time; "
+            stat enact/bolused.json | grep Mod
+        fi
+    #if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
         refresh_pumphistory_and_meal \
