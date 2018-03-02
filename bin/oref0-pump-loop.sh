@@ -769,11 +769,6 @@ function refresh_profile {
     || get_settings
 }
 
-function highload {
-    # check whether system load average is high
-    uptime | awk '$NF > 2' | grep load | awk '{print $NF}' | tr -d '\n' && echo " load average"
-}
-
 function onbattery {
     # check whether battery level is < 98%
     if getent passwd edison > /dev/null; then
