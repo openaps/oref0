@@ -23,20 +23,6 @@ def index():
         else:
             data['loop_completed']=""
             
-        error_text = "battery"
-        data['battery'] = json.load(open(os.path.join(myopenaps_dir, "monitor/battery.json")))
-        
-        error_text = "edison"
-        data['edison_battery'] = json.load(open(os.path.join(myopenaps_dir, "monitor/edison-battery.json")))
-        
-        error_text = "meal"
-        data['meal'] = json.load(open(os.path.join(myopenaps_dir, "monitor/meal.json")))
-
-        error_text = "suggested"
-        data['suggested'] = json.load(open(os.path.join(myopenaps_dir, "enact/suggested.json")))
-
-        error_text = "temp_basal"
-        data['temp_basal'] = json.load(open(os.path.join(myopenaps_dir, "monitor/temp_basal.json")))
     except ValueError:
         return render_template('indexError.html', data=data, error_text=error_text )
     except IOError:
@@ -89,5 +75,29 @@ def iob():
     data = json.load(open(json_url))
     return jsonify(data)
 
+@app.route("/pump_battery")
+def pump_battery():
+    json_url = os.path.join("/root/myopenaps/monitor/battery.json")
+    data = json.load(open(json_url))
+    return jsonify(data)
+    
+@app.route("/edison_battery")
+def edison_battery():
+    json_url = os.path.join("/root/myopenaps/monitor/edison-battery.json")
+    data = json.load(open(json_url))
+    return jsonify(data)
+
+@app.route("/meal")
+def meal():
+    json_url = os.path.join("/root/myopenaps/monitor/meal.json")
+    data = json.load(open(json_url))
+    return jsonify(data)
+
+@app.route("/temp_basal")
+def temp_basal():
+    json_url = os.path.join("/root/myopenaps/monitor/temp_basal.json")
+    data = json.load(open(json_url))
+    return jsonify(data)
+    
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

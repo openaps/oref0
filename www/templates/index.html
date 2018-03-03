@@ -14,7 +14,7 @@
         <script src="/static/js/bootstrap.min.js"></script>
 
         <script>
-            var hoursHistory = 4; //max 8
+            var hoursHistory = 4; 
             var param = {
                 unit: 'mg/dl', 
                 maxBgChart: 100, 
@@ -32,24 +32,32 @@
                 delta: 0,
                 deltaFix: 0,
                 tick: '',
-                iob:0,
+                iob:'-',
+                cob:'-',
                 suggestedBg: 0,
                 eventualBg: 0,
                 enactedBg: 0,
+                tempBasalRate: '-',
+                tempBasalDuration: '-',
+                battery: {
+                    pumpVoltage: '-',
+                    pumpStatus: '',
+                    edisonPcnt: '-',
+                    edisonVoltage: '-',
+                },
                 suggested: {
                     reason: '',
-                    deliveredAt: '',
+                    deliverAt: '',
                 },
                 enacted: {
-                    rate: 0,
-                    duration: 0,
+                    rate: '-',
+                    duration: '-',
                     units: 0,
-                    reservoir: 0,
-                    insulinReq: 0,
-                    sensitivityRatio: 0,
+                    reservoir: '-',
+                    insulinReq: '-',
+                    sensitivityRatio: '-',
                     reason: '',
-                    deliveredAt: '',
-                    units: 0,
+                    deliverAt: '',
                 },
                 data: {
                     bg: [],
@@ -68,25 +76,10 @@
             loadForecast(param); 
             loadTargets(param);
             loadIob(param);
-            
-            $.ajax({
-                url: "enacted",
-                async: false,
-                dataType: 'json',
-                success: function(data) {
-                    param.enacted = data;
-                    var info = param.enacted.reason.split(",");
-                    for ( var i = 0 ; i < info.length; i++) {
-                        if ( info[i].trim().startsWith('Target')) {
-                            param.targetBg = info[i].split(":")[1].trim();
-                        }
-                    }
-                    param.enactedBg = bgUnitConvert(data.bg,param);
-                    loadChart(param);
-                }
-            });
-
-            
+            loadBattery(param);
+            loadMealTempBasal(param);
+            loadEnacted(param);
+            loadChart(param);
 
             function loadChart(param) {
                 if ( param.unit == 'mmol/L' ) {
@@ -209,11 +202,7 @@
                         scales: {
                             xAxes: [{
                                 type: 'time',
-                                display: true,
-                                time: {
-                                    min: param.minDate,
-                                    max: param.maxDate
-                                }                                
+                                display: true                
                             }],
                             yAxes: [{
                                 id:'y1',
@@ -392,33 +381,40 @@
                     var height = ctx.canvas.width / 10;
                     $('.basal').attr('style','height:' + height); */
 
-
-                    
                     $(".pill.direction").text(directionToChar(param.direction));
 
                     diffMinutes( param.bgTimeAgo, '.timeago-bg');
                     diffMinutes(param.enacted.deliverAt, '.timeago-enacted');
                     diffMinutes(param.suggested.deliverAt, '.timeago-suggested');
                     diffMinutes("{{ data.loop_completed }}", '.timeago-complete');
-                    $('.bg-current').html(param.currentBg);
-                    $('.bg-unit').html(param.unit);
-                    $('.bg-tick').html(param.tick);
-                    $('.bg-eventual').html(param.eventualBg);
-                    $('.iob').html(param.iob);
-                    if (param.enacted.units == undefined ) {
-                        $('.smb-units').html('0');
-                    } else {
-                        $('.smb-units').html(param.enacted.units);
-                    }
+                    $('.bg-current').text(param.currentBg);
+                    $('.bg-unit').text(param.unit);
+                    $('.bg-tick').text(param.tick);
+                    $('.bg-eventual').text(param.eventualBg);
+                    $('.iob').text(param.iob);
+                    $('.smb-units').text(param.enacted.units);
                     
                     if (parseInt($('.timeago-complete-mins').attr('data-mins')) <= 5 ) {
-                    
                         $('.oaps-status').addClass('bg-success');
                     } else if (parseInt($('.timeago-complete-mins').attr('data-mins')) <= 15 ) {
                         $('.oaps-status').addClass('bg-warning');
                     } else {
                         $('.oaps-status').addClass('bg-danger');
                     }
+                    
+                    if ( parseInt(param.enacted.reservoir)  < 5 || parseFloat(param.battery.pumpVoltage) < 1.3 ) {
+                        $('.oaps-pump').addClass('bg-danger');
+                    } else if ( parseInt(param.enacted.reservoir)  < 15 || parseFloat(param.battery.pumpVoltage) < 1.4 ) {
+                        $('.oaps-pump').addClass('bg-warning');
+                    }
+
+                    
+                    if ( parseInt(param.battery.edisonPcnt)  < 10 ) {
+                        $('.oaps-edison').addClass('bg-danger');
+                    } else if ( parseInt(param.battery.edisonPcnt)  < 20 ) {
+                        $('.oaps-edison').addClass('bg-warning');
+                    }
+                    
                     $("body").on("click",".open-oaps",function(){
                         
                         $("#oapsModal").modal("show");
@@ -492,11 +488,12 @@
                     async: false,
                     dataType: 'json',
                     success: function(data) {
-                         var minDate_basal = param.minDate;
+                        var minDate_basal = param.minDate;
+                        var maxDate_basal = new Date(Date.now()+120*60000);
 
-                        param.maxDate = new Date(Date.now()+120*60000);
                         for(i = 0; i < data.length ; i++) {
                             var date1 = new Date(data[i].timestamp);
+                            if (date1 > param.maxDate ) { param.maxDate = date1;}
                             if ( date1 >= param.minDate) {
                                 if ( data[i]._type == 'TempBasal' ) {
 
@@ -507,12 +504,12 @@
                                     for(t=0; t<=data[i+1]['duration (min)']; t=t+5) {
                                         var date3 = new Date(date2.getTime()-t*60000);
                                         if ( date3 < param.minDate ) { break;}
-                                        if ( date3 < param.maxDate) {
+                                        if ( date3 < maxDate_basal) {
                                             if (parseFloat(data[i].rate) > param.maxBasal) { param.maxBasal = parseFloat(data[i].rate);}
                                             param.data.basal[param.data.basal.length] = {t:date3,y:data[i].rate};
                                         }
                                     }
-                                    param.maxDate = date1;
+                                    maxDate_basal = date1;
                                 } else if ( data[i]._type == 'Bolus' ) {
                                     if ( date1 >= param.minDate ) { 
                                         if (parseFloat(data[i].amount) > param.maxBolus) { param.maxBolus = parseFloat(data[i].amount);}
@@ -567,6 +564,7 @@
                                 var date3 = new Date(date1.getTime()+t*60000);
                                 var target = bgUnitConvert((data[i].targetBottom+data[i].targetTop)/2,param);
                                 param.data.target[param.data.target.length] = {t:date3,y:target};
+                                if (date3 > param.maxDate ) { param.maxDate = date3;}
                             }
                         }
                     }
@@ -588,7 +586,7 @@
                                 param.data.iob[param.data.iob.length] = {t:date1,y:data[i].iob};
                             }
                         }
-                     }
+                    }
                });
             }            
 
@@ -619,6 +617,65 @@
                 });
             }
             
+            function loadBattery(param) {
+                $.ajax({
+                    url: "pump_battery",
+                    async: false,
+                    dataType: 'json',
+                    success: function(data) {
+                        param.battery.pumpVoltage = data.voltage;
+                        param.battery.pumpStatus = data.status;
+                    }
+                });
+                $.ajax({
+                    url: "edison_battery",
+                    async: false,
+                    dataType: 'json',
+                    success: function(data) {
+                        param.battery.edisonVoltage = Math.round(data.batteryVoltage / 10) / 100 ;
+                        param.battery.edisonPcnt = data.battery;
+                    }
+               });
+            }            
+
+            function loadMealTempBasal(param) {
+                $.ajax({
+                    url: "meal",
+                    async: false,
+                    dataType: 'json',
+                    success: function(data) {
+                        param.cob = data.mealCOB;
+                    }
+                });
+                $.ajax({
+                    url: "temp_basal",
+                    async: false,
+                    dataType: 'json',
+                    success: function(data) {
+                        param.tempBasalRate = data.rate ;
+                        param.tempBasalDuration = data.duration;
+                    }
+               });
+            }            
+
+            function loadEnacted(param) {
+                $.ajax({
+                    url: "enacted",
+                    async: false,
+                    dataType: 'json',
+                    success: function(data) {
+                        param.enacted = data;
+                        var info = param.enacted.reason.split(",");
+                        for ( var i = 0 ; i < info.length; i++) {
+                            if ( info[i].trim().startsWith('Target')) {
+                                param.targetBg = info[i].split(":")[1].trim();
+                            }
+                        }
+                        param.enactedBg = bgUnitConvert(data.bg,param);
+                    }
+                });
+            }
+
             function diffMinutes(date, selector) {
                 var date1 = new Date(date);
                 var date2 = new Date();
@@ -629,11 +686,17 @@
             }
 
             function bgUnitConvert(value,param) {
-                if ( param.unit == 'mmol/L' ) {
-                    value = Math.round(value / 18 * 100) / 100 ;
+                if ($.isNumeric(value)) {
+                    if ( param.unit == 'mmol/L' ) {
+                        value = Math.round(value / 18 * 100) / 100 ;
+                    }
+                    if ( parseFloat(value) > param.maxBgChart ) { param.maxBgChart = parseFloat(value);}
+                    if ( parseFloat(value) < param.minBgChart ) { param.minBgChart = parseFloat(value);}
+                } 
+                else 
+                {
+                    value = 0;
                 }
-                if ( parseFloat(value) > param.maxBgChart ) { param.maxBgChart = parseFloat(value);}
-                if ( parseFloat(value) < param.minBgChart ) { param.minBgChart = parseFloat(value);}
                 return value
             }
         </script>
@@ -643,7 +706,6 @@
     <body>
         <div class="card">
             <div class="row">
-
                 <div class="col open-oaps oaps-status" style="border-radius:8px;">
                     <div class="row text-center">
                         <div class="col-6 col-md-5 text-right pr-0 bg bg-current"></div>
@@ -658,7 +720,7 @@
 
                 <div class="col">
                     <div class="col-12 topbox"> <b>IOB:</b> <span class="iob"></span> U </div>
-                    <div class="col-12 topbox"> <b>COB:</b> {{ data.meal.mealCOB }} g</div>
+                    <div class="col-12 topbox"> <b>COB:</b> <script>document.write(param.cob);</script> g</div>
                     <div class="col-12 topbox"><b>Enacted:</b> <script>document.write(param.enacted.rate);</script> for <script>document.write(param.enacted.duration);</script>min + SMB <span class="smb-units"></span>U</div>
                 </div>
 
@@ -675,7 +737,7 @@
                 </div>
             </div> -->
             <div class="row">
-                <div class="col box2"><b>Temp basal:</b> {{ data.temp_basal.rate }} for {{ data.temp_basal.duration}}min</div>
+                <div class="col box2"><b>Temp basal:</b> <script>document.write(param.tempBasalRate);</script> for <script>document.write(param.tempBasalDuration);</script>min</div>
                 <div class="col box2"><b>Sensitivity Ratio:</b> <script>document.write(param.enacted.sensitivityRatio);</script></div>
             </div>
             <div class="row">
@@ -683,8 +745,8 @@
                 <div class="col box2"><b>Eventual BG:</b> <span class="bg-eventual"></span> <span class="bg-unit"></span></div>
             </div>
             <div class="row">
-                <div class="col box2"><b>Pump:</b> <script>document.write(param.enacted.reservoir);</script> U, {{ data.battery.voltage }} V, {{ data.battery.status }}</div>
-                <div class="col box2"><b>Edison Battery:</b> {{ data.edison_battery.battery }}% ({{ data.edison_battery.batteryVoltage }} mV)</div>
+                <div class="col box2 oaps-pump"><b>Pump:</b> <script>document.write(param.enacted.reservoir);</script>U, <script>document.write(param.battery.pumpVoltage);</script>v, <script>document.write(param.battery.pumpStatus);</script></div>
+                <div class="col box2 oaps-edison"><b>{{ data.hostname }}:</b> <script>document.write(param.battery.edisonPcnt);</script>%, <script>document.write(param.battery.edisonVoltage);</script>v</div>
             </div>
 
             <div id="oapsModal" class="modal fade" role="dialog">
