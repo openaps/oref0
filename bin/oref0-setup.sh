@@ -236,7 +236,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     buildgofromsource=false
     if [[ $REPLY =~ ^[Ss]$ ]]; then
       buildgofromsource=true
-      echo "Building go libs from source"
+      echo "Building Go pump binaries from source"
+    else
+      echo "Downloading precompiled Go pump binaries."
     fi
     
 
@@ -1109,9 +1111,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           mkdir -p $HOME/go/bin && \
           downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/latest | \
             jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
-          echo "Downloading go medtronic binaries from:" $downloadUrl
-          wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract go pump libs"
-          echo "Installing go medtronic binaries ..."
+          echo "Downloading Go pump binaries from:" $downloadUrl
+          wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
+          echo "Installing Go pump binaries ..."
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         fi
