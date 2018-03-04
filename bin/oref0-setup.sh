@@ -1114,6 +1114,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           echo "Downloading Go pump binaries from:" $downloadUrl
           wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
           echo "Installing Go pump binaries ..."
+          cp $HOME/go/bin/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         fi
