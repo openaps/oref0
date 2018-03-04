@@ -118,7 +118,7 @@ main() {
 function update_display {
     # TODO: install this globally
     if [ -e /root/src/openaps-menu/scripts/status.js ]; then
-        node /root/src/openaps-menu/scripts/status.js
+        node /root/src/openaps-menu/scripts/status.js ~/myopenaps/settings/profile.json
     fi
 }
 
