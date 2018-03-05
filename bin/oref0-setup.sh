@@ -637,7 +637,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             cd $HOME/src/bluez-5.48 && ./configure --disable-systemd && make || die "Couldn't make bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
