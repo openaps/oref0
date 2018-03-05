@@ -4,7 +4,7 @@ main() {
     echo
     echo Starting oref0-g4-loop at $(date):
     prep
-    cat cgm/g4-glucose.json | jq -c -C '.[0] | { sgv: .sgv, dateString: .dateString }'
+    show_last_record
     if ! enough_data; then
         echo "cgm/g4-glucose.json has < 24h worth of data"
         full_refresh
@@ -25,11 +25,16 @@ main() {
         #exit 2
     #fi
 
+    show_last_record
     echo Completed oref0-g4-loop at $(date)
 }
 
+function show_last_record {
+    cat cgm/g4-glucose.json | jq -c -C '.[0] | { sgv: .sgv, dateString: .dateString }'
+}
+
 function enough_data {
-    jq --exit-status '. | length > 288' cgm/g4-glucose.json
+    jq --exit-status '. | length > 288' cgm/g4-glucose.json > /dev/null
 }
 
 function touch_glucose {
