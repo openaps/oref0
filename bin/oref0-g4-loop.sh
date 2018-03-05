@@ -4,10 +4,16 @@ main() {
     echo
     echo Starting oref0-g4-loop at $(date):
     prep
-    if ! enough_data || ! glucose_lt_1h_old ; then
+    if ! enough_data; then
+        echo "cgm/g4-glucose.json has < 24h worth of data"
+        full_refresh
+    elif ! glucose_lt_1h_old ; then
+        echo cgm/g4-glucose.json more than 1h old:
+        ls -la cgm/g4-glucose.json
+        cat cgm/g4-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
         full_refresh
     elif glucose_fresh; then
-        echo Glucose file is fresh
+        echo cgm/g4-glucose.json is fresh
         cat cgm/g4-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
     else
         update_data
