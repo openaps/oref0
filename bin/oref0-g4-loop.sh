@@ -4,7 +4,7 @@ main() {
     echo
     echo Starting oref0-g4-loop at $(date):
     prep
-    cat cgm/g4-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
+    cat cgm/g4-glucose.json | jq -c -C '.[0] | { sgv: .sgv, dateString: .dateString }'
     if ! enough_data; then
         echo "cgm/g4-glucose.json has < 24h worth of data"
         full_refresh
@@ -32,19 +32,21 @@ function enough_data {
     jq --exit-status '. | length > 288' cgm/g4-glucose.json
 }
 
-function glucose_lt_1h_old {
-    # check whether g4-glucose.json is less than 5m old
-    if jq .[0].date/1000 cgm/g4-glucose.json; then
+function touch_glucose {
+    if jq .[0].date/1000 cgm/g4-glucose.json >/dev/null; then
         touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/g4-glucose.json))" cgm/g4-glucose.json
     fi
+}
+
+function glucose_lt_1h_old {
+    # check whether g4-glucose.json is less than 60m old
+    touch_glucose
     find cgm -mmin -60 | egrep -q "g4-glucose.json"
 }
 
 function glucose_fresh {
     # check whether g4-glucose.json is less than 5m old
-    if jq .[0].date/1000 cgm/g4-glucose.json >/dev/null; then
-        touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/g4-glucose.json))" cgm/g4-glucose.json
-    fi
+    touch_glucose
     find cgm -mmin -5 | egrep -q "g4-glucose.json"
 }
 
