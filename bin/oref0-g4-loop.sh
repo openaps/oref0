@@ -3,11 +3,14 @@
 main() {
     echo
     echo Starting oref0-g4-loop at $(date):
-    if glucose_fresh; then
+    prep
+    if ! enough_data || ! glucose_lt_1h_old ; then
+        full_refresh
+    elif glucose_fresh; then
         echo Glucose file is fresh
         cat cgm/g4-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
     else
-        update_g4_data
+        update_data
     fi
     # TODO: remove?
     #overtemp && exit 1
@@ -19,6 +22,18 @@ main() {
     echo Completed oref0-g4-loop at $(date)
 }
 
+function enough_data {
+    jq --exit-status '. | length > 288' cgm/g4-glucose.json
+}
+
+function glucose_lt_1h_old {
+    # check whether g4-glucose.json is less than 5m old
+    if jq .[0].date/1000 cgm/g4-glucose.json; then
+        touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/g4-glucose.json))" cgm/g4-glucose.json
+    fi
+    find cgm -mmin -60 | egrep -q "g4-glucose.json"
+}
+
 function glucose_fresh {
     # check whether g4-glucose.json is less than 5m old
     if jq .[0].date/1000 cgm/g4-glucose.json; then
@@ -27,7 +42,7 @@ function glucose_fresh {
     find cgm -mmin -5 | egrep -q "g4-glucose.json"
 }
 
-function update_g4_data {
+function prep {
     if [[ -z $NIGHTSCOUT_SITE ]]; then
         if [[ -z $NIGHTSCOUT_HOST ]]; then
             echo Warning: NIGHTSCOUT_SITE / NIGHTSCOUT_HOST not set
@@ -42,7 +57,13 @@ function update_g4_data {
             export NIGHTSCOUT_API_SECRET=$API_SECRET
         fi
     fi
-    g4update -f cgm/g4-glucose.json -u
+}
+
+function full_refresh {
+    g4update -f cgm/g4-glucose.json -u -b 30h -k 48h
+}
+function update_data {
+    g4update -f cgm/g4-glucose.json -u -b 1h -k 48h
 }
 
 # TODO: remove?
