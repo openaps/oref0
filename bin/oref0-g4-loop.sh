@@ -73,10 +73,10 @@ function prep {
 }
 
 function full_refresh {
-    g4update -f cgm/g4-glucose.json -u -b 30h -k 48h
+    g4update -f cgm/g4-glucose.json -u -b 30h -k 48h 2>&1
 }
 function update_data {
-    g4update -f cgm/g4-glucose.json -u -b 1h -k 48h
+    g4update -f cgm/g4-glucose.json -u -b 1h -k 48h 2>&1
 }
 
 # TODO: remove?
