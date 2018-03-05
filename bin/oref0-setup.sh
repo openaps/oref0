@@ -232,7 +232,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo
         fi
     fi
-    read -p "Would you like to [D]ownload precompiled go pump communication library or build them from [S]ource? [D]/S " -r
+    read -p "Would you like to [D]ownload precompiled Go pump communication library or build them from [S]ource? [D]/S " -r
     buildgofromsource=false
     if [[ $REPLY =~ ^[Ss]$ ]]; then
       buildgofromsource=true
