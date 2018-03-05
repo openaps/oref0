@@ -21,7 +21,9 @@ main() {
 
 function glucose_fresh {
     # check whether g4-glucose.json is less than 5m old
-    touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/g4-glucose.json))" cgm/g4-glucose.json
+    if jq .[0].date/1000 cgm/g4-glucose.json; then
+        touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/g4-glucose.json))" cgm/g4-glucose.json
+    fi
     find cgm -mmin -5 | egrep -q "g4-glucose.json"
 }
 
