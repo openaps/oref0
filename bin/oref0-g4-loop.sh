@@ -4,18 +4,18 @@ main() {
     echo
     echo Starting oref0-g4-loop at $(date):
     prep
+    cat cgm/g4-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
     if ! enough_data; then
         echo "cgm/g4-glucose.json has < 24h worth of data"
         full_refresh
     elif ! glucose_lt_1h_old ; then
         echo cgm/g4-glucose.json more than 1h old:
         ls -la cgm/g4-glucose.json
-        cat cgm/g4-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
         full_refresh
     elif glucose_fresh; then
         echo cgm/g4-glucose.json is fresh
-        cat cgm/g4-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
     else
+        echo Updating data
         update_data
     fi
     # TODO: remove?
@@ -42,7 +42,7 @@ function glucose_lt_1h_old {
 
 function glucose_fresh {
     # check whether g4-glucose.json is less than 5m old
-    if jq .[0].date/1000 cgm/g4-glucose.json; then
+    if jq .[0].date/1000 cgm/g4-glucose.json >/dev/null; then
         touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/g4-glucose.json))" cgm/g4-glucose.json
     fi
     find cgm -mmin -5 | egrep -q "g4-glucose.json"
