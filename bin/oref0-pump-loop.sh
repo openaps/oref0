@@ -152,57 +152,19 @@ function overtemp {
 }
 
 function smb_reservoir_before {
-    
     # Refresh reservoir.json and pumphistory.json
     try_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
-        CURRENT_DTG=$(date +%s)
-    try_fail timerun openaps report invoke monitor/clock.json monitor/clock-zone                                                                                                                                                                              d.json 2>&3 >&4 | tail -1
+    try_fail timerun openaps report invoke monitor/clock.json monitor/clock-zoned.json 2>&3 >&4 | tail -1
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | tr -d '\n'
-    echo -n " is within 55s of current time: " && date
-    PUMP_DTG=$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g'))
-    # To prevent a BASH arithmetic syntax-error, initialize pump-DTG to 999 if it's not a valid unix-epoch time                                                                                                                                                                              UMP_DTG is not a valid epoch number.
-    # This will cause the loop to detect an invalid clock-zoned.json and respond                                                                                                                                                                               with something other than a syntax error
-    if [ ! "$PUMP_DTG" -gt "10" ]
-    then
-        PUMP_DTG=999
-        echo Pump clock retrieval error - clock-zoned.json invalid
-    fi
-    if [ "$PUMP_DTG" == "999" ]
-    then
-                #We know clock-zoned is corrupt. Don't bother with the rest of the process!
-                echo "Error: pump clock data (monitor/clock-zoned.json) invalid.                                                                                                                                                                               This is probably caused by the pump being out-of-range"
-                fail "$@"
-    else
-            let DTG_DIFFERENCE=$CURRENT_DTG-$PUMP_DTG
-            DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
-            if [ "$DTG_DIFFERENCE" -gt "55" ]
-            then
-                    echo Pump clock is more than 55s off: attempting to reset it
-                    timerun oref0-set-device-clocks
-                    # Refresh current-date, since we just reset device clock.
-                    CURRENT_DTG=$(date +%s)
-                    try_fail timerun openaps report invoke monitor/clock.json monitor/clock-                                                                                                                                                                              zoned.json 2>&3 >&4 | tail -1
-                    PUMP_DTG=$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g'))
-                    if [ ! "$PUMP_DTG" -gt "10" ]
-                    then
-                            PUMP_DTG=999
-                            echo Pump clock retrieval error - clock-zoned.json invalid
-                    else
-                            let DTG_DIFFERENCE=$CURRENT_DTG-$PUMP_DTG
-                            DTG_DIFFERENCE=${DTG_DIFFERENCE/#-/}
-                    fi
-                    if [ "$DTG_DIFFERENCE" -gt "90" ] || [ "$PUMP_DTG" == "999" ]
-                    then
-                            echo "Error: pump clock refresh error / mismatch"
-                            fail "$@"
-                    else
-                            echo "Pump clock is now within 90s of current time. Proceeding."
-                    fi
-            fi
-
-    fi
+    echo -n " is within 90s of current time: " && date
+    if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -55 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 55 )); then
+        echo Pump clock is more than 55s off: attempting to reset it
+        timerun oref0-set-device-clocks
+       fi
+    (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -90 )) \
+    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
     find monitor/ -mmin -1 -size +5c | grep -q pumphistory || { echo "Error: pumphistory too old"; fail "$@"; }
 }
 
