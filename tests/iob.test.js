@@ -106,7 +106,6 @@ describe('IOB', function() {
         //afterDIA.bolussnooze.should.equal(0);
     });
 
-
     it('should calculate IOB with Ultra-fast peak setting of 55', function() {
 
         var basalprofile = [{
@@ -317,8 +316,6 @@ describe('IOB', function() {
         afterDIA.iob.should.equal(0);
         //afterDIA.bolussnooze.should.equal(0);
     });
-
-
 
     it('should calculate IOB with Rapid-acting', function() {
 
@@ -685,6 +682,7 @@ describe('IOB', function() {
         hourLater.iob.should.be.lessThan(0.5);
         hourLater.iob.should.be.greaterThan(0.45);
     });
+
     it('should calculate IOB with Temp Basals that overlap midnight and a basal profile, part deux', function() {
 
         var nowDate = new Date();
@@ -940,7 +938,6 @@ describe('IOB', function() {
         var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
 
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
-
     });
 
     it('should calculate IOB without counting time pump suspended surrounding a basal', function() {
@@ -1328,7 +1325,6 @@ describe('IOB', function() {
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
     });
 
-
     it('should not report negative IOB with Temp Basals and a basal profile with drastic changes', function() {
 
         var basalprofile = [{
@@ -1435,7 +1431,6 @@ describe('IOB', function() {
 
         hourLater.iob.should.be.lessThan(1);
         hourLater.iob.should.be.greaterThan(0);
-
     });
 
     it('should calculate IOB with Temp Basals that are lower than base rate', function() {
@@ -1488,7 +1483,6 @@ describe('IOB', function() {
 
         hourLater.iob.should.be.lessThan(0);
         hourLater.iob.should.be.greaterThan(-1);
-
     });
 
     it('should show 0 IOB with Temp Basals if duration is not found', function() {
@@ -1557,7 +1551,6 @@ describe('IOB', function() {
         hourLater.iob.should.equal(0);
     });
 
-
     it('should calculate IOB using a 4 hour duration', function() {
 
         var basalprofile = [{
@@ -1606,7 +1599,6 @@ describe('IOB', function() {
         after4hInputs.clock = new Date(now + (4 * 60 * 60 * 1000)).toISOString();
         var after4h = require('../lib/iob')(after4hInputs)[0];
         after4h.iob.should.equal(0);
-
     });
 
 

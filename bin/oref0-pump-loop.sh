@@ -45,6 +45,7 @@ old_main() {
             && refresh_pumphistory_and_enact \
             && refresh_profile \
             && pumphistory_daily_refresh \
+            && touch /tmp/pump_loop_success \
             && echo Completed basal-only pump-loop at $(date) \
             && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
             && echo); do
@@ -84,6 +85,7 @@ main() {
                     && refresh_pumphistory_and_enact \
                     && refresh_profile \
                     && pumphistory_daily_refresh \
+                    && touch /tmp/pump_loop_success \
                     && echo Completed pump-loop at $(date) \
                     && echo \
                     )
@@ -104,6 +106,7 @@ main() {
                 fi
             fi
             cat /tmp/oref0-updates.txt 2>&3
+            touch /tmp/pump_loop_success
             echo Completed oref0-pump-loop at $(date)
             update_display
             echo
@@ -668,8 +671,8 @@ function refresh_old_profile {
 function get_settings {
     if grep -q 12 settings/model.json
     then
-        # If we have a 512 or 712, only get the data that the pump can provide.
-        # On the x12 pumps, the rest of the files are simulated by static json files created during the oref0-setup.sh run.
+        # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
+        # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
         retry_return check_model 2>&3 >&4 || return 1
         retry_return read_insulin_sensitivities 2>&3 >&4 || return 1
         retry_return read_carb_ratios 2>&3 >&4 || return 1
