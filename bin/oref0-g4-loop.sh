@@ -47,7 +47,6 @@ function glucose_lt_1h_old {
 function wait_if_needed {
     touch_glucose
     # as long as CGM data is less than 5m old, sleep
-    ls -la cgm/g4-glucose.json
     while find cgm -mmin -5 | egrep -q "g4-glucose.json"; do
         echo -n "."
         sleep 10
