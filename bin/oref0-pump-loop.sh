@@ -44,6 +44,7 @@ old_main() {
             && refresh_pumphistory_and_enact \
             && refresh_profile \
             && refresh_pumphistory_24h \
+            && touch /tmp/pump_loop_success \
             && echo Completed basal-only pump-loop at $(date) \
             && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
             && echo); do
@@ -82,6 +83,7 @@ main() {
                     && refresh_pumphistory_and_enact \
                     && refresh_profile \
                     && refresh_pumphistory_24h \
+                    && touch /tmp/pump_loop_success \
                     && echo Completed pump-loop at $(date) \
                     && echo \
                     )
@@ -98,6 +100,7 @@ main() {
                 fi
             fi
             cat /tmp/oref0-updates.txt 2>&3
+            touch /tmp/pump_loop_success
             echo Completed oref0-pump-loop at $(date)
             echo
         else
