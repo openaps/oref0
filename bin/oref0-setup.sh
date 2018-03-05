@@ -1140,7 +1140,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ${CGM,,} =~ "g5-upload" ]]; then
             (crontab -l; crontab -l | grep -q "oref0-upload-entries" || echo "* * * * * cd $directory && oref0-upload-entries" ) | crontab -
         fi
-        if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
+        if [[ ${CGM,,} =~ "g4-go" ]]; then
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-g4-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-g4-loop' || oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log") | crontab -
+        elif [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
         elif [[ ${CGM,,} =~ "xdrip" ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip' || monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log") | crontab -
