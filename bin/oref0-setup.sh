@@ -176,7 +176,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     echo "What kind of CGM would you like to configure for offline use? Options are:"
-    echo "G4-go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
+    echo "G4-Go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
     echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
     echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
@@ -1023,6 +1023,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
     echo API_SECRET="${API_HASHED_SECRET}" >> $HOME/.bash_profile
     echo "export API_SECRET" >> $HOME/.bash_profile
+    echo DEXCOM_CGM_ID="$BLE_SERIAL" >> $HOME/.bash_profile
+    echo "export DEXCOM_CGM_ID" >> $HOME/.bash_profile
 
     echo
 
@@ -1125,6 +1127,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # add crontab entries
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
+        (crontab -l; crontab -l | grep -q "DEXCOM_CGM_ID=" || echo DEXCOM_CGM_ID=$BLE_SERIAL) | crontab -
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
         (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || cd '$directory' && oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
         # temporarily disable hotspot for 1m every hour to allow it to try to connect via wifi again
