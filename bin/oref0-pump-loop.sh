@@ -27,39 +27,6 @@ else
   exec 4>/dev/null
 fi
 
-# old pump-loop
-old_main() {
-    prep
-    if ! overtemp; then
-        until( \
-            echo && echo Starting basal-only pump-loop at $(date): \
-            && wait_for_bg \
-            && wait_for_silence \
-            && if_mdt_get_bg \
-            && refresh_old_pumphistory_enact \
-            && refresh_old_pumphistory_24h \
-            && refresh_old_profile \
-            && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
-            && ( refresh_temp_and_enact || ( smb_verify_status && refresh_temp_and_enact ) ) \
-            && refresh_pumphistory_and_enact \
-            && refresh_profile \
-            && refresh_pumphistory_24h \
-            && touch /tmp/pump_loop_success \
-            && echo Completed basal-only pump-loop at $(date) \
-            && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
-            && echo); do
-                # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
-                if grep -q "percent" monitor/temp_basal.json; then
-                    echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
-                fi
-                # On a random subset of failures, mmtune
-                echo Error, retrying \
-                && maybe_mmtune
-                sleep 5
-        done
-    fi
-}
-
 # main pump-loop
 main() {
     prep
@@ -212,7 +179,11 @@ function smb_suggest {
 }
 
 function determine_basal {
-    timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
+    if ( grep 12 settings/model.json ); then
+      timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
+    else
+      timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
+    fi
 }
 
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails or a 0 duration temp is requested)
@@ -424,7 +395,7 @@ function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( timerun openaps report invoke settings/model.json || timerun openaps report invoke settings/model.json ) 2>&3 >&4 | tail -1 \
-    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && die "error: x12 pumps do support SMB safety checks: quitting to restart with basal-only pump-loop") ) \
+    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && echo "x12 pumps do not support SMB safety checks: SMB will not be available.") ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
 }
@@ -501,12 +472,16 @@ function wait_for_silence {
 
 # Refresh pumphistory etc.
 function refresh_pumphistory_and_meal {
-    retry_return timerun openaps report invoke monitor/status.json 2>&3 >&4 | tail -1 || return 1
+    if ( grep 12 settings/model.json ); then
+      touch monitor/status.json
+    else
+      retry_return timerun openaps report invoke monitor/status.json 2>&3 >&4 | tail -1 || return 1
+    fi
     echo -n Ref
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-         || { echo; cat monitor/status.json | jq -c -C .; return 1; }
+         || { cat monitor/status.json | jq -c -C .; echo "x12 model detected."; }
     echo -n resh
     retry_return monitor_pump || return 1
     echo -n ed
@@ -552,13 +527,6 @@ function enact {
     fi
     grep incorrectly enact/suggested.json && timerun oref0-set-system-clock 2>&3
     echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
-}
-
-# used by old pump-loop only
-# refresh pumphistory if it's more than 15m old and enact
-function refresh_old_pumphistory_enact {
-    find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
-    || ( echo -n "Old pumphistory: " && refresh_pumphistory_and_meal && enact )
 }
 
 # refresh pumphistory if it's more than 30m old, but don't enact
@@ -768,8 +736,4 @@ die() {
     exit 1
 }
 
-if grep 12 settings/model.json; then
-    old_main "$@"
-else
-    main "$@"
-fi
+main "$@"
