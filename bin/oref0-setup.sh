@@ -151,7 +151,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     echo
     if [[ -z $DIR ]]; then
-        DIR="myopenaps"
+        DIR="$HOME/myopenaps"
     fi
     directory="$(readlink -m $DIR)"
     echo
@@ -195,34 +195,35 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
-
-    read -p "Are you using an Explorer Board / HAT? [Y]/n " -r
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-        echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
-        read -p "What is your TTY port? " -r
-        ttyport=$REPLY
-        echocolor-n "Ok, "
-        if [[ -z "$ttyport" ]]; then
-            echo -n Carelink
-        else
-            echo -n TTY $ttyport
-        fi
-        echocolor " it is. "
-        echo
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product ; then
+        echocolor "Explorer Board HAT detected. "
+        ttyport=/dev/spidev0.0
     else
-        if  getent passwd edison > /dev/null; then
-            echocolor "Yay! Configuring for Edison with Explorer Board. "
-            ttyport=/dev/spidev5.1
-        elif getent passwd pi > /dev/null; then
-            echocolor "Yay! Configuring for Pi with Explorer Board HAT. "
-            ttyport=/dev/spidev0.0
-        else
-            echo "Hmm, you don't seem to be using an Edison or Pi."
-            read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+        read -p "Are you using an Explorer Board? [Y]/n " -r
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
+            read -p "What is your TTY port? " -r
             ttyport=$REPLY
-            echocolor "Ok, we'll try TTY $ttyport then."
+            echocolor-n "Ok, "
+            if [[ -z "$ttyport" ]]; then
+                echo -n Carelink
+            else
+                echo -n TTY $ttyport
+            fi
+            echocolor " it is. "
+            echo
+        else
+            if  getent passwd edison > /dev/null; then
+                echocolor "Yay! Configuring for Edison with Explorer Board. "
+                ttyport=/dev/spidev5.1
+            else
+                echo "Hmm, you don't seem to be using an Edison."
+                read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+                ttyport=$REPLY
+                echocolor "Ok, we'll try TTY $ttyport then."
+            fi
+            echo
         fi
-        echo
     fi
 
 
@@ -480,8 +481,8 @@ read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Attempting to remove git to make install --nogit by default for existing users
-    echo Removing any existing git
-    rm -rf ~/myopenaps/.git
+    echo Removing any existing git in $directory/.git
+    rm -rf $directory/.git
     echo Removed any existing git
 
     # TODO: delete this after openaps 0.2.1 release
@@ -597,6 +598,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     #TODO: remove this when IPv6 works reliably
     echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
 
+    # update, upgrade, and autoclean apt-get
+    echo Running apt-get update
+    sudo apt-get update
+    echo Running apt-get upgrade
+    sudo apt-get upgrade
+    echo Running apt-get autoclean
+    sudo apt-get autoclean
+
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
@@ -628,7 +637,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             cd $HOME/src/bluez-5.48 && ./configure --disable-systemd && make || die "Couldn't make bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
@@ -781,7 +790,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
         if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
                 openaps alias remove mmtune
-                openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done\""
+                openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(cat monitor/mmtune.json | jq -r .setFreq) | while read line; do echo -n \"$line \"; done\""
         fi
         echo Checking kernel for mraa installation
         if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
@@ -989,6 +998,25 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export API_SECRET" >> $HOME/.bash_profile
 
     echo
+    
+    #Check to see if Explorer HAT is present, and install all necessary stuff
+    if grep -a "Explorer HAT" /proc/device-tree/hat/product ; then
+        echo "Looks like you're using an Explorer HAT!"
+        echo "Making sure SPI is enabled..."
+        sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+        echo "Enabling i2c device nodes..."
+        sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
+        egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
+        echo "i2c-dev" > /etc/modules-load.d/i2c.conf
+        echo "Installing socat..."
+        apt-get install socat
+        echo "Installing openaps-menu..."
+        cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+        cd $HOME/src/openaps-menu && sudo npm install
+        cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
+        cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
+    fi
+    
     if [[ "$ttyport" =~ "spi" ]]; then
         echo Resetting spi_serial
         reset_spi_serial.py
@@ -1032,7 +1060,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         elif [[ $ENABLE =~ dexusb ]]; then
             (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot cd $directory && /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
         elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | jq -r  '.[] | \"\\(.sgv) \\(.dateString)\"' | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
         fi
         if [[ ${CGM,,} =~ "xdrip" ]]; then # use old ns-loop for now
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
@@ -1042,15 +1070,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
         if [[ $ENABLE =~ autotune ]]; then
             # autotune nightly at 4:05am using data from NS
-            (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 4 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | json | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
+            (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 4 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | jq . | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
         fi
         if [[ "$ttyport" =~ "spi" ]]; then
             (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
             (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-        # try to start oref0-pump-loop every 30s
-        (crontab -l; crontab -l | grep -q "cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         if [[ ! -z "$BT_PEB" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
         fi
@@ -1060,7 +1086,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         #if [[ "$ttyport" =~ "spidev5.1" ]]; then
            # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
         if egrep -i "edison" /etc/passwd 2>/dev/null; then
-           (crontab -l; crontab -l | grep -q "cd $directory && sudo ~/src/EdisonVoltage/voltage" || echo "*/15 * * * * cd $directory && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
+           (crontab -l; crontab -l | grep -q "cd $directory && sudo ~/src/EdisonVoltage/voltage" || echo "*/15 * * * * cd $directory && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | jq .batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
            #fi
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
