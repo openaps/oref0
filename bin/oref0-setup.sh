@@ -1112,6 +1112,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
     fi
 
+    echo "Clearing retrieved apt packages to free space."
+    apt-get autoclean && apt-get clean
+
     #if [[ "$ttyport" =~ "spi" ]]; then
         #echo Resetting spi_serial
         #reset_spi_serial.py
@@ -1219,9 +1222,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
-
-echo "Clearing retrieved apt packages to free space."
-apt-get autoclean && apt-get clean
 
 if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
