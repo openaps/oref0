@@ -661,11 +661,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
         # use packaged bluez with Rapsbian
-        if getent passwd pi > /dev/null; then
+# TODO: uncomment or remove this
+# try packaged bluez with Edison too
+        #if getent passwd pi > /dev/null; then
             bluetoothdminversion=5.43
-        else
-            bluetoothdminversion=5.48
-        fi
+        #else
+            #bluetoothdminversion=5.48
+        #fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
             cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
