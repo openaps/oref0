@@ -21,7 +21,7 @@ die() {
 
 # defaults
 max_iob=0 # max_IOB will default to zero if not set in setup script
-CGM="G4-upload"
+CGM="G4-go"
 DIR=""
 directory=""
 EXTRAS=""
@@ -137,13 +137,15 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, G5-upload, MDT or xdrip."
+# TODO: deprecate g4-upload and g4-local-only
+if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "g4-go" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-upload, G4-local-only, G5, G5-upload, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
+    # TODO: deprecate g4-upload and g4-local-only
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|G4-go|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     echo
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
@@ -177,6 +179,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
     echo "What kind of CGM would you like to configure for offline use? Options are:"
     echo "G4-Go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
+    # TODO: deprecate g4-upload and G4-local-only
     echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
     echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
@@ -189,8 +192,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
     echo
-    if [[ ${CGM,,} =~ "shareble" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
-        read -p "What is your G4 Share Serial Number? (i.e. SM12345678) " -r
+    if [[ ${CGM,,} =~ "g4-go" ]]; then
+        read -p "If your G4 has Share, what is its Serial Number? (i.e. SM12345678) " -r
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
         echo
@@ -390,7 +393,7 @@ else
 fi
 
 echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
-if [[ ${CGM,,} =~ "shareble" ]]; then
+if [[ ! -z $BLE_SERIAL ]]; then
     echo -n "G4 Share serial $BLE_SERIAL, "
 fi
 echo
@@ -433,7 +436,7 @@ OREF0_RUNAGAIN=`mktemp /tmp/oref0-runagain.XXXXXXXXXX`
 echo "#!/bin/bash" > $OREF0_RUNAGAIN
 echo "# To run again with these same options, use: " | tee $OREF0_RUNAGAIN
 echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
-if [[ ${CGM,,} =~ "shareble" ]]; then
+if [[ ! -z $BLE_SERIAL ]]; then
     echo -n " --bleserial=$BLE_SERIAL" | tee -a $OREF0_RUNAGAIN
 fi
 echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_RUNAGAIN
@@ -644,7 +647,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
     echo Checking for BT Mac, BT Peb or Shareble
-    if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
+    if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
@@ -696,7 +699,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
-    elif [[ ${CGM,,} =~ "shareble" ]]; then
+    # TODO: figure out if any of this is still needed
+    elif [[ ${CGM,,} =~ "g4-go" ]]; then
         echo Checking Adafruit_BluefruitLE installation
         if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
             if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
@@ -709,17 +713,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             fi
             echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
         fi
-        echo Checking openxshareble installation
-        if ! python -c "import openxshareble" 2>/dev/null; then
-            echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
-        fi
         sudo apt-get update; sudo apt-get upgrade
         sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
         echo Checking bluez installation
-        # TODO: figure out if we need to do this for 5.44 as well
-        if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
-            sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
-        fi
         # start bluetoothd in /etc/rc.local if it is missing.
         if ! grep -q '/usr/local/bin/bluetoothd &' /etc/rc.local; then
             sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
@@ -735,7 +731,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     fi
 
-    if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
+    # TODO: deprecate g4-upload and g4-local-only
+    if [[ ${CGM,,} =~ "g4-upload" ]]; then
         mkdir -p $directory-cgm-loop
         if ( cd $directory-cgm-loop && ls openaps.ini 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
             echo $directory-cgm-loop already exists
@@ -758,6 +755,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
         fi
 
+        # TODO: deprecate g4-upload and g4-local-only
         if [[ ${CGM,,} =~ "g4-upload" ]]; then
             sudo apt-get -y install bc
             openaps device add cgm dexcom || die "Can't add CGM"
@@ -765,22 +763,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 echo importing $type file
                 cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
             done
-        elif [[ ${CGM,,} =~ "shareble" ]]; then
-            # import shareble stuff
-            for type in shareble cgm-loop; do
-                echo importing $type file
-                cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-            done
-
-            if [[ -z "$BLE_MAC" ]]; then
-                read -p "Please go into your Dexcom's Share settings, forget any existing device, turn Share back on, and press Enter."
-                openaps use cgm list_dexcom
-                read -p "What is your G4 Share MAC address? (i.e. FE:DC:BA:98:78:54) " -r
-                BLE_MAC=$REPLY
-                echo "$BLE_MAC? Got it."
-            fi
-            echo openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC
-            openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC || die "Couldn't configure Share serial and MAC"
         fi
 
         cd $directory || die "Can't cd $directory"
@@ -1142,7 +1124,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         if [[ ${CGM,,} =~ "g4-go" ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-g4-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-g4-loop' || oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log") | crontab -
-        elif [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
+        # TODO: deprecate g4-upload and g4-local-only
+        elif [[ ${CGM,,} =~ "g4-upload" ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
         elif [[ ${CGM,,} =~ "xdrip" ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip' || monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log") | crontab -
@@ -1186,7 +1169,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         crontab -l | tee $HOME/crontab.txt
     fi
 
-    if [[ ${CGM,,} =~ "shareble" ]]; then
+    if [[ ${CGM,,} =~ "g4-go" ]]; then
         echo
         echo "To pair your G4 Share receiver, open its Settings, select Share, Forget Device (if previously paired), then turn sharing On"
     fi
