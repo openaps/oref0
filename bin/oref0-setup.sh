@@ -235,6 +235,15 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo
         fi
     fi
+    read -p "Would you like to [D]ownload precompiled Go pump communication library or build them from [S]ource? [D]/S " -r
+    buildgofromsource=false
+    if [[ $REPLY =~ ^[Ss]$ ]]; then
+      buildgofromsource=true
+      echo "Building Go pump binaries from source"
+    else
+      echo "Downloading precompiled Go pump binaries."
+    fi
+    
 
 
     if [[ ! -z "${ttyport}" ]]; then
@@ -1030,6 +1039,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # install Go for Explorer Board/HAT
     if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
+      if $buildgofromsource; then
         if go version | grep go1.9.; then
             echo Go already installed
         else
@@ -1039,7 +1049,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             elif uname -m | grep i686; then
                 cd /tmp && wget -c https://dl.google.com/go/go1.9.3.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.3.linux-386.tar.gz
             fi
-
         fi
         if ! grep GOROOT $HOME/.bash_profile; then
             echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
@@ -1051,27 +1060,47 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
             echo 'export PATH' >> $HOME/.bash_profile
         fi
-        mkdir -p $HOME/go
-        source $HOME/.bash_profile
+      else
+            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+            echo 'export PATH' >> $HOME/.bash_profile
+      fi
     fi
+    mkdir -p $HOME/go
+    source $HOME/.bash_profile
     if [[ "$ttyport" =~ "spidev" ]]; then
-        #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
-        go get -u -v -tags cc111x github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
-        #cd $HOME/go/src/github.com/ecc1/medtronic/cmd
-        #cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
-        #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
-        #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
-        #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
-        rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
-        mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
-        cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
-        #Store radio_locale for later use
-        grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
-        #Necessary to "bootstrap" Go commands...
-        if [[ $radio_locale =~ ^WW$ ]]; then
-          echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+        if $buildgofromsource; then
+          #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
+          go get -u -v -tags cc111x github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+          #cd $HOME/go/src/github.com/ecc1/medtronic/cmd
+          #cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
+          #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
+          #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
+          #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
+          rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
+          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
+          cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          #Store radio_locale for later use
+          grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
+          #Necessary to "bootstrap" Go commands...
+          if [[ $radio_locale =~ ^WW$ ]]; then
+            echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+          else
+            echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+          fi
         else
-          echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+          arch=arm
+          if egrep -i "edison" /etc/passwd 2>/dev/null; then
+            arch=386
+          fi
+          mkdir -p $HOME/go/bin && \
+          downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/latest | \
+            jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
+          echo "Downloading Go pump binaries from:" $downloadUrl
+          wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
+          echo "Installing Go pump binaries ..."
+          cp $HOME/go/bin/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
+          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         fi
     fi
     if [[ ${CGM,,} =~ "g4-go" ]]; then
@@ -1190,6 +1219,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
+
+echo "Clearing retrieved apt packages to free space."
+apt-get autoclean && apt-get clean
 
 if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
