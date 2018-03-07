@@ -26,6 +26,7 @@ DIR=""
 directory=""
 EXTRAS=""
 radio_locale="US"
+buildgofromsource=false
 
 #this makes the confirmation echo text a color when you use echocolor instead of echo
 function echocolor() { # $1 = string
@@ -236,7 +237,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         fi
     fi
     read -p "Would you like to [D]ownload precompiled Go pump communication library or build them from [S]ource? [D]/S " -r
-    buildgofromsource=false
     if [[ $REPLY =~ ^[Ss]$ ]]; then
       buildgofromsource=true
       echo "Building Go pump binaries from source"
