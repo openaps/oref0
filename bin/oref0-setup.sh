@@ -710,36 +710,36 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
-    # TODO: figure out if any of this is still needed
-    elif [[ ${CGM,,} =~ "g4-go" ]]; then
-        echo Checking Adafruit_BluefruitLE installation
-        if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
-            if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
-                echo "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
-                (cd $HOME/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
-            else
-                echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
-                # TODO: get this moved over to openaps and install with pip
-                (cd $HOME/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
-            fi
-            echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
-        fi
-        sudo apt-get update; sudo apt-get upgrade
-        sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
-        echo Checking bluez installation
-        # start bluetoothd in /etc/rc.local if it is missing.
-        if ! grep -q '/usr/local/bin/bluetoothd &' /etc/rc.local; then
-            sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
-        fi
-        # starting with bluez 5.48 the --experimental command line option is not needed. remove the --experimental if it still exists in /etc/rc.local. this is for rigs with version 0.6.0 or earlier
-        if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
-            sed -i"" 's/^\/usr\/local\/bin\/bluetoothd --experimental \&/\/usr\/local\/bin\/bluetoothd \&/' /etc/rc.local
-        fi
-        if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
-            sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
-        fi
-        # comment out existing line if it exists and isn't already commented out
-        sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
+    ## TODO: figure out if any of this is still needed
+    #elif [[ ${CGM,,} =~ "g4-go" ]]; then
+        #echo Checking Adafruit_BluefruitLE installation
+        #if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
+            #if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
+                #echo "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
+                #(cd $HOME/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+            #else
+                #echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
+                ## TODO: get this moved over to openaps and install with pip
+                #(cd $HOME/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+            #fi
+            #echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
+        #fi
+        #sudo apt-get update; sudo apt-get upgrade
+        #sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
+        #echo Checking bluez installation
+        ## start bluetoothd in /etc/rc.local if it is missing.
+        #if ! grep -q '/usr/local/bin/bluetoothd &' /etc/rc.local; then
+            #sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
+        #fi
+        ## starting with bluez 5.48 the --experimental command line option is not needed. remove the --experimental if it still exists in /etc/rc.local. this is for rigs with version 0.6.0 or earlier
+        #if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
+            #sed -i"" 's/^\/usr\/local\/bin\/bluetoothd --experimental \&/\/usr\/local\/bin\/bluetoothd \&/' /etc/rc.local
+        #fi
+        #if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
+            #sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
+        #fi
+        ## comment out existing line if it exists and isn't already commented out
+        #sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     fi
 
     # TODO: deprecate g4-upload and g4-local-only
