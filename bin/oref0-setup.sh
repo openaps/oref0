@@ -953,6 +953,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
     fi
 
+    #Setup files for editing on the x12, and replace get-settings alias
     if [[ ${pumpmodel,,} =~ "x12" ]]; then
         echo "copying settings files for x12 pumps"
         cp $HOME/src/oref0/lib/oref0-setup/bg_targets_raw.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/basal_profile.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/settings.json $directory/settings/ || die "Could not copy settings files for x12 pumps"
@@ -960,14 +961,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         openaps alias remove get-settings || die "Could not remove get-settings"
         echo "settings removed, getting ready to add x12 settings"
         openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json settings/profile.json" || die "Could not add x12 settings"
-    else
-        sudo apt-get -y install bc jq ntpdate bash-completion || die "Couldn't install bc etc."
-        cd $directory || die "Can't cd $directory"
-        for type in supermicrobolus; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
     fi
+
+    #Moved this out of the conditional, so that x12 models will work with smb loops
+    sudo apt-get -y install bc jq ntpdate bash-completion || die "Couldn't install bc etc."
+    cd $directory || die "Can't cd $directory"
+    for type in supermicrobolus; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+    done
 
     echo "Adding OpenAPS log shortcuts"
     oref0-log-shortcuts

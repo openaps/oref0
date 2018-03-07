@@ -14,7 +14,8 @@
 # -  when subcommand outputs are not needed in the main log file:
 #    - redirect the output to either fd >&3 or fd >&4 based on
 #    - when you want the output visible.
-OREF0_DEBUG=${OREF0_DEBUG:-0}
+OREF0_DEBUG=1
+#OREF0_DEBUG=${OREF0_DEBUG:-0}
 if [[ "$OREF0_DEBUG" -ge 1 ]] ; then
   exec 3>&1
 else
@@ -262,6 +263,10 @@ function smb_verify_status {
         unsuspend_if_no_temp
         refresh_pumphistory_and_meal
         false
+    fi \
+    && if grep -q 12 monitor/status.json; then
+	echo -n "x12 model detected."
+        true
     fi
 }
 
