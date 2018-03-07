@@ -1094,9 +1094,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
           fi
         else
-          arch=arm
+          arch=arm-spi
           if egrep -i "edison" /etc/passwd 2>/dev/null; then
-            arch=386
+            arch=386-spi
           fi
           mkdir -p $HOME/go/bin && \
           downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/latest | \
