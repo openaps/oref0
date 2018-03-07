@@ -1039,6 +1039,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
     fi
 
+    echo "Clearing retrieved apt packages to free space."
+    apt-get autoclean && apt-get clean
+
     # install Go for Explorer Board/HAT
     if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
       if $buildgofromsource; then
@@ -1113,9 +1116,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
     fi
-
-    echo "Clearing retrieved apt packages to free space."
-    apt-get autoclean && apt-get clean
 
     #if [[ "$ttyport" =~ "spi" ]]; then
         #echo Resetting spi_serial
