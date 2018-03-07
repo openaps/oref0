@@ -14,8 +14,7 @@
 # -  when subcommand outputs are not needed in the main log file:
 #    - redirect the output to either fd >&3 or fd >&4 based on
 #    - when you want the output visible.
-OREF0_DEBUG=1
-#OREF0_DEBUG=${OREF0_DEBUG:-0}
+OREF0_DEBUG=${OREF0_DEBUG:-0}
 if [[ "$OREF0_DEBUG" -ge 1 ]] ; then
   exec 3>&1
 else
@@ -180,7 +179,7 @@ function smb_suggest {
 }
 
 function determine_basal {
-    if ( grep 12 settings/model.json ); then
+    if ( grep -q 12 settings/model.json ); then
       timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
       timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
@@ -400,7 +399,7 @@ function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( timerun openaps report invoke settings/model.json || timerun openaps report invoke settings/model.json ) 2>&3 >&4 | tail -1 \
-    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && echo "x12 pumps do not support SMB safety checks: SMB will not be available.") ) \
+    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo "x12 pumps do not support SMB safety checks: SMB will not be available.") ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
 }
@@ -477,11 +476,7 @@ function wait_for_silence {
 
 # Refresh pumphistory etc.
 function refresh_pumphistory_and_meal {
-    if ( grep 12 settings/model.json ); then
-      touch monitor/status.json
-    else
-      retry_return timerun openaps report invoke monitor/status.json 2>&3 >&4 | tail -1 || return 1
-    fi
+    retry_return timerun openaps report invoke monitor/status.json 2>&3 >&4 | tail -1 || return 1
     echo -n Ref
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
