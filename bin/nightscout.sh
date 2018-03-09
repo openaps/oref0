@@ -286,7 +286,7 @@ ns)
     expr=$1
     zone=${2-'tz'}
     count=${3-1000}
-    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json "find[date][\$gte]=$(date -d $expr +"%s%3N")&count=$count" \
+    exec ns-get host $NIGHTSCOUT_HOST entries.json "find[date][\$gte]=$(date -d $expr +"%s%3N")&count=$count" \
       | json -e "this.glucose = this.sgv" \
       | openaps use $zone rezone --astimezone --date dateString -
     ;;
