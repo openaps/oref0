@@ -399,7 +399,7 @@ function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( timerun openaps report invoke settings/model.json || timerun openaps report invoke settings/model.json ) 2>&3 >&4 | tail -1 \
-    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo "(x12 models do not support SMB safety checks, SMB will not be available.)") ) \
+    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo -n "(x12 models do not support SMB safety checks, SMB will not be available.) ") ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
 }
@@ -481,7 +481,7 @@ function refresh_pumphistory_and_meal {
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-         || { cat monitor/status.json | jq -c -C .; echo "x12 model detected."; }
+         || { echo; cat monitor/status.json | jq -c -C .; echo -n "x12 model detected. Ref"; }
     echo -n resh
     retry_return monitor_pump || return 1
     echo -n ed
