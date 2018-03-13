@@ -14,11 +14,12 @@ main() {
         ls -la cgm/g4-glucose.json
         full_refresh
     elif glucose_fresh; then
-        echo "cgm/g4-glucose.json < 4m old"
+        echo "cgm/g4-glucose.json < 5m old"
     else
         wait_if_needed
         echo Updating data
         update_data
+        g4update -u 2>&1
     fi
 
     show_last_record
@@ -58,8 +59,8 @@ function glucose_lt_1h_old {
 
 function wait_if_needed {
     touch_glucose
-    # as long as CGM data is less than 5m old, sleep
-    while find cgm -mmin -5 | egrep -q "g4-glucose.json"; do
+    # as long as CGM data is less than 6m old, sleep
+    while find cgm -mmin -6 | egrep -q "g4-glucose.json"; do
         echo -n "."
         sleep 10
     done
@@ -68,7 +69,7 @@ function wait_if_needed {
 function glucose_fresh {
     # check whether g4-glucose.json is less than 5m old
     touch_glucose
-    find cgm -mmin -4 | egrep -q "g4-glucose.json"
+    find cgm -mmin -6 | egrep -q "g4-glucose.json"
 }
 
 function prep {
