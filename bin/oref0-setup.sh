@@ -1060,7 +1060,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo Go already installed
         else
             echo "Installing Golang..."
-            if uname -m | grep armv6l; then
+            if uname -m | grep armv; then
                 cd /tmp && wget -c https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
             elif uname -m | grep i686; then
                 cd /tmp && wget -c https://dl.google.com/go/go1.9.3.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.3.linux-386.tar.gz
