@@ -910,7 +910,7 @@ describe('IOB', function() {
                     timestamp: timestamp30mAgo
                 }],
                 profile: {
-                    dia: 3,
+                    dia: 5,
                     current_basal: 1,
                     suspend_zeros_iob: true,
                     max_daily_basal: 1,
@@ -945,7 +945,7 @@ describe('IOB', function() {
                     timestamp: timestamp30mAgo
                 }],
                 profile: {
-                    dia: 3,
+                    dia: 5,
                     current_basal: 1,
                     suspend_zeros_iob: true,
                     max_daily_basal: 1,
