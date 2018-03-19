@@ -608,9 +608,6 @@ describe('IOB', function() {
 
     it('should calculate IOB with Temp Basals that overlap each other', function() {
 
-        var nowDate = new Date();
-        var now = Date.now();
-
         var basalprofile = [{
             'i': 0,
             'start': '00:00:00',
@@ -624,6 +621,32 @@ describe('IOB', function() {
         var timestampEarly3 = moment('2016-06-13 00:30:00.000').subtract(28, 'minutes');
 
         var timestamp = startingPoint;
+        var inputs = {
+            clock: timestamp,
+            history: [{
+                _type: 'TempBasalDuration',
+                'duration (min)': 30,
+                date: timestampEarly.unix(),
+                timestamp: timestampEarly.format()
+            }, {
+                _type: 'TempBasal',
+                rate: 2,
+                date: timestampEarly.unix(),
+                timestamp: timestampEarly.format()
+            }],
+            profile: {
+                dia: 3,
+                current_basal: 0.1,
+                max_daily_basal: 1,
+                //bolussnooze_dia_divisor: 2,
+                basalprofile: basalprofile
+            }
+        };
+
+        var hourLaterInputs = inputs;
+        hourLaterInputs.clock = moment('2016-06-13 00:30:00.000');
+        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+
         var inputs = {
             clock: timestamp,
             history: [{
@@ -677,17 +700,14 @@ describe('IOB', function() {
         };
 
         var hourLaterInputs = inputs;
-        hourLaterInputs.clock = moment('2016-06-13 00:30:00.000'); //new Date(now + (30 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        hourLaterInputs.clock = moment('2016-06-13 00:30:00.000');
+        var hourLaterWithOverlap = require('../lib/iob')(hourLaterInputs)[0];
 
-        hourLater.iob.should.be.lessThan(0.5);
-        hourLater.iob.should.be.greaterThan(0.45);
+        hourLater.iob.should.be.greaterThan(hourLaterWithOverlap.iob);
+        hourLater.iob.should.be.lessThan(hourLaterWithOverlap.iob + 0.05);
     });
 
     it('should calculate IOB with Temp Basals that overlap midnight and a basal profile, part deux', function() {
-
-        var nowDate = new Date();
-        var now = Date.now();
 
         var basalprofile = [{
                 'i': 0,
@@ -741,7 +761,7 @@ describe('IOB', function() {
             };
 
         var hourLaterInputs = inputs;
-        hourLaterInputs.clock = moment('2016-06-14 00:45:00.000'); //new Date(now + (30 * 60 * 1000)).toISOString();
+        hourLaterInputs.clock = moment('2016-06-14 00:45:00.000');
         var hourLater = require('../lib/iob')(hourLaterInputs)[0];
 
         hourLater.iob.should.be.lessThan(1);
@@ -1351,7 +1371,8 @@ describe('IOB', function() {
             history: [{
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
-                date: startingPoint
+                date: startingPoint,
+                timestamp: startingPoint
             }, {
                 _type: 'TempBasal',
                 rate: 0.1,
@@ -1365,7 +1386,8 @@ describe('IOB', function() {
             }, {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
-                date: startingPoint2
+                date: startingPoint2,
+                timestamp: startingPoint2
             }],
             profile: {
                 dia: 3,
@@ -1597,96 +1619,5 @@ describe('IOB', function() {
         var after4h = require('../lib/iob')(after4hInputs)[0];
         after4h.iob.should.equal(0);
     });
-
-    it('should calculate IOB smoothly', function() {
-
-        var basalprofile = [{
-            "i": 0,
-            "minutes": 0,
-            "rate": 0.982,
-            "start": "00:00:00"
-          }, {
-            "i": 1,
-            "minutes": 60,
-            "rate": 0.94,
-            "start": "01:00:00"
-          }, {
-            "i": 2,
-            "minutes": 120,
-            "rate": 0.958,
-            "start": "02:00:00"
-          }, {
-            "i": 3,
-            "minutes": 180,
-            "rate": 0.846,
-            "start": "03:00:00"
-          }, {
-            "i": 4,
-            "minutes": 240,
-            "rate": 0.703,
-            "start": "04:00:00"
-          }, {
-            "i": 5,
-            "minutes": 300,
-            "rate": 0.666,
-            "start": "05:00:00"
-          }, {
-            "i": 6,
-            "minutes": 360,
-            "rate": 0.685,
-            "start": "06:00:00"
-          }, {
-            "i": 7,
-            "minutes": 420,
-            "rate": 0.691,
-            "start": "07:00:00"
-          }, {
-            "i": 8,
-            "minutes": 480,
-            "rate": 1.167,
-            "start": "08:00:00"
-        }];
-
-        var now = Date.now(),
-            timestamp = new Date(now).toISOString(),
-            inputs = {
-                clock: timestamp,
-                history: [{
-                    _type: 'Bolus',
-                    amount: 1,
-                    timestamp: timestamp
-                }],
-                profile: {
-                    dia: 4,
-                    //bolussnooze_dia_divisor: 2,
-                    basalprofile: basalprofile,
-                    current_basal: 1,
-                    max_daily_basal: 1
-                }
-
-            };
-
-        var rightAfterBolus = require('../lib/iob')(inputs)[0];
-        rightAfterBolus.iob.should.equal(1);
-        //rightAfterBolus.bolussnooze.should.equal(1);
-
-        var hourLaterInputs = inputs;
-        hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
-        hourLater.iob.should.be.lessThan(1);
-        //hourLater.bolussnooze.should.be.lessThan(.5);
-        hourLater.iob.should.be.greaterThan(0);
-
-        var after3hInputs = inputs;
-        after3hInputs.clock = new Date(now + (3 * 60 * 60 * 1000)).toISOString();
-        var after3h = require('../lib/iob')(after3hInputs)[0];
-        after3h.iob.should.be.greaterThan(0);
-
-        var after4hInputs = inputs;
-        after4hInputs.clock = new Date(now + (4 * 60 * 60 * 1000)).toISOString();
-        var after4h = require('../lib/iob')(after4hInputs)[0];
-        after4h.iob.should.equal(0);
-    });
-
 
 });
