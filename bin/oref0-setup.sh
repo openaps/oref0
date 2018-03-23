@@ -1083,6 +1083,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     mkdir -p $HOME/go
     source $HOME/.bash_profile
+    
+    #Store radio_locale for later use
+    grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
+    #Necessary to "bootstrap" Go commands...
+    if [[ $radio_locale =~ ^WW$ ]]; then
+      echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+    else
+      echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+    fi
+    
     if [[ "$ttyport" =~ "spidev" ]]; then
         if $buildgofromsource; then
           #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
@@ -1095,14 +1105,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
           cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
-          #Store radio_locale for later use
-          grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
-          #Necessary to "bootstrap" Go commands...
-          if [[ $radio_locale =~ ^WW$ ]]; then
-            echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
-          else
-            echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
-          fi
         else
           arch=arm-spi
           if egrep -i "edison" /etc/passwd 2>/dev/null; then
