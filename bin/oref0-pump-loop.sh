@@ -658,7 +658,7 @@ function refresh_old_pumphistory {
 function refresh_old_profile {
     find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old; " \
         || { echo -n "Old settings: " && get_settings; }
-    if ls settings/profile.json >&4 && cat settings/profile.json | jq -e .current_basal >&3; then
+    if [ -s settings/profile.json ] && jq -e .current_basal settings/profile.json >&3; then
         echo -n "Profile valid. "
     else
         echo -n "Profile invalid: "
@@ -693,7 +693,7 @@ function get_settings {
 
     # generate settings/pumpprofile.json without autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
-    if ls settings/pumpprofile.json.new >&4 && cat settings/pumpprofile.json.new | jq -e .current_basal >&4; then
+    if [ -s settings/pumpprofile.json.new ] && jq -e .current_basal settings/pumpprofile.json.new >&4; then
         mv settings/pumpprofile.json.new settings/pumpprofile.json
         echo -n "Pump profile refreshed; "
     else
@@ -702,7 +702,7 @@ function get_settings {
     fi
     # generate settings/profile.json.new with autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
-    if ls settings/profile.json.new >&4 && cat settings/profile.json.new | jq -e .current_basal >&4; then
+    if [ -s settings/profile.json.new ] && jq -e .current_basal settings/profile.json.new >&4; then
         mv settings/profile.json.new settings/profile.json
         echo -n "Settings refreshed; "
     else
