@@ -808,6 +808,7 @@ function glucose-fresh {
         touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json 2>&3
     fi
     if (! [ -s /tmp/pump_loop_completed ] ); then
+        echo "First loop: not waiting"
         return 0;
     elif (find monitor/ -newer /tmp/pump_loop_completed | grep -q glucose.json); then
         echo glucose.json newer than pump_loop_completed
