@@ -589,6 +589,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     cat preferences.json
 
+    # fix log rotate file for anyone who didn't use bootstrap
+    sed -i "s/daily/hourly/g" /etc/logrotate.conf
+    sed -i "s/#compress/compress/g" /etc/logrotate.conf
+
     # enable log rotation
     sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps || die "Could not cp /etc/logrotate.d/openaps"
     sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
