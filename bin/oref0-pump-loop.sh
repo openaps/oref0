@@ -310,7 +310,7 @@ function smb_verify_suggested {
         echo Pumphistory/temp mismatch: retrying
         return 1
     fi
-    if jq -e -r .deliverAt enact/smb-suggested.json; then
+    if [ -s enact/smb-suggested.json ] && jq -e -r .deliverAt enact/smb-suggested.json; then
         echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | tr -d '\n' \
         && echo -n " is within 1m of current time: " && date \
         && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") > -60 )) \
@@ -518,7 +518,7 @@ function mmtune {
     echo -n "mmtune: " && mmtune_Go >&3 2>&3
     #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
     #but only if it's not the default frequency
-    if ! $(jq -e .usedDefault monitor/mmtune.json); then
+    if ! $([ -s monitor/mmtune.json ] && jq -e .usedDefault monitor/mmtune.json); then
       freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
       while [ ${#freq} -ne 9 ];
         do
