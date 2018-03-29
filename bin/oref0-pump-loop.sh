@@ -598,7 +598,8 @@ function refresh_pumphistory_and_meal {
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
     retry_return monitor_pump || return 1
     echo -n "meal.json "
-    retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
+    retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new || { echo; echo "Couldn't calculate COB"; return 1; }
+    [ -s monitor/meal.json.new ] && jq -e .carbs monitor/meal.json.new && cp monitor/meal.json.new monitor/meal.json || { echo; echo "Couldn't copy meal.json"; fail "$@"; }
     echo "refreshed"
 }
 
@@ -608,7 +609,8 @@ function monitor_pump {
 }
 
 function calculate_iob {
-    oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
+    oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json.new || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
+    [ -s monitor/iob.json.new ] && jq -e .[0].iob monitor/iob.json.new && cp monitor/iob.json.new monitor/iob.json || { echo; echo "Couldn't copy IOB"; fail "$@"; }
 }
 
 function invoke_pumphistory_etc {
