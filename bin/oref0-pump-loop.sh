@@ -354,7 +354,6 @@ function refresh_after_bolus_or_enact {
             #echo -n "bolused since pumphistory refreshed, "
             #stat enact/bolused.json | grep Mod
         fi
-    #if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
         refresh_pumphistory_and_meal \
@@ -583,7 +582,6 @@ function refresh_pumphistory_and_meal {
     echo "refreshed"
 }
 
-# monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
 function monitor_pump {
     retry_return invoke_pumphistory_etc || return 1
     retry_return invoke_reservoir_etc || return 1
@@ -834,7 +832,7 @@ function check_battery() {
 }
 function check_tempbasal() {
   set -o pipefail
-  mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp >&4
+  mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp >&4 && cp monitor/temp_basal.json monitor/last_temp_basal.json
 }
 
 # clear and refresh the 24h pumphistory file approximatively every 6 hours.
