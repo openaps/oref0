@@ -43,7 +43,7 @@ function get_cal_records {
 }
 
 function add_raw_sgvs {
-    oref0 raw cgm/g4-glucose.json cgm/cal.json 160 > cgm/cgm-glucose.json
+    oref0 raw cgm/g4-glucose.json cgm/cal.json 160 | jq > cgm/cgm-glucose.json
     touch_glucose
     cp -pu cgm/cgm-glucose.json cgm/glucose.json
 }
