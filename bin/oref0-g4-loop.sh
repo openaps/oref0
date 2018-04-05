@@ -44,6 +44,8 @@ function get_cal_records {
 
 function add_raw_sgvs {
     oref0 raw cgm/g4-glucose.json cgm/cal.json 160 > cgm/cgm-glucose.json
+    touch_glucose
+    cp -pu cgm/cgm-glucose.json cgm/glucose.json
 }
 
 function enough_data {
@@ -53,6 +55,9 @@ function enough_data {
 function touch_glucose {
     if jq .[0].date/1000 cgm/g4-glucose.json >/dev/null; then
         touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/g4-glucose.json))" cgm/g4-glucose.json
+    fi
+    if jq .[0].date/1000 cgm/cgm-glucose.json >/dev/null; then
+        touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/cgm-glucose.json))" cgm/cgm-glucose.json
     fi
 }
 
