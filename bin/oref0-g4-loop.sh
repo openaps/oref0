@@ -103,13 +103,13 @@ function cal_raw {
 
 function get_cal_records {
     cat cgm/g4-glucose.json | jq 'map(select(.type | contains("cal")))' > cgm/cal.json
-    echo -n Found
+    echo -n "Found "
     cat cgm/cal.json | jq '. | length' | tr -d '\n'
-    echo calibration records.
+    echo " calibration records."
 }
 
 function add_raw_sgvs {
-    oref0 raw cgm/g4-glucose.json cgm/cal.json 160 | jq > cgm/cgm-glucose.json
+    oref0 raw cgm/g4-glucose.json cgm/cal.json 160 | jq . > cgm/cgm-glucose.json
     touch_glucose
     ls -la cgm/cgm-glucose.json cgm/glucose.json
     cp -pu cgm/cgm-glucose.json cgm/glucose.json
