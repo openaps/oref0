@@ -589,7 +589,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     cat preferences.json
 
-    # fix log rotate file for anyone who didn't use bootstrap
+    # fix log rotate file
+    sed -i "s/weekly/hourly/g" /etc/logrotate.conf
     sed -i "s/daily/hourly/g" /etc/logrotate.conf
     sed -i "s/#compress/compress/g" /etc/logrotate.conf
 
