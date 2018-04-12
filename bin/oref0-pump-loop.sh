@@ -421,12 +421,48 @@ function mdt_get_bg {
 }
 # make sure we can talk to the pump and get a valid model number
 function preflight {
+    # More efficient preflight function.
+    # Checks for invalid/nonexistent model.json & attempts to correct.
+    # Only refreshes model.json on 2hr intervals, reducing the number of openaps calls. 
+    # Returns different errors for '512 pump' vs 'invalid model file', etc
+    # Less use of egrep & shell-outs vs shell-internals. 
+    PF_FAILED=0
     echo -n "Preflight "
-    # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
-    ( timerun openaps report invoke settings/model.json || timerun openaps report invoke settings/model.json ) 2>&3 >&4 | tail -1 \
-    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && die "error: x12 pumps do support SMB safety checks: quitting to restart with basal-only pump-loop") ) \
-    && echo -n "OK. " \
-    || ( echo -n "fail. "; false )
+    if [ -f "settings/model.json" ] && [ "$(cat settings/model.json | wc -c)" != "5" ]
+    then
+            echo
+            echo "Removing invalid model.json file. "
+            rm -f settings/model.json
+    fi
+    if [ ! -f "settings/model.json" ] || [ "$(find settings/model.json -mmin +120)" != "" ]
+    then
+            echo -n " Refreshing model.json. "
+            #remove timeruns for debugging
+            ( openaps report invoke settings/model.json || openaps report invoke settings/model.json ) || ( echo Failed to refresh pump model.; PF_FAILED=1 )
+    fi
+    if [ "$PF_FAILED" == "0" ]
+    then
+            PUMP_MODEL=$(cat settings/model.json)
+            if [[ $PUMP_MODEL =~ [57](15|22|23|54) ]]
+            then
+                    # Preflight OK
+                    echo -n "OK. "
+            elif [[ $PUMP_MODEL =~ [57]12 ]]
+            then
+                    PF_FAILED=1
+                    die "error: x12 pumps do not support SMB Safety Checks - quitting to restart with basal-only pump-loop"
+            else
+                    echo
+                    echo "BREAK: Unsupported Pump detected: $PUMP_MODEL"
+                    echo
+                    PF_FAILED=1
+            fi
+    fi
+    if [ "$PF_FAILED" == "1" ]
+    then
+           echo -n "fail. "
+           false
+    fi
 }
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
@@ -599,6 +635,18 @@ function refresh_old_profile {
 
 # get-settings report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json
 function get_settings {
+    # Unlike other settings, model reasonably static & is refreshed regularly by preflight. We don't need to call a model report EVERY time we do get-stttings.
+    if [ -f "settings/model.json" ]
+    then
+        if [ "$(cat settings/model.json | wc -c)" != "5" ]
+        then
+                # Check for invalid settings/model.json
+                retry_fail timerun openaps report invoke settings/model.json
+        fi
+    else
+            # settings/model.json does not exist. Invoke the report
+            retry_fail timerun openaps report invoke settings/model.json
+    fi
     if grep -q 12 settings/model.json
     then
         # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
@@ -608,7 +656,7 @@ function get_settings {
         # On all other supported pumps, these reports work. 
         NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
     fi
-    retry_return timerun openaps report invoke settings/model.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
+    retry_return timerun openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
     # generate settings/pumpprofile.json without autotune
     timerun oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     if ls settings/pumpprofile.json.new >&4 && cat settings/pumpprofile.json.new | jq -e .current_basal >&4; then
