@@ -26,6 +26,7 @@ DIR=""
 directory=""
 EXTRAS=""
 radio_locale="US"
+buildgofromsource=false
 
 #this makes the confirmation echo text a color when you use echocolor instead of echo
 function echocolor() { # $1 = string
@@ -233,7 +234,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         fi
     fi
     read -p "Would you like to [D]ownload precompiled Go pump communication library or build them from [S]ource? [D]/S " -r
-    buildgofromsource=false
     if [[ $REPLY =~ ^[Ss]$ ]]; then
       buildgofromsource=true
       echo "Building Go pump binaries from source"
@@ -1060,7 +1060,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo Go already installed
         else
             echo "Installing Golang..."
-            if uname -m | grep armv6l; then
+            if uname -m | grep armv; then
                 cd /tmp && wget -c https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
             elif uname -m | grep i686; then
                 cd /tmp && wget -c https://dl.google.com/go/go1.9.3.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.3.linux-386.tar.gz
@@ -1083,6 +1083,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     mkdir -p $HOME/go
     source $HOME/.bash_profile
+    
+    #Store radio_locale for later use
+    grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
+    #Necessary to "bootstrap" Go commands...
+    if [[ $radio_locale =~ ^WW$ ]]; then
+      echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+    else
+      echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+    fi
+    
     if [[ "$ttyport" =~ "spidev" ]]; then
         if $buildgofromsource; then
           #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
@@ -1095,18 +1105,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
           cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
-          #Store radio_locale for later use
-          grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
-          #Necessary to "bootstrap" Go commands...
-          if [[ $radio_locale =~ ^WW$ ]]; then
-            echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
-          else
-            echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
-          fi
         else
-          arch=arm
+          arch=arm-spi
           if egrep -i "edison" /etc/passwd 2>/dev/null; then
-            arch=386
+            arch=386-spi
           fi
           mkdir -p $HOME/go/bin && \
           downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/latest | \
