@@ -29,38 +29,6 @@ else
   exec 4>/dev/null
 fi
 
-# old pump-loop
-old_main() {
-    prep
-    if ! overtemp; then
-        until( \
-            echo && echo Starting basal-only pump-loop at $(date): \
-            && wait_for_bg \
-            && wait_for_silence \
-            && if_mdt_get_bg \
-            && refresh_old_pumphistory_enact \
-            && refresh_old_profile \
-            && touch /tmp/pump_loop_enacted -r monitor/glucose.json \
-            && ( refresh_temp_and_enact || ( smb_verify_status && refresh_temp_and_enact ) ) \
-            && refresh_pumphistory_and_enact \
-            && refresh_profile \
-            && pumphistory_daily_refresh \
-            && touch /tmp/pump_loop_success \
-            && echo Completed basal-only pump-loop at $(date) \
-            && touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted \
-            && echo); do
-                # checking to see if the log reports out that it is on % basal type, which blocks remote temps being set
-                if grep -q "percent" monitor/temp_basal.json; then
-                    echo "Pssst! Your pump is set to % basal type. The pump won’t accept temporary basal rates in this mode. Change it to absolute u/hr, and temporary basal rates will then be able to be set."
-                fi
-                # On a random subset of failures, mmtune
-                echo Error, retrying \
-                && maybe_mmtune
-                sleep 5
-        done
-    fi
-}
-
 # main pump-loop
 main() {
     prep
@@ -240,7 +208,11 @@ function smb_suggest {
 }
 
 function determine_basal {
-    oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
+    if ( grep -q 12 settings/model.json ); then
+      timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
+    else
+      timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
+    fi
 }
 
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails or a 0 duration temp is requested)
@@ -337,6 +309,10 @@ function smb_verify_status {
         unsuspend_if_no_temp
         refresh_pumphistory_and_meal
         false
+    fi \
+    && if grep -q 12 monitor/status.json; then
+	echo -n "x12 model detected."
+        true
     fi
 }
 
@@ -500,21 +476,21 @@ function preflight {
     echo -n "Preflight "
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( check_model || check_model ) 2>&3 >&4 \
-    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep 12 settings/model.json && die "error: x12 pumps do support SMB safety checks: quitting to restart with basal-only pump-loop") ) \
+    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo -n "(x12 models do not support SMB safety checks, SMB will not be available.) ") ) \
     && echo -n "OK. " \
     || ( echo -n "fail. "; false )
 }
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
-#    # TODO: remove reset_spi_serial.py once oref0_init_pump_comms.py is fixed to do it correctly
-#    if [[ $port == "/dev/spidev5.1" ]]; then
-#        reset_spi_serial.py 2>&3
-#    fi
-    #Line below is not necessary for Go-based comms
-    #oref0_init_pump_comms.py
+    if grep "carelink" pump.ini 2>&1 >/dev/null; then
+	echo "using carelink; skipping mmtune"
+        return
+    fi
+
     echo -n "Listening for $upto45s s silence before mmtuning: "
     wait_for_silence $upto45s
+
     echo {} > monitor/mmtune.json
     echo -n "mmtune: " && mmtune_Go >&3 2>&3
     #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
@@ -564,6 +540,10 @@ function maybe_mmtune {
 
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
+    if grep "carelink" pump.ini 2>&1 >/dev/null; then
+	echo "using carelink; not waiting for silence"
+        return
+    fi
     if [ -z $1 ]; then
         waitfor=$upto45s
     else
@@ -596,7 +576,7 @@ function refresh_pumphistory_and_meal {
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-         || { echo; cat monitor/status.json | jq -c -C .; return 1; }
+         || { echo; cat monitor/status.json | jq -c -C .; echo -n "x12 model detected. Ref"; }
     retry_return monitor_pump || return 1
     echo -n "meal.json "
     retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
@@ -637,13 +617,6 @@ function enact {
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>&3
     echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
-}
-
-# used by old pump-loop only
-# refresh pumphistory if it's more than 15m old and enact
-function refresh_old_pumphistory_enact {
-    find monitor/ -mmin -15 -size +100c | grep -q pumphistory-zoned \
-    || ( echo -n "Old pumphistory: " && refresh_pumphistory_and_meal && enact )
 }
 
 # refresh pumphistory_24h if it's more than 5m old
@@ -949,8 +922,4 @@ die() {
     exit 1
 }
 
-if grep 12 settings/model.json; then
-    old_main "$@"
-else
-    main "$@"
-fi
+main "$@"
