@@ -32,7 +32,8 @@ main() {
 }
 
 function pushover_snooze {
-    if snooze=$(curl -s http://diyps.net:2929/api/v1/devicestatus.json?count=100 | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | tr -d '"'); then
+    URL=$NIGHTSCOUT_HOST/api/v1/devicestatus.json?count=100
+    if snooze=$(curl -s $URL | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | tr -d '"'); then
         #echo $snooze
         #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) monitor/pushover-sent
