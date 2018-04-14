@@ -616,11 +616,9 @@ describe('IOB', function() {
         }];
 
         var startingPoint = moment('2016-06-13 00:30:00.000');
-        var timestampEarly = moment('2016-06-13 00:30:00.000').subtract(30, 'minutes');
-        var timestampEarly2 = moment('2016-06-13 00:30:00.000').subtract(29, 'minutes');
-        var timestampEarly3 = moment('2016-06-13 00:30:00.000').subtract(28, 'minutes');
-
         var timestamp = startingPoint;
+        var timestampEarly = startingPoint.clone().subtract(30, 'minutes');
+
         var inputs = {
             clock: timestamp,
             history: [{
@@ -643,9 +641,10 @@ describe('IOB', function() {
             }
         };
 
-        var hourLaterInputs = inputs;
-        hourLaterInputs.clock = moment('2016-06-13 00:30:00.000');
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = require('../lib/iob')(inputs)[0];
+
+        var timestampEarly2 = startingPoint.clone().subtract(29, 'minutes');
+        var timestampEarly3 = startingPoint.clone().subtract(28, 'minutes');
 
         var inputs = {
             clock: timestamp,
@@ -679,16 +678,6 @@ describe('IOB', function() {
                 rate: 2,
                 date: timestampEarly3.unix(),
                 timestamp: timestampEarly3.format()
-            }, {
-                _type: 'TempBasal',
-                rate: 2,
-                date: timestamp.unix(),
-                timestamp: timestamp.format()
-            }, {
-                _type: 'TempBasalDuration',
-                'duration (min)': 30,
-                date: timestamp.unix(),
-                timestamp: timestamp.format()
             }],
             profile: {
                 dia: 3,
@@ -699,11 +688,9 @@ describe('IOB', function() {
             }
         };
 
-        var hourLaterInputs = inputs;
-        hourLaterInputs.clock = moment('2016-06-13 00:30:00.000');
-        var hourLaterWithOverlap = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLaterWithOverlap = require('../lib/iob')(inputs)[0];
 
-        hourLater.iob.should.be.greaterThan(hourLaterWithOverlap.iob);
+        hourLater.iob.should.be.greaterThan(hourLaterWithOverlap.iob - 0.05);
         hourLater.iob.should.be.lessThan(hourLaterWithOverlap.iob + 0.05);
     });
 
