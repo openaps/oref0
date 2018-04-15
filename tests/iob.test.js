@@ -607,9 +607,6 @@ describe('IOB', function() {
 
     it('should calculate IOB with Temp Basals that overlap each other', function() {
 
-        var nowDate = new Date();
-        var now = Date.now();
-
         var basalprofile = [{
             'i': 0,
             'start': '00:00:00',
@@ -618,11 +615,36 @@ describe('IOB', function() {
         }];
 
         var startingPoint = moment('2016-06-13 00:30:00.000');
-        var timestampEarly = moment('2016-06-13 00:30:00.000').subtract(30, 'minutes');
-        var timestampEarly2 = moment('2016-06-13 00:30:00.000').subtract(29, 'minutes');
-        var timestampEarly3 = moment('2016-06-13 00:30:00.000').subtract(28, 'minutes');
-
         var timestamp = startingPoint;
+        var timestampEarly = startingPoint.clone().subtract(30, 'minutes');
+
+        var inputs = {
+            clock: timestamp,
+            history: [{
+                _type: 'TempBasalDuration',
+                'duration (min)': 30,
+                date: timestampEarly.unix(),
+                timestamp: timestampEarly.format()
+            }, {
+                _type: 'TempBasal',
+                rate: 2,
+                date: timestampEarly.unix(),
+                timestamp: timestampEarly.format()
+            }],
+            profile: {
+                dia: 3,
+                current_basal: 0.1,
+                max_daily_basal: 1,
+                //bolussnooze_dia_divisor: 2,
+                basalprofile: basalprofile
+            }
+        };
+
+        var hourLater = require('../lib/iob')(inputs)[0];
+
+        var timestampEarly2 = startingPoint.clone().subtract(29, 'minutes');
+        var timestampEarly3 = startingPoint.clone().subtract(28, 'minutes');
+
         var inputs = {
             clock: timestamp,
             history: [{
@@ -655,16 +677,6 @@ describe('IOB', function() {
                 rate: 2,
                 date: timestampEarly3.unix(),
                 timestamp: timestampEarly3.format()
-            }, {
-                _type: 'TempBasal',
-                rate: 2,
-                date: timestamp.unix(),
-                timestamp: timestamp.format()
-            }, {
-                _type: 'TempBasalDuration',
-                'duration (min)': 30,
-                date: timestamp.unix(),
-                timestamp: timestamp.format()
             }],
             profile: {
                 dia: 3,
@@ -675,18 +687,13 @@ describe('IOB', function() {
             }
         };
 
-        var hourLaterInputs = inputs;
-        hourLaterInputs.clock = moment('2016-06-13 00:30:00.000'); //new Date(now + (30 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLaterWithOverlap = require('../lib/iob')(inputs)[0];
 
-        hourLater.iob.should.be.lessThan(0.5);
-        hourLater.iob.should.be.greaterThan(0.45);
+        hourLater.iob.should.be.greaterThan(hourLaterWithOverlap.iob - 0.05);
+        hourLater.iob.should.be.lessThan(hourLaterWithOverlap.iob + 0.05);
     });
 
     it('should calculate IOB with Temp Basals that overlap midnight and a basal profile, part deux', function() {
-
-        var nowDate = new Date();
-        var now = Date.now();
 
         var basalprofile = [{
                 'i': 0,
@@ -740,7 +747,7 @@ describe('IOB', function() {
             };
 
         var hourLaterInputs = inputs;
-        hourLaterInputs.clock = moment('2016-06-14 00:45:00.000'); //new Date(now + (30 * 60 * 1000)).toISOString();
+        hourLaterInputs.clock = moment('2016-06-14 00:45:00.000');
         var hourLater = require('../lib/iob')(hourLaterInputs)[0];
 
         hourLater.iob.should.be.lessThan(1);
@@ -889,7 +896,7 @@ describe('IOB', function() {
                     timestamp: timestamp60mAgo
                 }],
                 profile: {
-                    dia: 3,
+                    dia: 5,
                     current_basal: 1,
                     suspend_zeros_iob: true,
                     max_daily_basal: 1,
@@ -924,7 +931,7 @@ describe('IOB', function() {
                     timestamp: timestamp30mAgo
                 }],
                 profile: {
-                    dia: 3,
+                    dia: 5,
                     current_basal: 1,
                     suspend_zeros_iob: true,
                     max_daily_basal: 1,
@@ -1600,6 +1607,5 @@ describe('IOB', function() {
         var after4h = require('../lib/iob')(after4hInputs)[0];
         after4h.iob.should.equal(0);
     });
-
 
 });
