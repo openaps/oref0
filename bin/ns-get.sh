@@ -34,7 +34,7 @@ if [[ "${API_SECRET}" =~ "token=" ]]; then
   fi
 else
   REPORT_ENDPOINT=$NIGHTSCOUT_HOST/api/v1/${REPORT}'?'${QUERY}
-  #CURL_AUTH='-H "api-secret: ${API_SECRET}"'
+  CURL_AUTH='-H api-secret:'${API_SECRET}
 fi
 
 case $1 in
@@ -72,5 +72,3 @@ case $1 in
     curl -m 30 ${CURL_AUTH} ${CURL_FLAGS} $REPORT_ENDPOINT | $NIGHTSCOUT_FORMAT
     ;;
 esac
-
-
