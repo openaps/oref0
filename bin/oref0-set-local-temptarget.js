@@ -21,9 +21,9 @@ function usage ( ) {
 }
 
 if (!module.parent) {
-    var target = process.argv.slice(2, 3).pop();
-    var duration = process.argv.slice(3, 4).pop();
-    var start = process.argv.slice(4, 5).pop();
+    var target = process.argv[2];
+    var duration = process.argv[3];
+    var start = process.argv[4];
 
     if ([null, '--help', '-h', 'help'].indexOf(target) > 0) {
         usage( );

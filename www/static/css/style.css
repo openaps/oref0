@@ -1,0 +1,30 @@
+body {
+    background: white;
+    color: black;
+}
+.row{margin: 10px}
+.bg{font-size:40px;font-weight:bold}
+.delta,.timeago-bg{font-size:14px;}
+
+.topbox{
+	font-size:20px;
+	background-color:#cccccc;
+	border-radius:8px;
+	margin: 13px 0 10px;
+}
+
+.box2{
+	background-color:#cccccc;
+	border-radius:8px;
+	margin:0px 10px;
+}
+
+.delta-box{
+	padding:30px 0 0 0;
+}
+
+@media (max-device-width:768px) {
+    .delta-box{
+        padding:0;
+    }
+}

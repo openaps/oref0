@@ -204,7 +204,7 @@ ns)
         | openaps use $ZONE  \
           rezone --astimezone --date dateString - \
         | openaps use $ZONE  \
-          lsgaps --minutes 5 --after now  --date dateString -
+          lsgaps --minutes 6 --after now  --date dateString -
 
 
     ;;
