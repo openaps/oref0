@@ -21,7 +21,7 @@ describe('Profile', function ( ) {
         ]
         , isf: {
             sensitivities: [
-                { offset: 0, i: 0, x: 0, start: '00:00:00', sensitivity: 100 }
+                { offset: 0, sensitivity: 100 }
             ]
         }
         , carbratio: {
