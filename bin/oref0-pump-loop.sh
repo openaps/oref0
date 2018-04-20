@@ -92,13 +92,6 @@ function update_display {
     fi
 }
 
-function timerun {
-    echo "$(date): running $@" >> /tmp/timefile.txt
-    { time $@ 2> /tmp/stderr ; } 2>> /tmp/timefile.txt
-    echo "$(date): completed $@" >> /tmp/timefile.txt
-    cat /tmp/stderr 1>&3
-}
-
 function fail {
     echo -n "oref0-pump-loop failed. "
     if find enact/ -mmin -5 | grep smb-suggested.json >&4 && grep "too old" enact/smb-suggested.json >&4; then
@@ -209,9 +202,9 @@ function smb_suggest {
 
 function determine_basal {
     if ( grep -q 12 settings/model.json ); then
-      timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
+      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
-      timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
+      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
     fi
 }
 
