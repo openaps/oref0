@@ -1,5 +1,11 @@
 #!/bin/bash
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+usage "$@" <<EOT
+Usage: $self <TOKEN> <USER> [enact/suggested.json] [none] [15] [carbs|insulin]
+EOT
+
 TOKEN=$1
 USER=$2
 FILE=${3-enact/suggested.json}
@@ -15,8 +21,8 @@ PREF_FILE=preferences.json
 #echo "Running: $0 $TOKEN $USER $FILE $SOUND $SNOOZE"
 
 if [ -z $TOKEN ] || [ -z $USER ]; then
-    echo "Usage: $0 <TOKEN> <USER> [enact/suggested.json] [none] [15] [carbs|insulin]"
-    exit
+    print_usage
+    exit 1
 fi
 
 PREF_VALUE=$(cat $PREF_FILE | jq --raw-output -r .pushover_sound 2>/dev/null)

@@ -1,4 +1,7 @@
 #!/bin/bash
+
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 main() {
     echo
     echo Starting oref0-autosens-loop at $(date):
@@ -13,17 +16,14 @@ main() {
     echo Completed oref0-autons-loop at $(date)
 }
 
-function overtemp {
-    # check for CPU temperature above 85°C
-    sensors -u 2>/dev/null | awk '$NF > 85' | grep input \
-    && echo Edison is too hot: waiting for it to cool down at $(date)\
-    && echo Please ensure rig is properly ventilated
-}
+usage "$@" <<EOT
+Usage: $self
+Autosens loop. Checks (once) how long it's been since autosens has run, checks
+for various trouble conditions (high load, high CPU temperature), and if it's
+been 30 minutes since autosens has run and everything is okay, runs
+oref0-detect-sensitivity. Working directory should be myopenaps.
+EOT
 
-function highload {
-    # check whether system load average is high
-    uptime | awk '$NF > 2' | grep load
-}
 
 function completed_recently {
     find /tmp/ -mmin -30 | egrep -q "autosens-completed"
@@ -47,11 +47,6 @@ function autosens {
         echo -n "No need to refresh autosens yet: "
     fi
     cat settings/autosens.json | jq . -C -c
-}
-
-die() {
-    echo "$@"
-    exit 1
 }
 
 main "$@"
