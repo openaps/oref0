@@ -1,14 +1,12 @@
 #!/bin/bash
 
-self=$(basename $0)
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
-function usage ( ) {
-cat <<EOF
+usage "$@" <<EOF
 Usage: $self --find <NIGHTSCOUT_HOST> - No-op version, find out what delete would do.
 $self --list <NIGHTSCOUT_HOST> - list duplicate count per created_at
 $self delete <NIGHTSCOUT_HOST> - Delete duplicate entries from ${NIGHTSCOUT_HOST-<NIGHTSCOUT_HOST>}
 EOF
-}
 
 function fetch ( ) {
   curl --compressed -s -g $ENDPOINT.json
@@ -38,7 +36,7 @@ curl -X DELETE -H "API-SECRET: $API_SECRET" ${ENDPOINT}/$tid
 
 function list ( ) {
 NIGHTSCOUT_HOST=$1
-  test -z "$NIGHTSCOUT_HOST" && echo NIGHTSCOUT_HOST undefined. && usage && exit 1
+  test -z "$NIGHTSCOUT_HOST" && echo NIGHTSCOUT_HOST undefined. && print_usage && exit 1
 ENDPOINT=${NIGHTSCOUT_HOST}/api/v1/treatments
 
 export NIGHTSCOUT_HOST ENDPOINT
@@ -58,7 +56,7 @@ ENDPOINT=${NIGHTSCOUT_HOST}/api/v1/treatments
 if [[ -z "$NIGHTSCOUT_HOST" || -z "$NIGHTSCOUT_HOST" ]] ; then
   test -z "$NIGHTSCOUT_HOST" && echo NIGHTSCOUT_HOST undefined.
   test -z "$API_SECRET" && echo API_SECRET undefined.
-  usage
+  print_usage
   exit 1;
 fi
 
@@ -88,7 +86,7 @@ case "$1" in
     main $2 delete_cmd
     ;;
   *|help|--help|-h)
-    usage
+    print_usage
     exit 1;
     ;;
 esac

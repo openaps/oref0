@@ -41,6 +41,7 @@
     "oref0-autotune-export-to-xlsx": "./bin/oref0-autotune-export-to-xlsx.py",
     "oref0-autotune-prep": "./bin/oref0-autotune-prep.js",
     "oref0-autotune-recommends-report": "./bin/oref0-autotune-recommends-report.sh",
+    "oref0-bash-common-functions.sh": "./bin/oref0-bash-common-functions.sh",
     "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
     "oref0-copy-fresher": "./bin/oref0-copy-fresher",

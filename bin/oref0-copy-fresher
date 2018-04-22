@@ -1,21 +1,18 @@
 #!/bin/bash
-self=$(basename $0)
+
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 WITHIN=0
 
-function usage ( ) {
-cat <<EOF
-$self [--since <seconds|0>] <file> [<file>...]
+usage "$@" <<EOF
+Usage: $self [--since <seconds|0>] <file> [<file>...]
 cat files mentioned.
 If --since seconds is specified, the file will only be cat'd if the files last
 modification occurred within <seconds>.
 Default <seconds> is 0, it will cat all files.
 EOF
-}
+
 case $1 in
-  --help|-h|help)
-    usage
-    exit 0
-    ;;
   --since)
     shift
     WITHIN=$1

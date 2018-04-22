@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 # OREF0_DEBUG makes this script much more verbose
 # and allows it to print additional debug information.
 # OREF0_DEBUG=1 generally means to print everything that usually
@@ -28,6 +30,12 @@ if [[ "$OREF0_DEBUG" -ge 2 ]] ; then
 else
   exec 4>/dev/null
 fi
+
+usage "$@" <<EOT
+Usage: $self
+The main pump loop. Syncs with an insulin pump, enacts temporary basals and
+SMB boluses. Normally runs from crontab.
+EOT
 
 # main pump-loop
 main() {
@@ -193,22 +201,6 @@ function check_duty_cycle {
     fi
 }
 
-
-function overtemp {
-    # check for CPU temperature above 85°C
-    # special temperature check for raspberry pi
-    if getent passwd pi > /dev/null; then
-        TEMPERATURE=`cat /sys/class/thermal/thermal_zone0/temp`
-        TEMPERATURE=`echo -n ${TEMPERATURE:0:2}; echo -n .; echo -n ${TEMPERATURE:2}`
-        echo $TEMPERATURE | awk '$NF > 70' | grep input \
-        && echo Rig is too hot: not running pump-loop at $(date)\
-        && echo Please ensure rig is properly ventilated
-    else
-        sensors -u 2>&3 | awk '$NF > 85' | grep input \
-        && echo Rig is too hot: not running pump-loop at $(date)\
-        && echo Please ensure rig is properly ventilated
-    fi
-}
 
 function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
@@ -1006,10 +998,6 @@ try_fail() {
 }
 try_return() {
     "$@" || { echo "Couldn't $*" - continuing; return 1; }
-}
-die() {
-    echo "$@"
-    exit 1
 }
 
 main "$@"

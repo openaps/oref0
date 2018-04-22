@@ -1,4 +1,7 @@
 #!/bin/bash
+
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 # echo Starting ns-loop at $(date): && openaps get-ns-bg; sensors -u 2>/dev/null | awk '$NF > 85' | grep input || ( openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps upload )
 # echo Starting ns-loop at $(date): && openaps get-ns-bg; openaps ns-temptargets && echo -n Refreshed temptargets && openaps ns-meal-carbs && echo \\\" and meal-carbs\\\" && openaps battery-status; cat monitor/edison-battery.json; echo; openaps upload
 
@@ -31,6 +34,11 @@ main() {
     echo Completed oref0-ns-loop at $(date)
 }
 
+usage "$@" <<EOT
+Usage: $self
+Sync data with Nightscout. Typically runs from crontabb.
+EOT
+
 function pushover_snooze {
     URL=$NIGHTSCOUT_HOST/api/v1/devicestatus.json?count=100
     if snooze=$(curl -s $URL | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | tr -d '"'); then
@@ -39,18 +47,6 @@ function pushover_snooze {
         touch -d $(date -Is -d @$snooze) monitor/pushover-sent
         ls -la monitor/pushover-sent
     fi
-}
-
-function overtemp {
-    # check for CPU temperature above 85°C
-    sensors -u 2>/dev/null | awk '$NF > 85' | grep input \
-    && echo Edison is too hot: waiting for it to cool down at $(date)\
-    && echo Please ensure rig is properly ventilated
-}
-
-function highload {
-    # check whether system load average is high
-    uptime | tr -d ',' | awk "\$(NF-2) > 4" | grep load
 }
 
 
@@ -227,10 +223,5 @@ function mdt_upload_bg {
 
 
 
-
-die() {
-    echo "$@"
-    exit 1
-}
 
 main "$@"
