@@ -616,6 +616,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
 
     test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
+    
+    if [[ -f /etc/cron.daily/logrotate ]]; then
+        mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
+    fi
 
     #TODO: remove this when IPv6 works reliably
     echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
