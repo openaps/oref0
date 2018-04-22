@@ -74,3 +74,25 @@ assert_pwd_is_myopenaps () {
     fi
 }
 
+
+# Returns success (0) if running on an Intel Edison, fail (1) otherwise. Uses
+# the existence of an "edison" account in /etc/passwd to determine that.
+is_edison () {
+    #if egrep -i "edison" /etc/passwd 2>/dev/null; then
+    if getent passwd edison &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Returns success (0) if running on a Raspberry Pi, fail (1) otherwise. Uses
+# the existence of a "pi" account in /etc/passwd to determine that.
+is_pi () {
+    if getent passwd pi &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+

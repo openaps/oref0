@@ -228,7 +228,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
                 ttyport=/dev/spidev0.0
             fi
         else
-            if  getent passwd edison &> /dev/null; then
+            if is_edison; then
                 echocolor "Yay! Configuring for Edison with Explorer Board. "
                 ttyport=/dev/spidev5.1
             else
@@ -676,9 +676,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
         # use packaged bluez with Rapsbian
-# TODO: uncomment or remove this
-# try packaged bluez with Edison too
-        #if getent passwd pi > /dev/null; then
+        # TODO: uncomment or remove this
+        # try packaged bluez with Edison too
+        #if is_pi; then
             bluetoothdminversion=5.43
         #else
             #bluetoothdminversion=5.48
@@ -949,7 +949,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo sysctl -p
 
     # Install EdisonVoltage
-    if egrep -i "edison" /etc/passwd &>/dev/null; then
+    if is_edison; then
         echo "Checking if EdisonVoltage is already installed"
         if [ -d "$HOME/src/EdisonVoltage/" ]; then
             echo "EdisonVoltage already installed"
@@ -986,7 +986,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
     openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
 
-    if egrep -qi "edison" /etc/passwd &>/dev/null; then
+    if is_edison; then
         sudo apt-get -y -t jessie-backports install jq
     else
         sudo apt-get -y install jq
@@ -1127,7 +1127,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
         else
           arch=arm-spi
-          if egrep -i "edison" /etc/passwd &>/dev/null; then
+          if is_edison; then
             arch=386-spi
           fi
           mkdir -p $HOME/go/bin && \
@@ -1145,7 +1145,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [ ! -d $HOME/go/bin ]; then mkdir -p $HOME/go/bin; fi
         echo "Installing or Compiling Go dexcom binaries ..."
         if $buildgofromsource; then
-            if egrep -i "edison" /etc/passwd &>/dev/null; then
+            if is_edison; then
                 go get -u -v -tags nofilter github.com/ecc1/dexcom/...
             else
                 go get -u -v github.com/ecc1/dexcom/...
@@ -1233,7 +1233,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep bash | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
         fi
         # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
-        if egrep -i "edison" /etc/passwd &>/dev/null; then
+        if is_edison; then
            (crontab -l; crontab -l | grep -q "cd $directory && sudo ~/src/EdisonVoltage/voltage" || echo "*/15 * * * * cd $directory && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | jq .batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
