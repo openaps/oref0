@@ -11,7 +11,7 @@ sudo apt-get -o Acquire::ForceIPv4=true update && sudo apt-get -o Acquire::Force
 sudo apt-get -o Acquire::ForceIPv4=true install -y git python python-dev software-properties-common python-numpy python-pip nodejs-legacy watchdog strace tcpdump screen acpid vim locate jq lm-sensors || die "Couldn't install packages"
 if ! sudo apt-get -o Acquire::ForceIPv4=true install -y install npm; then
     sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
-    sudo -o Acquire::ForceIPv4=true install -y apt-get install nodejs || die "Couldn't install nodejs"
+    sudo apt-get -o Acquire::ForceIPv4=true install -y nodejs || die "Couldn't install nodejs"
 fi
 sudo pip install -U openaps || die "Couldn't install openaps toolkit"
 sudo pip install -U openaps-contrib || die "Couldn't install openaps-contrib"
