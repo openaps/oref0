@@ -739,7 +739,7 @@ function refresh_profile {
 
 function onbattery {
     # check whether battery level is < 98%
-    if getent passwd edison > /dev/null; then
+    if is_edison; then
         jq --exit-status ".battery < 98 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
     else
         jq --exit-status ".battery < 98" monitor/edison-battery.json >&4
