@@ -1111,7 +1111,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
-          cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          cp -s $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
         else
           arch=arm-spi
           if egrep -i "edison" /etc/passwd 2>/dev/null; then
@@ -1123,7 +1123,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           echo "Downloading Go pump binaries from:" $downloadUrl
           wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
           echo "Installing Go pump binaries ..."
-          cp $HOME/go/bin/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          cp -s $HOME/go/bin/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         fi
