@@ -619,6 +619,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
 
     test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
+    
+    if [[ -f /etc/cron.daily/logrotate ]]; then
+        mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
+    fi
 
     #TODO: remove this when IPv6 works reliably
     echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
@@ -1101,7 +1105,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
-          cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
         else
           arch=arm-spi
           if egrep -i "edison" /etc/passwd 2>/dev/null; then
@@ -1113,7 +1117,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           echo "Downloading Go pump binaries from:" $downloadUrl
           wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
           echo "Installing Go pump binaries ..."
-          cp $HOME/go/bin/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          ln -sf $HOME/go/bin/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         fi
