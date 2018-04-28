@@ -28,7 +28,7 @@ CGM=${4-cgm}
 
 usage "$@" <<EOF
 Usage: $self
-Set pump and CGM clocks based on NTP time if avaialble.
+Set pump and CGM clocks based on NTP time if available.
 EOF
 
 
