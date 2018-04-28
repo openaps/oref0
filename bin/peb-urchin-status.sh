@@ -4,7 +4,7 @@ source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to r
 
 usage "$@" <<EOT
 Usage: $self <MAC>
-Collect status information to display on a Pebble SmarthWatch. Runs from
+Collect status information to display on a Pebble smartwatch. Runs from
 crontab, if you indicated you have a Pebble during oref0-setup.
 EOT
 
