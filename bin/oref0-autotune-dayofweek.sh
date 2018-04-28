@@ -11,7 +11,7 @@ If you have day-of-the-week autotune profiles named like
 today is to myopenaps/autotune/profile.json and reruns autotune. Day 0 is
 Sunday, day 1 is Monday, etc.
 
-This script is not used up by a default install.
+This script is not used by a default install.
 EOF
 
 [ -z "$OPENAPS_DIR" ] && OPENAPS_DIR="$1"
