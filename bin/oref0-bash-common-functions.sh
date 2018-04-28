@@ -15,11 +15,11 @@ function overtemp {
         TEMPERATURE=`cat /sys/class/thermal/thermal_zone0/temp`
         TEMPERATURE=`echo -n ${TEMPERATURE:0:2}; echo -n .; echo -n ${TEMPERATURE:2}`
         echo $TEMPERATURE | awk '$NF > 70' | grep input \
-        && echo Rig is too hot: not running pump-loop at $(date)\
+        && echo Rig is too hot: waiting for it to cool down at $(date)\
         && echo Please ensure rig is properly ventilated
     else
         sensors -u 2>/dev/null | awk '$NF > 85' | grep input \
-        && echo Edison is too hot: waiting for it to cool down at $(date)\
+        && echo Rig is too hot: waiting for it to cool down at $(date)\
         && echo Please ensure rig is properly ventilated
     fi
 }
