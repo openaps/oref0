@@ -36,7 +36,7 @@ main() {
 
 usage "$@" <<EOT
 Usage: $self
-Sync data with Nightscout. Typically runs from crontabb.
+Sync data with Nightscout. Typically runs from crontab.
 EOT
 
 function pushover_snooze {
