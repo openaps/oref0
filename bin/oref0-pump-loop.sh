@@ -101,12 +101,12 @@ function update_display {
 
 function fail {
     echo -n "oref0-pump-loop failed. "
-    if find enact/ -mmin -5 | grep smb-suggested.json >&4 && grep "too old" enact/smb-suggested.json >&4; then
+    if file_is_recent enact/smb-suggested.json && grep "too old" enact/smb-suggested.json >&4; then
         touch /tmp/pump_loop_completed
         wait_for_bg
         echo "Unsuccessful oref0-pump-loop (BG too old) at $(date)"
     # don't treat suspended pump as a complete failure
-    elif find monitor/ -mmin -5 | grep status.json >&4 && grep -q '"suspended": true' monitor/status.json; then
+    elif file_is_recent monitor/status.json && grep -q '"suspended": true' monitor/status.json; then
         refresh_profile 15; pumphistory_daily_refresh
         refresh_after_bolus_or_enact
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
@@ -223,7 +223,7 @@ function smb_reservoir_before {
 
 # check if the temp was read more than 5m ago, or has been running more than 10m
 function smb_old_temp {
-    (find monitor/ -mmin +5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old) \
+    (file_is_recent_and_min_size monitor/temp_basal.json && echo temp_basal.json more than 5m old) \
     || ( jq --exit-status "(.duration-1) % 30 < 20" monitor/temp_basal.json >&4 \
         && echo -n "Temp basal set more than 10m ago: " && jq .duration monitor/temp_basal.json
         )
@@ -350,7 +350,7 @@ function smb_verify_suggested {
         && (( $(bc <<< "$(to_epochtime $(jq -r .deliverAt enact/smb-suggested.json)) - $(epochtime_now)") > -60 )) \
         && (( $(bc <<< "$(to_epochtime $(jq -r .deliverAt enact/smb-suggested.json)) - $(epochtime_now)") < 60 )) \
         && echo "and that smb-suggested.json is less than 1m old" \
-        && (find enact/ -mmin -1 -size +5c | grep -q smb-suggested.json)
+        && (file_is_recent_and_min_size enact/smb-suggested.json 1)
     else
         echo No deliverAt found.
         cat enact/smb-suggested.json
@@ -382,7 +382,7 @@ function smb_bolus {
     # Verify that the suggested.json is less than 5 minutes old
     # and administer the supermicrobolus
     #mdt bolus does not work on the 723 yet. Only tested on 722 pump
-    find enact/ -mmin -5 | grep smb-suggested.json >&4 \
+    file_is_recent enact/smb-suggested.json \
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
@@ -579,7 +579,7 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    if ( find /tmp/ -mmin -15 | egrep -q "pump_loop_completed" ); then
+    if file_is_recent /tmp/pump_loop_completed 15; then
         # mmtune ~ 25% of the time
         [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
         && mmtune
@@ -700,7 +700,7 @@ function refresh_old_pumphistory {
 
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
-    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old; " \
+    file_is_recent_and_min_size settings/profile.json 60 && echo -n "Profile less than 60m old; " \
         || { echo -n "Old settings: " && get_settings; }
     if [ -s settings/profile.json ] && jq -e .current_basal settings/profile.json >&3; then
         echo -n "Profile valid. "
@@ -775,7 +775,7 @@ function refresh_temp_and_enact {
     setglucosetimestamp
     # TODO: use pump_loop_completed logic as in refresh_smb_temp_and_enact
     if ( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
-        || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
+        || (! file_is_recent_and_min_size monitor/temp_basal.json && echo "temp_basal.json more than 5m old. ")); then
             echo -n Temp refresh
             retry_fail invoke_temp_etc
             echo ed
@@ -799,7 +799,7 @@ function refresh_pumphistory_and_enact {
     setglucosetimestamp
     if ((find monitor/ -newer monitor/pumphistory-24h-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
         || (find enact/ -newer monitor/pumphistory-24h-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
-        || ((! find monitor/ -mmin -5 | grep -q pumphistory-zoned || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
+        || ((! file_is_recent monitor/pumphistory-zoned.json || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
             { echo -n ": " && refresh_pumphistory_and_meal && enact; }
     else
         echo Pumphistory less than 5m old
@@ -812,7 +812,7 @@ function refresh_profile {
     else
         profileage=$1
     fi
-    find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
+    file_is_recent_and_min_size settings/settings.json $profileage | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
     || get_settings
 }
 

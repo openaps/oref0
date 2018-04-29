@@ -53,7 +53,7 @@ function pushover_snooze {
 function get_ns_bg {
     #openaps get-ns-glucose > /dev/null
     # update 24h glucose file if it's 55m old or too small to calculate COB
-    if ! find cgm/ -mmin -54 | egrep -q cgm/ns-glucose-24h.json \
+    if ! file_is_recent cgm/ns-glucose-24h.json 54 \
         || ! grep -c glucose cgm/ns-glucose-24h.json | jq -e '. > 36' >/dev/null; then
         nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -24hours > cgm/ns-glucose-24h.json
     fi
@@ -77,13 +77,13 @@ function get_ns_bg {
 }
 
 function completed_recently {
-    find /tmp/ -mmin -5 | egrep -q "ns-loop-completed"
+    file_is_recent /tmp/ns-loop-completed
 }
 
 function glucose_fresh {
     # check whether ns-glucose.json is less than 5m old
     touch -d "$(date -R -d @$(jq .[0].date/1000 cgm/ns-glucose.json))" cgm/ns-glucose.json
-    find cgm -mmin -5 | egrep -q "ns-glucose.json"
+    file_is_recent cgm/ns-glucose.json
 }
 
 function find_valid_ns_glucose {
@@ -146,7 +146,7 @@ function upload_ns_status {
     grep -q iob monitor/iob.json || die "IOB not found"
     # set the timestamp on enact/suggested.json to match the deliverAt time
     touch -d $(cat enact/suggested.json | jq .deliverAt | sed 's/"//g') enact/suggested.json
-    if ! find enact/ -mmin -5 -size +5c | grep -q suggested.json; then
+    if ! file_is_recent_and_min_size enact/suggested.json; then
         echo -n "No recent suggested.json found; last updated "
         ls -la enact/suggested.json | awk '{print $6,$7,$8}'
         return 1

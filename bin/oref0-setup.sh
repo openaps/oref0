@@ -634,13 +634,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
 
     # update, upgrade, and autoclean apt-get
-    if find /var/lib/apt/periodic/ -mmin -3600 | grep update-stamp; then
+    if file_is_recent /var/lib/apt/periodic/update-stamp 3600; then
         echo apt-get update-stamp is recent: skipping
     else
         echo Running apt-get update
         sudo apt-get update
     fi
-    if find /var/lib/apt/periodic/ -mmin -3600 | grep upgrade-stamp; then
+    if file_is_recent /var/lib/apt/periodic/upgrade-stamp 3600; then
         echo apt-get upgrade-stamp is recent: skipping
     else
         echo Running apt-get upgrade

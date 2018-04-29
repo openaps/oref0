@@ -26,7 +26,7 @@ EOT
 
 
 function completed_recently {
-    find /tmp/ -mmin -30 | egrep -q "autosens-completed"
+    file_is_recent /tmp/autosens-completed 30
 }
 
 # find settings/ -newer settings/autosens.json | grep -q pumphistory-24h-zoned.json || find settings/ -size -5c | grep -q autosens.json || ! find settings/ | grep -q autosens || ! find settings/autosens.json

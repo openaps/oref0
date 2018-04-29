@@ -80,9 +80,9 @@ fi
 
 date
 
-if find monitor/ -mmin -$SNOOZE | grep -q pushover-sent; then
+if file_is_recent monitor/pushover-sent $SNOOZE; then
     echo "Last pushover sent less than $SNOOZE minutes ago."
-elif ! find $FILE -mmin -5 | grep -q $FILE; then
+elif ! file_is_recent "$FILE"; then
     echo "$FILE more than 5 minutes old"
     exit
 elif ! cat $FILE | egrep "add'l|maxBolus"; then
@@ -177,7 +177,7 @@ fi
 #   vital facts. It will leave a voice mail if not answered.
 
 if [[ "$MAKER_KEY" != "null" ]] && cat $FILE | egrep "add'l"; then
-  if find monitor/ -mmin -60 | grep -q ifttt-sent; then
+  if file_is_recent monitor/ifttt-sent 60; then
      echo "carbsReq=${carbsReq} but last IFTTT event sent less than 60 minutes ago."
   else
      message="Carbs required = ${carbsReq}. Glucose = $bgNow Insulin on board = $iob Carbs on board = $cob grams."
