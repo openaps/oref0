@@ -98,6 +98,28 @@ is_pi () {
     fi
 }
 
+# Usage: file_is_recent <path> <minutes>
+# Return success if the modification time of the file at the given path has a
+# modification time newer than the given number of minutes (default 5). Returns
+# failure if the file doesn't exist, or is old.
+file_is_recent () {
+    BASE_NAME="$(basename $1)"
+    find "$(dirname $1)" -mmin -"${2-5}" -name "$BASE_NAME" |grep -q "$BASE_NAME" >/dev/null 2>&1
+    return $?
+}
+
+# Usage: file_is_recent_and_min_size <path> <minutes> <bytes>
+# Return success if the modification time of the file at the given path has a
+# modification time newer than the given number of minutes (default 5) *and* is
+# at least the given number of bytes (default 5). The minimum size is chosen
+# to exclude files like "{}\n" but include just about everything else. Returns
+# failure if the file doesn't exist, is too small, or is old.
+file_is_recent_and_min_size () {
+    BASE_NAME="$(basename $1)"
+    find "$(dirname $1)" -mmin -"${2-5}" -name "$BASE_NAME" -size +${3-5}c |grep -q "$BASE_NAME" >/dev/null 2>&1
+    return $?
+}
+
 # Output the number of seconds since epoch (Jan 1 1970).
 epochtime_now () {
     date +%s

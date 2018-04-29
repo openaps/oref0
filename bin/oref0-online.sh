@@ -16,7 +16,7 @@ main() {
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
         if ! ip route | grep default | grep -q wlan0; then
-            if find /tmp/ -mmin -60 | grep bad_wifi && grep -q "$(iwgetid -r wlan0)" /tmp/bad_wifi; then
+            if file_is_recent /tmp/bad_wifi 60 && grep -q "$(iwgetid -r wlan0)" /tmp/bad_wifi; then
                 echo Not renewing wlan0 IP due to recent connectivity failure:
                 ls -la /tmp/bad_wifi
             else
@@ -153,7 +153,7 @@ function bt_disconnect {
 }
 
 function wifi_dhcp_renew {
-    if find /tmp/ -mmin -60 | grep bad_wifi && grep -q "$(iwgetid -r wlan0)" /tmp/bad_wifi; then
+    if file_is_recent /tmp/bad_wifi 60 && grep -q "$(iwgetid -r wlan0)" /tmp/bad_wifi; then
         echo Not renewing wlan0 IP due to recent connectivity failure:
         ls -la /tmp/bad_wifi
     else
