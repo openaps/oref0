@@ -103,6 +103,15 @@ epochtime_now () {
     date +%s
 }
 
+# Usage: to_epochtime <datetime>
+# Convert a string representation of a datetime to a number of seconds since
+# epoch. This is fairly resilient about argument format; it will ignore quotes
+# and newlines, and the string can be spread across multiple arguments (so
+# you don't need to quote the parameters to avoid word-splitting).
+to_epochtime () {
+    date -d "$(echo "$@" |tr -d '"\n')" +%s
+}
+
 # Filter input to output, removing any embedded newlines.
 # Example:
 #     FOO="$(some_complex_thing |nonl)"

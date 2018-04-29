@@ -211,13 +211,13 @@ function smb_reservoir_before {
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | nonl
     echo -n " is within 90s of current time: " && date
-    if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | noquotes)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | noquotes)) - $(epochtime_now)") > 55 )); then
+    if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
         oref0-set-device-clocks
         read_full_pumphistory
        fi
-    (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | noquotes)) - $(epochtime_now)") > -90 )) \
-    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | noquotes)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
+    (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
+    && (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
     find monitor/ -mmin -5 -size +5c | grep -q pumphistory || { echo "Error: pumphistory-24h >5m old (or empty)"; fail "$@"; }
 }
 
@@ -347,8 +347,8 @@ function smb_verify_suggested {
     if [ -s enact/smb-suggested.json ] && jq -e -r .deliverAt enact/smb-suggested.json; then
         echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | nonl \
         && echo -n " is within 1m of current time: " && date \
-        && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | nonl)) - $(epochtime_now)") > -60 )) \
-        && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | nonl)) - $(epochtime_now)") < 60 )) \
+        && (( $(bc <<< "$(to_epochtime $(jq -r .deliverAt enact/smb-suggested.json)) - $(epochtime_now)") > -60 )) \
+        && (( $(bc <<< "$(to_epochtime $(jq -r .deliverAt enact/smb-suggested.json)) - $(epochtime_now)") < 60 )) \
         && echo "and that smb-suggested.json is less than 1m old" \
         && (find enact/ -mmin -1 -size +5c | grep -q smb-suggested.json)
     else
@@ -479,7 +479,7 @@ function if_mdt_get_bg {
         done
         if [ -f "monitor/cgm-mm-glucosedirty.json" ]; then
             if [ -f "cgm/glucose.json" ]; then
-                if [ $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json | noquotes) +%s) == $(date -d $(jq .[0].display_time monitor/glucose.json | noquotes) +%s) ]; then
+                if [ $(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json)) == $(to_epochtime $(jq .[0].display_time monitor/glucose.json)) ]; then
                     echo MDT CGM data retrieved \
                     && echo No new MDT CGM data to reformat \
                     && echo
@@ -501,9 +501,9 @@ function if_mdt_get_bg {
 # TODO: remove if still unused at next oref0 release
 function wait_for_mdt_get_bg {
     # This might not really be needed since very seldom does a loop take less time to run than CGM Data takes to refresh.
-    until [ $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| noquotes) +%s) + 300))" +%s) -lt $(epochtime_now) ]; do
-        CGMDIFFTIME=$(( $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes) +%s) + 300))" +%s) - $(epochtime_now) ))
-        echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes) +"%r") wait untill $(date --date="@$(($(date #-d $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes) +%s) + 300))" +"%r")to continue"
+    until [ $(to_epochtime @$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json)) + 300))) -lt $(epochtime_now) ]; do
+        CGMDIFFTIME=$(( $(to_epochtime @$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes)) + 300))) - $(epochtime_now) ))
+        echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes) +"%r") wait untill $(date --date="@$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes)) + 300))" +"%r")to continue"
         echo "waiting for $CGMDIFFTIME seconds before continuing"
         sleep $CGMDIFFTIME
         until openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&3 >&4; do
@@ -917,9 +917,9 @@ function check_tempbasal() {
 # It queries 27h of data, full refresh when oldest data is greater than 33 hours old.
 function pumphistory_daily_refresh() {
     lastRecordTimestamp=$(jq -r '.[-1].timestamp' monitor/pumphistory-24h-zoned.json 2>&3)
-    dateCutoff=$(date --date="33 hours ago" +%s)
+    dateCutoff=$(to_epochtime "33 hours ago")
     echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
-    if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || "$(date -d $lastRecordTimestamp +%s)" -le $dateCutoff ]]; then
+    if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || $(to_epochtime $lastRecordTimestamp) -le $dateCutoff ]]; then
             echo -n "Pumphistory >33h long: " && read_full_pumphistory
     fi
 }

@@ -193,7 +193,7 @@ function format_latest_nightscout_treatments {
 
 function check_mdt_upload {
     if [ -f /tmp/mdt_cgm_uploaded ]; then
-        if [ $(date -d $(jq .[0].dateString nightscout/glucose.json | noquotes) +%s) -gt $(date -r /tmp/mdt_cgm_uploaded +%s) ];then
+        if [ $(to_epochtime $(jq .[0].dateString nightscout/glucose.json)) -gt $(date -r /tmp/mdt_cgm_uploaded +%s) ];then
             echo Found new MDT CGM data to upload:
             echo "BG: $(jq .[0].glucose nightscout/glucose.json)" "at $(jq .[0].dateString nightscout/glucose.json | noquotes)"
             mdt_upload_bg
