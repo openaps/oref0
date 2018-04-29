@@ -23,7 +23,7 @@ Wipe out all history, forcibly re-initialzize openaps from scratch.
 EOF
 
 test ! -d $BACKUP_AREA && BACKUP_AREA=/tmp
-BACKUP="$BACKUP_AREA/git-$(date +%s)"
+BACKUP="$BACKUP_AREA/git-$(epochtime_now)"
 
 # remove old lockfile if still present
 find .git/index.lock -mmin +60 -exec rm {} \; 2>/dev/null

@@ -98,6 +98,11 @@ is_pi () {
     fi
 }
 
+# Output the number of seconds since epoch (Jan 1 1970).
+epochtime_now () {
+    date +%s
+}
+
 # Filter input to output, removing any embedded newlines.
 # Example:
 #     FOO="$(some_complex_thing |nonl)"
