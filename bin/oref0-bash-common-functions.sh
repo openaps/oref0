@@ -64,10 +64,12 @@ print_usage () {
     echo "$HELP_TEXT"
 }
 
-# Check that the current working directory is the myopenaps directory; if it
-# isn't, print a message to stderr and exit with status 1 (failure). We assume
-# we're in the right directory if there's a file named "openaps.ini" here.
-assert_pwd_is_myopenaps () {
+# Check that the current working directory contains openaps.ini, ie, is an
+# OpenAPS session directory. This is presumably the myopenaps directory (though
+# in principle it could also be ~/myopenaps-cgm-loop or something not part of
+# the standard install). If it isn't, print a message saying it should be run
+# from ~/myopenaps to stderr and exit with status 1 (failure).
+assert_cwd_contains_ini () {
     if [[ ! -e "openaps.ini" ]]; then
         echo "$self: This script should be run from the myopenaps directory, but was run from $PWD which does not contain openaps.ini." 1>&2
         exit 1
