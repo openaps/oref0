@@ -24,7 +24,7 @@ Check if git commit history is longer than 5000 commits, and re-initialize .git 
 EOF
 
 test ! -d $BACKUP_AREA && BACKUP_AREA=/tmp
-BACKUP="$BACKUP_AREA/git-$(date +%s)"
+BACKUP="$BACKUP_AREA/git-$(epochtime_now)"
 
 # remove old lockfile if still present
 find .git/index.lock -mmin +60 -exec rm {} \; 2>/dev/null
