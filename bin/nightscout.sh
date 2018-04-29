@@ -313,7 +313,7 @@ hash-api-secret)
     echo "Usage: $self hash-api-secret 'myverylongsecret'".
     exit 1;
   fi
-  API_SECRET=$(echo -n $1 | sha1sum | cut -d ' ' -f 1 | tr -d "\n")
+  API_SECRET=$(echo -n $1 | sha1sum | cut -d ' ' -f 1 | nonl)
   echo $API_SECRET
   ;;
 autoconfigure-device-crud)

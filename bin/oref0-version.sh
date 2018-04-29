@@ -3,7 +3,7 @@ source ~/.bash_profile
 # Simple script to check current version / branch of oref0 installed and check for updates
 location=${OREF0_SRC:-${HOME}/src/oref0}
 branch=$(cd ${location} && git rev-parse --abbrev-ref HEAD)
-version=$(jq .version "${location}/package.json" | sed 's/"//g')
+version=$(jq .version "${location}/package.json" | noquotes)
 
 if [[ $1 =~ "update" ]]; then
     cd ${location} && timeout 30 git fetch 2>/dev/null || echo git fetch failed # pull latest remote info

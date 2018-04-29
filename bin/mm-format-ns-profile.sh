@@ -124,7 +124,7 @@ function fix-dates ( ) {
 }
 
 function stub ( ) {
-  zone=$(cat /etc/timezone | tr -d '\n')
+  zone=$(cat /etc/timezone | nonl)
   dt=$(date --rfc-3339=ns | tr ' ' 'T')
   DIA=$(dia $SETTINGS)
   cat <<EOF | json

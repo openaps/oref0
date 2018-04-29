@@ -88,7 +88,7 @@ function print_bluetooth_name {
 }
 
 function print_wifi_name {
-    SSID=$(iwgetid -r wlan0 | tr -d '\n')
+    SSID=$(iwgetid -r wlan0 | nonl)
     if [[ ! -z $SSID ]]; then
         echo "At $(date) my wifi network name is $SSID"
     else

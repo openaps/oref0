@@ -98,3 +98,17 @@ is_pi () {
     fi
 }
 
+# Filter input to output, removing any embedded newlines.
+# Example:
+#     FOO="$(some_complex_thing |nonl)"
+nonl () {
+    tr -d '\n'
+}
+
+# Filter input to output, removing any quotes.
+# Example:
+#     FOO="$(some_complex_thing |noquotes)"
+noquotes () {
+    tr -d '"'
+}
+

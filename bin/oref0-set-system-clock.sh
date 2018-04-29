@@ -36,6 +36,6 @@ checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1
 if ! checkNTP; then
 # set system time to pump time if pump time is newer than the system time (by printing out the current epoch, and the epoch generated from the $CLOCK file, and using the most recent)
     echo Setting system time to later of `date` or `cat $CLOCK`:
-    echo "(date +%s; date -d `( cat $CLOCK; echo ) | sed 's/\"//g'` +%s) | sort -g | tail -1 | while read line; do sudo date -s @\$line; done;"
-    (date +%s; date -d `( cat $CLOCK; echo ) | sed 's/"//g'` +%s) | sort -g | tail -1 | while read line; do sudo date -s @$line; done;
+    echo "(date +%s; date -d `( cat $CLOCK; echo ) | noquotes` +%s) | sort -g | tail -1 | while read line; do sudo date -s @\$line; done;"
+    (date +%s; date -d `( cat $CLOCK; echo ) | noquotes` +%s) | sort -g | tail -1 | while read line; do sudo date -s @$line; done;
 fi
