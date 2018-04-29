@@ -41,7 +41,7 @@ EOT
 
 function pushover_snooze {
     URL=$NIGHTSCOUT_HOST/api/v1/devicestatus.json?count=100
-    if snooze=$(curl -s $URL | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | tr -d '"'); then
+    if snooze=$(curl -s $URL | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | noquotes); then
         #echo $snooze
         #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) monitor/pushover-sent
@@ -193,9 +193,9 @@ function format_latest_nightscout_treatments {
 
 function check_mdt_upload {
     if [ -f /tmp/mdt_cgm_uploaded ]; then
-        if [ $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%s) -gt $(date -r /tmp/mdt_cgm_uploaded +%s) ];then
+        if [ $(date -d $(jq .[0].dateString nightscout/glucose.json | noquotes) +%s) -gt $(date -r /tmp/mdt_cgm_uploaded +%s) ];then
             echo Found new MDT CGM data to upload:
-            echo "BG: $(jq .[0].glucose nightscout/glucose.json)" "at $(jq .[0].dateString nightscout/glucose.json | tr -d '"')"
+            echo "BG: $(jq .[0].glucose nightscout/glucose.json)" "at $(jq .[0].dateString nightscout/glucose.json | noquotes)"
             mdt_upload_bg
         else
             echo No new MDT CGM data to upload
@@ -213,7 +213,7 @@ function mdt_upload_bg {
     if grep "dateString" nightscout/recent-missing-entries.json 2>&1 >/dev/null; then
         echo "$(jq '. | length' nightscout/recent-missing-entries.json) missing entires found, uploading"
         openaps report invoke nightscout/uploaded-entries.json 2>&1 >/dev/null
-        touch -t $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%Y%m%d%H%M.%S) /tmp/mdt_cgm_uploaded
+        touch -t $(date -d $(jq .[0].dateString nightscout/glucose.json | noquotes) +%Y%m%d%H%M.%S) /tmp/mdt_cgm_uploaded
         echo "Uploaded $(jq '. | length' nightscout/uploaded-entries.json) missing entries"
         echo MDT CGM data uploaded
     else

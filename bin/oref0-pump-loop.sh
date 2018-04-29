@@ -209,15 +209,15 @@ function smb_reservoir_before {
     echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
     retry_fail check_clock
     echo -n "Checking pump clock: "
-    (cat monitor/clock-zoned.json; echo) | tr -d '\n'
+    (cat monitor/clock-zoned.json; echo) | nonl
     echo -n " is within 90s of current time: " && date
-    if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -55 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 55 )); then
+    if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | noquotes)) - $(date +%s)") < -55 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | noquotes)) - $(date +%s)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
         oref0-set-device-clocks
         read_full_pumphistory
        fi
-    (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -90 )) \
-    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
+    (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | noquotes)) - $(date +%s)") > -90 )) \
+    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | noquotes)) - $(date +%s)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
     find monitor/ -mmin -5 -size +5c | grep -q pumphistory || { echo "Error: pumphistory-24h >5m old (or empty)"; fail "$@"; }
 }
 
@@ -324,15 +324,15 @@ function smb_verify_reservoir {
     echo -n "Checking reservoir: " \
     && ( check_reservoir || check_reservoir ) 2>&3 >&4 \
     && echo -n "reservoir level before: " \
-    && cat monitor/lastreservoir.json | tr -d '\n' \
+    && cat monitor/lastreservoir.json | nonl \
     && echo -n ", suggested: " \
-    && jq -r -C -c .reservoir enact/smb-suggested.json | tr -d '\n' \
+    && jq -r -C -c .reservoir enact/smb-suggested.json | nonl \
     && echo -n " and after: " \
     && cat monitor/reservoir.json \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") )) \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) >= 0") )) \
-    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) <= 0.1") )) \
-    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) >= 0") ))
+    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | nonl) - $(< monitor/reservoir.json) <= 0.1") )) \
+    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | nonl) - $(< monitor/reservoir.json) >= 0") ))
 }
 
 function smb_verify_suggested {
@@ -345,10 +345,10 @@ function smb_verify_suggested {
         return 1
     fi
     if [ -s enact/smb-suggested.json ] && jq -e -r .deliverAt enact/smb-suggested.json; then
-        echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | tr -d '\n' \
+        echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | nonl \
         && echo -n " is within 1m of current time: " && date \
-        && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") > -60 )) \
-        && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") < 60 )) \
+        && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | nonl)) - $(date +%s)") > -60 )) \
+        && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | nonl)) - $(date +%s)") < 60 )) \
         && echo "and that smb-suggested.json is less than 1m old" \
         && (find enact/ -mmin -1 -size +5c | grep -q smb-suggested.json)
     else
@@ -387,7 +387,7 @@ function smb_bolus {
         # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
         try_return mdt -f internal button esc esc esc esc 2>&3 \
-        && echo -n "and bolusing " && jq .units enact/smb-suggested.json | tr -d '\n' && echo " units" \
+        && echo -n "and bolusing " && jq .units enact/smb-suggested.json | nonl && echo " units" \
         && ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && rm -rf enact/smb-suggested.json
     else
@@ -398,7 +398,7 @@ function smb_bolus {
 # && try_return openaps report invoke enact/bolused.json 2>&3 >&4 | tail -1 \
 
 function refresh_after_bolus_or_enact {
-    last_treatment_time=$(date -d $(cat monitor/pumphistory-24h-zoned.json | jq .[0].timestamp | tr -d '"'))
+    last_treatment_time=$(date -d $(cat monitor/pumphistory-24h-zoned.json | jq .[0].timestamp | noquotes))
     newer_enacted=$(find enact -newer monitor/pumphistory-24h-zoned.json -size +5c | egrep /enacted)
     newer_bolused=$(find enact -newer monitor/pumphistory-24h-zoned.json -size +5c | egrep /bolused)
     enacted_duration=$(grep duration enact/enacted.json)
@@ -479,7 +479,7 @@ function if_mdt_get_bg {
         done
         if [ -f "monitor/cgm-mm-glucosedirty.json" ]; then
             if [ -f "cgm/glucose.json" ]; then
-                if [ $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json | tr -d '"') +%s) == $(date -d $(jq .[0].display_time monitor/glucose.json | tr -d '"') +%s) ]; then
+                if [ $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json | noquotes) +%s) == $(date -d $(jq .[0].display_time monitor/glucose.json | noquotes) +%s) ]; then
                     echo MDT CGM data retrieved \
                     && echo No new MDT CGM data to reformat \
                     && echo
@@ -501,9 +501,9 @@ function if_mdt_get_bg {
 # TODO: remove if still unused at next oref0 release
 function wait_for_mdt_get_bg {
     # This might not really be needed since very seldom does a loop take less time to run than CGM Data takes to refresh.
-    until [ $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +%s) -lt $(date +%s) ]; do
-        CGMDIFFTIME=$(( $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +%s) - $(date +%s) ))
-        echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +"%r") wait untill $(date --date="@$(($(date #-d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +"%r")to continue"
+    until [ $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| noquotes) +%s) + 300))" +%s) -lt $(date +%s) ]; do
+        CGMDIFFTIME=$(( $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes) +%s) + 300))" +%s) - $(date +%s) ))
+        echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes) +"%r") wait untill $(date --date="@$(($(date #-d $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes) +%s) + 300))" +"%r")to continue"
         echo "waiting for $CGMDIFFTIME seconds before continuing"
         sleep $CGMDIFFTIME
         until openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&3 >&4; do
@@ -877,7 +877,7 @@ function setglucosetimestamp {
 #These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
 function check_reservoir() {
   set -o pipefail
-  mdt reservoir 2>&3 | tee monitor/reservoir.json && tr -d "\n" < monitor/reservoir.json \
+  mdt reservoir 2>&3 | tee monitor/reservoir.json && nonl < monitor/reservoir.json \
     && egrep -q [0-9] monitor/reservoir.json
 }
 function check_model() {

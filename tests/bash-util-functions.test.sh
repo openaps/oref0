@@ -20,6 +20,12 @@ mkdir bash-unit-test-temp
     cd bash-unit-test-temp
     
     # Tests go here
+    if [[ "$(echo -n '"x"' |noquotes)" != "x" ]]; then
+        fail_test "noquotes gave wrong result"
+    fi
+    if [[ "$(echo -e 'x\n' |nonl)" != "x" ]]; then
+        fail_test "nonl gave wrong result"
+    fi
 }
 
 cleanup

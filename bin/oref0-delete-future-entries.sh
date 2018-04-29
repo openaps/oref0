@@ -14,7 +14,7 @@ usage "$@" <<EOT
 Usage: $self
 EOT
 
-NEWTIME=$(date -d `(jq .[1].display_time monitor/glucose.json; echo ) | sed 's/"//g'` +%s)
+NEWTIME=$(date -d `(jq .[1].display_time monitor/glucose.json; echo ) | noquotes` +%s)
 TIME=$(date --date '5 minutes' +%s)  
 
 echo $NEWTIME 
