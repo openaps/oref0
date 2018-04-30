@@ -16,8 +16,6 @@ PRIORITY=0
 RETRY=60
 EXPIRE=600
 
-PREF_FILE=preferences.json
-
 #echo "Running: $0 $TOKEN $USER $FILE $SOUND $SNOOZE"
 
 if [ -z $TOKEN ] || [ -z $USER ]; then
@@ -25,37 +23,37 @@ if [ -z $TOKEN ] || [ -z $USER ]; then
     exit 1
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq --raw-output -r .pushover_sound 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq --raw-output -r .pushover_sound 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ]; then
     SOUND=$PREF_VALUE
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq .pushover_snooze 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq .pushover_snooze 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ] && [ "$PREF_VALUE" -eq "$PREF_VALUE" ]; then
     SNOOZE=$PREF_VALUE
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq --raw-output -r .pushover_only 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq --raw-output -r .pushover_only 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ]; then
     ONLYFOR=$PREF_VALUE
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq .pushover_priority 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq .pushover_priority 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ] && [ "$PREF_VALUE" -eq "$PREF_VALUE" ]; then
     PRIORITY=$PREF_VALUE
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq .pushover_retry 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq .pushover_retry 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ] && [ "$PREF_VALUE" -eq "$PREF_VALUE" ]; then
     RETRY=$PREF_VALUE
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq .pushover_expire 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq .pushover_expire 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ] && [ "$PREF_VALUE" -eq "$PREF_VALUE" ]; then
     EXPIRE=$PREF_VALUE
@@ -116,7 +114,7 @@ cob=`jq .COB $FILE`
 iob=`jq .IOB $FILE`
 
 #echo "carbsReq=${carbsReq} tick=${tick} bgNow=${bgNow} delta=${delta} cob=${cob} iob=${iob}"
-pushoverGlances=$(cat preferences.json | jq -M '.pushoverGlances')
+pushoverGlances=$(get_prefs_json | jq -M '.pushoverGlances')
 
 if [ "${pushoverGlances}" == "null" -o "${pushoverGlances}" == "false" ]; then
     echo "pushoverGlances not enabled in preferences.json"

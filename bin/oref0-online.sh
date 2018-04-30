@@ -179,7 +179,7 @@ function stop_hotspot {
         dhclient_restart
     else
         echo -n "At $(date) my local hotspot is not running"
-        if ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
+        if ! check_pref_bool .offline_hotspot false; then
             echo " (and not enabled in preferences.json)"
         else
             echo
@@ -198,8 +198,7 @@ function start_hotspot {
     echo
     if ls /tmp/disable_hotspot; then
         stop_cycle
-    elif ! ls preferences.json 2>/dev/null >/dev/null \
-        || ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
+    elif ! check_pref_bool .offline_hotspot false; then
         echo "Offline hotspot not enabled in preferences.json"
         stop_cycle
     elif [[ -z $1 ]]; then
