@@ -38,98 +38,76 @@ function echocolor() {
 }
 
 
-for i in "$@"
-do
+for i in "$@"; do
 case $i in
     -d=*|--dir=*)
     DIR="${i#*=}"
     # ~/ paths have to be expanded manually
     DIR="${DIR/#\~/$HOME}"
     directory="$(readlink -m $DIR)"
-    shift # past argument=value
     ;;
     -s=*|--serial=*)
     serial="${i#*=}"
-    shift # past argument=value
     ;;
     -rl=*|--radio_locale=*)
     radio_locale="${i#*=}"
-    shift # past argument=value
     ;;
     -pm=*|--pumpmodel=*)
     pumpmodel="${i#*=}"
-    shift # past argument=value
     ;;
     -t=*|--tty=*)
     ttyport="${i#*=}"
-    shift # past argument=value
     ;;
     -m=*|--max_iob=*)
     max_iob="${i#*=}"
-    shift # past argument=value
     ;;
     -mdsm=*|--max_daily_safety_multiplier=*)
     max_daily_safety_multiplier="${i#*=}"
-    shift # past argument=value
     ;;
     -cbsm=*|--current_basal_safety_multiplier=*)
     current_basal_safety_multiplier="${i#*=}"
-    shift # past argument=value
     ;;
     #-bdd=*|--bolussnooze_dia_divisor=*)
     #bolussnooze_dia_divisor="${i#*=}"
-    #shift # past argument=value
     #;;
     -m5c=*|--min_5m_carbimpact=*)
     min_5m_carbimpact="${i#*=}"
-    shift # past argument=value
     ;;
     -c=*|--cgm=*)
     CGM="${i#*=}"
-    shift # past argument=value
     ;;
     -n=*|--ns-host=*)
     NIGHTSCOUT_HOST=$(echo ${i#*=} | sed 's/\/$//g')
-    shift # past argument=value
     ;;
     -a=*|--api-secret=*)
     API_SECRET="${i#*=}"
-    shift # past argument=value
     ;;
     -e=*|--enable=*)
     ENABLE="${i#*=}"
-    shift # past argument=value
     ;;
     -b=*|--bleserial=*)
     BLE_SERIAL="${i#*=}"
-    shift # past argument=value
     ;;
     -l=*|--blemac=*)
     BLE_MAC="${i#*=}"
-    shift # past argument=value
     ;;
     --btmac=*)
     BT_MAC="${i#*=}"
-    shift # past argument=value
     ;;
     -p=*|--btpeb=*)
     BT_PEB="${i#*=}"
-    shift # past argument=value
     ;;
     --ww_ti_usb_reset=*) # use reset if pump device disappears with TI USB and WW-pump
     ww_ti_usb_reset="${i#*=}"
-    shift # past argument=value
     ;;
     -pt=*|--pushover_token=*)
     PUSHOVER_TOKEN="${i#*=}"
-    shift # past argument=value
     ;;
     -pu=*|--pushover_user=*)
     PUSHOVER_USER="${i#*=}"
-    shift # past argument=value
     ;;
     *)
-            # unknown option
+    # unknown option
     echo "Option ${i#*=} unknown"
     ;;
 esac
