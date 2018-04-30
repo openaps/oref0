@@ -148,3 +148,29 @@ noquotes () {
     tr -d '"'
 }
 
+# Take JSON on stdin and output a compact syntax-colored version of it to
+# stdout. If the input is not valid JSON, copy the input to the output
+# unchanged, and also print "(NOT VALID JSON: <reason>)" at the end. Returns
+# success in any case.
+colorize_json () {
+    local INPUT="$(cat)"
+    
+    if [[ "$INPUT" == "" ]]; then
+        echo "(NOT VALID JSON: empty)"
+    else
+        local COLORIZED_OUTPUT
+        COLORIZED_OUTPUT="$(echo "$INPUT" |jq -C -c . 2>&1)"
+        
+        if [[ $? != 0 ]]; then
+            # If jq returned failure, it also wrote an error message.
+            echo "$INPUT (NOT VALID JSON: $(echo $COLORIZED_OUTPUT))"
+        elif [[ "$COLORIZED_OUTPUT" == "" ]]; then
+            # If the input was truncated-JSON, jq doesn't output anything and
+            # returns success. But the empty string is not itself valid JSON, so
+            # we can detect this.
+            echo "$INPUT (NOT VALID JSON: unclosed quote, brace or bracket)"
+        else
+            echo "$COLORIZED_OUTPUT"
+        fi
+    fi
+}

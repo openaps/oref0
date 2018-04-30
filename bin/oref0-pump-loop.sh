@@ -262,7 +262,7 @@ function smb_suggest {
     retry_fail check_clock
     retry_fail check_tempbasal
     try_fail calculate_iob && echo -n "ed: "
-    echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c .
+    echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | colorize_json
     try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
     try_fail smb_verify_suggested
 }
@@ -314,7 +314,7 @@ function smb_verify_enacted {
     rm -rf monitor/temp_basal.json
     ( echo -n Temp refresh \
         && ( check_tempbasal || check_tempbasal ) 2>&3 >&4 && echo -n "ed: " \
-    ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
+    ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | colorize_json \
     && jq --slurp --exit-status 'if .[1].rate then (.[0].rate > .[1].rate - 0.03 and .[0].rate < .[1].rate + 0.03 and .[0].duration > .[1].duration - 5 and .[0].duration < .[1].duration + 20) else true end' monitor/temp_basal.json enact/smb-suggested.json >&4
 }
 
@@ -363,7 +363,7 @@ function smb_verify_status {
     rm -rf monitor/status.json
     echo -n "Checking pump status (suspended/bolusing): "
     ( check_status || check_status ) 2>&3 >&4 \
-    && cat monitor/status.json | jq -C -c . \
+    && cat monitor/status.json | colorize_json \
     && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
     && if grep -q '"suspended": true' monitor/status.json; then
@@ -630,7 +630,7 @@ function refresh_pumphistory_and_meal {
     ( grep -q 12 settings/model.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-         || { echo; cat monitor/status.json | jq -c -C .; return 1; }
+         || { echo; cat monitor/status.json | colorize_json; return 1; }
     try_return invoke_pumphistory_etc || return 1
     try_return invoke_reservoir_etc || return 1
     echo -n "meal.json "
@@ -687,12 +687,12 @@ function enact {
         grep -q duration enact/enacted.json || ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>&3
-    echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
+    echo -n "enact/enacted.json: " && cat enact/enacted.json | colorize_json
 }
 
 # refresh pumphistory_24h if it's more than 5m old
 function refresh_old_pumphistory {
-    (find monitor/ -mmin -5 -size +100c | grep -q pumphistory-24h-zoned \
+    (file_is_recent monitor/pumphistory-24h-zoned.json 5 100 \
      && echo -n "Pumphistory-24h less than 5m old. ") \
     || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s \
         && read_pumphistory )

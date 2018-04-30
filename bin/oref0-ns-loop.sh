@@ -128,9 +128,9 @@ function ns_meal_carbs {
 #sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json
 function battery_status {
     if [ -e ~/src/EdisonVoltage/voltage ]; then
-        sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | tee monitor/edison-battery.json | jq -C -c .
+        sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | tee monitor/edison-battery.json | colorize_json
     elif [ -e /root/src/openaps-menu/scripts/getvoltage.sh ]; then
-        sudo /root/src/openaps-menu/scripts/getvoltage.sh | tee monitor/edison-battery.json | jq -C -c .
+        sudo /root/src/openaps-menu/scripts/getvoltage.sh | tee monitor/edison-battery.json | colorize_json
     fi
 }
 
@@ -170,7 +170,7 @@ function upload_recent_treatments {
     #echo Uploading treatments
     format_latest_nightscout_treatments || die "Couldn't format latest NS treatments"
     if test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0; then
-        ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json | jq -C -c . || die "Couldn't upload latest treatments to NS"
+        ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json | colorize_json || die "Couldn't upload latest treatments to NS"
     else
         echo "No new treatments to upload"
     fi
