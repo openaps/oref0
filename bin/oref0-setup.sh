@@ -140,10 +140,90 @@ case $i in
 esac
 done
 
-# TODO: deprecate g4-upload and g4-local-only
-if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "g4-go" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-upload, G4-local-only, G5, G5-upload, MDT or xdrip."
-    echo
+function validate_cgm ()
+{
+    # Conver to lowercase
+    local selection="${1,,}"
+    
+    # Compare against list of supported CGMs
+    # TODO: deprecate g4-upload and g4-local-only
+    if ! [[ $selection =~ "g4-upload" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "g4-go" || $selection =~ "xdrip" || $selection =~ "g4-local" ]]; then
+        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-upload, G4-local-only, G5, G5-upload, MDT or xdrip."
+        echo
+        return 1
+    fi
+}
+
+function validate_g4share_serial ()
+{
+    true #TODO
+}
+
+function validate_ttyport ()
+{
+    true #TODO
+}
+
+function validate_pump_serial ()
+{
+    if [[ -z "$1" ]]; then
+        echo Pump serial number is required.
+        return 1
+    fi
+}
+
+function validate_nightscout_host ()
+{
+    if [[ -z "$1" ]]; then
+        echo Nightscout is required for interactive setup.
+        return 1
+    fi
+}
+
+function validate_nightscout_token ()
+{
+    true #TODO
+}
+
+function validate_api_secret ()
+{
+    if [[ -z "$1" ]]; then
+        echo API_SECRET is required for interactive setup.
+        return 1
+    fi
+}
+
+function validate_bt_mac ()
+{
+    true #TODO
+}
+
+function validate_bt_peb ()
+{
+    true #TODO
+}
+
+function validate_max_iob ()
+{
+    true #TODO
+}
+
+function validate_pushover_token ()
+{
+    true #TODO
+}
+
+function validate_pushover_user ()
+{
+    true #TODO
+}
+
+function validate_ble_mac ()
+{
+    true #TODO
+}
+
+if ! validate_cgm "${CGM}"; then
     DIR="" # to force a Usage prompt
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
@@ -158,13 +238,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     directory="$(readlink -m $DIR)"
     echo
 
-    read -p "What is your pump serial number (six digits, numbers only)? " -r
-    serial=$REPLY
-    while [[ -z $serial ]]; do
-        echo Pump serial number is required.
-        read -p "What is your pump serial number (six digits, numbers only)? " -r
-        serial=$REPLY
-    done
+    prompt_and_validate serial "What is your pump serial number (six digits, numbers only)?" validate_pump_serial
     echocolor "Ok, $serial it is."
     echo
 
@@ -187,12 +261,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "xdrip: will work with an xDrip receiver app on your Android phone"
     echo "Note: no matter which option you choose, CGM data will also be downloaded from NS when available."
     echo
-    read -p "What kind of CGM would you like to configure?:   " -r
-    CGM=$REPLY
+    prompt_and_validate CGM "What kind of CGM would you like to configure?:" validate_cgm
     echocolor "Ok, $CGM it is."
     echo
     if [[ ${CGM,,} =~ "g4-go" ]]; then
-        read -p "If your G4 has Share, what is its Serial Number? (i.e. SM12345678) " -r
+        prompt_and_validate BLE_SERIAL "If your G4 has Share, what is your G4 Share Serial Number? (i.e. SM12345678)" validate_g4share_serial
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
         echo
@@ -205,8 +278,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         if ! prompt_yn "Are you using an Explorer Board?" Y; then
             if ! prompt_yn "Are you using an Explorer HAT?" Y; then
                 echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
-                read -p "What is your TTY port? " -r
-                ttyport=$REPLY
+                prompt_and_validate ttyport "What is your TTY port?" validate_ttyport
                 echocolor -n "Ok, "
                 if [[ -z "$ttyport" ]]; then
                     echo -n Carelink
@@ -225,8 +297,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
                 ttyport=/dev/spidev5.1
             else
                 echo "Hmm, you don't seem to be using an Edison."
-                read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
-                ttyport=$REPLY
+                prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
                 echocolor "Ok, we'll try TTY $ttyport then."
             fi
             echo
@@ -277,43 +348,29 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       echo
     fi
 
-    read -p "What is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
+    prompt_and_validate REPLY "What is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)?" validate_nightscout_host
     # remove any trailing / from NIGHTSCOUT_HOST
     NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
-    while [[ -z $NIGHTSCOUT_HOST ]]; do
-        echo Nightscout is required for interactive setup.
-        read -p "What is your Nightscout site? (i.e. https://mynightscout.herokuapp.com)? " -r
-        # remove any trailing / from NIGHTSCOUT_HOST
-        NIGHTSCOUT_HOST=$(echo $REPLY | sed 's/\/$//g')
-        echo
-    done
     echocolor "Ok, $NIGHTSCOUT_HOST it is."
     echo
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
         echo "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET, but must first be configured in Nightscout."
         if prompt_yn "Do you want to use token based authentication?" N; then
-            read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
+            prompt_and_validate REPLY "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig?" validate_nightscout_token
             API_SECRET="token=${REPLY}"
             echocolor "Ok, $API_SECRET it is."
             echo
         else
             echocolor "Ok, you'll use API_SECRET instead."
             echo
-            read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
-            API_SECRET=$REPLY
-            while [[ -z $API_SECRET ]]; do
-                echo API_SECRET is required for interactive setup.
-                read -p "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)? " -r
-                API_SECRET=$REPLY
-            done
+            prompt_and_validate API_SECRET "What is your Nightscout API_SECRET (i.e. myplaintextsecret; It should be at least 12 characters long)?" validate_api_secret
             echocolor "Ok, $API_SECRET it is."
             echo
         fi
     fi
 
     if prompt_yn "Do you want to be able to set up BT tethering?" N; then
-        read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
-        BT_MAC=$REPLY
+        prompt_and_validate BT_MAC "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)?" validate_bt_mac
         echo
         echocolor "Ok, $BT_MAC it is. You will need to follow directions in docs to set-up BT tether after your rig is successfully looping."
         echo
@@ -325,7 +382,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
 
     if [[ ! -z $BT_PEB ]]; then
-        read -p "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip " -r
+        prompt_and_validate BT_PEB "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip" validate_bt_peb
         BT_PEB=$REPLY
         echocolor "Ok, $BT_PEB it is."
         echo
@@ -342,7 +399,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
     echo
-    read -p "Type a whole number (without a decimal) [i.e. 0] and hit enter:   " -r
+    prompt_and_validate REPLY "Type a whole number (without a decimal) [i.e. 0] and hit enter:" validate_max_iob
       if [[ $REPLY =~ [0-9] ]]; then
         max_iob="$REPLY"
         echocolor "Ok, $max_iob units will be set as your max_iob."
@@ -366,13 +423,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     #ENABLE+=" meal "
 
     if prompt_yn "Do you want to enable carbsReq Pushover alerts?" N; then
-        read -p "If so, what is your Pushover API Token? " -r
-        PUSHOVER_TOKEN=$REPLY
+        prompt_and_validate PUSHOVER_TOKEN "If so, what is your Pushover API Token?" validate_pushover_token
         echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
         echo
 
-        read -p "And what is your Pushover User Key? " -r
-        PUSHOVER_USER=$REPLY
+        prompt_and_validate PUSHOVER_USER "And what is your Pushover User Key?" validate_pushover_user
         echocolor "Ok, Pushover User Key $PUSHOVER_USER it is."
         echo
     else

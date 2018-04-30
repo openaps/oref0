@@ -207,6 +207,52 @@ prompt_yn () {
     done
 }
 
+# Usage: prompt_and_validate <variable> <question> <validation-function> <default-value>
+#
+# Give the user (running the script in a terminal) a prompt, check their reply
+# by running validation-function, and store the result in the named variable.
+#
+# The validation function takes one parameter, which is the value the user
+# entered, and returns success if it's valid, false otherwise. If validation
+# fails, it should output something on stdout or stderr which explains why.
+# To disable validation, pass "true" as the validation function (or omit the
+# argument).
+#
+# If the user enters something other than the empty string which fails
+# validation, and then they enter the exact same thing again, they will be
+# asked whether they want to override the validator.
+prompt_and_validate () {
+    local VARNAME="$1"
+    local QUESTION="$2"
+    local VALIDATOR="${3-true}"
+    local DEFAULT="$4"
+    
+    local LAST_VALUE=""
+    
+    while true; do
+        if [[ $# -ge 4 ]]; then
+            read -p "$QUESTION [$DEFAULT] " -r "$VARNAME"
+        else
+            read -p "$QUESTION " -r "$VARNAME"
+        fi
+        
+        if [[ "${!VARNAME}" == "" ]]; then
+            # User entered the empty string? Use the default value, if there is one.
+            if [[ $# -ge 4 ]]; then
+                export "$VARNAME"="$DEFAULT"
+                return 0
+            fi
+        elif "$VALIDATOR" "${!VARNAME}"; then
+            return 0
+        elif [[ ! -z "${!VARNAME}" ]] && [[ "${!VARNAME}" == "$LAST_VALUE" ]]; then
+            if prompt_yn "Override validation and use \"${!VARNAME}\"?" N; then
+                return 0
+            fi
+        fi
+        LAST_VALUE="${!VARNAME}"
+    done
+}
+
 
 # Output the contents of preferences.json. (This is a function rather than just
 # a varname that you cat(1) because of plans to make it support HJSON, which
