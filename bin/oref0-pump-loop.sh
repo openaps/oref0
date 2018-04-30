@@ -281,26 +281,26 @@ function determine_basal {
 function smb_enact_temp {
     smb_suggest
     echo -n "enact/smb-suggested.json: "
-    cat enact/smb-suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)'
-    cat enact/smb-suggested.json | jq -C -c .reason
+    cat enact/smb-suggested.json | colorize_json '. | del(.predBGs) | del(.reason)'
+    cat enact/smb-suggested.json | colorize_json .reason
     if (jq --exit-status .predBGs.COB enact/smb-suggested.json >&4); then
-        echo -n "COB: " && jq -C -c .predBGs.COB enact/smb-suggested.json
+        echo -n "COB: " && cat enact/smb-suggested.json |colorize_json .predBGs.COB
     fi
     if (jq --exit-status .predBGs.UAM enact/smb-suggested.json >&4); then
-        echo -n "UAM: " && jq -C -c .predBGs.UAM enact/smb-suggested.json
+        echo -n "UAM: " && cat enact/smb-suggested.json |colorize_json .predBGs.UAM
     fi
     if (jq --exit-status .predBGs.IOB enact/smb-suggested.json >&4); then
-        echo -n "IOB: " && jq -C -c .predBGs.IOB enact/smb-suggested.json
+        echo -n "IOB: " && cat enact/smb-suggested.json |colorize_json .predBGs.IOB
     fi
     if (jq --exit-status .predBGs.ZT enact/smb-suggested.json >&4); then
-        echo -n "ZT:  " && jq -C -c .predBGs.ZT enact/smb-suggested.json
+        echo -n "ZT:  " && cat enact/smb-suggested.json |colorize_json .predBGs.ZT
     fi
     if ( grep -q duration enact/smb-suggested.json 2>&3 && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
         rm enact/smb-enacted.json
         ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
         grep -q duration enact/smb-enacted.json || ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
         cp -up enact/smb-enacted.json enact/enacted.json
-        echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c '. | "Rate: \(.rate) Duration: \(.duration)"'
+        echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | colorize_json '. | "Rate: \(.rate) Duration: \(.duration)"'
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     else
         echo -n "No smb_enact needed. "
@@ -889,7 +889,7 @@ function check_status() {
   if ( grep 12 settings/model.json ); then
     touch monitor/status.json
   else
-    mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | jq -c -C .status
+    mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | colorize_json .status
   fi
 }
 function mmtune_Go() {
