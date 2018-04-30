@@ -177,6 +177,37 @@ colorize_json () {
 }
 
 
+# Usage: prompt_yn <question> <default-value>
+# Give the user (running the script in a terminal) a yes/no prompt. Return
+# success if the the answer was yes, failure if the answer was no. If the user
+# just presses Enter, the result is default-value (if given). If the answer is
+# something other than yes or no, ask the question again.
+prompt_yn () {
+    while true; do
+        if [[ "$2" == "y" ]]; then
+            read -p "$1 [Y]/n " -r
+        else
+            read -p "$1 y/[N] " -r
+        fi
+        if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+            return 0
+        elif [[ "$REPLY" =~ ^[Nn]$ ]]; then
+            return 1
+        elif [[ $# -ge 2 ]]; then
+            if [[ "$2" =~ ^[Yy]$ ]]; then
+                return 0
+            elif [[ "$2" =~ ^[Nn]$ ]]; then
+                return 1
+            else
+                echo "Invalid default specified: $2"
+            fi
+        else
+            echo "Please answer Y or N."
+        fi
+    done
+}
+
+
 # Output the contents of preferences.json. (This is a function rather than just
 # a varname that you cat(1) because of plans to make it support HJSON, which
 # requires preprocessing and caching.
