@@ -175,3 +175,148 @@ colorize_json () {
         fi
     fi
 }
+
+
+# Output the contents of preferences.json. (This is a function rather than just
+# a varname that you cat(1) because of plans to make it support HJSON, which
+# requires preprocessing and caching.
+get_prefs_json () {
+    cat preferences.json
+}
+
+# Usage: get_pref_bool <preference-expr> [default-value]
+#
+# Check myopenaps/preferences.json for a setting matching preference-expr which
+# is a bool. If it's present and is a bool, output it and return success. If
+# the setting is missing or null but default-value is given, output
+# default-value and return success.  If the setting is missing and there's no
+# default value, the setting is present but isn't a boolean, the preferences
+# file is missing or the preference file fails to parse, writes an error to
+# stderr, writes false to stdout, and returns fail.
+#
+# Example:
+#     MY_SETTING=$(get_pref_bool .my_boolean_setting) || die
+#     if [[ $MY_SETTING == true ]]; then
+#         echo Setting was true
+#     fi
+get_pref_bool () {
+    set -e
+    set -o pipefail
+    RESULT="$(get_prefs_json |jq "$1")"
+    if [[ "$RESULT" == "null" ]]; then
+        if [[ "$2" != "" ]]; then
+            echo "$2"
+            return 0
+        else
+            echo "Undefined preference setting and no default provided for $1 in $PREFERENCES_FILE_ABSOLUTE" 1>&1
+            return 1
+        fi
+    elif [[ "$RESULT" == "true" || "$RESULT" == "false" ]]; then
+        echo "$RESULT"
+        return 0
+    else
+        echo "Setting $1 in $PREFERENCES_FILE_ABSOLUTE should be a boolean, was $RESULT" 1>&2
+        return 1
+    fi
+}
+
+# Usage: check_pref_bool <preference-name> [default-value]
+#
+# Like get_pref_bool except that instead of outputting true or false, returns
+# success for settings that are true and failure for settings that are false,
+# and outputs nothing. If default-value is omitted, the default is false. If
+# something is wrong (config file is missing or corrupt, value is not boolean),
+# this will output a warning to stderr, but otherwise continue on with the
+# default value.
+#
+# Example:
+#     if check_pref_bool .my_boolean_setting; then
+#         echo Setting was true
+#     fi
+check_pref_bool () {
+    if [[ $(get_pref_bool "$@") == true ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Usage: string_is_number <string>
+#
+# Returns success if the argument is a number (possibly with a decimal component
+# or scientific notation, but not NaN or Inf), failure otherwise.
+string_is_number () {
+    NUMBER_REGEX='^-?[0-9]+([.][0-9]*)?([Ee]-?[0-9]+)?$'
+    if [[ "$1" =~ $NUMBER_REGEX ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Usage: get_pref_float <preference-name> [default-value]
+#
+# Check myopenaps/preferences.json for a setting matching preference-name which
+# is a float. If it's present and is a number, output it and return success. If
+# it's missing or null but default-value was given, output default-value
+# instead. If the setting is missing and there's no default value, the setting
+# is present but isn't a number, or the preferences file is missing or fails
+# to parse, outputs 0, writes to stderr, and returns failure.
+#
+# Example:
+#     THRESHOLD=$(get_pref_float .my_threshold) || die
+#     if ((FOO<THRESHOLD)); then
+#         echo FOO was below threshold
+#     fi
+get_pref_float () {
+    RESULT="$(get_prefs_json |jq "$1")"
+    if [[ "$RESULT" == "null" ]]; then
+        if [[ "$2" != "" ]]; then
+            echo "$2"
+            return 0
+        else
+            echo "Undefined preference setting and no default provided for $1 in $PREFERENCES_FILE_ABSOLUTE" 1>&2
+            return 1
+        fi
+    else
+        if ! string_is_number "$RESULT"; then
+            echo "Setting $1 in $PREFERENCES_FILE_ABSOLUTE should be a number, was $RESULT" 1>&2
+            return 1
+        else
+            echo "$RESULT"
+            return 0
+        fi
+    fi
+}
+
+# Usage: get_pref_string <preference-name> [default-value]
+#
+# Check myopenaps/preferences.json for a setting matching preference-name which
+# is a string. If it's present but isn't a string, it'll be coerced to a string
+# corresponding to its JSON serialization. If it's missing but default-value
+# was given, outputs default-value. If it's missing and there's no default
+# value, write a message to stderr and return failure.
+#
+# The output is an unescaped string and may contain spaces, newlines, and
+# special characters, so quotes are required around invocations of this
+# function and any variable that stores its result.
+#
+# Example:
+#     USER_NICKNAME="$(get_pref_string .alert_text)" || die
+#     echo "Hello, $USER_NICKNAME"
+get_pref_string () {
+    RESULT="$(get_prefs_json |jq --exit-status --raw-output "$1")"
+    RETURN_CODE=$?
+    
+    if [[ $RETURN_CODE == 0 ]]; then
+        echo "$RESULT"
+        return 0
+    elif [[ $# -ge 2 ]]; then
+        echo "$2"
+        return 0
+    else
+        echo "Failed to get string preference $1" 1>&2
+        return 1
+    fi
+}
+

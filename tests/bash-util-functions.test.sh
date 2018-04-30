@@ -82,6 +82,68 @@ mkdir bash-unit-test-temp
     if ! echo "}" |colorize_json |grep 'NOT VALID JSON' >/dev/null; then
         fail_test "colorize_json didn't report an error on close-curly-brace input"
     fi
+
+    # Test that getting config variables when the config-file is missing is
+    # fatal
+    rm -f preferences.json
+    get_pref_bool .noConfigFile >/dev/null 2>&1 \
+        && fail_test "Loading bool config var with no config file present"
+    get_pref_bool .noConfigFile true >/dev/null 2>&1 \
+        && fail_test "Loading bool config var with no config file present"
+
+    get_pref_float .noConfigFile >/dev/null 2>&1 \
+        && fail_test "Loading float config var with no config file present"
+    get_pref_float .noConfigFile 123 >/dev/null 2>&1 \
+        && fail_test "Loading float config var with no config file present"
+
+    get_pref_string .noConfigFile >/dev/null 2>&1 \
+        && fail_test "Loading string config var with no config file present"
+
+    # Make a fake preferences.json to test the getters that extract values from it
+    cat >preferences.json <<EOT
+        {
+            "bool_true": true,
+            "bool_false": false,
+            "number_5": 5,
+            "number_3_5": 3.5,
+            "number_big": 1.1e99,
+            "string_hello": "hello",
+            "null_value": null
+        }
+EOT
+
+    # Test boolean getter
+    if ! check_pref_bool .bool_true; then
+        fail_test "Wrong result for check_pref_bool on a true value"
+    fi
+    if check_pref_bool .bool_false; then
+        fail_test "Wrong result for check_pref_bool on a false value"
+    fi
+    if check_pref_bool .missing false; then
+        fail_test "Wrong result for check_pref_bool on a missing value with default false"
+    fi
+    if ! check_pref_bool .missing true; then
+        fail_test "Wrong result for check_pref_bool on a missing value with default true"
+    fi
+    
+    # Test numeric getter
+    if [ "$(get_pref_float .number_5)" -ne "5" ]; then
+        fail_test "Wrong result for get_pref_float on an integer value"
+    fi
+    if [ "$(get_pref_float .number_3_5)" != "3.5" ]; then
+        fail_test "Wrong result for get_pref_float on a non-integer value"
+    fi
+    if [ "$(get_pref_float .missing 123)" -ne 123 ]; then
+        fail_test "Wrong result for get_pref_float on a missing value with default specified"
+    fi
+    
+    # Test string getter
+    if [ "$(get_pref_string .string_hello)" != "hello" ]; then
+        fail_test "Wrong result for get_pref_string"
+    fi
+    if [ "$(get_pref_string .missing stringDefault)" != "stringDefault" ]; then
+        fail_test "Wrong result for get_pref_string on a missing value with default"
+    fi
 }
 
 cleanup
