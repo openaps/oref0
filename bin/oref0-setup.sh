@@ -29,18 +29,14 @@ EXTRAS=""
 radio_locale="US"
 buildgofromsource=false
 
-#this makes the confirmation echo text a color when you use echocolor instead of echo
-function echocolor() { # $1 = string
-    COLOR='\033[1;34m'
-    NC='\033[0m'
-    printf "${COLOR}$1${NC}\n"
+# Echo text, but in bright-blue. Used for confirmation echo text. This takes
+# the same arguments as echo, including the -n option.
+function echocolor() {
+    echo -e -n "\e[1;34m"
+    echo "$@"
+    echo -e -n "\e[0m"
 }
 
-function echocolor-n() { # $1 = string
-    COLOR='\033[1;34m'
-    NC='\033[0m'
-    printf "${COLOR}$1${NC}"
-}
 
 for i in "$@"
 do
@@ -208,7 +204,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
                 echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
                 read -p "What is your TTY port? " -r
                 ttyport=$REPLY
-                echocolor-n "Ok, "
+                echocolor -n "Ok, "
                 if [[ -z "$ttyport" ]]; then
                     echo -n Carelink
                 else
@@ -492,7 +488,7 @@ fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
-echocolor-n "Continue? y/[N] "
+echocolor -n "Continue? y/[N] "
 read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
