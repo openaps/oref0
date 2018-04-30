@@ -217,6 +217,17 @@ function validate_ble_mac ()
     true #TODO
 }
 
+
+# Usage: do_openaps_import <file.json>
+# Import aliases, devices, and reports from a JSON file into OpenAPS. What this
+# means in practice is adding entries top openaps.ini, and creating other ini
+# files for devices in the myopenaps directory.
+function do_openaps_import ()
+{
+    echo "Importing $1"
+    cat "$1" |openaps import ||die "Could not import $1"
+}
+
 if ! validate_cgm "${CGM}"; then
     DIR="" # to force a Usage prompt
 fi
@@ -699,10 +710,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     # import template
-    for type in vendor device report alias; do
-        echo importing $type file
-        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-    done
+    do_openaps_import $HOME/src/oref0/lib/oref0-setup/vendor.json
+    do_openaps_import $HOME/src/oref0/lib/oref0-setup/device.json
+    do_openaps_import $HOME/src/oref0/lib/oref0-setup/report.json
+    do_openaps_import $HOME/src/oref0/lib/oref0-setup/alias.json
     echo Checking for BT Mac, BT Peb or Shareble
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
         # Install Bluez for BT Tethering
@@ -821,16 +832,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ${CGM,,} =~ "g4-upload" ]]; then
             sudo apt-get -y install bc
             openaps device add cgm dexcom || die "Can't add CGM"
-            for type in cgm-loop; do
-                echo importing $type file
-                cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-            done
+            do_openaps_import $HOME/src/oref0/lib/oref0-setup/cgm-loop.json
         elif [[ ${CGM,,} =~ "shareble" ]]; then
             # import shareble stuff
-            for type in shareble cgm-loop; do
-                echo importing $type file
-                cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-            done
+            do_openaps_import $HOME/src/oref0/lib/oref0-setup/shareble.json
+            do_openaps_import $HOME/src/oref0/lib/oref0-setup/cgm-loop.json
 
             if [[ -z "$BLE_MAC" ]]; then
                 read -p "Please go into your Dexcom's Share settings, forget any existing device, turn Share back on, and press Enter."
@@ -953,10 +959,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         else
             openaps device add cgm mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add cgm"
         fi
-        for type in mdt-cgm; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
+        do_openaps_import $HOME/src/oref0/lib/oref0-setup/mdt-cgm.json
     fi
 
     sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
@@ -968,10 +971,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
         git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
-        for type in xdrip-cgm; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
+        do_openaps_import $HOME/src/oref0/lib/oref0-setup/xdrip-cgm.json
         touch /tmp/reboot-required
     fi
 
@@ -1003,10 +1003,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     if [[ ${CGM,,} =~ "mdt" ]]; then # still need this for the old ns-loop for now
         cd $directory || die "Can't cd $directory"
-        for type in edisonbattery; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
+        do_openaps_import $HOME/src/oref0/lib/oref0-setup/edisonbattery.json
     fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
@@ -1016,10 +1013,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         sudo pip install --user git+git://github.com/mddub/pancreabble.git
         oref0-bluetoothup
         sudo rfcomm bind hci0 $BT_PEB
-        for type in pancreabble; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
+        do_openaps_import $HOME/src/oref0/lib/oref0-setup/pancreabble.json
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
     echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
@@ -1033,10 +1027,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # configure autotune if enabled
     if [[ $ENABLE =~ autotune ]]; then
         cd $directory || die "Can't cd $directory"
-        for type in autotune; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
+        do_openaps_import $HOME/src/oref0/lib/oref0-setup/autotune.json
     fi
 
     #Setup files for editing on the x12, and replace get-settings alias
@@ -1052,10 +1043,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     #Moved this out of the conditional, so that x12 models will work with smb loops
     sudo apt-get -y install bc jq ntpdate bash-completion || die "Couldn't install bc etc."
     cd $directory || die "Can't cd $directory"
-    for type in supermicrobolus; do
-        echo importing $type file
-        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-    done
+    do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
 
     echo "Adding OpenAPS log shortcuts"
     oref0-log-shortcuts --add-to-profile="$HOME/.bash_profile"
