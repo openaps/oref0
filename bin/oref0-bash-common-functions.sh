@@ -267,7 +267,7 @@ prompt_and_validate () {
 # a varname that you cat(1) because of plans to make it support HJSON, which
 # requires preprocessing and caching.
 get_prefs_json () {
-    cat preferences.json
+    cat "$PREFERENCES_FILE"
 }
 
 # Usage: get_pref_bool <preference-expr> [default-value]
@@ -406,3 +406,26 @@ get_pref_string () {
     fi
 }
 
+# Usage: set_pref_json <preference-name> <new-value>
+# Change the value of something in preferences.json. The preference-name is
+# given as a jq selector, typically ".pref_name"; the value should be JSON,
+# including quotes if it's a string. (For setting strings you probably want
+# set_pref_string which handles the string-escaping.)
+set_pref_json () {
+    if [[ -f "$PREFERENCES_FILE" ]]; then
+        local OLD_PREFS="$(get_prefs_json)"
+        local NEW_PREFS="$(echo "$OLD_PREFS" |jq "$1 |= $2")"
+    else
+        local NEW_PREFS="$(echo '{}' |jq "$1 |= $2")"
+    fi
+    
+    # Write the whole file and move into place, so that the change is atomic
+    echo "$NEW_PREFS" >"${PREFERENCES_FILE}.new"
+    mv -f "${PREFERENCES_FILE}.new" "$PREFERENCES_FILE"
+}
+
+# Usage: set_pref_string <preference-name> <string-value>
+set_pref_string () {
+    # TODO: Escape quotes and backslashes
+    set_pref_json "$1" "\"$2\""
+}

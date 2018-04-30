@@ -145,6 +145,31 @@ EOT
         fail_test "Wrong result for get_pref_string on a missing value with default"
     fi
     
+    # Test mutating a (non-empty) config file to add a new setting
+    set_pref_json .mutated_pref 123
+    if [ "$(get_pref_float .mutated_pref)" != 123 ]; then
+        fail_test "set_pref_json didn't set a pref correctly"
+    fi
+    
+    # Test mutating a config file to change an existing setting
+    set_pref_json .mutated_pref 567
+    if [ "$(get_pref_float .mutated_pref)" != 567 ]; then
+        fail_test "set_pref_json didn't mutate a pref correctly"
+    fi
+    
+    # Test mutating an (empty) config file
+    rm -f preferences.json
+    set_pref_json .empty_mutated_pref 123
+    if [ "$(get_pref_float .empty_mutated_pref)" != 123 ]; then
+        fail_test "set_pref_json didn't set a pref correctly when config file was empty"
+    fi
+    
+    # Test mutating a config file, adding a quoted string
+    set_pref_string .mutated_pref Hello
+    if [ "$(get_pref_string .mutated_pref)" != "Hello" ]; then
+        fail_test "set_pref_string didn't set a string pref correctly"
+    fi
+
     # Test script_is_sourced
     TEST_SCRIPT="$(cat <<EOT
 #!/bin/bash

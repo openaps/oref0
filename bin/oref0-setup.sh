@@ -678,6 +678,20 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
     fi
 
+    # Save information to preferences.json
+    set_pref_string .nightscout_host "$NIGHTSCOUT_HOST"
+    set_pref_string .nightscout_api_secret "$API_SECRET"
+    set_pref_string .cgm "${CGM,,}"
+    set_pref_string .bt_peb "$BT_PEB"
+    set_pref_string .bt_mac "$BT_MAC"
+    set_pref_string .enable "$ENABLE"
+    set_pref_string .ttyport "$ttyport"
+    set_pref_string .pushover_token "$PUSHOVER_TOKEN"
+    set_pref_string .pushover_user "$PUSHOVER_USER"
+    set_pref_string .myopenaps_path "$directory"
+    set_pref_string .cgm_loop_path "$directory-cgm-loop"
+    set_pref_string .xdrip_path "$HOME/.xDripAPS"
+    
     cat preferences.json
 
     # fix log rotate file
