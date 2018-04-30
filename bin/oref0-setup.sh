@@ -148,8 +148,7 @@ if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" |
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
     print_usage
-    read -p "Start interactive setup? [Y]/n " -r
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
+    if ! prompt_yn "Start interactive setup?" Y; then
         exit
     fi
     echo
@@ -169,8 +168,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echocolor "Ok, $serial it is."
     echo
 
-    read -p "Do you have a 512 or 712 model pump? y/[N] " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if prompt_yn "Do you have a 512 or 712 model pump?" N; then
         pumpmodel=x12
         echocolor "Ok, you'll be using a 512 or 712 pump. Got it. "
         echo
@@ -204,10 +202,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "Explorer Board HAT detected. "
         ttyport=/dev/spidev0.0
     else
-        read -p "Are you using an Explorer Board? [Y]/n " -r
-        if [[ $REPLY =~ ^[Nn]$ ]]; then
-            read -p "Are you using an Explorer HAT? [Y]/n " -r
-            if [[ $REPLY =~ ^[Nn]$ ]]; then
+        if ! prompt_yn "Are you using an Explorer Board?" Y; then
+            if ! prompt_yn "Are you using an Explorer HAT?" Y; then
                 echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
                 read -p "What is your TTY port? " -r
                 ttyport=$REPLY
@@ -266,8 +262,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       if [[ $radio_locale =~ ^WW$ ]]; then
         echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process. If so, enter Y. Otherwise just hit enter (default no):"
         echo
-        read -p "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces? " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if prompt_yn "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces?" N; then
           ww_ti_usb_reset="yes"
         else
           ww_ti_usb_reset="no"
@@ -296,8 +291,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
         echo "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET, but must first be configured in Nightscout."
-        read -p "Do you want to use token based authentication? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if prompt_yn "Do you want to use token based authentication?" N; then
             read -p "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig? " -r
             API_SECRET="token=${REPLY}"
             echocolor "Ok, $API_SECRET it is."
@@ -317,9 +311,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         fi
     fi
 
-    read -p "Do you want to be able to set up BT tethering? y/[N] " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-    read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
+    if prompt_yn "Do you want to be able to set up BT tethering?" N; then
+        read -p "What is your phone's BT MAC address (i.e. AA:BB:CC:DD:EE:FF)? " -r
         BT_MAC=$REPLY
         echo
         echocolor "Ok, $BT_MAC it is. You will need to follow directions in docs to set-up BT tether after your rig is successfully looping."
@@ -360,21 +353,19 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
       fi
 
-    read -p "Enable autotuning of basals and ratios? [Y]/n  " -r
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-       echocolor "Ok, no autotune."
-       echo
-    else
+    if prompt_yn "Enable autotuning of basals and ratios?" Y; then
        ENABLE+=" autotune "
        echocolor "Ok, autotune will be enabled. It will run around 4am."
+       echo
+    else
+       echocolor "Ok, no autotune."
        echo
     fi
 
     #always enabling AMA by default
     #ENABLE+=" meal "
 
-    read -p "Do you want to enable carbsReq Pushover alerts? y/[N] " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if prompt_yn "Do you want to enable carbsReq Pushover alerts?" N; then
         read -p "If so, what is your Pushover API Token? " -r
         PUSHOVER_TOKEN=$REPLY
         echocolor "Ok, Pushover token $PUSHOVER_TOKEN it is."
@@ -1173,13 +1164,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # clear any extraneous input before prompting
     while(read -r -t 0.1); do true; done
 
-    read -p "Schedule openaps in cron? y/[N] " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if prompt_yn "Schedule openaps in cron?" N; then
 
         echo Saving existing crontab to $HOME/crontab.txt:
         crontab -l | tee $HOME/crontab.old.txt
-        read -p "Would you like to remove your existing crontab first? y/[N] " -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if prompt_yn "Would you like to remove your existing crontab first?" N; then
             crontab -r
         fi
 
