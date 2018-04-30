@@ -622,6 +622,7 @@ function wait_for_silence {
             break
         fi
     done
+    echo
 }
 
 # Refresh pumphistory etc.
@@ -841,6 +842,7 @@ function wait_for_bg {
                 echo -n .; sleep 10
             fi
         done
+        echo
     fi
 }
 
@@ -851,7 +853,7 @@ function glucose-fresh {
     else
         touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json 2>&3
     fi
-    if (! [ -e /tmp/pump_loop_completed ] ); then
+    if [[ ! -e /tmp/pump_loop_completed ]]; then
         echo "First loop: not waiting"
         return 0;
     elif (find monitor/ -newer /tmp/pump_loop_completed | grep -q glucose.json); then

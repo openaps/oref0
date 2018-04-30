@@ -80,7 +80,6 @@ assert_cwd_contains_ini () {
 # Returns success (0) if running on an Intel Edison, fail (1) otherwise. Uses
 # the existence of an "edison" account in /etc/passwd to determine that.
 is_edison () {
-    #if egrep -i "edison" /etc/passwd 2>/dev/null; then
     if getent passwd edison &> /dev/null; then
         return 0
     else
