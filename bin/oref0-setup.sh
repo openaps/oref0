@@ -234,6 +234,14 @@ function do_openaps_import ()
     cat "$1" |openaps import ||die "Could not import $1"
 }
 
+function remove_all_openaps_aliases ()
+{
+    local ALIASES="$(openaps alias show |cut -f 1 -d ' ')"
+    for ALIAS in ALIASES; do
+        openaps alias remove "$ALIAS" >/dev/null 2>&1
+    done
+}
+
 if ! validate_cgm "${CGM}"; then
     DIR="" # to force a Usage prompt
 fi
@@ -577,6 +585,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         die "Can't init $directory"
     fi
     cd $directory || die "Can't cd $directory"
+    
+    # Clear out any OpenAPS aliases from previous versions (they'll get
+    # recreated if they're still used)
+    remove_all_openaps_aliases
 
     # Taking the oref0-runagain.sh from tmp to $directory
     mv $OREF0_RUNAGAIN ./oref0-runagain.sh
@@ -593,7 +605,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ${CGM,,} =~ "xdrip" ]]; then
         mkdir -p xdrip || die "Can't mkdir xdrip"
     fi
-
+    
     # check whether decocare-0.0.31 has been installed
     #if ! ls /usr/local/lib/python2.7/dist-packages/decocare-0.0.31-py2.7.egg/ 2>/dev/null >/dev/null; then
         # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
@@ -1039,10 +1051,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ${pumpmodel,,} =~ "x12" ]]; then
         echo "copying settings files for x12 pumps"
         cp $HOME/src/oref0/lib/oref0-setup/bg_targets_raw.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/basal_profile.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/settings.json $directory/settings/ || die "Could not copy settings files for x12 pumps"
-        echo "getting ready to remove get-settings since this is an x12"
-        openaps alias remove get-settings || die "Could not remove get-settings"
-        echo "settings removed, getting ready to add x12 settings"
-        openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json settings/profile.json" || die "Could not add x12 settings"
     fi
 
     #Moved this out of the conditional, so that x12 models will work with smb loops
@@ -1098,7 +1106,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
-        cd $directory && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
     fi
 
     echo "Clearing retrieved apt packages to free space."
