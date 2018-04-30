@@ -14,7 +14,7 @@ main() {
     else
         if glucose_fresh; then
             echo Glucose file is fresh
-            cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
+            cat cgm/ns-glucose.json | colorize_json '.[0] | { glucose: .glucose, dateString: .dateString }'
         else
             get_ns_bg
         fi
@@ -65,11 +65,11 @@ function get_ns_bg {
     valid_glucose=$(find_valid_ns_glucose)
     if echo $valid_glucose | grep -q glucose; then
         echo Found recent valid BG:
-        echo $valid_glucose | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
+        echo $valid_glucose | colorize_json '.[0] | { glucose: .glucose, dateString: .dateString }'
         cp -pu cgm/ns-glucose.json cgm/glucose.json
     else
         echo No recent valid BG found. Most recent:
-        cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
+        cat cgm/ns-glucose.json | colorize_json '.[0] | { glucose: .glucose, dateString: .dateString }'
     fi
 
     # copy cgm/glucose.json over to monitor/glucose.json if it's newer
@@ -98,14 +98,14 @@ function ns_temptargets {
     # TODO: merge local-temptargets.json with ns-temptargets.json
     #openaps report invoke settings/ns-temptargets.json settings/profile.json
     echo -n "Latest NS temptargets: "
-    cat settings/ns-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
+    cat settings/ns-temptargets.json | colorize_json '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
     # delete any local-temptarget files last modified more than 24h ago
     find settings/local-temptarget* -mmin +1440 -exec rm {} \;
     echo -n "Merging local temptargets: "
-    cat settings/local-temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
+    cat settings/local-temptargets.json | colorize_json '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
     jq -s '.[0] + .[1]|unique|sort_by(.created_at)|reverse' settings/ns-temptargets.json settings/local-temptargets.json > settings/temptargets.json
     echo -n "Temptargets merged: "
-    cat settings/temptargets.json | jq -c -C '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
+    cat settings/temptargets.json | colorize_json '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || die "Couldn't refresh profile"
     if cat settings/profile.json.new | jq . | grep -q basal; then
         mv settings/profile.json.new settings/profile.json
@@ -150,7 +150,7 @@ function upload_ns_status {
         return 1
     fi
     format_ns_status && grep -q iob upload/ns-status.json || die "Couldn't generate ns-status.json"
-    ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json | jq -C -c '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' || die "Couldn't upload devicestatus to NS"
+    ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json | colorize_json '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' || die "Couldn't upload devicestatus to NS"
 }
 
 #ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json

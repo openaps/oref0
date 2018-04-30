@@ -148,10 +148,11 @@ noquotes () {
     tr -d '"'
 }
 
-# Take JSON on stdin and output a compact syntax-colored version of it to
-# stdout. If the input is not valid JSON, copy the input to the output
-# unchanged, and also print "(NOT VALID JSON: <reason>)" at the end. Returns
-# success in any case.
+# Usage: colorize_json [jq-selector]
+# Take JSON on stdin, optionally apply a jq selector, and output a compact
+# syntax-colored version of the results to stdout. If the input is not valid
+# JSON, copy the input to the output unchanged, and also print
+# "(NOT VALID JSON: <reason>)" at the end. Return success in any case.
 colorize_json () {
     local INPUT="$(cat)"
     
@@ -159,7 +160,7 @@ colorize_json () {
         echo "(NOT VALID JSON: empty)"
     else
         local COLORIZED_OUTPUT
-        COLORIZED_OUTPUT="$(echo "$INPUT" |jq -C -c . 2>&1)"
+        COLORIZED_OUTPUT="$(echo "$INPUT" |jq -C -c "${@-.}" 2>&1)"
         
         if [[ $? != 0 ]]; then
             # If jq returned failure, it also wrote an error message.
