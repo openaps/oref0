@@ -1061,7 +1061,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     done
 
     echo "Adding OpenAPS log shortcuts"
-    oref0-log-shortcuts
+    oref0-log-shortcuts --add-to-profile="$HOME/.bash_profile"
 
     # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
     echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile

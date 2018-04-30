@@ -176,6 +176,16 @@ colorize_json () {
     fi
 }
 
+# Return success if the code that called this function was loaded with "source"
+# or ".", false if it was run directly. Note that wrapping a call to this in a
+# function changes it to refer to the location of the wrapping function.
+# Used by oref0-log-shortcuts to determine whether to/whether it's possible to
+# add aliases to the user's shell.
+# https://stackoverflow.com/questions/2683279/how-to-detect-if-a-script-is-being-sourced
+script_is_sourced () {
+    [[ "${BASH_SOURCE[1]}" != "${0}" ]]
+}
+
 
 # Usage: prompt_yn <question> <default-value>
 # Give the user (running the script in a terminal) a yes/no prompt. Return
