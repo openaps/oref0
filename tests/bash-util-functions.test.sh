@@ -71,6 +71,17 @@ mkdir bash-unit-test-temp
     if [[ "$(file_is_recent file_3minsago 2>&1)" != "" ]]; then
         fail_test "file_is_recent had output (when the file existed)"
     fi
+    
+    # Check that colorized_json handles invalid inputs correctly.
+    if echo "{}" |colorize_json |grep 'NOT VALID JSON' >/dev/null; then
+        fail_test "colorize_json reported an error on valid input"
+    fi
+    if ! echo "{" |colorize_json |grep 'NOT VALID JSON' >/dev/null; then
+        fail_test "colorize_json didn't report an error on mismatched-curly-brace input"
+    fi
+    if ! echo "}" |colorize_json |grep 'NOT VALID JSON' >/dev/null; then
+        fail_test "colorize_json didn't report an error on close-curly-brace input"
+    fi
 }
 
 cleanup

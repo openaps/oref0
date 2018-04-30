@@ -46,7 +46,7 @@ function autosens {
     else
         echo -n "No need to refresh autosens yet: "
     fi
-    cat settings/autosens.json | jq . -C -c
+    cat settings/autosens.json | colorize_json
 }
 
 main "$@"
