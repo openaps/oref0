@@ -214,6 +214,13 @@ function remove_all_openaps_aliases ()
     done
 }
 
+# Usage: add_to_crontab <duplicate-detect-key> <schedule> <command>
+# Checks cron for a line containing duplicate-detect-key. If there is no such
+# line, appends the given command with the given schedule to crontab.
+function add_to_crontab () {
+    (crontab -l; crontab -l |grep -q "$1" || echo "$2" "$3") | crontab -
+}
+
 if ! validate_cgm "${CGM}"; then
     DIR="" # to force a Usage prompt
 fi
@@ -1194,6 +1201,24 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
+
+        add_to_crontab \
+            "oref0-cron-every-minute" \
+            '* * * * *' \
+            "cd $directory && oref0-cron-every-minute"
+        add_to_crontab \
+            "oref0-cron-post-reboot" \
+            '@reboot' \
+            "cd $directory && oref0-cron-post-reboot"
+        add_to_crontab \
+            "oref0-nightly" \
+            "5 4 * * *" \
+            "cd $directory && oref0-cron-nightly"
+        add_to_crontab \
+            "oref0-cron-every-15min" \
+            "*/15 * * * *" \
+            "cd $directory && oref0-cron-every-15min"
+        
         (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || cd '$directory' && oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
         # temporarily disable hotspot for 1m every hour to allow it to try to connect via wifi again
         (crontab -l; crontab -l | grep -q "touch /tmp/disable_hotspot" || echo '0,20,40 * * * * touch /tmp/disable_hotspot' ) | crontab -
