@@ -43,7 +43,7 @@ CMD_GET_GLUCOSE="openaps use cgm oref0_glucose --hours %d --threshold 100"
 CMD_DESCRIBE_CLOCKS="openaps use cgm DescribeClocks"
 DEST="raw-cgm/raw-entries.json"
 CMD_NS_UPLOAD_ENTRIES="ns-upload-entries %s" % DEST
-CMD_OPENAPS_GET_BG="openaps get-bg"
+CMD_OPENAPS_GET_BG="oref0-get-bg"
 WAIT=5*60+1 # wait 5 minutes and 1 second
 CGMPER24H=288*2 # 24 hours = 288 * 5 minutes. For raw values multiply by 2
 

@@ -71,10 +71,10 @@ elif [[ ${CGM,,} =~ "xdrip" ]]; then
 elif [[ $ENABLE =~ dexusb ]]; then
     true
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
-    if ! is_process_running_named "openaps get-bg"; then
+    if ! is_process_running_named "oref0-get-bg"; then
         (
             date
-            openaps get-bg
+            oref0-get-bg
             cat cgm/glucose.json | jq -r  '.[] | \"\\(.sgv) \\(.dateString)\"' | head -1
         ) | tee -a /var/log/openaps/cgm-loop.log &
     fi
