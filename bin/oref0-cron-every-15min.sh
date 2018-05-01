@@ -9,3 +9,16 @@ cron, in the myopenaps directory.
 EOT
 
 assert_cwd_contains_ini
+
+# proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
+if is_edison; then
+    sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | jq .batteryVoltage | awk '{if ($1<=3050)system("sudo shutdown -h now")}' &
+fi
+
+# temporarily disable hotspot for 1m every 15m to allow it to try to connect via wifi again
+(
+    touch /tmp/disable_hotspot
+    sleep 60
+    rm /tmp/disable_hotspot
+) &
+
