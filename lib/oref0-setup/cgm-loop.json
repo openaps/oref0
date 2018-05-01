@@ -266,26 +266,5 @@
     },
     "type": "report",
     "name": "nightscout/uploaded-first.json"
-  },
-  {
-    "extras": {
-      "command": "report invoke monitor/cal.json monitor/cal-zoned.json nightscout/uploaded-cals.json"
-    },
-    "type": "alias",
-    "name": "extras"
-  },
-  {
-    "maybe-extras": {
-      "command": "! bash -c \"if (oref0-dex-is-fresh monitor/glucose-zoned.json 3); then openaps extras; else echo \\\"Glucose is not fresh, not pulling extra data\\\"; fi\""
-    },
-    "type": "alias",
-    "name": "maybe-extras"
-  },
-  {
-    "upload-first": {
-      "command": "report invoke monitor/glucose-zoned-first.json nightscout/uploaded-first.json"
-    },
-    "type": "alias",
-    "name": "upload-first"
   }
 ]
