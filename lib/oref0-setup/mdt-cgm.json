@@ -110,13 +110,6 @@
     "name": "nightscout/glucose.json"
   },
   {
-     "get-bg": {
-      "command": "! bash -c \" (echo -n MDT cgm data retrieve && openaps monitor-cgm 2>/dev/null >/dev/null && grep -q glucose cgm/cgm-glucose.json && echo d) && cp -pu cgm/cgm-glucose.json cgm/glucose.json && cp -pu cgm/glucose.json monitor/glucose-unzoned.json && (echo -n MDT cgm data reformat && openaps report invoke monitor/glucose.json nightscout/glucose.json 2>/dev/null >/dev/null && echo ted)\""
-     },
-    "type": "alias",
-    "name": "get-bg"
-  },
-  {
     "type": "alias",
     "upload-bg": {
       "command": "report invoke nightscout/recent-missing-entries.json nightscout/uploaded-entries.json"

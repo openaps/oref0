@@ -23,14 +23,6 @@
     }
   },
   {
-    "//": "Used by oref0-dexusb-cgm-loop.py",
-    "get-bg": {
-      "command": "! bash -c \"openaps monitor-cgm 2>&1 | tail -1 && grep -q glucose cgm/cgm-glucose.json && cp -pu cgm/cgm-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json\""
-    },
-    "type": "alias",
-    "name": "get-bg"
-  },
-  {
     "//": "Likely unused, but 'enact' is a special word in OpenAPS so I'm leaving it for now in case it's used in a roundabout way",
     "type": "alias",
     "name": "enact",

@@ -60,6 +60,7 @@
     "oref0-find-insulin-uses": "./bin/oref0-find-insulin-uses.js",
     "oref0-fix-git-corruption": "bin/oref0-fix-git-corruption.sh",
     "oref0-g4-loop": "./bin/oref0-g4-loop.sh",
+    "oref0-get-bg": "./bin/oref0-get-bg.sh",
     "oref0-get-profile": "./bin/oref0-get-profile.js",
     "oref0-html": "./bin/oref0-html.js",
     "oref0-ifttt-notify": "./bin/oref0-ifttt-notify",
