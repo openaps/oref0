@@ -67,6 +67,7 @@
     "oref0-log-shortcuts": "./bin/oref0-log-shortcuts.sh",
     "oref0-mdt-trend": "./bin/oref0-mdt-trend.js",
     "oref0-meal": "./bin/oref0-meal.js",
+    "oref0-monitor-cgm": "./bin/oref0-monitor-cgm.sh",
     "oref0-ns-loop": "./bin/oref0-ns-loop.sh",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "oref0_nightscout_check": "./bin/oref0_nightscout_check.py",

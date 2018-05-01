@@ -15,14 +15,6 @@
     }
   },
   {
-    "//": "Used by get-bg",
-    "type": "alias",
-    "name": "monitor-cgm",
-    "monitor-cgm": {
-      "command": "report invoke raw-cgm/raw-entries.json cgm/cgm-glucose.json"
-    }
-  },
-  {
     "//": "Likely unused, but 'enact' is a special word in OpenAPS so I'm leaving it for now in case it's used in a roundabout way",
     "type": "alias",
     "name": "enact",

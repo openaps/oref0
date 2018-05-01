@@ -268,20 +268,6 @@
     "name": "nightscout/uploaded-first.json"
   },
   {
-    "type": "alias",
-    "name": "glucose",
-    "glucose": {
-      "command": "report invoke monitor/glucose-oref0.json monitor/glucose-zoned.json monitor/glucose-zoned-merge.json monitor/glucose-raw-merge.json"
-    }
-  },
-  {
-    "echo-glucose": {
-      "command": "! bash -c \"echo \\\">>>>RESULTS<<<<\\\" && json -f monitor/glucose-raw-merge.json -a sgv raw dateString | head -n 4\""
-    },
-    "type": "alias",
-    "name": "echo-glucose"
-  },
-  {
     "extras": {
       "command": "report invoke monitor/cal.json monitor/cal-zoned.json nightscout/uploaded-cals.json"
     },
@@ -300,13 +286,6 @@
     "name": "upload",
     "upload": {
       "command": "report invoke nightscout/recent-missing-entries.json nightscout/uploaded-entries.json"
-    }
-  },
-  {
-    "type": "alias",
-    "name": "monitor-cgm",
-    "monitor-cgm": {
-      "command": "! bash -c \"openaps wait-until-expected && time openaps glucose && openaps echo-glucose && (openaps upload-first || echo upload first failed) && (openaps upload || echo cgm upload failed) && (openaps maybe-extras || echo cgm extras failed)\""
     }
   },
   {

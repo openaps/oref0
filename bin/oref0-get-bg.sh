@@ -9,7 +9,7 @@ EOT
 CGM="$(get_pref_string .cgm)"
 if [[ "${CGM,,}" == "mdt" ]]; then
     (echo -n MDT cgm data retrieve \
-        && openaps monitor-cgm 2>/dev/null >/dev/null \
+        && oref0-monitor-cgm 2>/dev/null >/dev/null \
         && grep -q glucose cgm/cgm-glucose.json \
         && echo d) \
     && cp -pu cgm/cgm-glucose.json cgm/glucose.json \
@@ -18,7 +18,7 @@ if [[ "${CGM,,}" == "mdt" ]]; then
         && openaps report invoke monitor/glucose.json nightscout/glucose.json 2>/dev/null >/dev/null \
         && echo ted)
 else
-    openaps monitor-cgm 2>&1 | tail -1 \
+    oref0-monitor-cgm 2>&1 | tail -1 \
     && grep -q glucose cgm/cgm-glucose.json \
     && cp -pu cgm/cgm-glucose.json cgm/glucose.json
     cp -pu cgm/glucose.json monitor/glucose.json
