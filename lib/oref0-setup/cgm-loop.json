@@ -282,13 +282,6 @@
     "name": "maybe-extras"
   },
   {
-    "type": "alias",
-    "name": "upload",
-    "upload": {
-      "command": "report invoke nightscout/recent-missing-entries.json nightscout/uploaded-entries.json"
-    }
-  },
-  {
     "upload-first": {
       "command": "report invoke monitor/glucose-zoned-first.json nightscout/uploaded-first.json"
     },

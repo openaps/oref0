@@ -24,6 +24,10 @@ function glucose_report {
     openaps report invoke monitor/glucose-oref0.json monitor/glucose-zoned.json monitor/glucose-zoned-merge.json monitor/glucose-raw-merge.json
 }
 
+function upload {
+    report invoke nightscout/recent-missing-entries.json nightscout/uploaded-entries.json
+}
+
 if [[ "${CGM,,}" == "mdt" ]]; then
     openaps report invoke monitor/cgm-mm-glucosedirty.json monitor/cgm-mm-glucosetrend.json cgm/cgm-glucose.json
 elif [[ ${CGM,,} =~ "g4-upload" ]] ||  [[ ${CGM,,} =~ "shareble" ]]; then
@@ -31,7 +35,7 @@ elif [[ ${CGM,,} =~ "g4-upload" ]] ||  [[ ${CGM,,} =~ "shareble" ]]; then
     && time glucose_report \
     && echo_glucose \
     && (openaps upload-first || echo upload first failed) \
-    && (openaps upload || echo cgm upload failed) \
+    && (upload || echo cgm upload failed) \
     && (openaps maybe-extras || echo cgm extras failed)
 else
     openaps report invoke raw-cgm/raw-entries.json cgm/cgm-glucose.json

@@ -110,13 +110,6 @@
     "name": "upload-bg"
   },
   {
-    "type": "alias",
-    "name": "upload",
-    "upload": {
-      "command": "! bash -c \"echo -n Upload && ( openaps upload-bg; openaps upload-ns-status; openaps upload-recent-treatments ) 2>/dev/null >/dev/null && echo ed\""
-    }
-  },
-  {
     "//": "May be run directly by the user (mentioned in docs)",
     "type": "alias",
     "first-upload": {
