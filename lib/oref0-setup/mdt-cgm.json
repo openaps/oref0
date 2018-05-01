@@ -53,13 +53,6 @@
     }
   },
   {
-    "type": "alias",
-    "name": "monitor-cgm",
-    "monitor-cgm": {
-      "command": "report invoke monitor/cgm-mm-glucosedirty.json monitor/cgm-mm-glucosetrend.json cgm/cgm-glucose.json"
-    }
-  },
-  {
     "type": "report",
     "name": "monitor/glucose.json",
     "monitor/glucose.json": {

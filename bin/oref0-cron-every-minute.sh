@@ -72,12 +72,11 @@ if [[ ${CGM,,} =~ "g4-go" ]]; then
 # TODO: deprecate g4-upload and g4-local-only
 elif [[ ${CGM,,} =~ "g4-upload" ]]; then
     (
-        cd $CGM_LOOPDIR
-        if ! is_process_running_named "openaps monitor-cgm"; then
-            (date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log
+        if ! is_process_running_named "oref0-monitor-cgm"; then
+            (date; oref0-monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log
         fi
-        cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json
-        cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json
+        cp -up $CGM_LOOPDIR/monitor/glucose-raw-merge.json $directory/cgm/glucose.json
+        cp -up $CGM_LOOPDIR/$directory/cgm/glucose.json $directory/monitor/glucose.json
     ) &
 elif [[ ${CGM,,} =~ "xdrip" ]]; then
     if ! is_process_running_named "monitor-xdrip"; then
