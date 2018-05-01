@@ -22,7 +22,26 @@ BT_MAC="$(get_pref_string .bt_mac "")"
 PUSHOVER_TOKEN="$(get_pref_string .pushover_token "")"
 PUSHOVER_USER="$(get_pref_string .pushover_user "")"
 
-ps aux | grep -v grep | grep bash | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log &
+function is_process_running_named ()
+{
+    if ps aux |grep -v grep |grep -q "$1"; then
+        return 0
+    else
+        return 1
+    fi
+}
+function is_bash_process_running_named ()
+{
+    if ps aux | grep -v grep | grep bash | grep -q "$1"; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+if ! is_bash_process_running_named "oref0-online $BT_MAC"; then
+    oref0-online "$BT_MAC" 2>&1 >> /var/log/openaps/network.log &
+fi
 
 sudo wpa_cli scan &
 
@@ -47,39 +66,57 @@ fi
 
 if [[ ${CGM,,} =~ "g4-go" ]]; then
         cd $CGM_LOOPDIR
-        ps aux | grep -v grep | grep bash | grep -q 'oref0-g4-loop' || oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log
+        if ! is_bash_process_running_named oref0-g4-loop; then
+            oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log &
+        fi
 # TODO: deprecate g4-upload and g4-local-only
 elif [[ ${CGM,,} =~ "g4-upload" ]]; then
     (
         cd $CGM_LOOPDIR
-        ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || (date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log
+        if ! is_process_running_named "openaps monitor-cgm"; then
+            (date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log
+        fi
         cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json
         cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json
     ) &
 elif [[ ${CGM,,} =~ "xdrip" ]]; then
-    ps aux | grep -v grep | grep -q 'monitor-xdrip' || monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log &
+    if ! is_process_running_named "monitor-xdrip"; then
+        monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log &
+    fi
 elif [[ $ENABLE =~ dexusb ]]; then
     true
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
-    ps aux | grep -v grep | grep -q 'openaps get-bg' || (
-        date
-        openaps get-bg
-        cat cgm/glucose.json | jq -r  '.[] | \"\\(.sgv) \\(.dateString)\"' | head -1
-    ) | tee -a /var/log/openaps/cgm-loop.log &
+    if ! is_process_running_named "openaps get-bg"; then
+        (
+            date
+            openaps get-bg
+            cat cgm/glucose.json | jq -r  '.[] | \"\\(.sgv) \\(.dateString)\"' | head -1
+        ) | tee -a /var/log/openaps/cgm-loop.log &
+    fi
 fi
 
-ps aux | grep -v grep | grep bash | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log &
+if ! is_bash_process_running_named oref0-ns-loop; then
+    oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log &
+fi
 
-ps aux | grep -v grep | grep bash | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log &
+if ! is_bash_process_running_named oref0-autosens-loop; then
+    oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log &
+fi
 
-( ps aux | grep -v grep | grep bash | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log &
+if ! is_bash_process_running_named oref0-pump-loop; then
+    oref0-pump-loop 2>&1 | tee -a /var/log/openaps/pump-loop.log &
+fi
 
 if [[ ! -z "$BT_PEB" ]]; then
-    ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log &
+    if ! is_process_running_named "peb-urchin-status $BT_PEB"; then
+        peb-urchin-status $BT_PEB 2>&1 | tee -a /var/log/openaps/urchin-loop.log &
+    fi
 fi
 
 if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
-    ps aux | grep -v grep | grep bash | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log &
+    if ! is_bash_process_running_named oref0-bluetoothup; then
+        oref0-bluetoothup >> /var/log/openaps/network.log &
+    fi
 fi
 
 if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
