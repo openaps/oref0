@@ -13,56 +13,5 @@
     "mmtune": {
       "command": "! bash -c \"reset_spi_serial.py 2>/dev/null; oref0_init_pump_comms.py; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \\\"$line \\\"; done\""
     }
-  },
-  {
-    "//": "Likely unused, but 'enact' is a special word in OpenAPS so I'm leaving it for now in case it's used in a roundabout way",
-    "type": "alias",
-    "name": "enact",
-    "enact": {
-      "command": "! bash -c \"rm enact/suggested.json; openaps invoke enact/suggested.json && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then ( rm enact/enacted.json; openaps invoke enact/enacted.json ; grep -q duration enact/enacted.json || openaps invoke enact/enacted.json ) 2>&1 | egrep -v \\\"^  |subg_rfspy|handler\\\"; fi; grep incorrectly enact/suggested.json && oref0-set-system-clock 2>/dev/null; cat enact/enacted.json | json -0\""
-    }
-  },
-  {
-    "//": "Used in oref0-ns-loop.sh",
-    "type": "alias",
-    "name": "latest-ns-treatment-time",
-    "latest-ns-treatment-time": {
-      "command": "! bash -c \"nightscout latest-openaps-treatment $NIGHTSCOUT_HOST | json created_at\""
-    }
-  },
-  {
-    "type": "alias",
-    "name": "format-latest-nightscout-treatments",
-    "format-latest-nightscout-treatments": {
-      "command": "! bash -c \"nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json\""
-    }
-  },
-  {
-    "type": "alias",
-    "name": "upload-recent-treatments",
-    "upload-recent-treatments": {
-      "command": "! bash -c \"openaps format-latest-nightscout-treatments && test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0 && (ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json ) || echo \\\"No recent treatments to upload\\\"\""
-    }
-  },
-  {
-    "type": "alias",
-    "name": "format-ns-status",
-    "format-ns-status": {
-      "command": "! bash -c \"ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json\""
-    }
-  },
-  {
-    "upload-ns-status": {
-      "command": "! bash -c \"grep -q iob monitor/iob.json && find enact/ -mmin -5 -size +5c | grep -q suggested.json && openaps format-ns-status && grep -q iob upload/ns-status.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json\""
-    },
-    "type": "alias",
-    "name": "upload-ns-status"
-  },
-  {
-    "type": "alias",
-    "name": "monitor-xdrip",
-    "monitor-xdrip": {
-      "command": "report invoke xdrip/glucose.json"
   }
-}
 ]

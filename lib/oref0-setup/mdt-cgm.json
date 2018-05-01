@@ -102,19 +102,4 @@
     },
     "name": "nightscout/glucose.json"
   },
-  {
-    "type": "alias",
-    "upload-bg": {
-      "command": "report invoke nightscout/recent-missing-entries.json nightscout/uploaded-entries.json"
-    },
-    "name": "upload-bg"
-  },
-  {
-    "//": "May be run directly by the user (mentioned in docs)",
-    "type": "alias",
-    "first-upload": {
-      "command": "! bash -c \"cat nightscout/glucose.json | json 1 > nightscout/recent-missing-entries.json && openaps report invoke nightscout/uploaded-entries.json\""
-    },
-    "name": "first-upload"
-  }
 ]

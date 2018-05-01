@@ -36,5 +36,6 @@ fi
 
 #decide to run urchin loop or not
 if [[ $(jq .urchin_loop_on pancreoptions.json) = "true" ]]; then
-   openaps urchin-loop
+   openaps invoke upload/urchin-data.json \
+   && openaps use pbbl send_urchin_data upload/urchin-data.json
 fi
