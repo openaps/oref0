@@ -33,7 +33,12 @@ sudo wpa_cli scan &
 ) &
 
 # kill pump-loop after 5 minutes of not writing to pump-loop.log
-find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && ( echo No updates to pump-loop.log in 5m - killing processes; killall -g --older-than 5m openaps; killall -g --older-than 5m oref0-pump-loop; killall -g --older-than 5m openaps-report ) | tee -a /var/log/openaps/pump-loop.log &
+find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && (
+    echo No updates to pump-loop.log in 5m - killing processes
+    killall -g --older-than 5m openaps
+    killall -g --older-than 5m oref0-pump-loop
+    killall -g --older-than 5m openaps-report
+) | tee -a /var/log/openaps/pump-loop.log &
 
 if [[ ${CGM,,} =~ "g5-upload" ]]; then
     oref0-upload-entries &
@@ -51,7 +56,11 @@ elif [[ ${CGM,,} =~ "xdrip" ]]; then
 elif [[ $ENABLE =~ dexusb ]]; then
     true
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
-    ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | jq -r  '.[] | \"\\(.sgv) \\(.dateString)\"' | head -1 ) | tee -a /var/log/openaps/cgm-loop.log &
+    ps aux | grep -v grep | grep -q 'openaps get-bg' || (
+        date
+        openaps get-bg
+        cat cgm/glucose.json | jq -r  '.[] | \"\\(.sgv) \\(.dateString)\"' | head -1
+    ) | tee -a /var/log/openaps/cgm-loop.log &
 fi
 
 ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log &
