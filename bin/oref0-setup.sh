@@ -195,7 +195,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
-    if grep -qa "Explorer HAT" /proc/device-tree/hat/product 2>/dev/null ; then
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product ; then
         echocolor "Explorer Board HAT detected. "
         ttyport=/dev/spidev0.0
     else
@@ -607,7 +607,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Running apt-get update
     sudo apt-get update
     echo Running apt-get upgrade
-    sudo apt-get upgrade
+    sudo apt-get -y upgrade
     echo Running apt-get autoclean
     sudo apt-get autoclean
 
@@ -699,7 +699,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if ! python -c "import openxshareble" 2>/dev/null; then
             echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
         fi
-        sudo apt-get update; sudo apt-get upgrade
+        sudo apt-get update; sudo apt-get -y upgrade
         sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
         echo Checking bluez installation
         # TODO: figure out if we need to do this for 5.44 as well
@@ -886,7 +886,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # xdrip CGM (xDripAPS)
     if [[ ${CGM,,} =~ "xdrip" ]]; then
         echo xdrip selected as CGM, so configuring xDripAPS
-        sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
+        sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
         git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
         for type in xdrip-cgm; do
@@ -1016,7 +1016,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
         echo "Installing socat..."
-        apt-get install socat
+        apt-get -y install socat
         echo "Installing openaps-menu..."
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
