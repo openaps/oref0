@@ -1007,7 +1007,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo
     
     #Check to see if Explorer HAT is present, and install all necessary stuff
-    if grep -a "Explorer HAT" /proc/device-tree/hat/product ; then
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product 2>/dev/null ; then
         echo "Looks like you're using an Explorer HAT!"
         echo "Making sure SPI is enabled..."
         sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
