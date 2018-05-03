@@ -569,7 +569,7 @@ function refresh_pumphistory_and_meal {
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-         || { echo; cat monitor/status.json | colorize_json; return 1 }
+         || { echo; cat monitor/status.json | colorize_json; return 1; }
     retry_return monitor_pump || return 1
     echo -n "meal.json "
     retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
