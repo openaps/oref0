@@ -20,8 +20,6 @@ var get_iob = require('oref0/lib/iob');
 var detect = require('oref0/lib/determine-basal/autosens');
 
 if (!module.parent) {
-    var detectsensitivity = init();
-
     var glucose_input = process.argv[2];
     var pumphistory_input = process.argv[3];
     var isf_input = process.argv[4]
@@ -122,17 +120,4 @@ if (!module.parent) {
 
 }
 
-function init() {
-
-    var detectsensitivity = {
-        name: 'detect-sensitivity'
-        , label: "OpenAPS Detect Sensitivity"
-    };
-
-    //detectsensitivity.getLastGlucose = require('../lib/glucose-get-last');
-    //detectsensitivity.detect_sensitivity = require('../lib/determine-basal/determine-basal');
-    return detectsensitivity;
-
-}
-module.exports = init;
 
