@@ -11,8 +11,8 @@ EOT
 
 assert_cwd_contains_ini
 
-ENABLE="$(get_config_string .enable)"
-NIGHTSCOUT_HOST="$(get_config_string .nightscout_host)"
+ENABLE="$(get_pref_string .enable)"
+NIGHTSCOUT_HOST="$(get_pref_string .nightscout_host)"
 directory="$PWD"
 
 if [[ $ENABLE =~ autotune ]]; then
