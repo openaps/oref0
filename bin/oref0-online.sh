@@ -1,5 +1,14 @@
 #!/bin/bash
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+usage "$@" <<EOT
+Usage: $self
+Attempt to get a working internet connection via wifi or bluetooth. Typically
+run from crontab.
+EOT
+
+
 main() {
     MACs=$@
     HostAPDIP='10.29.29.1'
@@ -7,7 +16,7 @@ main() {
     # if we are connected to wifi but don't have an IP, try to get one
     if iwgetid -r wlan0 | egrep -q "[A-Za-z0-9_]+"; then
         if ! ip route | grep default | grep -q wlan0; then
-            if find /tmp/ -mmin -60 | grep bad_wifi && grep -q "$(iwgetid -r wlan0)" /tmp/bad_wifi; then
+            if file_is_recent /tmp/bad_wifi 60 && grep -q "$(iwgetid -r wlan0)" /tmp/bad_wifi; then
                 echo Not renewing wlan0 IP due to recent connectivity failure:
                 ls -la /tmp/bad_wifi
             else
@@ -79,7 +88,7 @@ function print_bluetooth_name {
 }
 
 function print_wifi_name {
-    SSID=$(iwgetid -r wlan0 | tr -d '\n')
+    SSID=$(iwgetid -r wlan0 | nonl)
     if [[ ! -z $SSID ]]; then
         echo "At $(date) my wifi network name is $SSID"
     else
@@ -144,7 +153,7 @@ function bt_disconnect {
 }
 
 function wifi_dhcp_renew {
-    if find /tmp/ -mmin -60 | grep bad_wifi && grep -q "$(iwgetid -r wlan0)" /tmp/bad_wifi; then
+    if file_is_recent /tmp/bad_wifi 60 && grep -q "$(iwgetid -r wlan0)" /tmp/bad_wifi; then
         echo Not renewing wlan0 IP due to recent connectivity failure:
         ls -la /tmp/bad_wifi
     else
@@ -170,7 +179,7 @@ function stop_hotspot {
         dhclient_restart
     else
         echo -n "At $(date) my local hotspot is not running"
-        if ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
+        if ! check_pref_bool .offline_hotspot false; then
             echo " (and not enabled in preferences.json)"
         else
             echo
@@ -189,8 +198,7 @@ function start_hotspot {
     echo
     if ls /tmp/disable_hotspot; then
         stop_cycle
-    elif ! ls preferences.json 2>/dev/null >/dev/null \
-        || ! cat preferences.json | jq -e .offline_hotspot >/dev/null; then
+    elif ! check_pref_bool .offline_hotspot false; then
         echo "Offline hotspot not enabled in preferences.json"
         stop_cycle
     elif [[ -z $1 ]]; then

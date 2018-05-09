@@ -1,5 +1,13 @@
 #!/bin/bash
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+usage "$@" <<EOF
+Usage: $self
+Upload data to Nightscout. Normally runs from crontab.
+EOF
+
+
 echo "Checking entries-last-date.json..."
 if [ -e upload/entries-last-date.json ]; then
     LAST_TIME=$(jq -s ".[0].date" upload/entries-last-date.json)

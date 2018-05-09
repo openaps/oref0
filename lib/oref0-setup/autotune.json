@@ -32,12 +32,5 @@
     },
     "type": "report",
     "name": "settings/profile.json"
-  },
-  {
-    "type": "alias",
-    "name": "get-settings",
-    "get-settings": {
-      "command": "report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json"
-    }
   }
 ]

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 # OREF0_DEBUG makes this script much more verbose
 # and allows it to print additional debug information.
 # OREF0_DEBUG=1 generally means to print everything that usually
@@ -28,6 +30,12 @@ if [[ "$OREF0_DEBUG" -ge 2 ]] ; then
 else
   exec 4>/dev/null
 fi
+
+usage "$@" <<EOT
+Usage: $self
+The main pump loop. Syncs with an insulin pump, enacts temporary basals and
+SMB boluses. Normally runs from crontab.
+EOT
 
 # main pump-loop
 main() {
@@ -101,12 +109,12 @@ function timerun {
 
 function fail {
     echo -n "oref0-pump-loop failed. "
-    if find enact/ -mmin -5 | grep smb-suggested.json >&4 && grep "too old" enact/smb-suggested.json >&4; then
+    if file_is_recent enact/smb-suggested.json && grep "too old" enact/smb-suggested.json >&4; then
         touch /tmp/pump_loop_completed
         wait_for_bg
         echo "Unsuccessful oref0-pump-loop (BG too old) at $(date)"
     # don't treat suspended pump as a complete failure
-    elif find monitor/ -mmin -5 | grep status.json >&4 && grep -q '"suspended": true' monitor/status.json; then
+    elif file_is_recent monitor/status.json && grep -q '"suspended": true' monitor/status.json; then
         refresh_profile 15; pumphistory_daily_refresh
         refresh_after_bolus_or_enact
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
@@ -126,22 +134,6 @@ function fail {
     exit 1
 }
 
-function overtemp {
-    # check for CPU temperature above 85°C
-    # special temperature check for raspberry pi
-    if getent passwd pi > /dev/null; then
-        TEMPERATURE=`cat /sys/class/thermal/thermal_zone0/temp`
-        TEMPERATURE=`echo -n ${TEMPERATURE:0:2}; echo -n .; echo -n ${TEMPERATURE:2}`
-        echo $TEMPERATURE | awk '$NF > 70' | grep input \
-        && echo Rig is too hot: not running pump-loop at $(date)\
-        && echo Please ensure rig is properly ventilated
-    else
-        sensors -u 2>&3 | awk '$NF > 85' | grep input \
-        && echo Rig is too hot: not running pump-loop at $(date)\
-        && echo Please ensure rig is properly ventilated
-    fi
-}
-
 function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     try_fail refresh_pumphistory_and_meal
@@ -149,15 +141,15 @@ function smb_reservoir_before {
     echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
     retry_fail check_clock
     echo -n "Checking pump clock: "
-    (cat monitor/clock-zoned.json; echo) | tr -d '\n'
+    (cat monitor/clock-zoned.json; echo) | nonl
     echo -n " is within 90s of current time: " && date
-    if (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < -55 )) || (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > 55 )); then
+    if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
         oref0-set-device-clocks
         read_full_pumphistory
        fi
-    (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") > -90 )) \
-    && (( $(bc <<< "$(date +%s -d $(cat monitor/clock-zoned.json | sed 's/"//g')) - $(date +%s)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
+    (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
+    && (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
     find monitor/ -mmin -5 -size +5c | grep -q pumphistory || { echo "Error: pumphistory-24h >5m old (or empty)"; fail "$@"; }
 }
 
@@ -202,7 +194,7 @@ function smb_suggest {
     retry_fail check_clock
     retry_fail check_tempbasal
     try_fail calculate_iob && echo -n "ed: "
-    echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c .
+    echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | colorize_json
     try_fail determine_basal && cp -up enact/smb-suggested.json enact/suggested.json
     try_fail smb_verify_suggested
 }
@@ -219,26 +211,26 @@ function determine_basal {
 function smb_enact_temp {
     smb_suggest
     echo -n "enact/smb-suggested.json: "
-    cat enact/smb-suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)'
-    cat enact/smb-suggested.json | jq -C -c .reason
+    cat enact/smb-suggested.json | colorize_json '. | del(.predBGs) | del(.reason)'
+    cat enact/smb-suggested.json | colorize_json .reason
     if (jq --exit-status .predBGs.COB enact/smb-suggested.json >&4); then
-        echo -n "COB: " && jq -C -c .predBGs.COB enact/smb-suggested.json
+        echo -n "COB: " && cat enact/smb-suggested.json |colorize_json .predBGs.COB
     fi
     if (jq --exit-status .predBGs.UAM enact/smb-suggested.json >&4); then
-        echo -n "UAM: " && jq -C -c .predBGs.UAM enact/smb-suggested.json
+        echo -n "UAM: " && cat enact/smb-suggested.json |colorize_json .predBGs.UAM
     fi
     if (jq --exit-status .predBGs.IOB enact/smb-suggested.json >&4); then
-        echo -n "IOB: " && jq -C -c .predBGs.IOB enact/smb-suggested.json
+        echo -n "IOB: " && cat enact/smb-suggested.json |colorize_json .predBGs.IOB
     fi
     if (jq --exit-status .predBGs.ZT enact/smb-suggested.json >&4); then
-        echo -n "ZT:  " && jq -C -c .predBGs.ZT enact/smb-suggested.json
+        echo -n "ZT:  " && cat enact/smb-suggested.json |colorize_json .predBGs.ZT
     fi
     if ( grep -q duration enact/smb-suggested.json 2>&3 && ! smb_verify_enacted || jq --exit-status '.duration == 0' enact/smb-suggested.json >&4 ); then (
         rm enact/smb-enacted.json
         ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
         grep -q duration enact/smb-enacted.json || ( mdt settempbasal enact/smb-suggested.json && jq '.  + {"received": true}' enact/smb-suggested.json > enact/smb-enacted.json ) 2>&3 >&4
         cp -up enact/smb-enacted.json enact/enacted.json
-        echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | jq -C -c '. | "Rate: \(.rate) Duration: \(.duration)"'
+        echo -n "enact/smb-enacted.json: " && cat enact/smb-enacted.json | colorize_json '. | "Rate: \(.rate) Duration: \(.duration)"'
         ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     else
         echo -n "No smb_enact needed. "
@@ -252,7 +244,7 @@ function smb_verify_enacted {
     rm -rf monitor/temp_basal.json
     ( echo -n Temp refresh \
         && ( check_tempbasal || check_tempbasal ) 2>&3 >&4 && echo -n "ed: " \
-    ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | jq -C -c . \
+    ) && echo -n "monitor/temp_basal.json: " && cat monitor/temp_basal.json | colorize_json \
     && jq --slurp --exit-status 'if .[1].rate then (.[0].rate > .[1].rate - 0.03 and .[0].rate < .[1].rate + 0.03 and .[0].duration > .[1].duration - 5 and .[0].duration < .[1].duration + 20) else true end' monitor/temp_basal.json enact/smb-suggested.json >&4
 }
 
@@ -262,15 +254,15 @@ function smb_verify_reservoir {
     echo -n "Checking reservoir: " \
     && ( check_reservoir || check_reservoir ) 2>&3 >&4 \
     && echo -n "reservoir level before: " \
-    && cat monitor/lastreservoir.json | tr -d '\n' \
+    && cat monitor/lastreservoir.json | nonl \
     && echo -n ", suggested: " \
-    && jq -r -C -c .reservoir enact/smb-suggested.json | tr -d '\n' \
+    && jq -r -C -c .reservoir enact/smb-suggested.json | nonl \
     && echo -n " and after: " \
     && cat monitor/reservoir.json \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) <= 0.1") )) \
     && (( $(bc <<< "$(< monitor/lastreservoir.json) - $(< monitor/reservoir.json) >= 0") )) \
-    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) <= 0.1") )) \
-    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | tr -d '\n') - $(< monitor/reservoir.json) >= 0") ))
+    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | nonl) - $(< monitor/reservoir.json) <= 0.1") )) \
+    && (( $(bc <<< "$(jq -r .reservoir enact/smb-suggested.json | nonl) - $(< monitor/reservoir.json) >= 0") ))
 }
 
 function smb_verify_suggested {
@@ -283,12 +275,12 @@ function smb_verify_suggested {
         return 1
     fi
     if jq -e -r .deliverAt enact/smb-suggested.json; then
-        echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | tr -d '\n' \
+        echo -n "Checking deliverAt: " && jq -r .deliverAt enact/smb-suggested.json | nonl \
         && echo -n " is within 1m of current time: " && date \
-        && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") > -60 )) \
-        && (( $(bc <<< "$(date +%s -d $(jq -r .deliverAt enact/smb-suggested.json | tr -d '\n')) - $(date +%s)") < 60 )) \
+        && (( $(bc <<< "$(to_epochtime $(jq -r .deliverAt enact/smb-suggested.json)) - $(epochtime_now)") > -60 )) \
+        && (( $(bc <<< "$(to_epochtime $(jq -r .deliverAt enact/smb-suggested.json)) - $(epochtime_now)") < 60 )) \
         && echo "and that smb-suggested.json is less than 1m old" \
-        && (find enact/ -mmin -1 -size +5c | grep -q smb-suggested.json)
+        && (file_is_recent_and_min_size enact/smb-suggested.json 1)
     else
         echo No deliverAt found.
         cat enact/smb-suggested.json
@@ -301,7 +293,7 @@ function smb_verify_status {
     rm -rf monitor/status.json
     echo -n "Checking pump status (suspended/bolusing): "
     ( check_status || check_status ) 2>&3 >&4 \
-    && cat monitor/status.json | jq -C -c . \
+    && cat monitor/status.json | colorize_json \
     && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
     && if grep -q '"suspended": true' monitor/status.json; then
@@ -320,12 +312,12 @@ function smb_bolus {
     # Verify that the suggested.json is less than 5 minutes old
     # and administer the supermicrobolus
     #mdt bolus does not work on the 723 yet. Only tested on 722 pump
-    find enact/ -mmin -5 | grep smb-suggested.json >&4 \
+    file_is_recent enact/smb-suggested.json \
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
         mdt -f internal button esc esc esc esc 2>&3 \
-        && echo -n "and bolusing " && jq .units enact/smb-suggested.json | tr -d '\n' && echo " units" \
+        && echo -n "and bolusing " && jq .units enact/smb-suggested.json | nonl && echo " units" \
         && ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && rm -rf enact/smb-suggested.json
     else
@@ -336,7 +328,7 @@ function smb_bolus {
 # && try_return openaps report invoke enact/bolused.json 2>&3 >&4 | tail -1 \
 
 function refresh_after_bolus_or_enact {
-    last_treatment_time=$(date -d $(cat monitor/pumphistory-24h-zoned.json | jq .[0].timestamp | tr -d '"'))
+    last_treatment_time=$(date -d $(cat monitor/pumphistory-24h-zoned.json | jq .[0].timestamp | noquotes))
     newer_enacted=$(find enact -newer monitor/pumphistory-24h-zoned.json -size +5c | egrep /enacted)
     newer_bolused=$(find enact -newer monitor/pumphistory-24h-zoned.json -size +5c | egrep /bolused)
     enacted_duration=$(grep duration enact/enacted.json)
@@ -354,7 +346,7 @@ function refresh_after_bolus_or_enact {
             #echo -n "bolused since pumphistory refreshed, "
             #stat enact/bolused.json | grep Mod
         fi
-    #if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
+    #if (file_is_recent_and_min_size enact/bolused.json 2 || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
         refresh_pumphistory_and_meal \
@@ -372,7 +364,7 @@ function refresh_after_bolus_or_enact {
 function unsuspend_if_no_temp {
     # If temp basal duration is zero, unsuspend pump
     if (cat monitor/temp_basal.json | json -c "this.duration == 0" | grep -q duration); then
-        if (grep -iq '"unsuspend_if_no_temp": true' preferences.json); then
+        if check_pref_bool .unsuspend_if_no_temp false; then
             echo Temp basal has ended: unsuspending pump
             mdt resume 2>&3
         else
@@ -425,7 +417,7 @@ function if_mdt_get_bg {
         done
         if [ -f "monitor/cgm-mm-glucosedirty.json" ]; then
             if [ -f "cgm/glucose.json" ]; then
-                if [ $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json | tr -d '"') +%s) == $(date -d $(jq .[0].display_time monitor/glucose.json | tr -d '"') +%s) ]; then
+                if [ $(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json)) == $(to_epochtime $(jq .[0].display_time monitor/glucose.json)) ]; then
                     echo MDT CGM data retrieved \
                     && echo No new MDT CGM data to reformat \
                     && echo
@@ -447,9 +439,9 @@ function if_mdt_get_bg {
 # TODO: remove if still unused at next oref0 release
 function wait_for_mdt_get_bg {
     # This might not really be needed since very seldom does a loop take less time to run than CGM Data takes to refresh.
-    until [ $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +%s) -lt $(date +%s) ]; do
-        CGMDIFFTIME=$(( $(date --date="@$(($(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +%s) - $(date +%s) ))
-        echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +"%r") wait untill $(date --date="@$(($(date #-d $(jq .[1].date monitor/cgm-mm-glucosedirty.json| tr -d '"') +%s) + 300))" +"%r")to continue"
+    until [ $(to_epochtime @$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json)) + 300))) -lt $(epochtime_now) ]; do
+        CGMDIFFTIME=$(( $(to_epochtime @$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes)) + 300))) - $(epochtime_now) ))
+        echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes) +"%r") wait untill $(date --date="@$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes)) + 300))" +"%r")to continue"
         echo "waiting for $CGMDIFFTIME seconds before continuing"
         sleep $CGMDIFFTIME
         until openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&3 >&4; do
@@ -525,7 +517,7 @@ function mmtune {
 }
 
 function maybe_mmtune {
-    if ( find /tmp/ -mmin -15 | egrep -q "pump_loop_completed" ); then
+    if file_is_recent /tmp/pump_loop_completed 15; then
         # mmtune ~ 25% of the time
         [[ $(( ( RANDOM % 100 ) )) > 75 ]] \
         && mmtune
@@ -568,6 +560,7 @@ function wait_for_silence {
             break
         fi
     done
+    echo
 }
 
 # Refresh pumphistory etc.
@@ -576,7 +569,7 @@ function refresh_pumphistory_and_meal {
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-         || { echo; cat monitor/status.json | jq -c -C .; return 1; }
+         || { echo; cat monitor/status.json | colorize_json; return 1; }
     retry_return monitor_pump || return 1
     echo -n "meal.json "
     retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
@@ -616,12 +609,12 @@ function enact {
         grep -q duration enact/enacted.json || ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>&3
-    echo -n "enact/enacted.json: " && cat enact/enacted.json | jq -C -c .
+    echo -n "enact/enacted.json: " && cat enact/enacted.json | colorize_json
 }
 
 # refresh pumphistory_24h if it's more than 5m old
 function refresh_old_pumphistory {
-    (find monitor/ -mmin -5 -size +100c | grep -q pumphistory-24h-zoned \
+    (file_is_recent monitor/pumphistory-24h-zoned.json 5 100 \
      && echo -n "Pumphistory-24h less than 5m old. ") \
     || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s \
         && read_pumphistory )
@@ -629,7 +622,7 @@ function refresh_old_pumphistory {
 
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
-    find settings/ -mmin -60 -size +5c | grep -q settings/profile.json && echo -n "Profile less than 60m old; " \
+    file_is_recent_and_min_size settings/profile.json 60 && echo -n "Profile less than 60m old; " \
         || { echo -n "Old settings: " && get_settings; }
     if [ -s settings/profile.json ] && jq -e .current_basal settings/profile.json >&3; then
         echo -n "Profile valid. "
@@ -704,7 +697,7 @@ function refresh_temp_and_enact {
     setglucosetimestamp
     # TODO: use pump_loop_completed logic as in refresh_smb_temp_and_enact
     if ( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
-        || (! find monitor/ -mmin -5 -size +5c | grep -q temp_basal && echo "temp_basal.json more than 5m old. ")); then
+        || (! file_is_recent_and_min_size monitor/temp_basal.json && echo "temp_basal.json more than 5m old. ")); then
             echo -n Temp refresh
             retry_fail invoke_temp_etc
             echo ed
@@ -728,7 +721,7 @@ function refresh_pumphistory_and_enact {
     setglucosetimestamp
     if ((find monitor/ -newer monitor/pumphistory-24h-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
         || (find enact/ -newer monitor/pumphistory-24h-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
-        || ((! find monitor/ -mmin -5 | grep -q pumphistory-zoned || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
+        || ((! file_is_recent monitor/pumphistory-zoned.json || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
             { echo -n ": " && refresh_pumphistory_and_meal && enact; }
     else
         echo Pumphistory less than 5m old
@@ -741,13 +734,13 @@ function refresh_profile {
     else
         profileage=$1
     fi
-    find settings/ -mmin -$profileage -size +5c | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
+    file_is_recent_and_min_size settings/settings.json $profileage && echo -n "Settings less than $profileage minutes old. " \
     || get_settings
 }
 
 function onbattery {
     # check whether battery level is < 98%
-    if getent passwd edison > /dev/null; then
+    if is_edison; then
         jq --exit-status ".battery < 98 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
     else
         jq --exit-status ".battery < 98" monitor/edison-battery.json >&4
@@ -770,6 +763,7 @@ function wait_for_bg {
                 echo -n .; sleep 10
             fi
         done
+        echo
     fi
 }
 
@@ -780,7 +774,7 @@ function glucose-fresh {
     else
         touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json 2>&3
     fi
-    if (! ls /tmp/pump_loop_completed >&4 ); then
+    if [[ ! -e /tmp/pump_loop_completed ]]; then
         return 0;
     elif (find monitor/ -newer /tmp/pump_loop_completed | grep -q glucose.json); then
         echo glucose.json newer than pump_loop_completed
@@ -805,7 +799,7 @@ function setglucosetimestamp {
 #These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
 function check_reservoir() {
   set -o pipefail
-  mdt reservoir 2>&3 | tee monitor/reservoir.json && tr -d "\n" < monitor/reservoir.json \
+  mdt reservoir 2>&3 | tee monitor/reservoir.json && nonl < monitor/reservoir.json \
     && egrep -q [0-9] monitor/reservoir.json
 }
 function check_model() {
@@ -814,7 +808,7 @@ function check_model() {
 }
 function check_status() {
   set -o pipefail
-  mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | jq -c -C .status
+  mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | colorize_json .status
 }
 function mmtune_Go() {
   set -o pipefail
@@ -841,9 +835,9 @@ function check_tempbasal() {
 # It queries 27h of data, full refresh when oldest data is greater than 33 hours old.
 function pumphistory_daily_refresh() {
     lastRecordTimestamp=$(jq -r '.[-1].timestamp' monitor/pumphistory-24h-zoned.json 2>&3)
-    dateCutoff=$(date --date="33 hours ago" +%s)
+    dateCutoff=$(to_epochtime "33 hours ago")
     echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
-    if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || "$(date -d $lastRecordTimestamp +%s)" -le $dateCutoff ]]; then
+    if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || $(to_epochtime $lastRecordTimestamp) -le $dateCutoff ]]; then
             echo -n "Pumphistory >33h long: " && read_full_pumphistory
     fi
 }
@@ -916,10 +910,6 @@ try_fail() {
 }
 try_return() {
     "$@" || { echo "Couldn't $*" - continuing; return 1; }
-}
-die() {
-    echo "$@"
-    exit 1
 }
 
 main "$@"

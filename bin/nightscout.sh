@@ -1,7 +1,7 @@
 #!/bin/bash
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
-self=$(basename $0)
 NAME=${1-help}
 shift
 PROGRAM="ns-${NAME}"
@@ -313,7 +313,7 @@ hash-api-secret)
     echo "Usage: $self hash-api-secret 'myverylongsecret'".
     exit 1;
   fi
-  API_SECRET=$(echo -n $1 | sha1sum | cut -d ' ' -f 1 | tr -d "\n")
+  API_SECRET=$(echo -n $1 | sha1sum | cut -d ' ' -f 1 | nonl)
   echo $API_SECRET
   ;;
 autoconfigure-device-crud)
