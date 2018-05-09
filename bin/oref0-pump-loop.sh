@@ -155,7 +155,7 @@ function smb_reservoir_before {
 
 # check if the temp was read more than 5m ago, or has been running more than 10m
 function smb_old_temp {
-    (file_is_recent_and_min_size monitor/temp_basal.json && echo temp_basal.json more than 5m old) \
+    (find monitor/ -mmin +5 -size +5c | grep -q temp_basal && echo temp_basal.json more than 5m old) \
     || ( jq --exit-status "(.duration-1) % 30 < 20" monitor/temp_basal.json >&4 \
         && echo -n "Temp basal set more than 10m ago: " && jq .duration monitor/temp_basal.json
         )
@@ -734,7 +734,7 @@ function refresh_profile {
     else
         profileage=$1
     fi
-    file_is_recent_and_min_size settings/settings.json $profileage | grep -q settings.json && echo -n "Settings less than $profileage minutes old. " \
+    file_is_recent_and_min_size settings/settings.json $profileage && echo -n "Settings less than $profileage minutes old. " \
     || get_settings
 }
 
