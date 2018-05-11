@@ -47,6 +47,7 @@ main() {
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                     smb_verify_status
                 else
+                    echo "Bolus failed: checking temp age"
                     smb_old_temp && ( \
                     echo "Falling back to basal-only pump-loop" \
                     && refresh_temp_and_enact \
@@ -324,7 +325,7 @@ function smb_bolus {
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
-        mdt -f internal button esc esc esc esc 2>&3 \
+        retry_return mdt -f internal button esc esc esc esc 2>&3 \
         && echo -n "and bolusing " && jq .units enact/smb-suggested.json | tr -d '\n' && echo " units" \
         && ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && rm -rf enact/smb-suggested.json
@@ -904,10 +905,16 @@ function read_carb_ratios() {
 }
 
 retry_fail() {
-    "$@" || { echo Retrying $*; "$@"; } || { echo "Couldn't $*"; fail "$@"; }
+    "$@" || { echo Retry 1 of $*; "$@"; } \
+    || { echo Retry 2 of $*; "$@"; } \
+    || { echo Retry 3 of $*; "$@"; } \
+    || { echo "Couldn't $*"; fail "$@"; }
 }
 retry_return() {
-    "$@" || { echo Retrying $*; "$@"; } || { echo "Couldn't $* - continuing"; return 1; }
+    "$@" || { echo Retry 1 of $*; "$@"; } \
+    || { echo Retry 2 of $*; "$@"; } \
+    || { echo Retry 3 of $*; "$@"; } \
+    || { echo "Couldn't $* - continuing"; return 1; }
 }
 try_fail() {
     "$@" || { echo "Couldn't $*"; fail "$@"; }
