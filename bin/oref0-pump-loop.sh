@@ -47,17 +47,14 @@ main() {
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                     smb_verify_status
                 else
-                    echo "Bolus failed: checking temp age"
-                    smb_old_temp && ( \
-                    echo "Falling back to basal-only pump-loop" \
+                    echo "Bolus failed: falling back to basal-only pump-loop" \
                     && refresh_temp_and_enact \
                     && refresh_pumphistory_and_enact \
                     && refresh_profile \
                     && pumphistory_daily_refresh \
                     && touch /tmp/pump_loop_success \
                     && echo Completed pump-loop at $(date) \
-                    && echo \
-                    )
+                    && echo
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
