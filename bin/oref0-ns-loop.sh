@@ -6,24 +6,39 @@
 main() {
     echo
     echo Starting oref0-ns-loop at $(date):
-    if glucose_fresh; then
-        echo Glucose file is fresh
-        cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
+    if grep "MDT cgm" openaps.ini 2>&1 >/dev/null; then
+        check_mdt_upload
     else
-        get_ns_bg
-    fi
-    overtemp && exit 1
-    if highload && completed_recently; then
-        echo Load high at $(date): waiting up to 5m to continue
-        exit 2
+        if glucose_fresh; then
+            echo Glucose file is fresh
+            cat cgm/ns-glucose.json | jq -c -C '.[0] | { glucose: .glucose, dateString: .dateString }'
+        else
+            get_ns_bg
+        fi
+        overtemp && exit 1
+        if highload && completed_recently; then
+            echo Load high at $(date): waiting up to 5m to continue
+            exit 2
+        fi
     fi
 
+    pushover_snooze
     ns_temptargets || die "ns_temptargets failed"
     ns_meal_carbs || die ", but ns_meal_carbs failed"
     battery_status
     upload
     touch /tmp/ns-loop-completed
     echo Completed oref0-ns-loop at $(date)
+}
+
+function pushover_snooze {
+    URL=$NIGHTSCOUT_HOST/api/v1/devicestatus.json?count=100
+    if snooze=$(curl -s $URL | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | tr -d '"'); then
+        #echo $snooze
+        #echo date -Is -d @$snooze; echo
+        touch -d $(date -Is -d @$snooze) monitor/pushover-sent
+        ls -la monitor/pushover-sent
+    fi
 }
 
 function overtemp {
@@ -35,7 +50,7 @@ function overtemp {
 
 function highload {
     # check whether system load average is high
-    uptime | awk '$NF > 2' | grep load
+    uptime | tr -d ',' | awk "\$(NF-2) > 4" | grep load
 }
 
 
@@ -108,7 +123,7 @@ function ns_meal_carbs {
     #openaps report invoke monitor/carbhistory.json >/dev/null
     nightscout ns $NIGHTSCOUT_HOST $API_SECRET carb_history > monitor/carbhistory.json.new
     cat monitor/carbhistory.json.new | jq .[0].carbs | egrep -q [0-9] && mv monitor/carbhistory.json.new monitor/carbhistory.json
-    oref0-meal monitor/pumphistory-merged.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new
+    oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new
     grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json
     echo -n "Refreshed carbhistory; COB: "
     grep COB monitor/meal.json | jq .mealCOB
@@ -118,6 +133,8 @@ function ns_meal_carbs {
 function battery_status {
     if [ -e ~/src/EdisonVoltage/voltage ]; then
         sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | tee monitor/edison-battery.json | jq -C -c .
+    elif [ -e /root/src/openaps-menu/scripts/getvoltage.sh ]; then
+        sudo /root/src/openaps-menu/scripts/getvoltage.sh | tee monitor/edison-battery.json | jq -C -c .
     fi
 }
 
@@ -143,7 +160,7 @@ function upload_ns_status {
 #ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json
 # ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --uploader monitor/edison-battery.json > upload/ns-status.json
 function format_ns_status {
-    if [ -e monitor/edison-battery.json ]; then
+    if [ -s monitor/edison-battery.json ]; then
         ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --uploader monitor/edison-battery.json > upload/ns-status.json
     else
         ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json
@@ -163,8 +180,51 @@ function upload_recent_treatments {
 
 #nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
 function format_latest_nightscout_treatments {
-    nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
+    latest_ns_treatment_time=$(openaps latest-ns-treatment-time)
+    historyfile=monitor/pumphistory-24h-zoned.json
+    # TODO: remove this hack once we actually start parsing pump time change events
+    if [[ $latest_ns_treatment_time > $(date -Is) ]]; then
+        echo "Latest NS treatment time $latest_ns_treatment_time is 'in the future' / from a timezone east of here."
+        latest_ns_treatment_time=$(date -Is -d "1 hour ago")
+        echo "Uploading the last 10 treatments since $latest_ns_treatment_time"
+        jq .[0:9] monitor/pumphistory-24h-zoned.json > upload/recent-pumphistory.json
+        historyfile=upload/recent-pumphistory.json
+    fi
+        nightscout cull-latest-openaps-treatments $historyfile settings/model.json $latest_ns_treatment_time > upload/latest-treatments.json
 }
+
+function check_mdt_upload {
+    if [ -f /tmp/mdt_cgm_uploaded ]; then
+        if [ $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%s) -gt $(date -r /tmp/mdt_cgm_uploaded +%s) ];then
+            echo Found new MDT CGM data to upload:
+            echo "BG: $(jq .[0].glucose nightscout/glucose.json)" "at $(jq .[0].dateString nightscout/glucose.json | tr -d '"')"
+            mdt_upload_bg
+        else
+            echo No new MDT CGM data to upload
+        fi
+    elif [ -f nightscout/glucose.json ]; then
+        mdt_upload_bg
+    else
+        echo No cgm data available
+    fi
+}
+
+function mdt_upload_bg {
+    echo Formating recent-missing-entries
+    openaps report invoke nightscout/recent-missing-entries.json 2>&1 >/dev/null
+    if grep "dateString" nightscout/recent-missing-entries.json 2>&1 >/dev/null; then
+        echo "$(jq '. | length' nightscout/recent-missing-entries.json) missing entires found, uploading"
+        openaps report invoke nightscout/uploaded-entries.json 2>&1 >/dev/null
+        touch -t $(date -d $(jq .[0].dateString nightscout/glucose.json | tr -d '"') +%Y%m%d%H%M.%S) /tmp/mdt_cgm_uploaded
+        echo "Uploaded $(jq '. | length' nightscout/uploaded-entries.json) missing entries"
+        echo MDT CGM data uploaded
+    else
+        echo No missing entries found
+    fi
+}
+
+
+
 
 die() {
     echo "$@"

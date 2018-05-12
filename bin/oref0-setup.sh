@@ -26,6 +26,7 @@ DIR=""
 directory=""
 EXTRAS=""
 radio_locale="US"
+buildgofromsource=false
 
 #this makes the confirmation echo text a color when you use echocolor instead of echo
 function echocolor() { # $1 = string
@@ -143,7 +144,7 @@ if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" |
     DIR="" # to force a Usage prompt
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autosens meal dexusb'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     echo
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
@@ -151,7 +152,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     echo
     if [[ -z $DIR ]]; then
-        DIR="myopenaps"
+        DIR="$HOME/myopenaps"
     fi
     directory="$(readlink -m $DIR)"
     echo
@@ -176,6 +177,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     echo "What kind of CGM would you like to configure for offline use? Options are:"
+    echo "G4-go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
     echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
     echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
@@ -188,32 +190,57 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
     echo
-    if [[ ${CGM,,} =~ "shareble" ]]; then
+    if [[ ${CGM,,} =~ "shareble" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
         read -p "What is your G4 Share Serial Number? (i.e. SM12345678) " -r
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
         echo
     fi
 
-
-    read -p "Are you using an Explorer Board? y/[N] " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ttyport=/dev/spidev5.1
-        echocolor "Ok, yay for Explorer Board! "
-        echo
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product 2>/dev/null ; then
+        echocolor "Explorer Board HAT detected. "
+        ttyport=/dev/spidev0.0
     else
-        echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
-        read -p "What is your TTY port? " -r
-        ttyport=$REPLY
-        echocolor-n "Ok, "
-        if [[ -z "$ttyport" ]]; then
-            echo -n Carelink
+        read -p "Are you using an Explorer Board? [Y]/n " -r
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            read -p "Are you using an Explorer HAT? [Y]/n " -r
+            if [[ $REPLY =~ ^[Nn]$ ]]; then
+                echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
+                read -p "What is your TTY port? " -r
+                ttyport=$REPLY
+                echocolor-n "Ok, "
+                if [[ -z "$ttyport" ]]; then
+                    echo -n Carelink
+                else
+                    echo -n TTY $ttyport
+                fi
+                echocolor " it is. "
+                echo
+            else
+                echocolor "Configuring Explorer Board HAT. "
+                ttyport=/dev/spidev0.0
+            fi
         else
-            echo -n TTY $ttyport
+            if  getent passwd edison > /dev/null; then
+                echocolor "Yay! Configuring for Edison with Explorer Board. "
+                ttyport=/dev/spidev5.1
+            else
+                echo "Hmm, you don't seem to be using an Edison."
+                read -p "What is your TTY port? (/dev/ttySOMETHING) " -r
+                ttyport=$REPLY
+                echocolor "Ok, we'll try TTY $ttyport then."
+            fi
+            echo
         fi
-        echocolor " it is. "
-        echo
     fi
+    read -p "Would you like to [D]ownload precompiled Go pump communication library or build them from [S]ource? [D]/S " -r
+    if [[ $REPLY =~ ^[Ss]$ ]]; then
+      buildgofromsource=true
+      echo "Building Go pump binaries from source"
+    else
+      echo "Downloading precompiled Go pump binaries."
+    fi
+
 
 
     if [[ ! -z "${ttyport}" ]]; then
@@ -330,16 +357,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
       fi
 
-    read -p "Enable automatic sensitivity adjustment? [Y]/n  " -r
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-       echocolor "Ok, no autosens."
-       echo
-    else
-       ENABLE+=" autosens "
-       echocolor "Ok, autosens will be enabled."
-       echo
-    fi
-
     read -p "Enable autotuning of basals and ratios? [Y]/n  " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
        echocolor "Ok, no autotune."
@@ -351,7 +368,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     #always enabling AMA by default
-    ENABLE+=" meal "
+    #ENABLE+=" meal "
 
     read -p "Do you want to enable carbsReq Pushover alerts? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -480,8 +497,8 @@ read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Attempting to remove git to make install --nogit by default for existing users
-    echo Removing any existing git
-    rm -rf ~/myopenaps/.git
+    echo Removing any existing git in $directory/.git
+    rm -rf $directory/.git
     echo Removed any existing git
 
     # TODO: delete this after openaps 0.2.1 release
@@ -518,24 +535,24 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     # check whether decocare-0.0.31 has been installed
-    if ! ls /usr/local/lib/python2.7/dist-packages/decocare-0.0.31-py2.7.egg/ 2>/dev/null >/dev/null; then
+    #if ! ls /usr/local/lib/python2.7/dist-packages/decocare-0.0.31-py2.7.egg/ 2>/dev/null >/dev/null; then
         # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
-        sudo easy_install -U decocare || die "Can't easy_install decocare"
-    fi
+        #sudo easy_install -U decocare || die "Can't easy_install decocare"
+    #fi
 
     mkdir -p $HOME/src/
 
     # TODO: remove this and switch back to easy_install or pip once decocare 0.1.0 is released
-    if [ -d "$HOME/src/decocare/" ]; then
-        echo "$HOME/src/decocare/ already exists; pulling latest 0.1.0-dev"
-        (cd $HOME/src/decocare && git fetch && git checkout 0.1.0-dev && git pull) || die "Couldn't pull latest decocare 0.1.0-dev"
-    else
-        echo -n "Cloning decocare 0.1.0-dev: "
-        (cd $HOME/src && git clone -b 0.1.0-dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare 0.1.0-dev"
-    fi
-    echo Installing decocare 0.1.0-dev
-    cd $HOME/src/decocare
-    sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
+    #if [ -d "$HOME/src/decocare/" ]; then
+        #echo "$HOME/src/decocare/ already exists; pulling latest 0.1.0-dev"
+        #(cd $HOME/src/decocare && git fetch && git checkout 0.1.0-dev && git pull) || die "Couldn't pull latest decocare 0.1.0-dev"
+    #else
+        #echo -n "Cloning decocare 0.1.0-dev: "
+        #(cd $HOME/src && git clone -b 0.1.0-dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare 0.1.0-dev"
+    #fi
+    #echo Installing decocare 0.1.0-dev
+    #cd $HOME/src/decocare
+    #sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
 
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
@@ -547,20 +564,21 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
-        npm list -g oref0 | egrep oref0@0.5.[0-1] || (echo Installing latest oref0 package && sudo npm install -g oref0)
+        npm list -g --depth=0 | egrep oref0@0.6.[0] || (echo Installing latest oref0 package && sudo npm install -g oref0)
     else
-        npm list -g oref0 | egrep oref0@0.5.[2-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+        npm list -g --depth=0 | egrep oref0@0.6.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
 
-    echo Checking mmeowlink installation
-#if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-    pip show mmeowlink | egrep "Version: 0.11.1" || (
-        echo Installing latest mmeowlink
-        sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
-    )
-#fi
-
     cd $directory || die "Can't cd $directory"
+
+    #echo Checking mmeowlink installation
+    if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
+        pip show mmeowlink | egrep "Version: 0.11.1" || (
+            echo Installing latest mmeowlink
+            sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
+        )
+    fi
+
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
         cp preferences.json old_preferences.json
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
@@ -588,11 +606,42 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     cat preferences.json
 
+    # fix log rotate file
+    sed -i "s/weekly/hourly/g" /etc/logrotate.conf
+    sed -i "s/daily/hourly/g" /etc/logrotate.conf
+    sed -i "s/#compress/compress/g" /etc/logrotate.conf
+
     # enable log rotation
     sudo cp $HOME/src/oref0/logrotate.openaps /etc/logrotate.d/openaps || die "Could not cp /etc/logrotate.d/openaps"
     sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
 
     test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
+
+    if [[ -f /etc/cron.daily/logrotate ]]; then
+        mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
+    fi
+
+    #TODO: remove this when IPv6 works reliably
+    echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
+
+    # update, upgrade, and autoclean apt-get
+    if find /var/lib/apt/periodic/ -mmin -3600 | grep update-stamp; then
+        echo apt-get update-stamp is recent: skipping
+    else
+        echo Running apt-get update
+        sudo apt-get update
+    fi
+    if find /var/lib/apt/periodic/ -mmin -3600 | grep upgrade-stamp; then
+        echo apt-get upgrade-stamp is recent: skipping
+    else
+        echo Running apt-get upgrade
+        sudo apt-get -y upgrade
+        # make sure hostapd and dnsmasq don't get re-enabled
+        update-rc.d -f hostapd remove
+        update-rc.d -f dnsmasq remove
+    fi
+    echo Running apt-get autoclean
+    sudo apt-get autoclean
 
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
@@ -617,18 +666,24 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        bluetoothdminversion=5.47
+        # use packaged bluez with Rapsbian
+        if getent passwd pi > /dev/null; then
+            bluetoothdminversion=5.43
+        else
+            bluetoothdminversion=5.48
+        fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-            cd $HOME/src/bluez-5.47 && ./configure --enable-experimental --disable-systemd && \
-            make && sudo make install || die "Couldn't make bluez"
+            cd $HOME/src/bluez-5.48 && ./configure --disable-systemd && make || die "Couldn't make bluez"
+            killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+            sudo make install || die "Couldn't make install bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
             oref0-bluetoothup
         else
-            echo bluez v ${bluetoothdversion} already installed
+            echo bluez version ${bluetoothdversion} already installed
         fi
         echo Installing prerequisites and configs for local-only hotspot
         apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
@@ -676,16 +731,20 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if ! python -c "import openxshareble" 2>/dev/null; then
             echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
         fi
-        sudo apt-get update; sudo apt-get upgrade
+        sudo apt-get update; sudo apt-get -y upgrade
         sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
         echo Checking bluez installation
         # TODO: figure out if we need to do this for 5.44 as well
         if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
             sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
         fi
-        # add two lines to /etc/rc.local if they are missing.
+        # start bluetoothd in /etc/rc.local if it is missing.
+        if ! grep -q '/usr/local/bin/bluetoothd &' /etc/rc.local; then
+            sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
+        fi
+        # starting with bluez 5.48 the --experimental command line option is not needed. remove the --experimental if it still exists in /etc/rc.local. this is for rigs with version 0.6.0 or earlier
         if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
-            sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd --experimental \&\n\nexit 0/' /etc/rc.local
+            sed -i"" 's/^\/usr\/local\/bin\/bluetoothd --experimental \&/\/usr\/local\/bin\/bluetoothd \&/' /etc/rc.local
         fi
         if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
             sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
@@ -745,13 +804,19 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $directory || die "Can't cd $directory"
     fi
 
-    if [[ "$ttyport" =~ "spi" ]]; then
+    # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
+    if [[ "$ttyport" =~ "spi" ]] && [[ ${CGM,,} =~ "mdt" ]]; then
         echo Checking kernel for spi_serial installation
         if ! python -c "import spi_serial" 2>/dev/null; then
             if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
-            echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
+                echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
             else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
-            echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+                if [[ "$ttyport" =~ "spidev0.0" ]]; then
+                    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
+                    sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+                else
+                    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+                fi
             fi
             #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
         fi
@@ -763,7 +828,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
         if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
                 openaps alias remove mmtune
-                openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \"$line \"; done\""
+                openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(cat monitor/mmtune.json | jq -r .setFreq) | while read line; do echo -n \"$line \"; done\""
         fi
         echo Checking kernel for mraa installation
         if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
@@ -792,45 +857,50 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
     fi
 
-    echo Checking openaps dev installation
-    if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
+    #echo Checking openaps dev installation
+    #if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
         # TODO: switch this back to master once https://github.com/openaps/openaps/pull/116 is merged/released
-        echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
-    fi
+        #echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
+    #fi
 
-    cd $directory || die "Can't cd $directory"
-    echo "Removing any existing pump device:"
-    ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
-    if [[ -z "$ttyport" ]]; then
-        openaps device add pump medtronic $serial || die "Can't add pump"
-        # carelinks can't listen for silence or mmtune, so just do a preflight check instead
-        openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
-        openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
-        openaps alias add mmtune 'report invoke monitor/temp_basal.json'
-    else
-        # radio_locale requires openaps 0.2.0-dev or later
-        openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
-        openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
-        openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
-        if [[ ${radio_locale,,} =~ "ww" ]]; then
-        if [ -d "$HOME/src/subg_rfspy/" ]; then
-            echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
-            (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
+    # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
+    if [[ ${CGM,,} =~ "mdt" ]]; then
+        cd $directory || die "Can't cd $directory"
+        echo "Removing any existing pump device:"
+        ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
+        if [[ -z "$ttyport" ]]; then
+            openaps device add pump medtronic $serial || die "Can't add pump"
+            #openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
+            #openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
+            #openaps alias add mmtune 'report invoke monitor/temp_basal.json'
         else
-            echo -n "Cloning subg_rfspy: "
-            (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
-        fi
+            # radio_locale requires openaps 0.2.0-dev or later
+            openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
+            #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
+            #openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
+            if [[ ${radio_locale,,} =~ "ww" ]]; then
+            if [ -d "$HOME/src/subg_rfspy/" ]; then
+                echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
+                (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
+            else
+                echo -n "Cloning subg_rfspy: "
+                (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
+            fi
 
-        # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-        # this will be called when mmtune is use with a WW pump.
-        # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-        # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
+            # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
+            # this will be called when mmtune is use with a WW pump.
+            # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
+            # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
 
-        # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
-        # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-        # TODO: remove once https://github.com/openaps/openaps/pull/112 has been released in a openaps version
-        grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+            # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
+            # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+            # TODO: remove once https://github.com/openaps/openaps/pull/112 has been released in a openaps version
+            grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+            fi
         fi
+    else
+        echo '[device "pump"]' > pump.ini
+        echo "serial = $serial" >> pump.ini
     fi
 
     # Medtronic CGM
@@ -848,12 +918,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
     fi
 
+    sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
+    sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
+
     # xdrip CGM (xDripAPS)
     if [[ ${CGM,,} =~ "xdrip" ]]; then
         echo xdrip selected as CGM, so configuring xDripAPS
-        sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
-        sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
-        sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
+        sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
         git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
         for type in xdrip-cgm; do
@@ -876,27 +947,25 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo sysctl -p
 
     # Install EdisonVoltage
-    if [[ "$ttyport" =~ "spidev5.1" ]]; then
-        if egrep -i "edison" /etc/passwd 2>/dev/null; then
-            echo "Checking if EdisonVoltage is already installed"
-            if [ -d "$HOME/src/EdisonVoltage/" ]; then
-                echo "EdisonVoltage already installed"
-            else
-                echo "Installing EdisonVoltage"
-                cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
-                cd $HOME/src/EdisonVoltage
-                make voltage
-            fi
-            # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
-            grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
+    if egrep -i "edison" /etc/passwd 2>/dev/null; then
+        echo "Checking if EdisonVoltage is already installed"
+        if [ -d "$HOME/src/EdisonVoltage/" ]; then
+            echo "EdisonVoltage already installed"
+        else
+            echo "Installing EdisonVoltage"
+            cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+            cd $HOME/src/EdisonVoltage
+            make voltage
         fi
-        if [[ ${CGM,,} =~ "mdt" ]] || [[ ${CGM,,} =~ "xdrip" ]]; then # still need this for the old ns-loop for now
-            cd $directory || die "Can't cd $directory"
-            for type in edisonbattery; do
-                echo importing $type file
-                cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-            done
-        fi
+        # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
+        grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
+    fi
+    if [[ ${CGM,,} =~ "mdt" ]]; then # still need this for the old ns-loop for now
+        cd $directory || die "Can't cd $directory"
+        for type in edisonbattery; do
+            echo importing $type file
+            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+        done
     fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
@@ -912,20 +981,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
-    # configure optional features passed to enact/suggested.json report
-    if [[ $ENABLE =~ autosens && $ENABLE =~ meal ]]; then
-        EXTRAS="settings/autosens.json monitor/meal.json"
-    elif [[ $ENABLE =~ autosens ]]; then
-        EXTRAS="settings/autosens.json"
-    elif [[ $ENABLE =~ meal ]]; then
-        EXTRAS='"" monitor/meal.json'
-    fi
-    echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
-    openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json $EXTRAS
+    echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
+    openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
 
+    if egrep -qi "edison" /etc/passwd 2>/dev/null; then
+        sudo apt-get -y -t jessie-backports install jq
+    else
+        sudo apt-get -y install jq
+    fi
     # configure autotune if enabled
     if [[ $ENABLE =~ autotune ]]; then
-        sudo apt-get -y install jq
         cd $directory || die "Can't cd $directory"
         for type in autotune; do
             echo importing $type file
@@ -933,6 +998,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         done
     fi
 
+    #Setup files for editing on the x12, and replace get-settings alias
     if [[ ${pumpmodel,,} =~ "x12" ]]; then
         echo "copying settings files for x12 pumps"
         cp $HOME/src/oref0/lib/oref0-setup/bg_targets_raw.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/basal_profile.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/settings.json $directory/settings/ || die "Could not copy settings files for x12 pumps"
@@ -940,14 +1006,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         openaps alias remove get-settings || die "Could not remove get-settings"
         echo "settings removed, getting ready to add x12 settings"
         openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json settings/profile.json" || die "Could not add x12 settings"
-    else
-        sudo apt-get -y install bc jq ntpdate bash-completion
-        cd $directory || die "Can't cd $directory"
-        for type in supermicrobolus; do
+    fi
+
+    #Moved this out of the conditional, so that x12 models will work with smb loops
+    sudo apt-get -y install bc jq ntpdate bash-completion || die "Couldn't install bc etc."
+    cd $directory || die "Can't cd $directory"
+    for type in supermicrobolus; do
         echo importing $type file
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
-    fi
+    done
 
     echo "Adding OpenAPS log shortcuts"
     oref0-log-shortcuts
@@ -978,15 +1045,114 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export API_SECRET" >> $HOME/.bash_profile
 
     echo
-    if [[ "$ttyport" =~ "spi" ]]; then
-        echo Resetting spi_serial
-        reset_spi_serial.py
+
+    #Check to see if Explorer HAT is present, and install all necessary stuff
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product || [[ "$ttyport" =~ "spidev0.0" ]]; then
+        echo "Looks like you're using an Explorer HAT!"
+        echo "Making sure SPI is enabled..."
+        sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+        echo "Enabling i2c device nodes..."
+        sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
+        egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
+        echo "i2c-dev" > /etc/modules-load.d/i2c.conf
+        echo "Installing socat and ntp..."
+        apt-get install -y socat ntp
+        echo "Installing openaps-menu..."
+        cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+        cd $HOME/src/openaps-menu && sudo npm install
+        cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
+        cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
     fi
+
+    # install Go for Explorer Board/HAT
+    if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
+      if $buildgofromsource; then
+        if go version | grep go1.9.; then
+            echo Go already installed
+        else
+            echo "Installing Golang..."
+            if uname -m | grep armv; then
+                cd /tmp && wget -c https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
+            elif uname -m | grep i686; then
+                cd /tmp && wget -c https://dl.google.com/go/go1.9.3.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.3.linux-386.tar.gz
+            fi
+        fi
+        if ! grep GOROOT $HOME/.bash_profile; then
+            echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
+            echo 'export GOROOT' >> $HOME/.bash_profile
+        fi
+        if ! grep GOPATH $HOME/.bash_profile; then
+            echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
+            echo 'export GOPATH' >> $HOME/.bash_profile
+            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+            echo 'export PATH' >> $HOME/.bash_profile
+        fi
+      else
+            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+            echo 'export PATH' >> $HOME/.bash_profile
+      fi
+    fi
+    mkdir -p $HOME/go
+    source $HOME/.bash_profile
+
+    #Store radio_locale for later use
+    grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
+    #Necessary to "bootstrap" Go commands...
+    if [[ $radio_locale =~ ^WW$ ]]; then
+      echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+    else
+      echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+    fi
+
+    if [[ "$ttyport" =~ "spidev" ]]; then
+        if $buildgofromsource; then
+          #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
+          go get -u -v -tags cc111x github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+          #cd $HOME/go/src/github.com/ecc1/medtronic/cmd
+          #cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
+          #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
+          #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
+          #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
+          rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
+          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
+          ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+        else
+          arch=arm-spi
+          if egrep -i "edison" /etc/passwd 2>/dev/null; then
+            arch=386-spi
+          fi
+          mkdir -p $HOME/go/bin && \
+          downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/latest | \
+            jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
+          echo "Downloading Go pump binaries from:" $downloadUrl
+          wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
+          echo "Installing Go pump binaries ..."
+          ln -sf $HOME/go/bin/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
+          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
+        fi
+    fi
+    if [[ ${CGM,,} =~ "g4-go" ]]; then
+        if egrep -i "edison" /etc/passwd 2>/dev/null; then
+            go get -u -v -tags nofilter github.com/ecc1/dexcom/...
+        else
+            go get -u -v github.com/ecc1/dexcom/...
+        fi
+        rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
+    fi
+
+    #if [[ "$ttyport" =~ "spi" ]]; then
+        #echo Resetting spi_serial
+        #reset_spi_serial.py
+    #fi
 # Commenting out the mmtune as attempt to stop the radio reboot errors that happen when re-setting up.
 #    echo Attempting to communicate with pump:
 #    ( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
 #    openaps mmtune
 #    echo
+
+    # clear any extraneous input before prompting
+    while(read -r -t 0.1); do true; done
 
     read -p "Schedule openaps in cron? y/[N] " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -1009,7 +1175,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
-        (crontab -l; crontab -l | grep -q "killall -g --older-than 5m oref0" || echo '* * * * * find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && ( killall -g --older-than 5m openaps; killall -g --older-than 5m oref0-pump-loop; killall -g --older-than 5m openaps-report )') | crontab -
+        (crontab -l; crontab -l | grep -q "find /var/log/openaps/pump-loop.log -mmin" || echo '* * * * * find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && ( echo No updates to pump-loop.log in 5m - killing processes; killall -g --older-than 5m openaps; killall -g --older-than 5m oref0-pump-loop; killall -g --older-than 5m openaps-report ) | tee -a /var/log/openaps/pump-loop.log') | crontab -
         if [[ ${CGM,,} =~ "g5-upload" ]]; then
             (crontab -l; crontab -l | grep -q "oref0-upload-entries" || echo "* * * * * cd $directory && oref0-upload-entries" ) | crontab -
         fi
@@ -1021,45 +1187,37 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         elif [[ $ENABLE =~ dexusb ]]; then
             (crontab -l; crontab -l | grep -q "@reboot .*dexusb-cgm" || echo "@reboot cd $directory && /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1" ) | crontab -
         elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | jq -r  '.[] | \"\\(.sgv) \\(.dateString)\"' | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
         fi
-        if [[ ${CGM,,} =~ "mdt" ]] || [[ ${CGM,,} =~ "xdrip" ]]; then # use old ns-loop for now
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
-        else
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
-        fi
-        if [[ $ENABLE =~ autosens ]]; then
-            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
-        fi
+
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
         if [[ $ENABLE =~ autotune ]]; then
             # autotune nightly at 4:05am using data from NS
-            (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 4 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | json | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
-        fi
-        if [[ "$ttyport" =~ "spi" ]]; then
-            (crontab -l; crontab -l | grep -q "reset_spi_serial.py" || echo "@reboot reset_spi_serial.py") | crontab -
-            (crontab -l; crontab -l | grep -q "oref0-radio-reboot" || echo "* * * * * oref0-radio-reboot") | crontab -
+            (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 4 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | jq . | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
-        # try to start oref0-pump-loop every 30s
-        (crontab -l; crontab -l | grep -q "cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop'" || echo "* * * * * cd $directory && sleep 30 && ( ps aux | grep -v grep | grep bash | grep -q 'bin/oref0-pump-loop' || oref0-pump-loop ) 2>&1 | tee -a /var/log/openaps/pump-loop.log") | crontab -
         if [[ ! -z "$BT_PEB" ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
         fi
         if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
         (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
         fi
-        if [[ "$ttyport" =~ "spidev5.1" ]]; then
-           # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
-           if egrep -i "edison" /etc/passwd 2>/dev/null; then
-           (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
-           fi
+        # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
+        if egrep -i "edison" /etc/passwd 2>/dev/null; then
+           (crontab -l; crontab -l | grep -q "cd $directory && sudo ~/src/EdisonVoltage/voltage" || echo "*/15 * * * * cd $directory && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | jq .batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
         if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
             (crontab -l; crontab -l | grep -q "oref0-pushover" || echo "* * * * * cd $directory && oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log" ) | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-version --check-for-updates" || echo "0 * * * * cd $directory && oref0-version --check-for-updates > /tmp/oref0-updates.txt") | crontab -
-
+        (crontab -l; crontab -l | grep -q "flask run" || echo "@reboot cd ~/src/oref0/www && export FLASK_APP=app.py && flask run -p 80 --host=0.0.0.0 | tee -a /var/log/openaps/flask.log") | crontab -
+        if [[ "$ttyport" =~ "spidev0.0" ]]; then
+            # disable HDMI on Explorer HAT rigs to save battery
+            (crontab -l; crontab -l | grep -q "tvservice" || echo "@reboot /usr/bin/tvservice -o") | crontab -
+        fi
         crontab -l | tee $HOME/crontab.txt
     fi
 
@@ -1074,12 +1232,19 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo and may want to edit your settings.json and bg_targets_raw.json as well.
         read -p "Press enter to begin editing basal_profile.json, and then press Ctrl-X when done."
         nano $directory/settings/basal_profile.json
+        read -p "Press enter to begin editing settings.json, and then press Ctrl-X when done."
+        nano $directory/settings/settings.json
+        read -p "Press enter to begin editing bg_targets_raw.json, and then press Ctrl-X when done."
+        nano $directory/settings/bg_targets_raw.json
         echo To edit your basal_profile.json again in the future, run: nano $directory/settings/basal_profile.json
         echo To edit your settings.json to set maxBasal or DIA, run: nano $directory/settings/settings.json
         echo To edit your bg_targets_raw.json to set targets, run: nano $directory/settings/bg_targets_raw.json
     fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
+
+echo "Clearing retrieved apt packages to free space."
+apt-get autoclean && apt-get clean
 
 if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"

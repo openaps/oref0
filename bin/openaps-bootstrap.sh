@@ -21,7 +21,7 @@ echo -e "\n/etc/network/interfaces:\n"
 cat interfaces
 cd /etc/wpa_supplicant/
 cp wpa_supplicant.conf wpa_supplicant.conf.$(date +%s).bak
-echo -e "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\nupdate_config=1\nnetwork={\n  ssid=\"$SSID\"\n  psk=\"$PSK\"\n}" > wpa_supplicant.conf
+echo -e "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\nnetwork={\n  ssid=\"$SSID\"\n  psk=\"$PSK\"\n}" > wpa_supplicant.conf
 echo -e "\n/etc/wpa_supplicant/wpa_supplicant.conf:\n"
 cat wpa_supplicant.conf
 echo -e "\nAttempting to bring up wlan0:\n"

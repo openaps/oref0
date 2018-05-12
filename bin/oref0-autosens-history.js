@@ -24,17 +24,13 @@ if (!module.parent) {
 
     var glucose_input = process.argv[2];
     var pumphistory_input = process.argv[3];
-    var isf_input = process.argv[4]
-    var basalprofile_input = process.argv[5]
-    var profile_input = process.argv[6];
-    var carb_input = process.argv[7]
-    var temptarget_input = process.argv[8]
+    var profile_input = process.argv[4];
 
     if (!glucose_input || !pumphistory_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json> [carbhistory.json] [temptargets.json]');
+        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <profile.json>');
         process.exit(1);
     }
-    
+
     var fs = require('fs');
     try {
         var cwd = process.cwd();
@@ -49,43 +45,57 @@ if (!module.parent) {
         var pumphistory_data = require(cwd + '/' + pumphistory_input);
         var profile = require(cwd + '/' + profile_input);
 
-        var isf_data = require(cwd + '/' + isf_input);
-        if (isf_data.units !== 'mg/dL') {
-            if (isf_data.units == 'mmol/L') {
-                for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
-                    isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
+        if (typeof(profile.isfProfile == "undefined")) {
+            //console.error(profile[0].store.Default.basal);
+            profile =
+            {
+                "min_5m_carbimpact": 8,
+                "dia": profile[0].store.Default.dia,
+                "basalprofile": profile[0].store.Default.basal.map(convertBasal),
+                "isfProfile": {
+                    "units": profile[0].store.Default.units,
+                    "sensitivities": [
+                    {
+                        "i": 0,
+                        "start": profile[0].store.Default.sens[0].time + ":00",
+                        "sensitivity": profile[0].store.Default.sens[0].value,
+                        "offset": 0,
+                        "x": 0,
+                        "endOffset": 1440
+                    }
+                    ]
+                },
+                "carb_ratio": profile[0].store.Default.carbratio[0].value,
+                "autosens_max": 2.0,
+                "autosens_min": 0.5
+            };
+          //console.error(profile);
+        }
+        var isf_data = profile.isfProfile;
+        if (typeof(isf_data) != "undefined" && typeof(isf_data.units == "string")) {
+            if (isf_data.units !== 'mg/dL') {
+                if (isf_data.units == 'mg/dl') {
+                    isf_data.units = 'mg/dL';
+                    profile.isfProfile.units = 'mg/dL';
+                } else if (isf_data.units == 'mmol/L') {
+                    for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
+                        isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
+                    }
+                    isf_data.units = 'mg/dL';
+                } else {
+                    console.log('ISF is expected to be expressed in mg/dL or mmol/L.'
+                            , 'Found', isf_data.units, '.');
+                    process.exit(2);
                 }
-               isf_data.units = 'mg/dL';
-            } else {
-                console.log('ISF is expected to be expressed in mg/dL or mmol/L.'
-                        , 'Found', isf_data.units, 'in', isf_input, '.');
-                process.exit(2);
             }
+        } else {
+            console.error("Unable to determine units.");
         }
-        var basalprofile = require(cwd + '/' + basalprofile_input);
-
-        var carb_data = { };
-        if (typeof carb_input != 'undefined') {
-            try {
-                carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
-            } catch (e) {
-                console.error("Warning: could not parse "+carb_input);
-            }
-        }
-
-        var temptarget_data = { };
-        if (typeof temptarget_input != 'undefined') {
-            try {
-                temptarget_data = JSON.parse(fs.readFileSync(temptarget_input, 'utf8'));
-            } catch (e) {
-                console.error("Warning: could not parse "+temptarget_input);
-            }
-        }
+        var basalprofile = profile.basalprofile;
 
         var iob_inputs = {
             history: pumphistory_data
             , profile: profile
-        //, clock: clock_data
         };
     } catch (e) {
         return console.error("Could not parse input data: ", e);
@@ -93,32 +103,28 @@ if (!module.parent) {
 
     var detection_inputs = {
         iob_inputs: iob_inputs
-        , carbs: carb_data
+        , carbs: {}
         , glucose_data: glucose_data
         , basalprofile: basalprofile
-        , temptargets: temptarget_data
-        //, clock: clock_data
+        , temptargets: {}
+        , retrospective: true
     };
-    console.error("Calculating sensitivity using 8h of non-exluded data");
-    detection_inputs.deviations = 96;
-    detect(detection_inputs);
-    ratio8h = ratio;
-    newisf8h = newisf;
-    console.error("Calculating sensitivity using all non-exluded data (up to 24h)");
-    detection_inputs.deviations = 288;
-    detect(detection_inputs);
-    ratio24h = ratio;
-    newisf24h = newisf;
-    if ( ratio8h < ratio24h ) {
-        console.error("Using 8h autosens ratio of",ratio8h,"(ISF",newisf8h+")");
-    } else {
-        console.error("Using 24h autosens ratio of",ratio24h,"(ISF",newisf24h+")");
+    var ratioArray = [];
+    do {
+        detection_inputs.deviations = 96;
+        detect(detection_inputs);
+        for(var i=0; i<10; i++) {
+            detection_inputs.glucose_data.shift();
+        }
+        console.error(ratio, newisf);
+        ratioArray.unshift(ratio);
     }
-    var lowestRatio = Math.min(ratio8h, ratio24h);
-    var sensAdj = {
-        "ratio": lowestRatio
-    }
-    return console.log(JSON.stringify(sensAdj));
+    while(detection_inputs.glucose_data.length > 96);
+    //var lowestRatio = Math.min(ratio8h, ratio24h);
+    //var sensAdj = {
+        //"ratio": lowestRatio
+    //}
+    return console.log(JSON.stringify(ratioArray));
 
 }
 
@@ -135,6 +141,17 @@ function init() {
 
 }
 module.exports = init;
+
+
+function convertBasal(item)
+{
+    var convertedBasal = {
+      "start": item.time + ":00",
+      "minutes": Math.round(item.timeAsSeconds / 60),
+      "rate": item.value
+  };
+  return convertedBasal;
+}
 
 // From https://gist.github.com/IceCreamYou/6ffa1b18c4c8f6aeaad2
 // Returns the value at a given percentile in a sorted numeric array.

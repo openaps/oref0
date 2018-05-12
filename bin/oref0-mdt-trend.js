@@ -17,7 +17,7 @@ function usage ( ) {
 }
 
 if (!module.parent) {
-  var glucose_input = process.argv.slice(2, 3).pop();
+  var glucose_input = process.argv[2];
   if ([null, '--help', '-h', 'help'].indexOf(glucose_input) > 0) {
     usage( );
     process.exit(0)
@@ -56,11 +56,15 @@ if (!module.parent) {
 		continue;
 	}
 
+    if (record.sgv == 0)
+    {
+        continue;
+    }
 	var used_records = 0;
 	for (var j = 0; j < max_entries; j++)
 	{
 		var past_record = last_entries[j];
-		if (typeof past_record == "undefined")
+		if (typeof past_record == "undefined" || past_record.sgv == 0)
 		{
 			continue;
 		}
@@ -94,20 +98,20 @@ if (!module.parent) {
 			output_record.trend_arrow = "45_UP";
 			output_record.direction = "FortyFiveUp";
 		}
-		else if (delta < -1)
+		else if (delta < -3)
 		{
-			output_record.trend_arrow = "45_DOWN";
-			output_record.direction = "FortyFiveDown";
+			output_record.trend_arrow = "DOUBLE_DOWN";
+			output_record.direction = "DoubleDown";
 		}
 		else if (delta < -2)
 		{
 			output_record.trend_arrow = "SINGLE_DOWN";
 			output_record.direction = "SingleDown";
 		}
-		else if (delta < -3)
+		else if (delta < -1)
 		{
-			output_record.trend_arrow = "DOUBLE_DOWN";
-			output_record.direction = "DoubleDown";
+			output_record.trend_arrow = "45_DOWN";
+			output_record.direction = "FortyFiveDown";
 		}
 		else
 		{

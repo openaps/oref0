@@ -239,7 +239,7 @@
       "cal": "monitor/cal.json",
       "device": "raw",
       "remainder": "",
-      "maxraw": "150",
+      "maxraw": "200",
       "glucose": "monitor/glucose-zoned-merge.json"
     }
   },
@@ -283,7 +283,7 @@
   },
   {
     "echo-glucose": {
-      "command": "! bash -c \"echo \\\">>>>RESULTS<<<<\\\" && json -f monitor/glucose-raw-merge.json -a sgv raw dateString | head -n 3\""
+      "command": "! bash -c \"echo \\\">>>>RESULTS<<<<\\\" && json -f monitor/glucose-raw-merge.json -a sgv raw dateString | head -n 4\""
     },
     "type": "alias",
     "name": "echo-glucose"
@@ -341,7 +341,7 @@
     "type": "alias",
     "name": "maybe-upload",
     "maybe-upload": {
-      "command": "! bash -c \"if (is-fresh.sh monitor/glucose-zoned.json 4); then openaps upload; else echo \\\"Glucose is not fresh, not doing full upload\\\"; fi\""
+      "command": "! bash -c \"if (is-fresh.sh monitor/glucose-zoned.json 5); then openaps upload; else echo \\\"Glucose is not fresh, not doing full upload\\\"; fi\""
     }
   }
 ]
