@@ -120,6 +120,7 @@ function add_raw_sgvs {
 function check_for_cgm {
     if ! usb_connected && ! ble_configured; then
         echo CGM not connected via USB OTG, and not configured for BLE
+        echo Aborting oref0-g4-loop at $(date)
         exit 2
     fi
 }
