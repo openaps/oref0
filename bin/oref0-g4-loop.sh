@@ -5,6 +5,7 @@ main() {
     echo Starting oref0-g4-loop at $(date):
     prep
     show_last_record
+    check_for_cgm
     if ! enough_data; then
         echo "cgm/g4-glucose.json has < 24h worth of data"
         full_refresh
@@ -88,6 +89,7 @@ function prep {
 }
 
 function full_refresh {
+    rm cgm/g4-glucose.json
     g4update -f cgm/g4-glucose.json -u -b 30h -k 48h 2>&1
     cal_raw
 }
@@ -115,7 +117,20 @@ function add_raw_sgvs {
     cp -pu cgm/cgm-glucose.json cgm/glucose.json
 }
 
+function check_for_cgm {
+    if ! usb_connected && ! ble_configured; then
+        echo CGM not connected via USB OTG, and not configured for BLE
+        exit 2
+    fi
+}
 
+function usb_connected {
+    lsusb | grep 22a3
+}
+
+function ble_configured {
+    crontab -l | egrep "^DEXCOM_CGM_ID=SM"
+}
 
 die() {
     echo "$@"
