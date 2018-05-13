@@ -53,12 +53,19 @@ def glucose():
 
 @app.route("/sgv.json")
 def sgvjson():
+    json_url = os.path.join("/root/myopenaps/settings/profile.json")
+    data = json.load(open(json_url))
+    units = data['out_units']
     count = request.args.get('count', default = 10, type = int)
     if os.path.getmtime("/root/myopenaps/xdrip/glucose.json") > os.path.getmtime("/root/myopenaps/monitor/glucose.json"):
         json_url = os.path.join("/root/myopenaps/xdrip/glucose.json")
     else:
         json_url = os.path.join("/root/myopenaps/monitor/glucose.json")
     data = json.load(open(json_url))
+    if units == "mg/dL":
+        data[0]['units_hint'] = "mgdl"
+    else:
+        data[0]['units_hint'] = "mmol"
     return jsonify(data[0:count])
 
 @app.route("/temptargets")
