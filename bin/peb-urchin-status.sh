@@ -1,4 +1,13 @@
 #!/bin/bash
+
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+usage "$@" <<EOT
+Usage: $self <MAC>
+Collect status information to display on a Pebble smartwatch. Runs from
+crontab, if you indicated you have a Pebble during oref0-setup.
+EOT
+
 MAC=$1
 
 if ! ( rfcomm show hci0 | grep -q $MAC ) ; then
