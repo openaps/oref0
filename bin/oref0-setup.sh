@@ -1061,7 +1061,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
-        cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
+        cd $directory && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
     fi
 
     # install Go for Explorer Board/HAT
@@ -1099,9 +1099,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
     #Necessary to "bootstrap" Go commands...
     if [[ $radio_locale =~ ^WW$ ]]; then
-      echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+      echo 868400000 > $directory/monitor/medtronic_frequency.ini
     else
-      echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+      echo 916550000 > $directory/monitor/medtronic_frequency.ini
     fi
 
     if [[ "$ttyport" =~ "spidev" ]]; then
@@ -1115,7 +1115,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
-          ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't cp openaps.jq"
         else
           arch=arm-spi
           if egrep -i "edison" /etc/passwd 2>/dev/null; then
@@ -1127,7 +1127,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           echo "Downloading Go pump binaries from:" $downloadUrl
           wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
           echo "Installing Go pump binaries ..."
-          ln -sf $HOME/go/bin/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          ln -sf $HOME/go/bin/openaps.jq $directory/ || die "Couldn't cp openaps.jq"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         fi
