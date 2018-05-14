@@ -148,6 +148,8 @@ function upload {
 function upload_ns_status {
     #echo Uploading devicestatus
     grep -q iob monitor/iob.json || die "IOB not found"
+    # set the timestamp on enact/suggested.json to match the deliverAt time
+    touch -d $(cat enact/suggested.json | jq .deliverAt | sed 's/"//g') enact/suggested.json
     if ! find enact/ -mmin -5 -size +5c | grep -q suggested.json; then
         echo -n "No recent suggested.json found; last updated "
         ls -la enact/suggested.json | awk '{print $6,$7,$8}'
