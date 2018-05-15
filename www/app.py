@@ -65,7 +65,7 @@ def profile():
 
 @app.route("/pumphistory")
 def pumphistory():
-    json_url = os.path.join("/root/myopenaps/monitor/pumphistory-merged.json")
+    json_url = os.path.join("/root/myopenaps/monitor/pumphistory-24h-zoned.json")
     data = json.load(open(json_url))
     return jsonify(data)
 
