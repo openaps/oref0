@@ -197,7 +197,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
-    if grep -qa "Explorer HAT" /proc/device-tree/hat/product ; then
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product 2>/dev/null ; then
         echocolor "Explorer Board HAT detected. "
         ttyport=/dev/spidev0.0
     else
@@ -240,7 +240,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     else
       echo "Downloading precompiled Go pump binaries."
     fi
-    
+
 
 
     if [[ ! -z "${ttyport}" ]]; then
@@ -617,6 +617,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
 
+    if [[ -f /etc/cron.daily/logrotate ]]; then
+        mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
+    fi
+
     #TODO: remove this when IPv6 works reliably
     echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
 
@@ -727,7 +731,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if ! python -c "import openxshareble" 2>/dev/null; then
             echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
         fi
-        sudo apt-get update; sudo apt-get upgrade
+        sudo apt-get update; sudo apt-get -y upgrade
         sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
         echo Checking bluez installation
         # TODO: figure out if we need to do this for 5.44 as well
@@ -920,7 +924,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # xdrip CGM (xDripAPS)
     if [[ ${CGM,,} =~ "xdrip" ]]; then
         echo xdrip selected as CGM, so configuring xDripAPS
-        sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
+        sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
         git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
         for type in xdrip-cgm; do
@@ -1043,7 +1047,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo
 
     #Check to see if Explorer HAT is present, and install all necessary stuff
-    if grep -a "Explorer HAT" /proc/device-tree/hat/product || [[ "$ttyport" =~ "spidev0.0" ]]; then
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product || [[ "$ttyport" =~ "spidev0.0" ]]; then
         echo "Looks like you're using an Explorer HAT!"
         echo "Making sure SPI is enabled..."
         sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
@@ -1057,7 +1061,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
-        cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
+        cd $directory && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
     fi
 
     # install Go for Explorer Board/HAT
@@ -1090,16 +1094,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     mkdir -p $HOME/go
     source $HOME/.bash_profile
-    
+
     #Store radio_locale for later use
     grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
     #Necessary to "bootstrap" Go commands...
     if [[ $radio_locale =~ ^WW$ ]]; then
-      echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+      echo 868400000 > $directory/monitor/medtronic_frequency.ini
     else
-      echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+      echo 916550000 > $directory/monitor/medtronic_frequency.ini
     fi
-    
+
     if [[ "$ttyport" =~ "spidev" ]]; then
         if $buildgofromsource; then
           #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
@@ -1111,7 +1115,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
-          cp $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
         else
           arch=arm-spi
           if egrep -i "edison" /etc/passwd 2>/dev/null; then
@@ -1123,7 +1127,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           echo "Downloading Go pump binaries from:" $downloadUrl
           wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
           echo "Installing Go pump binaries ..."
-          cp $HOME/go/bin/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          ln -sf $HOME/go/bin/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         fi

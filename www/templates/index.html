@@ -392,7 +392,7 @@
                     $('.bg-tick').text(param.tick);
                     $('.bg-eventual').text(param.eventualBg);
                     $('.iob').text(param.iob);
-                    $('.smb-units').text(param.enacted.units);
+                    $('.smb-units').text(param.enacted.units == undefined ? 0 : param.enacted.units);
                     
                     if (parseInt($('.timeago-complete-mins').attr('data-mins')) <= 5 ) {
                         $('.oaps-status').addClass('bg-success');
@@ -497,11 +497,11 @@
                             if ( date1 >= param.minDate) {
                                 if ( data[i]._type == 'TempBasal' ) {
 
-                                    var date2 = new Date(date1.getTime()+data[i+1]['duration (min)']*60000);
+                                    var date2 = new Date(date1.getTime()+data[i-1]['duration (min)']*60000);
                                      
                                     if ( date2 < param.minDate ) { break;}
                                     
-                                    for(t=0; t<=data[i+1]['duration (min)']; t=t+5) {
+                                    for(t=0; t<=data[i-1]['duration (min)']; t=t+5) {
                                         var date3 = new Date(date2.getTime()-t*60000);
                                         if ( date3 < param.minDate ) { break;}
                                         if ( date3 < maxDate_basal) {
@@ -624,7 +624,7 @@
                     dataType: 'json',
                     success: function(data) {
                         param.battery.pumpVoltage = data.voltage;
-                        param.battery.pumpStatus = data.status;
+                        param.battery.pumpStatus = data.string;
                     }
                 });
                 $.ajax({

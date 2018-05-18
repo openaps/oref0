@@ -47,16 +47,14 @@ main() {
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                     smb_verify_status
                 else
-                    smb_old_temp && ( \
-                    echo "Falling back to basal-only pump-loop" \
+                    echo "Bolus failed: falling back to basal-only pump-loop" \
                     && refresh_temp_and_enact \
                     && refresh_pumphistory_and_enact \
                     && refresh_profile \
                     && pumphistory_daily_refresh \
                     && touch /tmp/pump_loop_success \
                     && echo Completed pump-loop at $(date) \
-                    && echo \
-                    )
+                    && echo
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
@@ -90,13 +88,6 @@ function update_display {
     if [ -e /root/src/openaps-menu/scripts/status.js ]; then
         node /root/src/openaps-menu/scripts/status.js
     fi
-}
-
-function timerun {
-    echo "$(date): running $@" >> /tmp/timefile.txt
-    { time $@ 2> /tmp/stderr ; } 2>> /tmp/timefile.txt
-    echo "$(date): completed $@" >> /tmp/timefile.txt
-    cat /tmp/stderr 1>&3
 }
 
 function fail {
@@ -209,9 +200,9 @@ function smb_suggest {
 
 function determine_basal {
     if ( grep -q 12 settings/model.json ); then
-      timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
+      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
-      timerun oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
+      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
     fi
 }
 
@@ -324,7 +315,7 @@ function smb_bolus {
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
-        mdt -f internal button esc esc esc esc 2>&3 \
+        retry_return mdt -f internal button esc esc esc esc 2>&3 \
         && echo -n "and bolusing " && jq .units enact/smb-suggested.json | tr -d '\n' && echo " units" \
         && ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && rm -rf enact/smb-suggested.json
@@ -354,7 +345,6 @@ function refresh_after_bolus_or_enact {
             #echo -n "bolused since pumphistory refreshed, "
             #stat enact/bolused.json | grep Mod
         fi
-    #if (find enact/ -mmin -2 -size +5c | grep -q bolused.json || (cat monitor/temp_basal.json | json -c "this.duration > 28" | grep -q duration)); then
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
         refresh_pumphistory_and_meal \
@@ -576,14 +566,13 @@ function refresh_pumphistory_and_meal {
     ( grep -q "model.*12" monitor/status.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
-         || { echo; cat monitor/status.json | jq -c -C .; echo -n "x12 model detected. Ref"; }
+         || { echo; cat monitor/status.json | jq -c -C .; return 1; }
     retry_return monitor_pump || return 1
     echo -n "meal.json "
     retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
     echo "refreshed"
 }
 
-# monitor-pump report invoke monitor/clock.json monitor/temp_basal.json monitor/pumphistory.json monitor/pumphistory-zoned.json monitor/clock-zoned.json monitor/iob.json monitor/reservoir.json monitor/battery.json monitor/status.json
 function monitor_pump {
     retry_return invoke_pumphistory_etc || return 1
     retry_return invoke_reservoir_etc || return 1
@@ -834,7 +823,7 @@ function check_battery() {
 }
 function check_tempbasal() {
   set -o pipefail
-  mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp >&4
+  mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp >&4 && cp monitor/temp_basal.json monitor/last_temp_basal.json
 }
 
 # clear and refresh the 24h pumphistory file approximatively every 6 hours.
@@ -906,10 +895,16 @@ function read_carb_ratios() {
 }
 
 retry_fail() {
-    "$@" || { echo Retrying $*; "$@"; } || { echo "Couldn't $*"; fail "$@"; }
+    "$@" || { echo Retry 1 of $*; "$@"; } \
+    || { wait_for_silence 2; echo Retry 2 of $*; "$@"; } \
+    || { wait_for_silence 5; echo Retry 3 of $*; "$@"; } \
+    || { echo "Couldn't $*"; fail "$@"; }
 }
 retry_return() {
-    "$@" || { echo Retrying $*; "$@"; } || { echo "Couldn't $* - continuing"; return 1; }
+    "$@" || { echo Retry 1 of $*; "$@"; } \
+    || { wait_for_silence 2; echo Retry 2 of $*; "$@"; } \
+    || { wait_for_silence 5; echo Retry 3 of $*; "$@"; } \
+    || { echo "Couldn't $* - continuing"; return 1; }
 }
 try_fail() {
     "$@" || { echo "Couldn't $*"; fail "$@"; }

@@ -107,7 +107,7 @@ function check_ip {
 }
 
 function has_ip {
-    ifconfig | grep -A1 $1 | grep -q "inet addr"
+    ifconfig | grep -A1 $1 | grep -q "inet "
 }
 
 function bt_connect {
