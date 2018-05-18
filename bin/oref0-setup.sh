@@ -835,6 +835,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
     if [[ -z "$ttyport" ]]; then
         openaps device add pump medtronic $serial || die "Can't add pump"
+        # add carelink to pump.ini
+        grep -q radio_type pump.ini || echo "radio_type=carelink" >> pump.ini
         # carelinks can't listen for silence or mmtune, so just do a preflight check instead
         openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
         openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
