@@ -563,7 +563,7 @@ function wait_for_silence {
 # Refresh pumphistory etc.
 function refresh_pumphistory_and_meal {
     retry_return check_status 2>&3 >&4 || return 1
-    ( grep -q "model.*12" monitor/status.json || \
+    ( grep -q 12 settings/model.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
@@ -803,7 +803,11 @@ function check_model() {
 }
 function check_status() {
   set -o pipefail
-  mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | jq -c -C .status
+  if ( grep 12 settings/model.json ); then
+    echo "Status checks not supported on Model x12." > monitor/status.json
+  else
+    mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | jq -c -C .status
+  fi
 }
 function mmtune_Go() {
   set -o pipefail
