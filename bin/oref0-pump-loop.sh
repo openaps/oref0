@@ -796,7 +796,7 @@ function check_model() {
 function check_status() {
   set -o pipefail
   if ( grep 12 settings/model.json ); then
-    echo "Status checks not supported on Model x12." > monitor/status.json
+    touch monitor/status.json
   else
     mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | jq -c -C .status
   fi
