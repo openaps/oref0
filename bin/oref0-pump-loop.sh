@@ -204,6 +204,7 @@ function determine_basal {
     else
       oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
     fi
+    cp -up enact/smb-suggested.json enact/suggested.json
 }
 
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails or a 0 duration temp is requested)
@@ -590,11 +591,9 @@ function invoke_reservoir_etc {
 # Calculate new suggested temp basal and enact it
 function enact {
     rm enact/suggested.json
-    #openaps report invoke enact/suggested.json \
     determine_basal && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
         ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) 2>&3 >&4
-	#openaps report invoke enact/enacted.json 2>&3 >&4
         grep -q duration enact/enacted.json || ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>&3
