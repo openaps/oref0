@@ -893,13 +893,13 @@ function read_carb_ratios() {
 retry_fail() {
     "$@" || { echo Retry 1 of $*; "$@"; } \
     || { wait_for_silence $upto10s; echo Retry 2 of $*; "$@"; } \
-    || { wait_for_silence $upto20s; echo Retry 3 of $*; "$@"; } \
+    || { wait_for_silence $upto30s; echo Retry 3 of $*; "$@"; } \
     || { echo "Couldn't $*"; fail "$@"; }
 }
 retry_return() {
     "$@" || { echo Retry 1 of $*; "$@"; } \
     || { wait_for_silence $upto10s; echo Retry 2 of $*; "$@"; } \
-    || { wait_for_silence $upto20s; echo Retry 3 of $*; "$@"; } \
+    || { wait_for_silence $upto30s; echo Retry 3 of $*; "$@"; } \
     || { echo "Couldn't $* - continuing"; return 1; }
 }
 try_fail() {
