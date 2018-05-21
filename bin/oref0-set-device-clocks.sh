@@ -46,7 +46,7 @@ checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1
 if checkNTP; then
     sudo ntpdate -s -b time.nist.gov
     echo Setting pump time to $(date)
-    openaps use $PUMP set_clock --to now 2>&1 >/dev/null | tail -1
+    mdt -f internal setclock now 2>&1 >/dev/null
     # xdripaps CGM does not have a clock to set, so don't try. 
     if [ ! -f xdrip.ini ] 
     then

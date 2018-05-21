@@ -196,7 +196,7 @@ if (!module.parent) {
         try {
             temptargets_data = JSON.parse(fs.readFileSync(temptargets_input, 'utf8'));
         } catch (e) {
-            //console.error("Could not parse temptargets_data.");
+            console.error("Could not parse temptargets_data.");
         }
     }
 
