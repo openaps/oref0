@@ -835,6 +835,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
     if [[ -z "$ttyport" ]]; then
         openaps device add pump medtronic $serial || die "Can't add pump"
+        # add carelink to pump.ini
+        grep -q radio_type pump.ini || echo "radio_type=carelink" >> pump.ini
         # carelinks can't listen for silence or mmtune, so just do a preflight check instead
         openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
         openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
@@ -851,17 +853,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         else
             echo -n "Cloning subg_rfspy: "
             (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
-        fi
-
-        # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-        # this will be called when mmtune is use with a WW pump.
-        # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-        # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
-
-        # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
-        # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-        # TODO: remove once https://github.com/openaps/openaps/pull/112 has been released in a openaps version
-        grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
         fi
     fi
 
