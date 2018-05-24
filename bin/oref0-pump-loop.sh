@@ -41,20 +41,29 @@ main() {
         # try_fail refresh_old_pumphistory
         try_fail refresh_old_profile
         try_fail touch /tmp/pump_loop_enacted -r monitor/glucose.json
-        if smb_check_everything; then
+        if retry_fail smb_check_everything; then
             if ( grep -q '"units":' enact/smb-suggested.json 2>&3); then
                 if try_return smb_bolus; then
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                     smb_verify_status
                 else
-                    echo "Bolus failed: falling back to basal-only pump-loop" \
-                    && refresh_temp_and_enact \
-                    && refresh_pumphistory_and_enact \
-                    && refresh_profile \
-                    && pumphistory_daily_refresh \
-                    && touch /tmp/pump_loop_success \
-                    && echo Completed pump-loop at $(date) \
-                    && echo
+                    echo "Bolus failed: retrying"
+                    if retry_fail smb_check_everything; then
+                        if ( grep -q '"units":' enact/smb-suggested.json 2>&3); then
+                            if try_fail smb_bolus; then
+                                touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+                                smb_verify_status
+                            fi
+                        fi
+                    fi
+                    #echo "Bolus failed: falling back to basal-only pump-loop" \
+                    #&& refresh_temp_and_enact \
+                    #&& refresh_pumphistory_and_enact \
+                    #&& refresh_profile \
+                    #&& pumphistory_daily_refresh \
+                    #&& touch /tmp/pump_loop_success \
+                    #&& echo Completed pump-loop at $(date) \
+                    #&& echo
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
