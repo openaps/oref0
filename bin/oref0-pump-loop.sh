@@ -137,7 +137,7 @@ function overtemp {
 
 function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
-    try_fail refresh_pumphistory_and_meal
+    retry_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
     echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
     retry_fail check_clock
@@ -569,7 +569,7 @@ function refresh_pumphistory_and_meal {
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
-    retry_return monitor_pump || return 1
+    try_return monitor_pump || return 1
     echo -n "meal.json "
     if ! retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new ; then
         echo; echo "Couldn't calculate COB"
