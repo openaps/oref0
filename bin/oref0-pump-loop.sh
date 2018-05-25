@@ -571,8 +571,16 @@ function refresh_pumphistory_and_meal {
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
     retry_return monitor_pump || return 1
     echo -n "meal.json "
-    retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new || { echo; echo "Couldn't calculate COB"; return 1; }
-    [ -s monitor/meal.json.new ] && jq -e .carbs monitor/meal.json.new >&3 && cp monitor/meal.json.new monitor/meal.json || { echo; echo "Couldn't copy meal.json"; fail "$@"; }
+    if ! retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new ; then
+        echo; echo "Couldn't calculate COB"
+        return 1
+    fi
+    if [ -s monitor/meal.json.new ]; then
+        jq -e .carbs monitor/meal.json.new >&3 && cp monitor/meal.json.new monitor/meal.json
+    else
+        echo; echo "Couldn't copy meal.json"
+        return 1
+    fi
     echo "refreshed"
 }
 
