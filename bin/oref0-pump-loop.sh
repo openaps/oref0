@@ -585,8 +585,8 @@ function refresh_pumphistory_and_meal {
 }
 
 function monitor_pump {
-    retry_return invoke_pumphistory_etc || return 1
-    retry_return invoke_reservoir_etc || return 1
+    try_return invoke_pumphistory_etc || return 1
+    try_return invoke_reservoir_etc || return 1
 }
 
 function calculate_iob {
