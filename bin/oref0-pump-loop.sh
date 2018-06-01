@@ -130,54 +130,54 @@ function fail {
 # Suggestion for carelink users are 
 # DUTY_CYCLE=120 
 # EMERGENCY_ACTION=900
-# REBOOT_EN=0		#0=true
-# USB_RESET_EN=0	#0=true
+# REBOOT_EN=0        #0=true
+# USB_RESET_EN=0    #0=true
 #
 # Default is DUTY_CYCLE=0 to disable this feature.
 DUTY_CYCLE=${DUTY_CYCLE:-0}
 
 EMERGENCY_ACTION=${EMERGENCY_ACTION:-900}
-REBOOT_EN=${REBOOT_EN:-1}	 	#0=true
-USB_RESET_EN=${USB_RESET_EN:-1}	#0=true
+REBOOT_EN=${REBOOT_EN:-1}         #0=true
+USB_RESET_EN=${USB_RESET_EN:-1}    #0=true
 
 function ckeck_duty_cycle { 
     if [ -e /tmp/pump_loop_success ]; then
         DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
-		
+
         if ([ $USB_RESET_EN ] || [ $REBOOT_EN ]) && [ "$DIFF_SECONDS" -gt "$EMERGENCY_ACTION" ]; then 
-			if [ $USB_RESET_EN ]; then
-				USB_RESET_DIFF=$EMERGENCY_ACTION
-				if [ -e /tmp/usp_power_cycled ]; then 
-					USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usp_power_cycled))
-				fi
-				
-				if [ "$USB_RESET_DIFF" -gt "$EMERGENCY_ACTION" ]; then
-					# file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
-					echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset usb... "
-					/usr/local/bin/oref0-reset-usb 2>&3 >&4
-					touch /tmp/usp_power_cycled
-					echo " done. --> start new cycle."
-					return 0 #return to loop routine
-				fi
-			fi
-			# if usb reset doesn't help or is not enabled --> reboot system
-			if [ $REBOOT_EN ]; then
-				echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> emergency reboot."
-				sudo shutdown -r now
-				exit 0		
-			fi
+            if [ $USB_RESET_EN ]; then
+                USB_RESET_DIFF=$EMERGENCY_ACTION
+                if [ -e /tmp/usp_power_cycled ]; then 
+                    USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usp_power_cycled))
+                fi
+                
+                if [ "$USB_RESET_DIFF" -gt "$EMERGENCY_ACTION" ]; then
+                    # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
+                    echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset usb... "
+                    /usr/local/bin/oref0-reset-usb 2>&3 >&4
+                    touch /tmp/usp_power_cycled
+                    echo " done. --> start new cycle."
+                    return 0 #return to loop routine
+                fi
+            fi
+            # if usb reset doesn't help or is not enabled --> reboot system
+            if [ $REBOOT_EN ]; then
+                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> emergency reboot."
+                sudo shutdown -r now
+                exit 0        
+            fi
         elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
             return 0
         else
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
-			exit 0
+            exit 0
         fi
     else
-	    echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
-		touch /tmp/pump_loop_success
-		return 0
-	fi
+        echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
+        touch /tmp/pump_loop_success
+        return 0
+    fi
 }
 
 
@@ -334,7 +334,7 @@ function smb_verify_status {
         false
     fi \
     && if grep -q 12 monitor/status.json; then
-	echo -n "x12 model detected."
+    echo -n "x12 model detected."
         true
     fi
 }
@@ -477,7 +477,7 @@ function preflight {
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
     if grep "carelink" pump.ini 2>&1 >/dev/null; then
-	echo "using carelink; skipping mmtune"
+    echo "using carelink; skipping mmtune"
         return
     fi
 
@@ -528,7 +528,7 @@ function any_pump_comms {
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
     if grep "carelink" pump.ini 2>&1 >/dev/null; then
-	echo "using carelink; not waiting for silence"
+    echo "using carelink; not waiting for silence"
         return
     fi
     if [ -z $1 ]; then
