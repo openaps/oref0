@@ -29,7 +29,7 @@ fi
 
 # main pump-loop
 main() {
-    ckeck_duty_cycle
+    check_duty_cycle
     prep
     if ! overtemp; then
         echo && echo "Starting oref0-pump-loop at $(date) with $upto30s second wait_for_silence:"
@@ -111,41 +111,44 @@ function fail {
     exit 1
 }
 
-# The function "ckeck_duty_cycle" checks if the loop has to run and it returns 0 if so.
+# The function "check_duty_cycle" checks if the loop has to run and it returns 0 if so.
 # It exits the script with code 0 otherwise.
-# The desicion is based on the time since last *successfull* loop.
+# The desicion is based on the time since last *successful* loop.
 # !Note duty cycle times are set in seconds.
 #
-# Additionally it may start a emergency action if enabled.
+# Additionally it may start an "emergency action" if enabled.
 # Possible actions are usb power cycling or reboot the system.
+# The EMERGENCY_ACTION variable sets the allowable time between successful loops.
+# If no loop has completed in that time, it performs the enabled actions.
 # !Note to enable a emergency action use 0 to enable and 1 to disable
 #
 # The intention is two fold: 
-# First the battery consumten is reduceddrastically (Pump and Pi)  if the loop runs less often.
-# Second if carelink is used, the loop produces to much communication, 
-# pretty much killing the communication between the pump and enlite sensors.
+# First the battery consumption is reduced (Pump and Pi) if the loop runs less often.
+# This is most dramatic for Enlite CGM, where wait_for_bg can't be used.
+# Secondly, if Carelink USB is used with Enlite, and wait_for_silence can't be used, this
+# prevents the loop from disrupting the communication between the pump and enlite sensors.
 #
-# Use DUTY_CYCLE=0 if you don't want to limit the loop
+# Use DUTY_CYCLE=0 (default) if you don't want to limit the loop
 #
-# Suggestion for carelink users are 
+# Suggestion for Carelink USB users are 
 # DUTY_CYCLE=120 
 # EMERGENCY_ACTION=900
-# REBOOT_EN=0        #0=true
-# USB_RESET_EN=0    #0=true
+# REBOOT_ENABLE=0        #0=true
+# USB_RESET_ENABLE=0    #0=true
 #
 # Default is DUTY_CYCLE=0 to disable this feature.
 DUTY_CYCLE=${DUTY_CYCLE:-0}
 
 EMERGENCY_ACTION=${EMERGENCY_ACTION:-900}
-REBOOT_EN=${REBOOT_EN:-1}         #0=true
-USB_RESET_EN=${USB_RESET_EN:-1}    #0=true
+REBOOT_ENABLE=${REBOOT_ENABLE:-1}          #0=true
+USB_RESET_ENABLE=${USB_RESET_ENABLE:-1}    #0=true
 
-function ckeck_duty_cycle { 
+function check_duty_cycle { 
     if [ -e /tmp/pump_loop_success ]; then
         DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
 
-        if ([ $USB_RESET_EN ] || [ $REBOOT_EN ]) && [ "$DIFF_SECONDS" -gt "$EMERGENCY_ACTION" ]; then 
-            if [ $USB_RESET_EN ]; then
+        if ([ $USB_RESET_ENABLE ] || [ $REBOOT_ENABLE ]) && [ "$DIFF_SECONDS" -gt "$EMERGENCY_ACTION" ]; then 
+            if [ $USB_RESET_ENABLE ]; then
                 USB_RESET_DIFF=$EMERGENCY_ACTION
                 if [ -e /tmp/usp_power_cycled ]; then 
                     USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usp_power_cycled))
@@ -153,7 +156,7 @@ function ckeck_duty_cycle {
                 
                 if [ "$USB_RESET_DIFF" -gt "$EMERGENCY_ACTION" ]; then
                     # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
-                    echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset usb... "
+                    echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> trying to reset USB... "
                     /usr/local/bin/oref0-reset-usb 2>&3 >&4
                     touch /tmp/usp_power_cycled
                     echo " done. --> start new cycle."
@@ -161,8 +164,8 @@ function ckeck_duty_cycle {
                 fi
             fi
             # if usb reset doesn't help or is not enabled --> reboot system
-            if [ $REBOOT_EN ]; then
-                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> emergency reboot."
+            if [ $REBOOT_ENABLE ]; then
+                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> rebooting."
                 sudo shutdown -r now
                 exit 0        
             fi
@@ -175,7 +178,8 @@ function ckeck_duty_cycle {
         fi
     else
         echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
-        touch /tmp/pump_loop_success
+        # if pump_loop_success does not exist, use the system uptime
+        touch -d "$(cat /proc/uptime | awk '{print $1}') seconds ago" /tmp/pump_loop_success
         return 0
     fi
 }
