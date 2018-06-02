@@ -854,7 +854,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 echo -n "Cloning subg_rfspy: "
                 (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
             fi
-        fi    
+        fi
     fi
 
     # Medtronic CGM
@@ -997,7 +997,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export API_SECRET" >> $HOME/.bash_profile
 
     echo
-    
+
     #Check to see if Explorer HAT is present, and install all necessary stuff
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product 2>/dev/null ; then
         echo "Looks like you're using an Explorer HAT!"
@@ -1015,7 +1015,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
         cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
     fi
-    
+
     if [[ "$ttyport" =~ "spi" ]]; then
         echo Resetting spi_serial
         reset_spi_serial.py
