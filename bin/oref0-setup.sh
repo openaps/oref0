@@ -854,6 +854,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 echo -n "Cloning subg_rfspy: "
                 (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
             fi
+
+            # Hack to check if radio_locale has been set in pump.ini.
+            # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+            grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
         fi
     fi
 
