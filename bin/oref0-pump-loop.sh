@@ -144,43 +144,45 @@ REBOOT_ENABLE=${REBOOT_ENABLE:-1}          #0=true
 USB_RESET_ENABLE=${USB_RESET_ENABLE:-1}    #0=true
 
 function check_duty_cycle {
-    if [ -e /tmp/pump_loop_success ]; then
-        DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
+    if [ "$DUTY_CYCLE" -gt "0" ]; then
+        if [ -e /tmp/pump_loop_success ]; then
+            DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
 
-        if ([ $USB_RESET_ENABLE ] || [ $REBOOT_ENABLE ]) && [ "$DIFF_SECONDS" -gt "$EMERGENCY_ACTION" ]; then
-            if [ $USB_RESET_ENABLE ]; then
-                USB_RESET_DIFF=$EMERGENCY_ACTION
-                if [ -e /tmp/usp_power_cycled ]; then
-                    USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usp_power_cycled))
-                fi
+            if ([ $USB_RESET_ENABLE ] || [ $REBOOT_ENABLE ]) && [ "$DIFF_SECONDS" -gt "$EMERGENCY_ACTION" ]; then
+                if [ $USB_RESET_ENABLE ]; then
+                    USB_RESET_DIFF=$EMERGENCY_ACTION
+                    if [ -e /tmp/usp_power_cycled ]; then
+                        USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usp_power_cycled))
+                    fi
 
-                if [ "$USB_RESET_DIFF" -gt "$EMERGENCY_ACTION" ]; then
-                    # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
-                    echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> trying to reset USB... "
-                    /usr/local/bin/oref0-reset-usb 2>&3 >&4
-                    touch /tmp/usp_power_cycled
-                    echo " done. --> start new cycle."
-                    return 0 #return to loop routine
+                    if [ "$USB_RESET_DIFF" -gt "$EMERGENCY_ACTION" ]; then
+                        # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
+                        echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> trying to reset USB... "
+                        /usr/local/bin/oref0-reset-usb 2>&3 >&4
+                        touch /tmp/usp_power_cycled
+                        echo " done. --> start new cycle."
+                        return 0 #return to loop routine
+                    fi
                 fi
-            fi
-            # if usb reset doesn't help or is not enabled --> reboot system
-            if [ $REBOOT_ENABLE ]; then
-                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> rebooting."
-                sudo shutdown -r now
+                # if usb reset doesn't help or is not enabled --> reboot system
+                if [ $REBOOT_ENABLE ]; then
+                    echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> rebooting."
+                    sudo shutdown -r now
+                    exit 0
+                fi
+            elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then
+                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
+                return 0
+            else
+                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
                 exit 0
             fi
-        elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then
-            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
-            return 0
         else
-            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
-            exit 0
+            echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
+            # if pump_loop_success does not exist, use the system uptime
+            touch -d "$(cat /proc/uptime | awk '{print $1}') seconds ago" /tmp/pump_loop_success
+            return 0
         fi
-    else
-        echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
-        # if pump_loop_success does not exist, use the system uptime
-        touch -d "$(cat /proc/uptime | awk '{print $1}') seconds ago" /tmp/pump_loop_success
-        return 0
     fi
 }
 
