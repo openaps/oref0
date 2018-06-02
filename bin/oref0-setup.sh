@@ -890,16 +890,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
             fi
 
-            # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-            # this will be called when mmtune is use with a WW pump.
-            # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-            # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
-
-            # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
+            # Hack to check if radio_locale has been set in pump.ini.
             # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-            # TODO: remove once https://github.com/openaps/openaps/pull/112 has been released in a openaps version
             grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
-            fi
         fi
     else
         echo '[device "pump"]' > pump.ini
