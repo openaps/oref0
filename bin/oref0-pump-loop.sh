@@ -122,7 +122,7 @@ function fail {
 # If no loop has completed in that time, it performs the enabled actions.
 # !Note to enable a emergency action use 0 to enable and 1 to disable
 #
-# The intention is two fold: 
+# The intention is two fold:
 # First the battery consumption is reduced (Pump and Pi) if the loop runs less often.
 # This is most dramatic for Enlite CGM, where wait_for_bg can't be used.
 # Secondly, if Carelink USB is used with Enlite, and wait_for_silence can't be used, this
@@ -130,8 +130,8 @@ function fail {
 #
 # Use DUTY_CYCLE=0 (default) if you don't want to limit the loop
 #
-# Suggestion for Carelink USB users are 
-# DUTY_CYCLE=120 
+# Suggestion for Carelink USB users are
+# DUTY_CYCLE=120
 # EMERGENCY_ACTION=900
 # REBOOT_ENABLE=0        #0=true
 # USB_RESET_ENABLE=0    #0=true
@@ -143,17 +143,17 @@ EMERGENCY_ACTION=${EMERGENCY_ACTION:-900}
 REBOOT_ENABLE=${REBOOT_ENABLE:-1}          #0=true
 USB_RESET_ENABLE=${USB_RESET_ENABLE:-1}    #0=true
 
-function check_duty_cycle { 
+function check_duty_cycle {
     if [ -e /tmp/pump_loop_success ]; then
         DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
 
-        if ([ $USB_RESET_ENABLE ] || [ $REBOOT_ENABLE ]) && [ "$DIFF_SECONDS" -gt "$EMERGENCY_ACTION" ]; then 
+        if ([ $USB_RESET_ENABLE ] || [ $REBOOT_ENABLE ]) && [ "$DIFF_SECONDS" -gt "$EMERGENCY_ACTION" ]; then
             if [ $USB_RESET_ENABLE ]; then
                 USB_RESET_DIFF=$EMERGENCY_ACTION
-                if [ -e /tmp/usp_power_cycled ]; then 
+                if [ -e /tmp/usp_power_cycled ]; then
                     USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usp_power_cycled))
                 fi
-                
+
                 if [ "$USB_RESET_DIFF" -gt "$EMERGENCY_ACTION" ]; then
                     # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
                     echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> trying to reset USB... "
@@ -167,9 +167,9 @@ function check_duty_cycle {
             if [ $REBOOT_ENABLE ]; then
                 echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> rebooting."
                 sudo shutdown -r now
-                exit 0        
+                exit 0
             fi
-        elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
+        elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
             return 0
         else
@@ -647,7 +647,7 @@ function get_settings {
         # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
         NON_X12_ITEMS="settings/bg_targets.json"
     else
-        # On all other supported pumps, these reports work. 
+        # On all other supported pumps, these reports work.
         NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
     fi
     retry_return timerun openaps report invoke settings/model.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
