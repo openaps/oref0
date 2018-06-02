@@ -808,16 +808,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ "$ttyport" =~ "spi" ]] && [[ ${CGM,,} =~ "mdt" ]]; then
         echo Checking kernel for spi_serial installation
         if ! python -c "import spi_serial" 2>/dev/null; then
-            if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
-                echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
-            else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
+            #if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
+            #    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
+            #else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
                 if [[ "$ttyport" =~ "spidev0.0" ]]; then
                     echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
                     sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
                 else
                     echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
                 fi
-            fi
+            #fi
             #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
         fi
 
@@ -831,9 +831,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(cat monitor/mmtune.json | jq -r .setFreq) | while read line; do echo -n \"$line \"; done\""
         fi
         echo Checking kernel for mraa installation
-        if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
-            echo "Skipping mraa install for kernel 4.10+"
-        else # check if mraa is installed
+        #if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
+        #    echo "Skipping mraa install for kernel 4.10+"
+        #else # check if mraa is installed
             if ! ldconfig -p | grep -q mraa; then # if not installed, install it
                 echo Installing swig etc.
                 sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
@@ -854,7 +854,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
                 sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
             fi
-        fi
+        #fi
     fi
 
     #echo Checking openaps dev installation
@@ -870,9 +870,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
         if [[ -z "$ttyport" ]]; then
             openaps device add pump medtronic $serial || die "Can't add pump"
-            #openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
-            #openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
-            #openaps alias add mmtune 'report invoke monitor/temp_basal.json'
+            # add carelink to pump.ini
+            grep -q radio_type pump.ini || echo "radio_type=carelink" >> pump.ini
+            # carelinks can't listen for silence or mmtune, so just do a preflight check instead
+            openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
+            openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
+            openaps alias add mmtune 'report invoke monitor/temp_basal.json'
         else
             # radio_locale requires openaps 0.2.0-dev or later
             openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
@@ -887,16 +890,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
             fi
 
-            # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-            # this will be called when mmtune is use with a WW pump.
-            # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-            # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
-
-            # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
+            # Hack to check if radio_locale has been set in pump.ini.
             # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-            # TODO: remove once https://github.com/openaps/openaps/pull/112 has been released in a openaps version
             grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
-            fi
         fi
     else
         echo '[device "pump"]' > pump.ini
