@@ -31,6 +31,7 @@ fi
 
 # main pump-loop
 main() {
+    check_duty_cycle
     prep
     if ! overtemp; then
         echo && echo "Starting oref0-pump-loop at $(date) with $upto30s second wait_for_silence:"
@@ -47,16 +48,14 @@ main() {
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                     smb_verify_status
                 else
-                    smb_old_temp && ( \
-                    echo "Falling back to basal-only pump-loop" \
+                    echo "Bolus failed: falling back to basal-only pump-loop" \
                     && refresh_temp_and_enact \
                     && refresh_pumphistory_and_enact \
                     && refresh_profile \
                     && pumphistory_daily_refresh \
                     && touch /tmp/pump_loop_success \
                     && echo Completed pump-loop at $(date) \
-                    && echo \
-                    )
+                    && echo
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
@@ -118,6 +117,80 @@ function fail {
     echo
     exit 1
 }
+
+# The function "check_duty_cycle" checks if the loop has to run and it returns 0 if so.
+# It exits the script with code 0 otherwise.
+# The desicion is based on the time since last *successful* loop.
+# !Note duty cycle times are set in seconds.
+#
+# Additionally it may start an "emergency action" if enabled.
+# Possible actions are usb power cycling or reboot the system.
+# The EMERGENCY_ACTION variable sets the allowable time between successful loops.
+# If no loop has completed in that time, it performs the enabled actions.
+# !Note to enable a emergency action use 0 to enable and 1 to disable
+#
+# The intention is two fold:
+# First the battery consumption is reduced (Pump and Pi) if the loop runs less often.
+# This is most dramatic for Enlite CGM, where wait_for_bg can't be used.
+# Secondly, if Carelink USB is used with Enlite, and wait_for_silence can't be used, this
+# prevents the loop from disrupting the communication between the pump and enlite sensors.
+#
+# Use DUTY_CYCLE=0 (default) if you don't want to limit the loop
+#
+# Suggestion for Carelink USB users are
+# DUTY_CYCLE=120
+# EMERGENCY_ACTION=900
+# REBOOT_ENABLE=0        #0=true
+# USB_RESET_ENABLE=0    #0=true
+#
+# Default is DUTY_CYCLE=0 to disable this feature.
+DUTY_CYCLE=${DUTY_CYCLE:-0}
+
+EMERGENCY_ACTION=${EMERGENCY_ACTION:-900}
+REBOOT_ENABLE=${REBOOT_ENABLE:-1}          #0=true
+USB_RESET_ENABLE=${USB_RESET_ENABLE:-1}    #0=true
+
+function check_duty_cycle {
+    if [ -e /tmp/pump_loop_success ]; then
+        DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
+
+        if ([ $USB_RESET_ENABLE ] || [ $REBOOT_ENABLE ]) && [ "$DIFF_SECONDS" -gt "$EMERGENCY_ACTION" ]; then
+            if [ $USB_RESET_ENABLE ]; then
+                USB_RESET_DIFF=$EMERGENCY_ACTION
+                if [ -e /tmp/usp_power_cycled ]; then
+                    USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usp_power_cycled))
+                fi
+
+                if [ "$USB_RESET_DIFF" -gt "$EMERGENCY_ACTION" ]; then
+                    # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
+                    echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> trying to reset USB... "
+                    /usr/local/bin/oref0-reset-usb 2>&3 >&4
+                    touch /tmp/usp_power_cycled
+                    echo " done. --> start new cycle."
+                    return 0 #return to loop routine
+                fi
+            fi
+            # if usb reset doesn't help or is not enabled --> reboot system
+            if [ $REBOOT_ENABLE ]; then
+                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> rebooting."
+                sudo shutdown -r now
+                exit 0
+            fi
+        elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then
+            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
+            return 0
+        else
+            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
+            exit 0
+        fi
+    else
+        echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
+        # if pump_loop_success does not exist, use the system uptime
+        touch -d "$(cat /proc/uptime | awk '{print $1}') seconds ago" /tmp/pump_loop_success
+        return 0
+    fi
+}
+
 
 function overtemp {
     # check for CPU temperature above 85°C
@@ -206,6 +279,7 @@ function determine_basal {
     else
       oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
     fi
+    cp -up enact/smb-suggested.json enact/suggested.json
 }
 
 # enact the appropriate temp before SMB'ing, (only if smb_verify_enacted fails or a 0 duration temp is requested)
@@ -304,7 +378,7 @@ function smb_verify_status {
         false
     fi \
     && if grep -q 12 monitor/status.json; then
-	echo -n "x12 model detected."
+    echo -n "x12 model detected."
         true
     fi
 }
@@ -317,7 +391,7 @@ function smb_bolus {
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
         echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
-        mdt -f internal button esc esc esc esc 2>&3 \
+        try_return mdt -f internal button esc esc esc esc 2>&3 \
         && echo -n "and bolusing " && jq .units enact/smb-suggested.json | tr -d '\n' && echo " units" \
         && ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && rm -rf enact/smb-suggested.json
@@ -336,16 +410,11 @@ function refresh_after_bolus_or_enact {
     bolused_units=$(grep units enact/bolused.json)
     if [[ $newer_enacted && $enacted_duration ]] || [[ $newer_bolused && $bolused_units ]]; then
         echo -n "Refreshing pumphistory because: "
-            #stat monitor/pumphistory-24h-zoned.json | grep Mod
         if [[ $newer_enacted && $enacted_duration ]]; then
             echo -n "enacted, "
-            #echo -n "enacted since pumphistory refreshed, "
-            #stat enact/enacted.json | grep Mod
         fi
         if [[ $newer_bolused && $bolused_units ]]; then
             echo -n "bolused, "
-            #echo -n "bolused since pumphistory refreshed, "
-            #stat enact/bolused.json | grep Mod
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
@@ -474,7 +543,7 @@ function preflight {
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
     if grep "carelink" pump.ini 2>&1 >/dev/null; then
-	echo "using carelink; skipping mmtune"
+    echo "using carelink; skipping mmtune"
         return
     fi
 
@@ -531,7 +600,7 @@ function maybe_mmtune {
 # listen for $1 seconds of silence (no other rigs talking to pump) before continuing
 function wait_for_silence {
     if grep "carelink" pump.ini 2>&1 >/dev/null; then
-	echo "using carelink; not waiting for silence"
+    echo "using carelink; not waiting for silence"
         return
     fi
     if [ -z $1 ]; then
@@ -563,7 +632,7 @@ function wait_for_silence {
 # Refresh pumphistory etc.
 function refresh_pumphistory_and_meal {
     retry_return check_status 2>&3 >&4 || return 1
-    ( grep -q "model.*12" monitor/status.json || \
+    ( grep -q 12 settings/model.json || \
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
@@ -603,11 +672,9 @@ function invoke_reservoir_etc {
 # Calculate new suggested temp basal and enact it
 function enact {
     rm enact/suggested.json
-    #openaps report invoke enact/suggested.json \
     determine_basal && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
         rm enact/enacted.json
         ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) 2>&3 >&4
-	#openaps report invoke enact/enacted.json 2>&3 >&4
         grep -q duration enact/enacted.json || ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
     fi
     grep incorrectly enact/suggested.json && oref0-set-system-clock 2>&3
@@ -810,7 +877,11 @@ function check_model() {
 }
 function check_status() {
   set -o pipefail
-  mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | jq -c -C .status
+  if ( grep 12 settings/model.json ); then
+    touch monitor/status.json
+  else
+    mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | jq -c -C .status
+  fi
 }
 function mmtune_Go() {
   set -o pipefail
@@ -902,10 +973,16 @@ function read_carb_ratios() {
 }
 
 retry_fail() {
-    "$@" || { echo Retrying $*; "$@"; } || { echo "Couldn't $*"; fail "$@"; }
+    "$@" || { echo Retry 1 of $*; "$@"; } \
+    || { wait_for_silence $upto10s; echo Retry 2 of $*; "$@"; } \
+    || { wait_for_silence $upto30s; echo Retry 3 of $*; "$@"; } \
+    || { echo "Couldn't $*"; fail "$@"; }
 }
 retry_return() {
-    "$@" || { echo Retrying $*; "$@"; } || { echo "Couldn't $* - continuing"; return 1; }
+    "$@" || { echo Retry 1 of $*; "$@"; } \
+    || { wait_for_silence $upto10s; echo Retry 2 of $*; "$@"; } \
+    || { wait_for_silence $upto30s; echo Retry 3 of $*; "$@"; } \
+    || { echo "Couldn't $* - continuing"; return 1; }
 }
 try_fail() {
     "$@" || { echo "Couldn't $*"; fail "$@"; }

@@ -200,7 +200,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
-    if grep -qa "Explorer HAT" /proc/device-tree/hat/product ; then
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product 2>/dev/null ; then
         echocolor "Explorer Board HAT detected. "
         ttyport=/dev/spidev0.0
     else
@@ -243,7 +243,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     else
       echo "Downloading precompiled Go pump binaries."
     fi
-    
+
 
 
     if [[ ! -z "${ttyport}" ]]; then
@@ -619,7 +619,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
 
     test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
-    
+
     if [[ -f /etc/cron.daily/logrotate ]]; then
         mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
     fi
@@ -792,16 +792,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ "$ttyport" =~ "spi" ]] && [[ ${CGM,,} =~ "mdt" ]]; then
         echo Checking kernel for spi_serial installation
         if ! python -c "import spi_serial" 2>/dev/null; then
-            if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
-                echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
-            else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
+            #if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
+            #    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
+            #else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
                 if [[ "$ttyport" =~ "spidev0.0" ]]; then
                     echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
                     sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
                 else
                     echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
                 fi
-            fi
+            #fi
             #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
         fi
 
@@ -815,9 +815,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(cat monitor/mmtune.json | jq -r .setFreq) | while read line; do echo -n \"$line \"; done\""
         fi
         echo Checking kernel for mraa installation
-        if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
-            echo "Skipping mraa install for kernel 4.10+"
-        else # check if mraa is installed
+        #if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
+        #    echo "Skipping mraa install for kernel 4.10+"
+        #else # check if mraa is installed
             if ! ldconfig -p | grep -q mraa; then # if not installed, install it
                 echo Installing swig etc.
                 sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
@@ -838,7 +838,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
                 sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
             fi
-        fi
+        #fi
     fi
 
     #echo Checking openaps dev installation
@@ -854,9 +854,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
         if [[ -z "$ttyport" ]]; then
             openaps device add pump medtronic $serial || die "Can't add pump"
-            #openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
-            #openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
-            #openaps alias add mmtune 'report invoke monitor/temp_basal.json'
+            # add carelink to pump.ini
+            grep -q radio_type pump.ini || echo "radio_type=carelink" >> pump.ini
+            # carelinks can't listen for silence or mmtune, so just do a preflight check instead
+            openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
+            openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
+            openaps alias add mmtune 'report invoke monitor/temp_basal.json'
         else
             # radio_locale requires openaps 0.2.0-dev or later
             openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
@@ -871,16 +874,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
             fi
 
-            # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-            # this will be called when mmtune is use with a WW pump.
-            # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-            # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not foundTI USB (instead of calling reset.py)
-
-            # Hack to check if radio_locale has been set in pump.ini. This is a temporary workaround for https://github.com/oskarpearson/mmeowlink/issues/55
+            # Hack to check if radio_locale has been set in pump.ini.
             # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-            # TODO: remove once https://github.com/openaps/openaps/pull/112 has been released in a openaps version
             grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
-            fi
         fi
     else
         echo '[device "pump"]' > pump.ini
@@ -908,7 +904,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # xdrip CGM (xDripAPS)
     if [[ ${CGM,,} =~ "xdrip" ]]; then
         echo xdrip selected as CGM, so configuring xDripAPS
-        sudo apt-get install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
+        sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
         git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
         for type in xdrip-cgm; do
@@ -1033,7 +1029,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo
 
     #Check to see if Explorer HAT is present, and install all necessary stuff
-    if grep -a "Explorer HAT" /proc/device-tree/hat/product || [[ "$ttyport" =~ "spidev0.0" ]]; then
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product || [[ "$ttyport" =~ "spidev0.0" ]]; then
         echo "Looks like you're using an Explorer HAT!"
         echo "Making sure SPI is enabled..."
         sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
@@ -1047,7 +1043,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
-        cd $HOME/myopenaps && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
+        cd $directory && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
     fi
 
     echo "Clearing retrieved apt packages to free space."
@@ -1084,16 +1080,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
     mkdir -p $HOME/go
     source $HOME/.bash_profile
-    
+
     #Store radio_locale for later use
     grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
     #Necessary to "bootstrap" Go commands...
     if [[ $radio_locale =~ ^WW$ ]]; then
-      echo 868400000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+      echo 868400000 > $directory/monitor/medtronic_frequency.ini
     else
-      echo 916550000 > $HOME/myopenaps/monitor/medtronic_frequency.ini
+      echo 916550000 > $directory/monitor/medtronic_frequency.ini
     fi
-    
+
     if [[ "$ttyport" =~ "spidev" ]]; then
         if $buildgofromsource; then
           #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
@@ -1105,7 +1101,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
-          ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
         else
           arch=arm-spi
           if egrep -i "edison" /etc/passwd 2>/dev/null; then
@@ -1117,7 +1113,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           echo "Downloading Go pump binaries from:" $downloadUrl
           wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
           echo "Installing Go pump binaries ..."
-          ln -sf $HOME/go/bin/openaps.jq $HOME/myopenaps/ || die "Couldn't cp openaps.jq"
+          ln -sf $HOME/go/bin/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
           rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         fi
