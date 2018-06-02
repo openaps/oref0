@@ -49,7 +49,7 @@ if checkNTP; then
     mdt -f internal setclock now 2>&1 >/dev/null
     if hash g4setclock 2>/dev/null; then
         echo Setting G4 CGM time to $(date) with g4setclock
-        g4setclock
+        g4setclock now
     fi
     #TODO: deprecate openaps toolkit based CGM setups
     # xdripaps CGM does not have a clock to set, so don't try. 
