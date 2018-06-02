@@ -349,9 +349,7 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-        refresh_pumphistory_and_meal \
-            || ( wait_for_silence 15 && refresh_pumphistory_and_meal ) \
-            || ( wait_for_silence 30 && refresh_pumphistory_and_meal )
+        refresh_pumphistory_and_meal || return 1
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
@@ -569,7 +567,8 @@ function refresh_pumphistory_and_meal {
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
-    try_return monitor_pump || return 1
+    try_return invoke_pumphistory_etc || return 1
+    try_return invoke_reservoir_etc || return 1
     echo -n "meal.json "
     if ! retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new ; then
         echo; echo "Couldn't calculate COB"
@@ -582,11 +581,6 @@ function refresh_pumphistory_and_meal {
         return 1
     fi
     echo "refreshed"
-}
-
-function monitor_pump {
-    try_return invoke_pumphistory_etc || return 1
-    try_return invoke_reservoir_etc || return 1
 }
 
 function calculate_iob {
