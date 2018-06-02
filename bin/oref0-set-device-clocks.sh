@@ -47,9 +47,14 @@ if checkNTP; then
     sudo ntpdate -s -b time.nist.gov
     echo Setting pump time to $(date)
     mdt -f internal setclock now 2>&1 >/dev/null
+    if hash g4setclock 2>/dev/null; then
+        echo Setting G4 CGM time to $(date) with g4setclock
+        g4setclock
+    fi
+    #TODO: deprecate openaps toolkit based CGM setups
     # xdripaps CGM does not have a clock to set, so don't try. 
     if [ ! -f xdrip.ini ]; then
-      echo Setting CGM time to $(date)
-      openaps use $CGM UpdateTime --to now 2>&1 >/dev/null | tail -1
+        echo Setting CGM time to $(date)
+        openaps use $CGM UpdateTime --to now 2>&1 >/dev/null | tail -1
     fi
 fi
