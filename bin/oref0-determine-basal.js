@@ -192,7 +192,7 @@ if (!module.parent) {
     if (currentTime_input && typeof currentTime_input != 'undefined') {
         try {
             currentTime = new Date(currentTime_input);
-            console.error(currentTime_data);
+            console.error(currentTime);
         } catch (e) {
             var msg = {
               msg: "Warning: Could not parse current time: "+currentTime_input+"."
