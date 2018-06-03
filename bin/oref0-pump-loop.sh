@@ -319,7 +319,8 @@ function smb_enact_temp {
     else
         echo -n "No smb_enact needed. "
     fi
-    ( smb_verify_enacted || ( try_fail smb_verify_status; smb_verify_enacted) )
+    try_fail smb_verify_status
+    smb_verify_enacted
 }
 
 function smb_verify_enacted {
