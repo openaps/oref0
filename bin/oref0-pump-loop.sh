@@ -248,7 +248,6 @@ function smb_old_temp {
 function smb_check_everything {
     try_fail smb_reservoir_before
     retry_fail smb_enact_temp
-    try_fail smb_verify_status
     if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # wait_for_silence and retry if first attempt fails
         ( smb_verify_suggested || smb_suggest ) \
@@ -320,7 +319,7 @@ function smb_enact_temp {
     else
         echo -n "No smb_enact needed. "
     fi
-    ( smb_verify_enacted || ( smb_verify_status; smb_verify_enacted) )
+    ( smb_verify_enacted || ( try_fail smb_verify_status; smb_verify_enacted) )
 }
 
 function smb_verify_enacted {
