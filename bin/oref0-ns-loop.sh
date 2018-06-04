@@ -54,7 +54,6 @@ function highload {
 }
 
 
-#openaps get-ns-glucose && cat cgm/ns-glucose.json | json -c \\\"minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38\\\" | grep -q glucose && cp -pu cgm/ns-glucose.json cgm/glucose.json; cp -pu cgm/glucose.json monitor/glucose.json
 function get_ns_bg {
     #openaps get-ns-glucose > /dev/null
     # update 24h glucose file if it's 55m old or too small to calculate COB
@@ -64,6 +63,7 @@ function get_ns_bg {
     fi
     nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -1hour > cgm/ns-glucose-1h.json
     jq -s '.[0] + .[1]|unique|sort_by(.date)|reverse' cgm/ns-glucose-24h.json cgm/ns-glucose-1h.json > cgm/ns-glucose.json
+    glucose_fresh # update timestamp on cgm/ns-glucose.json
     # if ns-glucose.json data is <10m old, no more than 5m in the future, and valid (>38),
     # copy cgm/ns-glucose.json over to cgm/glucose.json if it's newer
     valid_glucose=$(find_valid_ns_glucose)
@@ -148,6 +148,8 @@ function upload {
 function upload_ns_status {
     #echo Uploading devicestatus
     grep -q iob monitor/iob.json || die "IOB not found"
+    # set the timestamp on enact/suggested.json to match the deliverAt time
+    touch -d $(cat enact/suggested.json | jq .deliverAt | sed 's/"//g') enact/suggested.json
     if ! find enact/ -mmin -5 -size +5c | grep -q suggested.json; then
         echo -n "No recent suggested.json found; last updated "
         ls -la enact/suggested.json | awk '{print $6,$7,$8}'

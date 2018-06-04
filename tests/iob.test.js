@@ -657,6 +657,32 @@ describe('IOB', function() {
                 rate: 2,
                 date: timestampEarly.unix(),
                 timestamp: timestampEarly.format()
+            }],
+            profile: {
+                dia: 3,
+                current_basal: 0.1,
+                max_daily_basal: 1,
+                //bolussnooze_dia_divisor: 2,
+                basalprofile: basalprofile
+            }
+        };
+
+        var hourLaterInputs = inputs;
+        hourLaterInputs.clock = moment('2016-06-13 00:30:00.000');
+        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+
+        var inputs = {
+            clock: timestamp,
+            history: [{
+                _type: 'TempBasalDuration',
+                'duration (min)': 30,
+                date: timestampEarly.unix(),
+                timestamp: timestampEarly.format()
+            }, {
+                _type: 'TempBasal',
+                rate: 2,
+                date: timestampEarly.unix(),
+                timestamp: timestampEarly.format()
             }, {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
