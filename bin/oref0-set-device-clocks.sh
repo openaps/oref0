@@ -48,7 +48,7 @@ if checkNTP; then
     echo Setting pump time to $(date)
     mdt -f internal setclock now 2>&1 >/dev/null
     # xdripaps CGM does not have a clock to set, so don't try. 
-    if [ ! -f xdrip.ini ]; then
+    if [ ! -d xdrip ]; then
       echo Setting CGM time to $(date)
       openaps use $CGM UpdateTime --to now 2>&1 >/dev/null | tail -1
     fi
