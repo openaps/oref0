@@ -131,6 +131,10 @@ case $i in
     PUSHOVER_USER="${i#*=}"
     shift # past argument=value
     ;;
+	-npm=*|--npm_install=*)
+	npm_option="${i#*=}"
+	shift
+	;;
     *)
             # unknown option
     echo "Option ${i#*=} unknown"
@@ -568,7 +572,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
         npm list -g --depth=0 | egrep oref0@0.6.[0] || (echo Installing latest oref0 package && sudo npm install -g oref0)
-    else
+	elif [[ ${npm_option,,} == "force" ]]; then
+		echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install
+	else
         npm list -g --depth=0 | egrep oref0@0.6.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
 
