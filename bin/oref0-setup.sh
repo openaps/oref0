@@ -1032,6 +1032,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export API_SECRET" >> $HOME/.bash_profile
     echo DEXCOM_CGM_ID="$BLE_SERIAL" >> $HOME/.bash_profile
     echo "export DEXCOM_CGM_ID" >> $HOME/.bash_profile
+    echo 
 
     echo
 
@@ -1058,7 +1059,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # install Go for Explorer Board/HAT
     if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
-      if $buildgofromsource; then
+      # if $buildgofromsource; then  # Is preventing go from being downloaded, I think the check is invalid in this position since it's not related to building custom go binaries
         source $HOME/.bash_profile
         if go version | grep go1.9.; then
             echo Go already installed
@@ -1080,10 +1081,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
             echo 'export PATH' >> $HOME/.bash_profile
         fi
-      else
-            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
-            echo 'export PATH' >> $HOME/.bash_profile
-      fi
+      #else
+      #      echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+      #      echo 'export PATH' >> $HOME/.bash_profile
+      #fi
     fi
     mkdir -p $HOME/go
     source $HOME/.bash_profile
