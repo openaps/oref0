@@ -649,7 +649,15 @@ function refresh_pumphistory_and_meal {
     try_return monitor_pump || return 1
     echo -n "meal.json "
     retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
+    try_return meal_error_check || return 1
     echo "refreshed"
+}
+
+function meal_error_check {
+    if grep "Could not parse input data" monitor/meal.json; then
+        cat monitor/meal.json
+        return 1
+    fi
 }
 
 function monitor_pump {
