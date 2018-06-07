@@ -658,7 +658,7 @@ function check_cp_meal {
         cat monitor/meal.json
         return 1
     fi
-    if jq -e .carbs monitor/meal.json.new >&3
+    if jq -e .carbs monitor/meal.json.new >&3; then
         cp monitor/meal.json.new monitor/meal.json
     else
         echo meal.json.new invalid
