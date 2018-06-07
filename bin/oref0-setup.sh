@@ -228,7 +228,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
                 ttyport=/dev/spidev0.0
             fi
         else
-            if  getent passwd edison > /dev/null; then
+            if  getent passwd edison &> /dev/null; then
                 echocolor "Yay! Configuring for Edison with Explorer Board. "
                 ttyport=/dev/spidev5.1
             else
@@ -698,7 +698,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 if [[ $($bt_location -v|awk -F': ' '{print ($NF < 5.48)?1:0}') -eq 1 ]]; then
                     # Find latest version of bluez under $HOME/src and copy it to locations which have a version of bluetoothd/bluetoothctl < 5.48
                     if [[ $(find $(find $HOME/src -name "bluez-*" -type d | sort -rn | head -1) -name bluetoothd -o -name bluetoothctl | wc -l) -eq 2 ]]; then
-                        killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+                        killall $(basename $bt_location) &>/dev/null #Kill current running version if its out of date and we are updating it
                         sudo cp -p $(find $(find $HOME/src -name "bluez-*" -type d | sort -rn | head -1) -name $(basename $bt_location)) $bt_location || die "Couldn't replace $(basename $bt_location) in $(dirname $bt_location)"
                         touch /tmp/reboot-required
                     else 
