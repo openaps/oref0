@@ -126,7 +126,7 @@ if (!module.parent) {
     if (meal_input && typeof meal_input != 'undefined') {
         try {
             meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
-            console.error(JSON.stringify(meal_data));
+            //console.error(JSON.stringify(meal_data));
         } catch (e) {
             var msg = {
               msg: "Optional feature Meal Assist enabled, but could not read required meal data."
