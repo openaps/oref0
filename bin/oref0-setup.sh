@@ -692,6 +692,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             sudo make install || die "Couldn't make install bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
+            
+            # Replace all other instances of bluetoothd and bluetoothctl to make sure we are always using the self-compiled version
+            while IFS= read -r bt_location; do 
+                if [[ $($bt_location -v|awk -F': ' '{print $NF}') != "5.48" ]]; then
+                    killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+                    sudo cp -p $(find $HOME/src/bluez-5.48 -name $(basename $bt_location)) $bt_location || die "Couldn't replace $(basename $bt_location) in $(dirname $bt_location)"
+                    touch /tmp/reboot-required
+                fi
+            done < <(find / -name "bluetoothctl" -o -name "bluetoothd")
+            
             oref0-bluetoothup
         else
             echo bluez version ${bluetoothdversion} already installed
