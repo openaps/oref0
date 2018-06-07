@@ -645,7 +645,7 @@ function refresh_pumphistory_and_meal {
         echo; echo "Couldn't calculate COB"
         return 1
     fi
-    try_return meal_error_check || return 1
+    try_return check_cp_meal || return 1
     echo "refreshed"
 }
 
