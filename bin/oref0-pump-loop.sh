@@ -645,14 +645,27 @@ function refresh_pumphistory_and_meal {
         echo; echo "Couldn't calculate COB"
         return 1
     fi
-    if [ -s monitor/meal.json.new ]; then
-        jq -e .carbs monitor/meal.json.new >&3 && cp monitor/meal.json.new monitor/meal.json
-    else
-        echo; echo "Couldn't copy meal.json"
-        return 1
-    fi
+    try_return meal_error_check || return 1
     echo "refreshed"
 }
+
+function check_cp_meal {
+    if ! [ -s monitor/meal.json.new ]; then
+        echo meal.json.new not found
+        return 1
+    fi
+    if grep "Could not parse input data" monitor/meal.json.new; then
+        cat monitor/meal.json
+        return 1
+    fi
+    if jq -e .carbs monitor/meal.json.new >&3
+        cp monitor/meal.json.new monitor/meal.json
+    else
+        echo meal.json.new invalid
+        return 1
+    fi
+}
+
 
 function calculate_iob {
     oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json.new || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
