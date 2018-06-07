@@ -204,7 +204,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
-    if grep -qa "Explorer HAT" /proc/device-tree/hat/product 2>/dev/null ; then
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product &>/dev/null ; then
         echocolor "Explorer Board HAT detected. "
         ttyport=/dev/spidev0.0
     else
@@ -760,7 +760,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # TODO: deprecate g4-upload and g4-local-only
     if [[ ${CGM,,} =~ "g4-upload" ]]; then
         mkdir -p $directory-cgm-loop
-        if ( cd $directory-cgm-loop && ls openaps.ini 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
+        if ( cd $directory-cgm-loop && ls openaps.ini &>/dev/null && openaps use -h >/dev/null ); then
             echo $directory-cgm-loop already exists
         elif openaps init $directory-cgm-loop --nogit; then
             echo $directory-cgm-loop initialized
@@ -934,7 +934,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo sysctl -p
 
     # Install EdisonVoltage
-    if egrep -i "edison" /etc/passwd 2>/dev/null; then
+    if egrep -i "edison" /etc/passwd &>/dev/null; then
         echo "Checking if EdisonVoltage is already installed"
         if [ -d "$HOME/src/EdisonVoltage/" ]; then
             echo "EdisonVoltage already installed"
@@ -971,7 +971,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
     openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
 
-    if egrep -qi "edison" /etc/passwd 2>/dev/null; then
+    if egrep -qi "edison" /etc/passwd &>/dev/null; then
         sudo apt-get -y -t jessie-backports install jq
     else
         sudo apt-get -y install jq
@@ -1059,7 +1059,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # install Go for Explorer Board/HAT
     if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
-      # if $buildgofromsource; then  # Is preventing go from being downloaded, I think the check is invalid in this position since it's not related to building custom go binaries
+      if $buildgofromsource; then
         source $HOME/.bash_profile
         if go version | grep go1.9.; then
             echo Go already installed
@@ -1081,10 +1081,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
             echo 'export PATH' >> $HOME/.bash_profile
         fi
-      #else
-      #      echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
-      #      echo 'export PATH' >> $HOME/.bash_profile
-      #fi
+      else
+            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+            echo 'export PATH' >> $HOME/.bash_profile
+      fi
     fi
     mkdir -p $HOME/go
     source $HOME/.bash_profile
@@ -1107,12 +1107,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
           #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
           #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
-          rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
+          cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
           ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
         else
           arch=arm-spi
-          if egrep -i "edison" /etc/passwd 2>/dev/null; then
+          if egrep -i "edison" /etc/passwd &>/dev/null; then
             arch=386-spi
           fi
           mkdir -p $HOME/go/bin && \
@@ -1122,17 +1122,30 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
           echo "Installing Go pump binaries ..."
           ln -sf $HOME/go/bin/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
-          rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
+          cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
           mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
         fi
     fi
     if [[ ${CGM,,} =~ "g4-go" ]]; then
-        if egrep -i "edison" /etc/passwd 2>/dev/null; then
-            go get -u -v -tags nofilter github.com/ecc1/dexcom/...
+        if [ ! -d $HOME/go/bin ]; then mkdir -p $HOME/go/bin; fi
+        echo "Installing or Compiling Go dexcom binaries ..."
+        if $buildgofromsource; then
+            if egrep -i "edison" /etc/passwd &>/dev/null; then
+                go get -u -v -tags nofilter github.com/ecc1/dexcom/...
+            else
+                go get -u -v github.com/ecc1/dexcom/...
+            fi
         else
-            go get -u -v github.com/ecc1/dexcom/...
+            arch=arm
+            if egrep -i "edison" /etc/passwd &>/dev/null; then
+                arch=386
+            fi
+            downloadUrl=$(curl -s https://api.github.com/repos/ecc1/dexcom/releases/latest | \
+            jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
+            echo "Downloading Go dexcom binaries from:" $downloadUrl
+            wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go dexcom binaries"
         fi
-        rsync -rtuv $HOME/go/bin/ /usr/local/bin/ || die "Couldn't rsync go/bin"
+        cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
     fi
 
     #if [[ "$ttyport" =~ "spi" ]]; then
@@ -1204,7 +1217,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep bash | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
         fi
         # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
-        if egrep -i "edison" /etc/passwd 2>/dev/null; then
+        if egrep -i "edison" /etc/passwd &>/dev/null; then
            (crontab -l; crontab -l | grep -q "cd $directory && sudo ~/src/EdisonVoltage/voltage" || echo "*/15 * * * * cd $directory && sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | jq .batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
