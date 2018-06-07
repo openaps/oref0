@@ -1161,6 +1161,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go dexcom binaries"
         fi
         cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
+        mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
     fi
 
     #if [[ "$ttyport" =~ "spi" ]]; then
