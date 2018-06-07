@@ -695,12 +695,17 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             
             # Replace all other instances of bluetoothd and bluetoothctl to make sure we are always using the self-compiled version
             while IFS= read -r bt_location; do 
-                if [[ $($bt_location -v|awk -F': ' '{print $NF}') != "5.48" ]]; then
-                    killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-                    sudo cp -p $(find $HOME/src/bluez-5.48 -name $(basename $bt_location)) $bt_location || die "Couldn't replace $(basename $bt_location) in $(dirname $bt_location)"
-                    touch /tmp/reboot-required
+                if [[ $($bt_location -v|awk -F': ' '{print ($NF < 5.48)?1:0}') -eq 1 ]]; then
+                    # Find latest version of bluez under $HOME/src and copy it to locations which have a version of bluetoothd/bluetoothctl < 5.48
+                    if [[ $(find $(find $HOME/src -name "bluez-*" -type d | sort -rn | head -1) -name bluetoothd -o -name bluetoothctl | wc -l) -eq 2 ]]; then
+                        killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+                        sudo cp -p $(find $(find $HOME/src -name "bluez-*" -type d | sort -rn | head -1) -name $(basename $bt_location)) $bt_location || die "Couldn't replace $(basename $bt_location) in $(dirname $bt_location)"
+                        touch /tmp/reboot-required
+                    else 
+                        echo "Latest version of bluez @ $(find $HOME/src -name "bluez-*" -type d | sort -rn | head -1) is missing or has extra copies of bluetoothd or bluetoothctl, unable to replace older binaries"
+                    fi       
                 fi
-            done < <(find / -name "bluetoothctl" -o -name "bluetoothd")
+            done < <(find / \( -name "bluetoothctl" -o -name "bluetoothd" \) ! -path "*/src/bluez-*") # Find all locations with bluetoothctl or bluetoothd excluding directories with *bluez* in the path
             
             oref0-bluetoothup
         else
