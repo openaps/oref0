@@ -276,6 +276,7 @@ function smb_suggest {
 }
 
 function determine_basal {
+    cat monitor/meal.json
     if ( grep -q 12 settings/model.json ); then
       oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
