@@ -21,7 +21,7 @@ die() {
 
 # defaults
 max_iob=0 # max_IOB will default to zero if not set in setup script
-CGM="G4-upload"
+CGM="G4-go"
 DIR=""
 directory=""
 EXTRAS=""
@@ -138,13 +138,15 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, G5-upload, MDT or xdrip."
+# TODO: deprecate g4-upload and g4-local-only
+if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "g4-go" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-upload, G4-local-only, G5, G5-upload, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
 if [[ -z "$DIR" || -z "$serial" ]]; then
-    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|shareble|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
+    # TODO: deprecate g4-upload and g4-local-only
+    echo "Usage: oref0-setup.sh <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|G4-go|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]"
     echo
     read -p "Start interactive setup? [Y]/n " -r
     if [[ $REPLY =~ ^[Nn]$ ]]; then
@@ -177,7 +179,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
 
     echo "What kind of CGM would you like to configure for offline use? Options are:"
-    echo "G4-go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
+    echo "G4-Go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
+    # TODO: deprecate g4-upload and G4-local-only
     echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
     echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
@@ -190,8 +193,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
     echo
-    if [[ ${CGM,,} =~ "shareble" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
-        read -p "What is your G4 Share Serial Number? (i.e. SM12345678) " -r
+    if [[ ${CGM,,} =~ "g4-go" ]]; then
+        read -p "If your G4 has Share, what is its Serial Number? (i.e. SM12345678) " -r
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
         echo
@@ -399,7 +402,7 @@ else
 fi
 
 echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
-if [[ ${CGM,,} =~ "shareble" ]]; then
+if [[ ! -z $BLE_SERIAL ]]; then
     echo -n "G4 Share serial $BLE_SERIAL, "
 fi
 echo
@@ -442,7 +445,7 @@ OREF0_RUNAGAIN=`mktemp /tmp/oref0-runagain.XXXXXXXXXX`
 echo "#!/bin/bash" > $OREF0_RUNAGAIN
 echo "# To run again with these same options, use: " | tee $OREF0_RUNAGAIN
 echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
-if [[ ${CGM,,} =~ "shareble" ]]; then
+if [[ ! -z $BLE_SERIAL ]]; then
     echo -n " --bleserial=$BLE_SERIAL" | tee -a $OREF0_RUNAGAIN
 fi
 echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_RUNAGAIN
@@ -662,16 +665,18 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
     done
     echo Checking for BT Mac, BT Peb or Shareble
-    if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ${CGM,,} =~ "shareble" ]]; then
+    if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
         # use packaged bluez with Rapsbian
-        if getent passwd pi > /dev/null; then
+# TODO: uncomment or remove this
+# try packaged bluez with Edison too
+        #if getent passwd pi > /dev/null; then
             bluetoothdminversion=5.43
-        else
-            bluetoothdminversion=5.48
-        fi
+        #else
+            #bluetoothdminversion=5.48
+        #fi
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
             cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
@@ -714,46 +719,40 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
-    elif [[ ${CGM,,} =~ "shareble" ]]; then
-        echo Checking Adafruit_BluefruitLE installation
-        if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
-            if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
-                echo "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
-                (cd $HOME/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
-            else
-                echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
-                # TODO: get this moved over to openaps and install with pip
-                (cd $HOME/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
-            fi
-            echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
-        fi
-        echo Checking openxshareble installation
-        if ! python -c "import openxshareble" 2>/dev/null; then
-            echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
-        fi
-        sudo apt-get update; sudo apt-get -y upgrade
-        sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
-        echo Checking bluez installation
-        # TODO: figure out if we need to do this for 5.44 as well
-        if  bluetoothd --version | grep -q 5.37 2>/dev/null; then
-            sudo cp $HOME/src/openxshareble/bluetoothd.conf /etc/dbus-1/system.d/bluetooth.conf || die "Couldn't copy bluetoothd.conf"
-        fi
-        # start bluetoothd in /etc/rc.local if it is missing.
-        if ! grep -q '/usr/local/bin/bluetoothd &' /etc/rc.local; then
-            sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
-        fi
-        # starting with bluez 5.48 the --experimental command line option is not needed. remove the --experimental if it still exists in /etc/rc.local. this is for rigs with version 0.6.0 or earlier
-        if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
-            sed -i"" 's/^\/usr\/local\/bin\/bluetoothd --experimental \&/\/usr\/local\/bin\/bluetoothd \&/' /etc/rc.local
-        fi
-        if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
-            sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
-        fi
-        # comment out existing line if it exists and isn't already commented out
-        sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
+    ## TODO: figure out if any of this is still needed
+    #elif [[ ${CGM,,} =~ "g4-go" ]]; then
+        #echo Checking Adafruit_BluefruitLE installation
+        #if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
+            #if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
+                #echo "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
+                #(cd $HOME/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+            #else
+                #echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
+                ## TODO: get this moved over to openaps and install with pip
+                #(cd $HOME/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
+            #fi
+            #echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
+        #fi
+        #sudo apt-get update; sudo apt-get upgrade
+        #sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
+        #echo Checking bluez installation
+        ## start bluetoothd in /etc/rc.local if it is missing.
+        #if ! grep -q '/usr/local/bin/bluetoothd &' /etc/rc.local; then
+            #sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
+        #fi
+        ## starting with bluez 5.48 the --experimental command line option is not needed. remove the --experimental if it still exists in /etc/rc.local. this is for rigs with version 0.6.0 or earlier
+        #if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
+            #sed -i"" 's/^\/usr\/local\/bin\/bluetoothd --experimental \&/\/usr\/local\/bin\/bluetoothd \&/' /etc/rc.local
+        #fi
+        #if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
+            #sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
+        #fi
+        ## comment out existing line if it exists and isn't already commented out
+        #sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     fi
 
-    if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
+    # TODO: deprecate g4-upload and g4-local-only
+    if [[ ${CGM,,} =~ "g4-upload" ]]; then
         mkdir -p $directory-cgm-loop
         if ( cd $directory-cgm-loop && ls openaps.ini 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
             echo $directory-cgm-loop already exists
@@ -776,6 +775,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
         fi
 
+        # TODO: deprecate g4-upload and g4-local-only
         if [[ ${CGM,,} =~ "g4-upload" ]]; then
             sudo apt-get -y install bc
             openaps device add cgm dexcom || die "Can't add CGM"
@@ -783,22 +783,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 echo importing $type file
                 cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
             done
-        elif [[ ${CGM,,} =~ "shareble" ]]; then
-            # import shareble stuff
-            for type in shareble cgm-loop; do
-                echo importing $type file
-                cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-            done
-
-            if [[ -z "$BLE_MAC" ]]; then
-                read -p "Please go into your Dexcom's Share settings, forget any existing device, turn Share back on, and press Enter."
-                openaps use cgm list_dexcom
-                read -p "What is your G4 Share MAC address? (i.e. FE:DC:BA:98:78:54) " -r
-                BLE_MAC=$REPLY
-                echo "$BLE_MAC? Got it."
-            fi
-            echo openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC
-            openaps use cgm configure --serial $BLE_SERIAL --mac $BLE_MAC || die "Couldn't configure Share serial and MAC"
         fi
 
         cd $directory || die "Can't cd $directory"
@@ -1040,6 +1024,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
     echo API_SECRET="${API_HASHED_SECRET}" >> $HOME/.bash_profile
     echo "export API_SECRET" >> $HOME/.bash_profile
+    echo DEXCOM_CGM_ID="$BLE_SERIAL" >> $HOME/.bash_profile
+    echo "export DEXCOM_CGM_ID" >> $HOME/.bash_profile
 
     echo
 
@@ -1061,9 +1047,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $directory && openaps alias remove battery-status; openaps alias add battery-status '! bash -c "sudo ~/src/openaps-menu/scripts/getvoltage.sh > monitor/edison-battery.json"'
     fi
 
+    echo "Clearing retrieved apt packages to free space."
+    apt-get autoclean && apt-get clean
+
     # install Go for Explorer Board/HAT
     if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
       if $buildgofromsource; then
+        source $HOME/.bash_profile
         if go version | grep go1.9.; then
             echo Go already installed
         else
@@ -1164,19 +1154,24 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # add crontab entries
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
+        #TODO: don't try to add DEXCOM_CGM_ID unless it exists
+        (crontab -l; crontab -l | grep -q "DEXCOM_CGM_ID=" || echo DEXCOM_CGM_ID=$BLE_SERIAL) | crontab -
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-        (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || cd '$directory' && oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
+        (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep bash | grep -q "oref0-online '$BT_MAC'" || cd '$directory' && oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
         # temporarily disable hotspot for 1m every hour to allow it to try to connect via wifi again
         (crontab -l; crontab -l | grep -q "touch /tmp/disable_hotspot" || echo '0,20,40 * * * * touch /tmp/disable_hotspot' ) | crontab -
         (crontab -l; crontab -l | grep -q "rm /tmp/disable_hotspot" || echo '1,21,41 * * * * rm /tmp/disable_hotspot' ) | crontab -
         (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
-        (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
+        (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report; killall -g --older-than 10m oref0-g4-loop )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
         (crontab -l; crontab -l | grep -q "find /var/log/openaps/pump-loop.log -mmin" || echo '* * * * * find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && ( echo No updates to pump-loop.log in 5m - killing processes; killall -g --older-than 5m openaps; killall -g --older-than 5m oref0-pump-loop; killall -g --older-than 5m openaps-report ) | tee -a /var/log/openaps/pump-loop.log') | crontab -
         if [[ ${CGM,,} =~ "g5-upload" ]]; then
             (crontab -l; crontab -l | grep -q "oref0-upload-entries" || echo "* * * * * cd $directory && oref0-upload-entries" ) | crontab -
         fi
-        if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
+        if [[ ${CGM,,} =~ "g4-go" ]]; then
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep bash | grep -q 'oref0-g4-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep bash | grep -q 'oref0-g4-loop' || oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log") | crontab -
+        # TODO: deprecate g4-upload and g4-local-only
+        elif [[ ${CGM,,} =~ "g4-upload" ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
         elif [[ ${CGM,,} =~ "xdrip" ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'monitor-xdrip' || monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log") | crontab -
@@ -1189,7 +1184,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
         (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
 
-        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
+        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep bash | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep bash | grep -q 'oref0-autosens-loop' || oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
         if [[ $ENABLE =~ autotune ]]; then
             # autotune nightly at 4:05am using data from NS
             (crontab -l; crontab -l | grep -q "oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST" || echo "5 4 * * * ( oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | jq . | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log") | crontab -
@@ -1199,7 +1194,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB '" || echo "* * * * * cd $directory && ( ps aux | grep -v grep | grep -q 'peb-urchin-status $BT_PEB' || peb-urchin-status $BT_PEB ) 2>&1 | tee -a /var/log/openaps/urchin-loop.log") | crontab -
         fi
         if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
-        (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
+        (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep bash | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
         fi
         # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
         if egrep -i "edison" /etc/passwd 2>/dev/null; then
@@ -1218,7 +1213,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         crontab -l | tee $HOME/crontab.txt
     fi
 
-    if [[ ${CGM,,} =~ "shareble" ]]; then
+    if [[ ${CGM,,} =~ "g4-go" ]]; then
         echo
         echo "To pair your G4 Share receiver, open its Settings, select Share, Forget Device (if previously paired), then turn sharing On"
     fi
@@ -1239,9 +1234,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
-
-echo "Clearing retrieved apt packages to free space."
-apt-get autoclean && apt-get clean
 
 if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
