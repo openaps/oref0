@@ -124,11 +124,28 @@ function ns_meal_carbs {
     nightscout ns $NIGHTSCOUT_HOST $API_SECRET carb_history > monitor/carbhistory.json.new
     cat monitor/carbhistory.json.new | jq .[0].carbs | egrep -q [0-9] && mv monitor/carbhistory.json.new monitor/carbhistory.json
     oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new
-    grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json
+    #grep -q COB monitor/meal.json.new && mv monitor/meal.json.new monitor/meal.json
+    check_cp_meal || return 1
     echo -n "Refreshed carbhistory; COB: "
     grep COB monitor/meal.json | jq .mealCOB
 }
 
+function check_cp_meal {
+    if ! [ -s monitor/meal.json.new ]; then
+        echo meal.json.new not found
+        return 1
+    fi
+    if grep "Could not parse input data" monitor/meal.json.new; then
+        cat monitor/meal.json
+        return 1
+    fi
+    if ! jq -e .carbs monitor/meal.json.new >&3; then
+        echo meal.json.new invalid
+        return 1
+    fi
+    cp monitor/meal.json.new monitor/meal.json
+    #cat monitor/meal.json | jq -C -c .
+}
 #sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery > monitor/edison-battery.json
 function battery_status {
     if [ -e ~/src/EdisonVoltage/voltage ]; then
