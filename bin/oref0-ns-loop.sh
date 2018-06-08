@@ -24,7 +24,7 @@ main() {
 
     pushover_snooze
     ns_temptargets || die "ns_temptargets failed"
-    ns_meal_carbs || die ", but ns_meal_carbs failed"
+    ns_meal_carbs || echo "ns_meal_carbs failed"
     battery_status
     upload
     touch /tmp/ns-loop-completed
