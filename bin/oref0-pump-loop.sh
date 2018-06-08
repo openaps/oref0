@@ -57,14 +57,6 @@ main() {
                             fi
                         fi
                     fi
-                    #echo "Bolus failed: falling back to basal-only pump-loop" \
-                    #&& refresh_temp_and_enact \
-                    #&& refresh_pumphistory_and_enact \
-                    #&& refresh_profile \
-                    #&& pumphistory_daily_refresh \
-                    #&& touch /tmp/pump_loop_success \
-                    #&& echo Completed pump-loop at $(date) \
-                    #&& echo
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
@@ -589,7 +581,6 @@ function mmtune {
         fi
         echo "waiting for $rssi_wait second silence before continuing"
         wait_for_silence $rssi_wait
-        # preflight
         echo "Done waiting for rigs with better signal."
     else
         echo "No wait required."
