@@ -140,7 +140,8 @@ function check_cp_meal {
         return 1
     fi
     if ! jq -e .carbs monitor/meal.json.new >&3; then
-        echo meal.json.new invalid
+        echo meal.json.new invalid:
+        cat monitor/meal.json.new
         return 1
     fi
     cp monitor/meal.json.new monitor/meal.json
