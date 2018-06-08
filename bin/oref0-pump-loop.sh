@@ -648,8 +648,7 @@ function refresh_pumphistory_and_meal {
         return 1
     fi
     try_return check_cp_meal || return 1
-    echo -n "refreshed: "
-    cat monitor/meal.json
+    echo -n " refreshed"
 }
 
 function check_cp_meal {
@@ -661,12 +660,12 @@ function check_cp_meal {
         cat monitor/meal.json
         return 1
     fi
-    if jq -e .carbs monitor/meal.json.new >&3; then
-        cp monitor/meal.json.new monitor/meal.json
-    else
+    if ! jq -e .carbs monitor/meal.json.new >&3; then
         echo meal.json.new invalid
         return 1
     fi
+    cp monitor/meal.json.new monitor/meal.json
+    cat monitor/meal.json
 }
 
 function calculate_iob {
