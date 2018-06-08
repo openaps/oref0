@@ -648,7 +648,7 @@ function refresh_pumphistory_and_meal {
         return 1
     fi
     try_return check_cp_meal || return 1
-    echo -n " refreshed"
+    echo -n "refreshed. "
 }
 
 function check_cp_meal {
