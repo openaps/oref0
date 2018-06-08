@@ -646,7 +646,8 @@ function refresh_pumphistory_and_meal {
          test $(cat monitor/status.json | json suspended) == true || \
          test $(cat monitor/status.json | json bolusing) == false ) \
          || { echo; cat monitor/status.json | jq -c -C .; return 1; }
-    try_return monitor_pump || return 1
+    try_return invoke_pumphistory_etc || return 1
+    try_return invoke_reservoir_etc || return 1
     echo -n "meal.json "
     retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json || return 1
     try_return meal_error_check || return 1
@@ -658,11 +659,6 @@ function meal_error_check {
         cat monitor/meal.json
         return 1
     fi
-}
-
-function monitor_pump {
-    retry_return invoke_pumphistory_etc || return 1
-    retry_return invoke_reservoir_etc || return 1
 }
 
 function calculate_iob {
