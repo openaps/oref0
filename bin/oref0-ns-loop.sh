@@ -132,7 +132,6 @@ function check_cp_meal {
         return 1
     fi
     if grep "Could not parse input data" monitor/meal.json.new; then
-        cat monitor/meal.json
         return 1
     fi
     if ! jq -e .carbs monitor/meal.json.new &>/dev/null; then
