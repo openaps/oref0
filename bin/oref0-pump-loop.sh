@@ -623,7 +623,6 @@ function wait_for_silence {
             break
         fi
     done
-    echo
 }
 
 # Refresh pumphistory etc.
