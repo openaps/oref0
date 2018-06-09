@@ -22,36 +22,40 @@
 
 var generate = require('oref0/lib/autotune-prep');
 function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <glucose.json> [pumpprofile.json] [carbhistory.json] [--categorize_uam_as_basal]');
+        console.error('usage: ', process.argv.slice(0, 2), '[--categorize_uam_as_basal] [--tune-insulin-curve] <pumphistory.json> <profile.json> <glucose.json> [pumpprofile.json] [carbhistory.json]');
 }
 
 if (!module.parent) {
-    var pumphistory_input = process.argv[2];
-    if ([null, '--help', '-h', 'help'].indexOf(pumphistory_input) > 0) {
-      usage( );
-      process.exit(0);
-    }
-    var profile_input = process.argv[3];
-    var glucose_input = process.argv[4];
-    var pumpprofile_input = process.argv[5];
-    var carb_input = process.argv[6];
-    var categorize_uam_as_basal_arg = process.argv[7];
+    process.argv.shift();
+    process.argv.shift();
 
+    var argument;
     var categorize_uam_as_basal = false;
+    var tune_insulin_curve = false;
+    var pumphistory_input;
+
+    while (argument = process.argv.shift()) {
+      if ([null, '--help', '-h', 'help'].indexOf(argument) > 0) {
+        usage( );
+        process.exit(0);
+      } else if ([null, '--categorize_uam_as_basal'].indexOf(argument) > 0) {
+        categorize_uam_as_basal = true;
+      } else if ([null, '--tune-insulin-curve'].indexOf(argument) > 0) {
+        tune_insulin_curve = true;
+      } else {
+        pumphistory_input = argument;
+        break;
+      }
+    }
+
+    var profile_input = process.argv.shift();
+    var glucose_input = process.argv.shift();
+    var pumpprofile_input = process.argv.shift();
+    var carb_input = process.argv.shift();
 
     if ( !pumphistory_input || !profile_input || !glucose_input ) {
         usage( );
         console.log('{ "error": "Insufficient arguments" }');
-        process.exit(1);
-    }
-
-    if (carb_input === '--categorize_uam_as_basal') {
-        categorize_uam_as_basal = true;
-        carb_input = undefined;
-    } else if (categorize_uam_as_basal_arg === '--categorize_uam_as_basal') {
-        categorize_uam_as_basal = true;
-    } else if (typeof categorize_uam_as_basal_arg !== 'undefined') {
-        usage( );
         process.exit(1);
     }
 
@@ -99,12 +103,13 @@ if (!module.parent) {
     }
 
     var inputs = {
-        history: pumphistory_data
+      history: pumphistory_data
     , profile: profile_data
     , pumpprofile: pumpprofile_data
     , carbs: carb_data
     , glucose: glucose_data
     , categorize_uam_as_basal: categorize_uam_as_basal
+    , tune_insulin_curve: tune_insulin_curve
     };
 
     var prepped_glucose = generate(inputs);

@@ -49,6 +49,7 @@ END_DAYS_AGO=1  # Default to yesterday if not otherwise specified
 EXPORT_EXCEL="" # Default is to not export to Microsoft Excel
 TERMINAL_LOGGING=true
 CATEGORIZE_UAM_AS_BASAL=false
+TUNE_INSULIN_CURVE=false
 RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
 
@@ -118,6 +119,10 @@ case $i in
     CATEGORIZE_UAM_AS_BASAL="${i#*=}"
     shift
     ;;
+    -i=*|--tune-insulin-curve=*)
+    TUNE_INSULIN_CURVE="${i#*=}"
+    shift
+    ;;
     *)
     # unknown option
     echo "Option ${i#*=} unknown"
@@ -130,7 +135,7 @@ done
 NIGHTSCOUT_HOST=$(echo $NIGHTSCOUT_HOST | sed 's/\/$//g')
 
 if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" ]]; then
-    echo "Usage: oref0-autotune <--dir=myopenaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--xlsx=autotune.xlsx] [--log=(true)|false] [--categorize-uam-as-basal=true|(false)]"
+    echo "Usage: oref0-autotune <--dir=myopenaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--xlsx=autotune.xlsx] [--log=(true)|false] [--categorize-uam-as-basal=true|(false)] [--tune-insulin-curve=true|(false) ]"
 exit 1
 fi
 if [[ -z "$START_DATE" ]]; then
@@ -223,8 +228,15 @@ do
     else
         CATEGORIZE_UAM_AS_BASAL_OPT=
     fi
-    echo "oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json $CATEGORIZE_UAM_AS_BASAL_OPT > autotune.$i.json"
-    oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json $CATEGORIZE_UAM_AS_BASAL_OPT > autotune.$i.json \
+
+    if [[ $TUNE_INSULIN_CURVE = "true" ]]; then
+        TUNE_INSULIN_CURVE_OPT="--tune-insulin-curve"
+    else
+        TUNE_INSULIN_CURVE_OPT=
+    fi
+
+    echo "oref0-autotune-prep $CATEGORIZE_UAM_AS_BASAL_OPT $TUNE_INSULIN_CURVE_OPT ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json > autotune.$i.json"
+    oref0-autotune-prep $CATEGORIZE_UAM_AS_BASAL_OPT $TUNE_INSULIN_CURVE_OPT ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json > autotune.$i.json \
         || die "Could not run oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json"
     
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 
