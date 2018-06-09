@@ -209,7 +209,7 @@ function smb_reservoir_before {
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
     echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
     retry_fail check_clock
-    echo -n "Checking pump clock: "
+    echo -n "Checking that pump clock: "
     (cat monitor/clock-zoned.json; echo) | nonl
     echo -n " is within 90s of current time: " && date
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
