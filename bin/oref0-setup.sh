@@ -1104,6 +1104,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &> /dev/null || [[ "$ttyport" =~ "spidev0.0" ]]; then
         echo "Looks like you're using an Explorer HAT!"
         echo "Making sure SPI is enabled..."
+        if ! ( grep -q i2c-dev /etc/modules-load.d/i2c.conf && egrep "^dtparam=i2c1=on" /boot/config.txt ); then
+            echo Enabling i2c for the first time: this will require a reboot after oref0-setup.
+            touch /tmp/reboot-required
+        fi
         sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
         echo "Enabling i2c device nodes..."
         sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
