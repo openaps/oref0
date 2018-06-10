@@ -134,7 +134,13 @@ function validate_cgm ()
 
 function validate_g4share_serial ()
 {
-    true #TODO
+    if [[ -z "$1" ]]; then
+        echo Dexcom G4 Share serial not provided: continuing
+        return 1
+    else
+        #TODO: actually validate the DEXCOM_CGM_ID if provided
+        return 0
+    fi
 }
 
 function validate_ttyport ()
@@ -1230,8 +1236,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # add crontab entries
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
-        #TODO: don't try to add DEXCOM_CGM_ID unless it exists
-        (crontab -l; crontab -l | grep -q "DEXCOM_CGM_ID=" || echo DEXCOM_CGM_ID=$BLE_SERIAL) | crontab -
+        if validate_g4share_serial; then
+            (crontab -l; crontab -l | grep -q "DEXCOM_CGM_ID=" || echo DEXCOM_CGM_ID=$BLE_SERIAL) | crontab -
+        fi
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
 
         add_to_crontab \
