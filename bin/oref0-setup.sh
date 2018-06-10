@@ -138,8 +138,12 @@ function validate_g4share_serial ()
         echo Dexcom G4 Share serial not provided: continuing
         return 1
     else
-        #TODO: actually validate the DEXCOM_CGM_ID if provided
-        return 0
+        if [[ $1 == SM???????? ]]; then
+            return 0
+        else
+            echo Dexcom G4 Share serial numbers are of the form SM????????
+            return 1
+        fi
     fi
 }
 
