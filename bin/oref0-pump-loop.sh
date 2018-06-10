@@ -42,20 +42,21 @@ main() {
         # try_fail refresh_old_pumphistory
         try_fail refresh_old_profile
         try_fail touch /tmp/pump_loop_enacted -r monitor/glucose.json
-        if smb_check_everything; then
+        if retry_fail smb_check_everything; then
             if ( grep -q '"units":' enact/smb-suggested.json 2>&3); then
                 if try_return smb_bolus; then
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                     smb_verify_status
                 else
-                    echo "Bolus failed: falling back to basal-only pump-loop" \
-                    && refresh_temp_and_enact \
-                    && refresh_pumphistory_and_enact \
-                    && refresh_profile \
-                    && pumphistory_daily_refresh \
-                    && touch /tmp/pump_loop_success \
-                    && echo Completed pump-loop at $(date) \
-                    && echo
+                    echo "Bolus failed: retrying"
+                    if retry_fail smb_check_everything; then
+                        if ( grep -q '"units":' enact/smb-suggested.json 2>&3); then
+                            if try_fail smb_bolus; then
+                                touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+                                smb_verify_status
+                            fi
+                        fi
+                    fi
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
@@ -276,7 +277,7 @@ function smb_suggest {
 }
 
 function determine_basal {
-    cat monitor/meal.json
+    cat monitor/meal.json | jq -C -c .
     if ( grep -q 12 settings/model.json ); then
       oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
@@ -313,7 +314,8 @@ function smb_enact_temp {
     else
         echo -n "No smb_enact needed. "
     fi
-    ( smb_verify_enacted || ( smb_verify_status; smb_verify_enacted) )
+    try_fail smb_verify_status
+    smb_verify_enacted
 }
 
 function smb_verify_enacted {
@@ -579,7 +581,6 @@ function mmtune {
         fi
         echo "waiting for $rssi_wait second silence before continuing"
         wait_for_silence $rssi_wait
-        preflight
         echo "Done waiting for rigs with better signal."
     else
         echo "No wait required."
@@ -647,8 +648,7 @@ function refresh_pumphistory_and_meal {
         return 1
     fi
     try_return check_cp_meal || return 1
-    echo -n "refreshed: "
-    cat monitor/meal.json
+    echo -n "refreshed. "
 }
 
 function check_cp_meal {
@@ -660,14 +660,13 @@ function check_cp_meal {
         cat monitor/meal.json
         return 1
     fi
-    if jq -e .carbs monitor/meal.json.new >&3; then
-        cp monitor/meal.json.new monitor/meal.json
-    else
+    if ! jq -e .carbs monitor/meal.json.new >&3; then
         echo meal.json.new invalid
         return 1
     fi
+    cp monitor/meal.json.new monitor/meal.json
+    cat monitor/meal.json | jq -C -c .
 }
-
 
 function calculate_iob {
     oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json.new || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
@@ -836,7 +835,7 @@ function onbattery {
 function wait_for_bg {
     if grep "MDT cgm" openaps.ini 2>&3 >&4; then
         echo "MDT CGM configured; not waiting"
-    elif egrep -q "Warning:" enact/smb-suggested.json 2>&3; then
+    elif egrep -q "Warning:|null|NaN" enact/smb-suggested.json 2>&3; then
         echo "Retrying without waiting for new BG"
     elif egrep -q "Waiting [0](\.[0-9])?m ([0-6]?[0-9]s )?to microbolus again." enact/smb-suggested.json 2>&3; then
         echo "Retrying microbolus without waiting for new BG"
