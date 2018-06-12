@@ -82,7 +82,12 @@ if ( jq -e .bg naive_suggested.json && jq -e .BGI naive_suggested.json && jq -e 
     jq ".bg + .BGI + $deviation + $noiseformula |floor| [ { date: $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000), glucose: ., sgv: ., dateString: \"$(date -d $(cat clock.json | tr -d '"') -Iseconds )\", device: \"fakecgm\" } ] " naive_suggested.json > newrecord.json
 else
     echo "Invalid suggested.json: updating glucose.json +/- $noise"
-    jq ".[0].glucose + $noiseformula |floor| [ { date: $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000), glucose: ., sgv: ., dateString: \"$(date -d $(cat clock.json | tr -d '"') -Iseconds )\", device: \"fakecgm\" } ] " glucose.json | tee newrecord.json
+    if [[ $deviation == *".deviation"* ]]; then
+        adjustment=$noiseformula
+    else
+        adjustment="$deviation + $noiseformula"
+    fi
+    jq ".[0].glucose + $adjustment |floor| [ { date: $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000), glucose: ., sgv: ., dateString: \"$(date -d $(cat clock.json | tr -d '"') -Iseconds )\", device: \"fakecgm\" } ] " glucose.json | tee newrecord.json
 fi
 if jq -e '.[0].glucose < 39' newrecord.json; then
     echo "Glucose < 39 invalid"
