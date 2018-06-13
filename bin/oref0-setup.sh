@@ -214,6 +214,7 @@ function validate_ble_mac ()
 # files for devices in the myopenaps directory.
 function do_openaps_import ()
 {
+    cd $directory || die "Can't cd $directory"
     echo "Importing $1"
     cat "$1" |openaps import ||die "Could not import $1"
 }
