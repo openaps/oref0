@@ -35,6 +35,7 @@ oref0-meal pumphistory.json profile.json clock.json glucose.json basal_profile.j
 oref0-determine-basal naive_iob.json temp_basal.json glucose.json profile.json meal.json --microbolus --currentTime $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000) > naive_suggested.json
 cat naive_suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)'
 oref0-determine-basal iob.json temp_basal.json glucose.json profile.json autosens.json meal.json --microbolus --currentTime $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000) > suggested.json
+jq . -c suggested.json >> log.json
 cat suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)'
 cat suggested.json | jq -C -c .reason
 #cat suggested.json | jq -C -c .predBGs
@@ -46,7 +47,9 @@ echo -n "COB: " && jq -C -c .predBGs.COB suggested.json
 if jq -e .units suggested.json > /dev/null; then
     # if suggested.json delivers an SMB, put it into pumphistory.json
     jq '. | [ { timestamp: .deliverAt, amount: .units, duration: 0, _type: "Bolus" } ]' suggested.json > newrecords.json
-    jq -s '[.[][]]' newrecords.json pumphistory.json > pumphistory.json.new
+    # truncate to 400 pumphistory records
+    # TODO: decide whether to save old pumphistory
+    jq -s '[.[][]] | .[0:400]' newrecords.json pumphistory.json > pumphistory.json.new
     mv pumphistory.json.new pumphistory.json
 fi
 
@@ -55,7 +58,7 @@ if jq -e .duration suggested.json > /dev/null; then
     jq '. | { rate: .rate, duration: .duration, temp: "absolute" }' suggested.json > temp_basal.json
     jq '. | [ { timestamp: .deliverAt, rate: .rate, temp: "absolute", _type: "TempBasal" } ]' suggested.json > newrecords.json
     jq '. | [ { timestamp: .deliverAt, "duration (min)": .duration, _type: "TempBasalDuration" } ]' suggested.json >> newrecords.json
-    jq -s '[.[][]]' newrecords.json pumphistory.json > pumphistory.json.new
+    jq -s '[.[][]] | .[0:400]' newrecords.json pumphistory.json > pumphistory.json.new
     mv pumphistory.json.new pumphistory.json
 else
     # otherwise, advance the clock 5m on the currently running temp
@@ -77,22 +80,22 @@ if [ -z $noise ]; then
 fi
 noiseformula="2*$noise*$RANDOM/32767 - $noise + 0.5"
 echo " and noise of +/- $noise ($noiseformula)"
-# write a new glucose entry to glucose.json using the 
 if ( jq -e .bg naive_suggested.json && jq -e .BGI naive_suggested.json && jq -e .deviation naive_suggested.json ) >/dev/null; then
     jq ".bg + .BGI + $deviation + $noiseformula |floor| [ { date: $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000), glucose: ., sgv: ., dateString: \"$(date -d $(cat clock.json | tr -d '"') -Iseconds )\", device: \"fakecgm\" } ] " naive_suggested.json > newrecord.json
 else
-    echo "Invalid suggested.json: updating glucose.json +/- $noise"
     if [[ $deviation == *".deviation"* ]]; then
         adjustment=$noiseformula
     else
         adjustment="$deviation + $noiseformula"
     fi
-    jq ".[0].glucose + $adjustment |floor| [ { date: $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000), glucose: ., sgv: ., dateString: \"$(date -d $(cat clock.json | tr -d '"') -Iseconds )\", device: \"fakecgm\" } ] " glucose.json | tee newrecord.json
+    echo "Invalid suggested.json: updating glucose.json + $adjustment"
+    jq '.[0].glucose + '"$adjustment"' |floor| [ { date: '$(echo $(date -d $(cat clock.json | tr -d '"')+5minutes +%s)000)', glucose: ., sgv: ., dateString: "'$(date -d $(cat clock.json | tr -d '"')+5minutes -Iseconds )'", device: "fakecgm" } ] ' glucose.json | tee newrecord.json
 fi
 if jq -e '.[0].glucose < 39' newrecord.json; then
     echo "Glucose < 39 invalid"
 else
-    jq -s '[.[][]]' newrecord.json glucose.json > glucose.json.new
+    # write a new glucose entry to glucose.json, and truncate it to 432 records (36 hours)
+    jq -s '[.[][]] | .[0:432]' newrecord.json glucose.json > glucose.json.new
     mv glucose.json.new glucose.json
 fi
 
