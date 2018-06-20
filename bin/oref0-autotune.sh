@@ -46,6 +46,7 @@ START_DAYS_AGO=1  # Default to yesterday if not otherwise specified
 END_DAYS_AGO=1  # Default to yesterday if not otherwise specified
 EXPORT_EXCEL="" # Default is to not export to Microsoft Excel
 TERMINAL_LOGGING=true
+CATEGORIZE_UAM_AS_BASAL=false
 RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
 
@@ -111,6 +112,10 @@ case $i in
     TERMINAL_LOGGING="${i#*=}"
     shift
     ;;
+    -c=*|--categorize-uam-as-basal=*)
+    CATEGORIZE_UAM_AS_BASAL="${i#*=}"
+    shift
+    ;;
     *)
     # unknown option
     echo "Option ${i#*=} unknown"
@@ -123,7 +128,7 @@ done
 NIGHTSCOUT_HOST=$(echo $NIGHTSCOUT_HOST | sed 's/\/$//g')
 
 if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" ]]; then
-    echo "Usage: oref0-autotune <--dir=myopenaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--xlsx=autotune.xlsx] [--log=(true)|false]"
+    echo "Usage: oref0-autotune <--dir=myopenaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--xlsx=autotune.xlsx] [--log=(true)|false] [--categorize-uam-as-basal=true|(false)]"
 exit 1
 fi
 if [[ -z "$START_DATE" ]]; then
@@ -137,7 +142,7 @@ if [[ -z "$END_DATE" ]]; then
 fi
 
 if [[ -z "$UNKNOWN_OPTION" ]] ; then # everything is ok
-  echo "Running oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE"
+  echo "Running oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE --categorize-uam-as-basal=$CATEGORIZE_UAM_AS_BASAL"
 else
   echo "Unknown options. Exiting"
   exit 1
@@ -211,8 +216,13 @@ do
     cp profile.json profile.$i.json
     # Autotune Prep (required args, <pumphistory.json> <profile.json> <glucose.json>), output prepped glucose 
     # data or <autotune/glucose.json> below
-    echo "oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json > autotune.$i.json"
-    oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json > autotune.$i.json \
+    if [[ $CATEGORIZE_UAM_AS_BASAL = "true" ]]; then
+        CATEGORIZE_UAM_AS_BASAL_OPT="--categorize_uam_as_basal"
+    else
+        CATEGORIZE_UAM_AS_BASAL_OPT=
+    fi
+    echo "oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json $CATEGORIZE_UAM_AS_BASAL_OPT > autotune.$i.json"
+    oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json $CATEGORIZE_UAM_AS_BASAL_OPT > autotune.$i.json \
         || die "Could not run oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json"
     
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 

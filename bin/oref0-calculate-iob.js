@@ -25,14 +25,14 @@ function usage ( ) {
 }
 
 if (!module.parent) {
-  var pumphistory_input = process.argv.slice(2, 3).pop();
+  var pumphistory_input = process.argv[2];
   if ([null, '--help', '-h', 'help'].indexOf(pumphistory_input) > 0) {
     usage( );
     process.exit(0)
   }
-  var profile_input = process.argv.slice(3, 4).pop();
-  var clock_input = process.argv.slice(4, 5).pop();
-  var autosens_input = process.argv.slice(5, 6).pop();
+  var profile_input = process.argv[3];
+  var clock_input = process.argv[4];
+  var autosens_input = process.argv[5];
 
   if (!pumphistory_input || !profile_input) {
     usage( );

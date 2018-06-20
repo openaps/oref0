@@ -14,9 +14,8 @@
 
 /var/log/syslog
 {
-	rotate 24
-	daily
-	size 10M
+	rotate 3
+	size 5M
 	missingok
 	notifempty
 	delaycompress
@@ -39,9 +38,8 @@
 /var/log/debug
 /var/log/messages
 {
-	rotate 24
-	daily
-	size 10M
+	rotate 3
+	size 5M
 	missingok
 	notifempty
 	compress

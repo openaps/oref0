@@ -65,20 +65,20 @@ if (!module.parent) {
     var errors = [ ];
     var warnings = [ ];
 
-    var iob_input = params._.slice(0, 1).pop();
+    var iob_input = params._[0];
     if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
 
       usage( );
       process.exit(0)
     }
-    var currenttemp_input = params._.slice(1, 2).pop();
-    var glucose_input = params._.slice(2, 3).pop();
-    var profile_input = params._.slice(3, 4).pop();
-    var meal_input = params._.slice(4, 5).pop();
+    var currenttemp_input = params._[1];
+    var glucose_input = params._[2];
+    var profile_input = params._[3];
+    var meal_input = params._[4];
     var autosens_input = params.autoSens;
     if (params._.length > 5) {
-      autosens_input = params.autoSens ? params._.slice(4, 5).pop() : false;
-      meal_input = params._.slice(5, 6).pop();
+      autosens_input = params.autoSens ? params._[4] : false;
+      meal_input = params._[5];
     }
     if (params.meal && params.meal !== true && !meal_input) {
       meal_input = params.meal;

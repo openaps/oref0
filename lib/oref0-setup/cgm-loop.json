@@ -239,7 +239,7 @@
       "cal": "monitor/cal.json",
       "device": "raw",
       "remainder": "",
-      "maxraw": "150",
+      "maxraw": "200",
       "glucose": "monitor/glucose-zoned-merge.json"
     }
   },
