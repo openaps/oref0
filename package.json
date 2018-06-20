@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.6.0",
+  "version": "0.6.1-dev",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -94,7 +94,8 @@
     "share2nightscout-bridge": "^0.1.5",
     "moment-timezone": "0.5.11",
     "yargs": "~4.3.2",
-    "json": "~9.0.4"
+    "json": "~9.0.4",
+    "json-stable-stringify": "^1.0.1"
   },
   "devDependencies": {
     "coveralls": "^2.11.12",
