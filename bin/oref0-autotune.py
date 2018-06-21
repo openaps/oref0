@@ -214,15 +214,15 @@ def export_to_excel(output_directory, output_excel_filename):
     call(autotune_export_to_xlsx, shell=True)
 
 def create_summary_report_and_display_results(output_directory):
-    print 
-    print "Autotune pump profile recommendations:"
-    print "---------------------------------------------------------"
+    print()
+    print("Autotune pump profile recommendations:")
+    print("---------------------------------------------------------")
     
     report_file = os.path.join(output_directory, 'autotune', 'autotune_recommendations.log')
     autotune_recommends_report = 'oref0-autotune-recommends-report {0}'.format(output_directory)
     
     call(autotune_recommends_report, shell=True)
-    print "Recommendations Log File: {0}".format(report_file)
+    print("Recommendations Log File: {0}".format(report_file))
     
     # Go ahead and echo autotune_recommendations.log to the terminal, minus blank lines
     # cat $report_file | egrep -v "\| *\| *$"

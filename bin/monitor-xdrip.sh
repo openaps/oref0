@@ -1,5 +1,12 @@
 #!/bin/bash
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+usage "$@" <<EOT
+Usage: $self
+Normally runs from crontab.
+EOT
+
 date
 cp -rf xdrip/glucose.json xdrip/last-glucose.json
 curl --compressed -s http://localhost:5000/api/v1/entries?count=288 | json -e "this.glucose = this.sgv" > xdrip/glucose.json

@@ -1,5 +1,13 @@
 #!/bin/bash
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+usage "$@" <<EOF
+Usage: $self
+Check the pump-loop logfile for certain types of radio errors. If any are
+found, schedule a reboot to fix them. Otherwise cancel a pending reboot.
+EOF
+
 # There are 2 known conditions in which communication between rig and pump is not working and a reboot is required.
 # 1) spidev5.1 already in use, see https://github.com/openaps/oref0/pull/411 (all pumps)
 # 2) continuous 'retry 0' or hanging reset.py, see https://github.com/oskarpearson/mmeowlink/issues/60 (WW-pump users only)

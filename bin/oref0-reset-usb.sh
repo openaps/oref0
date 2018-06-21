@@ -13,21 +13,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-self=$(basename $0)
-function usage ( ) {
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
-cat <<EOF
-$self
-$self - Drop USB stack, rebind the usb kernel modules.
+usage "$@" <<EOF
+Usage: $self
+Drop USB stack, rebind the usb kernel modules.
 EOF
-}
-
-case "$1" in
-  --help|help|-h)
-    usage
-    exit 0
-    ;;
-esac
 
 # Raspberry Pi 1 running Raspbian Wheezy
 FILE=/sys/devices/platform/bcm2708_usb/buspower

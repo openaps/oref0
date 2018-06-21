@@ -1,15 +1,14 @@
 #!/bin/bash
 
-self=$(basename $0)
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 # Something like this:
 # https://maker.ifttt.com/trigger/{event}/with/key/MyKey
 IFTTT_TRIGGER=${IFTTT_TRIGGER-${1}}
 IFTTT_NOTIFY_USAGE="${2-pump model}"
 
-function help_message ( ) {
-cat <<EOF
-Usage:
-$self <IFTTT_TRIGGER> <NOTIFY_USAGE>
+usage "$@" <<EOF
+Usage: $self <IFTTT_TRIGGER> <NOTIFY_USAGE>
 
 ## Setup IFTTT Account
 
@@ -59,8 +58,6 @@ Crontab:
 Author: @audiefile
 EOF
 
-}
-
 
 
 case $1 in
@@ -68,10 +65,6 @@ env)
   echo PATH=$PATH
   env
   exit
-  ;;
-help|--help|-h)
-  help_message
-  exit 0
   ;;
 *)
   if [[ -z "$IFTTT_TRIGGER" || -z  "$IFTTT_NOTIFY_USAGE" ]] ; then

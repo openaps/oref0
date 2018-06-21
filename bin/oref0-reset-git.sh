@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Delete git lock / history if necessary to recover from corrupted .git objects
 #
 # Released under MIT license. See the accompanying LICENSE.txt file for
@@ -13,25 +12,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 # must be run from within a git repo to do anything useful
-self=$(basename $0)
 BACKUP_AREA=${1-${BACKUP_AREA-/var/cache/openaps-ruination}}
-function usage ( ) {
 
-cat <<EOF
-$self
-$self - Wipe out all history, forcibly re-initialzize openaps from scratch.
+usage "$@" <<EOF
+Usage: $self
+Wipe out all history, forcibly re-initialzize openaps from scratch.
 EOF
-}
 
-case "$1" in
-  --help|help|-h)
-    usage
-    exit 0
-    ;;
-esac
 test ! -d $BACKUP_AREA && BACKUP_AREA=/tmp
-BACKUP="$BACKUP_AREA/git-$(date +%s)"
+BACKUP="$BACKUP_AREA/git-$(epochtime_now)"
 
 # remove old lockfile if still present
 find .git/index.lock -mmin +60 -exec rm {} \; 2>/dev/null
