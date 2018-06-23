@@ -18,7 +18,7 @@ source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to r
 
 # TODO: deprecate g4-upload and g4-local-only
 usage "$@" <<EOT
-Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|G4-go|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]
+Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|G4-go|G5|MDT|xdrip|xdrip-js)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--dexcom_tx_sn=12A34B] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]
 EOT
 
 # defaults
@@ -92,6 +92,9 @@ case $i in
     -l=*|--blemac=*)
     BLE_MAC="${i#*=}"
     ;;
+    -dtx=*|--dexcom_tx_sn=*)
+    DEXCOM_CGM_TX_ID="${i#*=}"
+    ;;
     --btmac=*)
     BT_MAC="${i#*=}"
     ;;
@@ -107,10 +110,11 @@ case $i in
     -pu=*|--pushover_user=*)
     PUSHOVER_USER="${i#*=}"
     ;;
+    
     -npm=*|--npm_install=*)
     npm_option="${i#*=}"
     shift
-	;;
+    ;;
     *)
     # unknown option
     echo "Option ${i#*=} unknown"
@@ -125,8 +129,8 @@ function validate_cgm ()
     
     # Compare against list of supported CGMs
     # TODO: deprecate g4-upload and g4-local-only
-    if ! [[ $selection =~ "g4-upload" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "g4-go" || $selection =~ "xdrip" || $selection =~ "g4-local" ]]; then
-        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-upload, G4-local-only, G5, G5-upload, MDT or xdrip."
+    if ! [[ $selection =~ "g4-upload" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "g4-go" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
+        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-upload, G4-local-only, G5, G5-upload, MDT, xdrip, or xdrip-js."
         echo
         return 1
     fi
@@ -138,7 +142,18 @@ function validate_g4share_serial ()
         echo Dexcom G4 Share serial not provided: continuing
         return 1
     else
-        #TODO: actually validate the DEXCOM_CGM_ID if provided
+        #TODO: actually validate the DEXCOM_CGM_RECV_ID if provided
+        return 0
+    fi
+}
+
+function validate_g5transmitter_serial ()
+{
+    if [[ -z "$1" ]]; then
+        echo Dexcom G5 transmitter serial not provided: continuing
+        return 1
+    else
+        #TODO: actually validate the DEXCOM_CGM_TX_ID if provided
         return 0
     fi
 }
@@ -270,6 +285,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
     echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
     echo "xdrip: will work with an xDrip receiver app on your Android phone"
+	echo "xdrip-js: will work directly with a Dexcom G5 transmitter and will upload to Nightscout"
     echo "Note: no matter which option you choose, CGM data will also be downloaded from NS when available."
     echo
     prompt_and_validate CGM "What kind of CGM would you like to configure?:" validate_cgm
@@ -279,6 +295,12 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         prompt_and_validate BLE_SERIAL "If your G4 has Share, what is your G4 Share Serial Number? (i.e. SM12345678)" validate_g4share_serial
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
+        echo
+    fi
+    if [[ ${CGM,,} =~ "xdrip-js" ]]; then
+        prompt_and_validate DEXCOM_CGM_TX_ID "What is your current Dexcom Transmitter ID?" validate_g5transmitter_serial
+        DEXCOM_CGM_TX_ID=$REPLY
+        echo "$DEXCOM_CGM_TX_ID? Got it."
         echo
     fi
 
@@ -462,6 +484,9 @@ echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
 if [[ ! -z $BLE_SERIAL ]]; then
     echo -n "G4 Share serial $BLE_SERIAL, "
 fi
+if [[ ! -z $DEXCOM_CGM_TX_ID ]]; then
+    echo -n "G5 transmitter serial $DEXCOM_CGM_TX_ID, "
+fi
 echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
 if [[ ${pumpmodel,,} =~ "x12" ]]; then
@@ -537,6 +562,9 @@ fi
 if [[ ! -z "$BLE_MAC" ]]; then
     echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN
 fi
+if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
+    echo -n " --dexcom_tx_sn='$DEXCOM_CGM_TX_ID'" | tee -a $OREF0_RUNAGAIN
+fi
 if [[ ! -z "$BT_MAC" ]]; then
     echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN
 fi
@@ -597,7 +625,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     mkdir -p settings || die "Can't mkdir settings"
     mkdir -p enact || die "Can't mkdir enact"
     mkdir -p upload || die "Can't mkdir upload"
-    if [[ ${CGM,,} =~ "xdrip" ]]; then
+    if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
         mkdir -p xdrip || die "Can't mkdir xdrip"
     fi
     
@@ -686,6 +714,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     set_pref_string .myopenaps_path "$directory"
     set_pref_string .cgm_loop_path "$directory-cgm-loop"
     set_pref_string .xdrip_path "$HOME/.xDripAPS"
+    if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
+        set_pref_string .dexcom_cgm_tx_id "$DEXCOM_CGM_TX_ID"
+    fi
     
     cat preferences.json
 
@@ -996,13 +1027,21 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
 
     # xdrip CGM (xDripAPS)
-    if [[ ${CGM,,} =~ "xdrip" ]]; then
-        echo xdrip selected as CGM, so configuring xDripAPS
+    if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
+        echo xdrip or xdrip-js selected as CGM, so configuring xDripAPS
         sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
         git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/xdrip-cgm.json
         touch /tmp/reboot-required
+    fi
+
+    # xdrip-js specific installation tasks in addition to xdrip tasks
+    if [[ ${CGM,,} =~ "xdrip-js" ]]; then
+		echo xdrip-js selected as CGM, so configuring xdrip-js
+        git clone https://github.com/xdrip-js/Logger.git $HOME/src
+        cd $HOME/src/Logger
+        sudo npm run global-install
     fi
 
     # disable IPv6
@@ -1098,8 +1137,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
     echo API_SECRET="${API_HASHED_SECRET}" >> $HOME/.bash_profile
     echo "export API_SECRET" >> $HOME/.bash_profile
-    echo DEXCOM_CGM_ID="$BLE_SERIAL" >> $HOME/.bash_profile
-    echo "export DEXCOM_CGM_ID" >> $HOME/.bash_profile
+    echo DEXCOM_CGM_RECV_ID="$BLE_SERIAL" >> $HOME/.bash_profile
+    echo "export DEXCOM_CGM_RECV_ID" >> $HOME/.bash_profile
+    echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     echo 
 
     echo
@@ -1245,7 +1285,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
         if validate_g4share_serial; then
-            (crontab -l; crontab -l | grep -q "DEXCOM_CGM_ID=" || echo DEXCOM_CGM_ID=$BLE_SERIAL) | crontab -
+            (crontab -l; crontab -l | grep -q "DEXCOM_CGM_RECV_ID=" || echo DEXCOM_CGM_RECV_ID=$BLE_SERIAL) | crontab -
+        fi
+        if validate_g5transmitter_serial; then
+            (crontab -l; crontab -l | grep -q "DEXCOM_CGM_TX_ID=" || echo DEXCOM_CGM_TX_ID=$DEXCOM_CGM_TX_ID) | crontab -
         fi
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
 
@@ -1265,6 +1308,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             "oref0-cron-every-15min" \
             "*/15 * * * *" \
             "cd $directory && oref0-cron-every-15min"
+        if [[ ${CGM,,} =~ "xdrip-js" ]]; then
+            add_to_crontab \
+                "$DEXCOM_CGM_TX_ID" \
+                "* * * * *" \
+                "cd $HOME/src/Logger && ps aux | grep -v grep | grep -q "$DEXCOM_CGM_TX_ID" || /usr/local/bin/Logger $DEXCOM_CGM_TX_ID >> /var/log/openaps/logger-loop.log 2>&1"
+        fi
         crontab -l | tee $HOME/crontab.txt
     fi
 
