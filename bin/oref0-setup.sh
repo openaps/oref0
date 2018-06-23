@@ -556,6 +556,9 @@ echocolor -n "Continue? y/[N] "
 read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
+    # Having the loop run in the background during setup slows things way down and lengthens the time before first loop
+    service cron stop
+
     # Attempting to remove git to make install --nogit by default for existing users
     echo Removing any existing git in $directory/.git
     rm -rf $directory/.git
@@ -1286,6 +1289,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
+
+# Start cron back up in case the user doesn't decide to reboot
+service cron start
 
 if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
