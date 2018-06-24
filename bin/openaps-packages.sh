@@ -19,7 +19,7 @@ sudo apt-get install -y git python python-dev software-properties-common python-
 # install/upgrade to node 8
 if ! nodejs --version | grep 'v8.'; then
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &>/dev/null ; then
-        mkdir node && cd node
+        mkdir $HOME/src/node && cd $HOME/src/node
         wget https://nodejs.org/dist/v8.10.0/node-v8.10.0-linux-armv6l.tar.xz
         tar -xf node-v8.10.0-linux-armv6l.tar.xz
         cd *6l
