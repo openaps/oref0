@@ -149,7 +149,10 @@ function bt_connect {
 				|| ! ifconfig | egrep -q "bnep0" >/dev/null; then
 				echo "Attempting to connect to bt $MAC..."
             	sudo bt-pan client $MAC -d
-            	sudo bt-pan client $MAC && sudo dhclient bnep0
+            for i in {1..3}
+            do
+                sudo bt-pan client $MAC && sudo dhclient bnep0
+            done
 				echo "...done."
 			else
 				echo "Preference bt_offline enabled - already have a bt interface, not reconnecting it."
