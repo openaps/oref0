@@ -110,7 +110,6 @@ case $i in
     -pu=*|--pushover_user=*)
     PUSHOVER_USER="${i#*=}"
     ;;
-    
     -npm=*|--npm_install=*)
     npm_option="${i#*=}"
     shift
@@ -126,7 +125,7 @@ function validate_cgm ()
 {
     # Conver to lowercase
     local selection="${1,,}"
-    
+
     # Compare against list of supported CGMs
     # TODO: deprecate g4-upload and g4-local-only
     if ! [[ $selection =~ "g4-upload" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "g4-go" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
@@ -343,8 +342,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     else
       echo "Downloading precompiled Go pump binaries."
     fi
-
-
 
     if [[ ! -z "${ttyport}" ]]; then
       echo -e "\e[1mMedtronic pumps come in two types: WW (Worldwide) pumps, and NA (North America) pumps.\e[0m"
@@ -608,7 +605,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         die "Can't init $directory"
     fi
     cd $directory || die "Can't cd $directory"
-    
+
     # Clear out any OpenAPS aliases from previous versions (they'll get
     # recreated if they're still used)
     remove_all_openaps_aliases
@@ -648,7 +645,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     #echo Installing decocare 0.1.0-dev
     #cd $HOME/src/decocare
     #sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
-
+	
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
         (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
@@ -779,8 +776,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/device.json
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/report.json
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/alias.json
-    echo Checking for BT Mac, BT Peb or Shareble
-    if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL ]]; then
+
+    echo Checking for BT Mac, BT Peb, Shareble, or xdrip-js
+    if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL || ! -z $DEXCOM_CGM_TX_ID ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
@@ -801,6 +799,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             sudo make install || die "Couldn't make install bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
+            sudo apt-get install bluez-tools
             
             # Replace all other instances of bluetoothd and bluetoothctl to make sure we are always using the self-compiled version
             while IFS= read -r bt_location; do 
@@ -1026,7 +1025,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
     sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
 
-    # xdrip CGM (xDripAPS)
+    # xdrip CGM (xDripAPS), also gets installed when using xdrip-js
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
         echo xdrip or xdrip-js selected as CGM, so configuring xDripAPS
         sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
@@ -1036,12 +1035,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         touch /tmp/reboot-required
     fi
 
-    # xdrip-js specific installation tasks in addition to xdrip tasks
+    # xdrip-js specific installation tasks (in addition to xdrip tasks)
     if [[ ${CGM,,} =~ "xdrip-js" ]]; then
 		echo xdrip-js selected as CGM, so configuring xdrip-js
-        git clone https://github.com/xdrip-js/Logger.git $HOME/src
+        git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
         cd $HOME/src/Logger
         sudo npm run global-install
+		touch /tmp/reboot-required
     fi
 
     # disable IPv6
@@ -1139,6 +1139,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export API_SECRET" >> $HOME/.bash_profile
     echo DEXCOM_CGM_RECV_ID="$BLE_SERIAL" >> $HOME/.bash_profile
     echo "export DEXCOM_CGM_RECV_ID" >> $HOME/.bash_profile
+    echo DEXCOM_CGM_TX_ID="$DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     echo 
 
@@ -1310,7 +1311,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             "cd $directory && oref0-cron-every-15min"
         if [[ ${CGM,,} =~ "xdrip-js" ]]; then
             add_to_crontab \
-                "$DEXCOM_CGM_TX_ID" \
+                "Logger" \
                 "* * * * *" \
                 "cd $HOME/src/Logger && ps aux | grep -v grep | grep -q "$DEXCOM_CGM_TX_ID" || /usr/local/bin/Logger $DEXCOM_CGM_TX_ID >> /var/log/openaps/logger-loop.log 2>&1"
         fi
