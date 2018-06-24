@@ -40,20 +40,45 @@ main() {
                 ifdown wlan0; ifup wlan0
             fi
         fi
-        # if online via wifi, disconnect BT
-        if has_ip wlan0 && ifconfig | egrep -q "bnep0" >/dev/null; then
-            bt_disconnect $MACs
-            #wifi_dhcp_renew
-        fi
+	    if ! ls preferences.json 2>/dev/null >/dev/null \
+	        || ! cat preferences.json | jq -e .bt_with_wifi >/dev/null; then
+            # if online via wifi, disconnect BT
+            if has_ip wlan0 && ifconfig | egrep -q "bnep0" >/dev/null; then
+                bt_disconnect $MACs
+                #wifi_dhcp_renew
+            fi
+		else
+            if ifconfig | egrep -q "bnep0" >/dev/null; then
+				echo "Preference bt_with_wifi is enabled - have bt iface; leaving enabled."
+        		if ! has_ip wlan0; then
+					echo "Preference bt_with_wifi is enabled - enabling wifi."
+            		wifi_dhcp_renew
+        		fi
+				ifconfig | egrep -A6 "wlan|bnep"
+			else
+				if ! find /tmp/ -mmin -10 -name bt_with_wifi.last | grep bt_with_wifi.last 2>/dev/null >/dev/null; then
+					echo "Preference bt_with_wifi is enabled - have wifi connection, starting bt."
+					bt_connect $MACs
+					touch /tmp/bt_with_wifi.last
+				fi
+			fi
+		fi
     else
         echo
         print_wifi_name
         if ! has_ip wlan0; then
             wifi_dhcp_renew
         fi
-        if ! check_ip >/dev/null; then
-            bt_connect $MACs
-        fi
+	    if ! ls preferences.json 2>/dev/null >/dev/null \
+	        || ! cat preferences.json | jq -e .bt_with_wifi >/dev/null; then
+        	if ! check_ip >/dev/null; then
+            	bt_connect $MACs
+        	fi
+		else
+			echo "Preference bt_with_wifi is enabled - starting bt regardless of wifi status."
+			bt_connect $MACs
+			ifconfig | egrep -A6 "wlan|bnep"
+		fi
         #print_wifi_name
         if check_ip >/dev/null; then
             # if we're online after activating bluetooth, shut down any local-access hotspot we're running
@@ -114,23 +139,39 @@ function bt_connect {
     # loop over as many MACs as are provided as arguments
     for MAC; do
         #echo -n "At $(date) my public IP is: "
-        if ! check_ip >/dev/null; then
+        if ! check_ip >/dev/null \
+	   		|| (ls preferences.json 2>/dev/null >/dev/null \
+	    		&& cat preferences.json | jq -e .bt_with_wifi >/dev/null); then
             echo; echo "No Internet access detected, attempting to connect BT to $MAC"
             oref0-bluetoothup
-            sudo bt-pan client $MAC -d
+	    	if ! ls preferences.json 2>/dev/null >/dev/null \
+	        	|| ! cat preferences.json | jq -e .bt_offline >/dev/null \
+				|| ! ifconfig | egrep -q "bnep0" >/dev/null; then
+				echo "Attempting to connect to bt $MAC..."
+            	sudo bt-pan client $MAC -d
             for i in {1..3}
             do
                 sudo bt-pan client $MAC && sudo dhclient bnep0
             done
+				echo "...done."
+			else
+				echo "Preference bt_offline enabled - already have a bt interface, not reconnecting it."
+            	sudo dhclient bnep0
+				ifconfig | egrep -A6 "wlan|bnep"
+			fi
             if ifconfig | egrep -q "bnep0" >/dev/null; then
                 echo -n "Connected to Bluetooth with IP: "
                 print_local_ip bnep0
             fi
             # if we couldn't reach the Internet over wifi, but (now) have a bnep0 IP, release the wifi IP/route
             if has_ip wlan0 && has_ip bnep0 && ! grep -q $HostAPDIP /etc/network/interfaces; then
-                # release the wifi IP/route but *don't* renew it, in case it's not working
-                sudo dhclient wlan0 -r
-                iwgetid -r wlan0 >> /tmp/bad_wifi
+	   		    if ! ls preferences.json 2>/dev/null >/dev/null \
+	    		   || ! cat preferences.json | jq -e .bt_with_wifi >/dev/null; then
+					echo "Have bt connection, releasing wifi"
+                	# release the wifi IP/route but *don't* renew it, in case it's not working
+                	sudo dhclient wlan0 -r
+                	iwgetid -r wlan0 >> /tmp/bad_wifi
+				fi
             fi
             #echo
         fi
