@@ -8,13 +8,11 @@ rc=0
 
 myloc=$(dirname ${0})
 
-cd ${myloc}/..
-
 red='\033[1;31m'
 green='\033[1;32m'
 nocolor='\033[0m'
 
-for jsonfile in $(find . -name '*.json'); do
+for jsonfile in $(find ${myloc}/.. -name '*.json'); do
   realfile=$(realpath ${jsonfile})
   jq . ${jsonfile} >/dev/null 2>/dev/null
   ret=$?
