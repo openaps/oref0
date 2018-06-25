@@ -791,9 +791,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         fi
         echo Installing prerequisites and configs for local-only hotspot
         apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
-        ls /etc/dnsmasq.conf.bak 2>/dev/null || mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+        test ! -f  /etc/dnsmasq.conf.bak && mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
         cp $HOME/src/oref0/headless/dnsmasq.conf /etc/dnsmasq.conf || die "Couldn't copy dnsmasq.conf"
-        ls /etc/hostapd/hostapd.conf.bak 2>/dev/null || mv /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.bak
+        test ! -f  /etc/hostapd/hostapd.conf.bak && mv /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.bak
         cp $HOME/src/oref0/headless/hostapd.conf /etc/hostapd/hostapd.conf || die "Couldn't copy hostapd.conf"
         sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
         cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
@@ -853,7 +853,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # TODO: deprecate g4-upload and g4-local-only
     if [[ ${CGM,,} =~ "g4-upload" ]]; then
         mkdir -p $directory-cgm-loop
-        if ( cd $directory-cgm-loop && ls openaps.ini &>/dev/null && openaps use -h >/dev/null ); then
+        if ( cd $directory-cgm-loop && test -f openaps.ini && openaps use -h >/dev/null ); then
             echo $directory-cgm-loop already exists
         elif openaps init $directory-cgm-loop --nogit; then
             echo $directory-cgm-loop initialized
