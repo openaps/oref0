@@ -783,7 +783,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                         echo "Latest version of bluez @ $(find $HOME/src -name "bluez-*" -type d | sort -rn | head -1) is missing or has extra copies of bluetoothd or bluetoothctl, unable to replace older binaries"
                     fi       
                 fi
-            done < <(find / \( -name "bluetoothctl" -o -name "bluetoothd" \) ! -path "*/src/bluez-*") # Find all locations with bluetoothctl or bluetoothd excluding directories with *bluez* in the path
+            done < <(find / \( -name "bluetoothctl" -o -name "bluetoothd" \) ! -path "*/src/bluez-*" ! -path "*.rootfs/*") # Find all locations with bluetoothctl or bluetoothd excluding directories with *bluez* in the path
             
             oref0-bluetoothup
         else
