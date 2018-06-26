@@ -26,4 +26,4 @@ for jsonfile in $(find ${myloc}/.. -name '*.json'); do
   fi
 done
 
-exit ${rc}  
+exit ${rc}
