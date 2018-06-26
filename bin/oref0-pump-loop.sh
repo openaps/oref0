@@ -463,7 +463,7 @@ function prep {
 
 function if_mdt_get_bg {
     echo -n
-    if [ "$(get_pref_string .cgm \"\")" == "mdt" ]; then
+    if [ "$(get_pref_string .cgm '')" == "mdt" ]; then
         echo \
         && echo Attempting to retrieve MDT CGM data from pump
         #due to sometimes the pump is not in a state to give this command repeat until it completes
