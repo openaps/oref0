@@ -13,15 +13,16 @@ green='\033[1;32m'
 nocolor='\033[0m'
 
 for jsonfile in $(find ${myloc}/.. -name '*.json'); do
-  realfile=$(realpath ${jsonfile})
-  jq . ${jsonfile} >/dev/null 2>/dev/null
+  realfile=$(readlink -f ${jsonfile})
+  output=$(jq . ${jsonfile} 2>&1)
   ret=$?
   # accumulate failures
   rc=$((rc|ret))
   if [ ${ret} -eq 0 ]; then
-    echo -e "${green}${realfile}${nocolor}"
+    echo -e "${realfile} ${green}valid${nocolor}"
   else
-    echo -e "${red}${realfile} ${rc}${nocolor}"
+    echo -e "${red}${realfile} invalid:${nocolor}"
+    echo -e "${red}${realfile} ${output}${nocolor}"
   fi
 done
 
