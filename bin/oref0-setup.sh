@@ -1243,6 +1243,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if validate_g4share_serial; then
             (crontab -l; crontab -l | grep -q "DEXCOM_CGM_ID=" || echo DEXCOM_CGM_ID=$BLE_SERIAL) | crontab -
         fi
+        # deduplicate to avoid multiple instances of $GOPATH in $PATH
+        echo $PATH
+        dedupe_path;
+        echo $PATH
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
 
         add_to_crontab \
