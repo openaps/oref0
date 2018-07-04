@@ -72,6 +72,7 @@ if [[ ${CGM,,} =~ "g4-go" ]]; then
         if ! is_bash_process_running_named oref0-g4-loop; then
             oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log &
         fi
+        cd -
 # TODO: deprecate g4-upload and g4-local-only
 elif [[ ${CGM,,} =~ "g4-upload" ]]; then
     (
