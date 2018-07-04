@@ -61,7 +61,7 @@ find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && (
 ) | tee -a /var/log/openaps/pump-loop.log &
 
 # if the rig doesn't recover after that, reboot:
-oref0-radio-reboot
+oref0-radio-reboot &
 
 if [[ ${CGM,,} =~ "g5-upload" ]]; then
     oref0-upload-entries &
