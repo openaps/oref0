@@ -76,9 +76,7 @@ main() {
                 fi
                 if ! glucose-fresh; then
                     pumphistory_daily_refresh
-                    if ! glucose-fresh && ! onbattery; then
-                        refresh_after_bolus_or_enact
-                    fi
+                    refresh_after_bolus_or_enact
                 fi
             fi
             cat /tmp/oref0-updates.txt 2>&3
@@ -821,11 +819,11 @@ function refresh_profile {
 }
 
 function onbattery {
-    # check whether battery level is < 98%
+    # check whether battery level is < 90%
     if is_edison; then
-        jq --exit-status ".battery < 98 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
+        jq --exit-status ".battery < 90 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
     else
-        jq --exit-status ".battery < 98" monitor/edison-battery.json >&4
+        jq --exit-status ".battery < 90" monitor/edison-battery.json >&4
     fi
 }
 
