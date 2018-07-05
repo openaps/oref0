@@ -550,7 +550,7 @@ function mmtune {
     echo {} > monitor/mmtune.json
     echo -n "mmtune: " && mmtune_Go >&3 2>&3
     # if mmtune.json is empty, re-run it and display output
-    if [ -s monitor/mmtune.json ]; then
+    if ! [ -s monitor/mmtune.json ]; then
         mmtune_Go
     fi
     #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
