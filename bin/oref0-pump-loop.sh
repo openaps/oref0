@@ -386,12 +386,19 @@ function smb_bolus {
     #mdt bolus does not work on the 723 yet. Only tested on 722 pump
     file_is_recent enact/smb-suggested.json \
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
-        # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
-        echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
-        try_return mdt -f internal button esc esc esc esc 2>&3 \
-        && echo -n "and bolusing " && jq .units enact/smb-suggested.json | nonl && echo " units" \
-        && ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
-        && rm -rf enact/smb-suggested.json
+        if check_pref_bool .A52_risk_enable true; then
+            # don't press ESC four times on the pump - user has accepted risk of A52 errors
+            echo -n "SMBing and bolusing " && jq .units enact/smb-suggested.json | nonl && echo " units"
+            ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
+            && rm -rf enact/smb-suggested.json
+        else
+            # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
+            echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
+            try_return mdt -f internal button esc esc esc esc 2>&3 \
+            && echo -n "and bolusing " && jq .units enact/smb-suggested.json | nonl && echo " units" \
+            && ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
+            && rm -rf enact/smb-suggested.json
+        fi
     else
         echo -n "No bolus needed. "
     fi
