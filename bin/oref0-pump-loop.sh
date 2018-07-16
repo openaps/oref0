@@ -126,7 +126,7 @@ function fail {
     exit 1
 }
 
-# The function "ckeck_duty_cycle" checks if the loop has to run and it returns 0 if so.
+# The function "check_duty_cycle" checks if the loop has to run and it returns 0 if so.
 # It exits the script with code 0 otherwise.
 # The decision is based on the time since last *successful* loop.
 # !Note duty cycle times are set in seconds.
