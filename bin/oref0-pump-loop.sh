@@ -159,11 +159,11 @@ function fail {
 # REBOOT=900
 #
 # Default is DUTY_CYCLE=0 to disable this feature.
-DUTY_CYCLE=${DUTY_CYCLE:-120}	#0=off, other = delay in seconds
+DUTY_CYCLE=${DUTY_CYCLE:-0}	#0=off, other = delay in seconds
 
-SPI_RESET=${SPI_RESET:-300}		#0=off, other = delay in seconds
-USB_RESET=${USB_RESET:-300}		#0=off, other = delay in seconds
-REBOOT=${REBOOT:-900}			#0=off, other = delay in seconds
+SPI_RESET=${SPI_RESET:-0}		#0=off, other = delay in seconds
+USB_RESET=${USB_RESET:-0}		#0=off, other = delay in seconds
+REBOOT=${REBOOT:-0}			#0=off, other = delay in seconds
 
 function check_duty_cycle { 
     if [ -e /tmp/pump_loop_success ]; then
