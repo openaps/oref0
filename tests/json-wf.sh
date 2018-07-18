@@ -12,18 +12,29 @@ red='\033[1;31m'
 green='\033[1;32m'
 nocolor='\033[0m'
 
-for jsonfile in $(find ${myloc}/.. -name '*.json'); do
-  realfile=$(readlink -f ${jsonfile})
-  output=$(jq . ${jsonfile} 2>&1)
-  ret=$?
-  # accumulate failures
-  rc=$((rc|ret))
-  if [ ${ret} -eq 0 ]; then
-    echo -e "${realfile} ${green}valid${nocolor}"
-  else
-    echo -e "${red}${realfile} invalid:${nocolor}"
-    echo -e "${red}${realfile} ${output}${nocolor}"
-  fi
-done
+jsonfiles=$(find ${myloc}/.. -name '*.json')
+#echo jq -s . ${jsonfiles} 2>&1
+output=$(jq -s . ${jsonfiles} 2>&1)
+ret=$?
+#echo $ret
+# accumulate failures
+rc=$((rc|ret))
+#echo $rc
+if ! [ ${ret} -eq 0 ]; then
+    for jsonfile in $(find ${myloc}/.. -name '*.json'); do
+        realfile=$(readlink -f ${jsonfile})
+        output=$(jq . ${jsonfile} 2>&1)
+        ret=$?
+        # accumulate failures
+        rc=$((rc|ret))
+        if ! [ ${ret} -eq 0 ]; then
+            echo -e "${red}${realfile} invalid:${nocolor}"
+            echo -e "${red}${realfile} ${output}${nocolor}"
+        #else
+            #echo -e "${realfile} ${green}valid${nocolor}"
+        fi
+    done
+fi
 
+#echo ${rc}
 exit ${rc}
