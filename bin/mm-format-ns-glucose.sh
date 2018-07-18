@@ -5,23 +5,15 @@
 
 # Written for decocare v0.0.17. Will need updating the the decocare json format changes.
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+usage "$@" <<EOT
+Usage: $self [--oref0] <medtronic-glucose.json>
+Format Medtronic glucose data into something acceptable to Nightscout.
+EOT
+
 NSONLY=""
 test "$1" = "--oref0" && NSONLY="this.glucose = this.sgv" && shift
-
-self=$(basename $0)
-function usage ( ) {
-
-cat <<EOT
-$self [--oref0] <medtronic-glucose.json>
-$self - Format Medtronic glucose data into something acceptable to Nightscout.
-EOT
-}
-
-case "$1" in
-  --help|-h|help)
-    usage
-    exit 0
-esac
 
 HISTORY=${1-glucosehistory.json}
 OUTPUT=${2-/dev/fd/1}

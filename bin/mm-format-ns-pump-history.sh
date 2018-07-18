@@ -3,20 +3,12 @@
 # Author: Ben West
 # Maintainer: Scott Leibrand
 
-self=$(basename $0)
-function usage ( ) {
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
-cat <<EOT
-$self <medtronic-pump-history.json>
-$self - Format Medtronic pump-history data into something acceptable to Nightscout.
+usage "$@" <<EOT
+Usage: $self <medtronic-pump-history.json>
+Format Medtronic pump-history data into something acceptable to Nightscout.
 EOT
-}
-
-case "$1" in
-  --help|-h|help)
-    usage
-    exit 0
-esac
 
 
 HISTORY=${1-pumphistory.json}

@@ -1,5 +1,11 @@
 #!/bin/bash
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+usage "$@" <<EOT
+Usage: $self <TOKEN> <USER> [enact/suggested.json] [none] [15] [carbs|insulin]
+EOT
+
 TOKEN=$1
 USER=$2
 FILE=${3-enact/suggested.json}
@@ -10,46 +16,44 @@ PRIORITY=0
 RETRY=60
 EXPIRE=600
 
-PREF_FILE=preferences.json
-
 #echo "Running: $0 $TOKEN $USER $FILE $SOUND $SNOOZE"
 
 if [ -z $TOKEN ] || [ -z $USER ]; then
-    echo "Usage: $0 <TOKEN> <USER> [enact/suggested.json] [none] [15] [carbs|insulin]"
-    exit
+    print_usage
+    exit 1
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq --raw-output -r .pushover_sound 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq --raw-output -r .pushover_sound 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ]; then
     SOUND=$PREF_VALUE
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq .pushover_snooze 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq .pushover_snooze 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ] && [ "$PREF_VALUE" -eq "$PREF_VALUE" ]; then
     SNOOZE=$PREF_VALUE
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq --raw-output -r .pushover_only 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq --raw-output -r .pushover_only 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ]; then
     ONLYFOR=$PREF_VALUE
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq .pushover_priority 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq .pushover_priority 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ] && [ "$PREF_VALUE" -eq "$PREF_VALUE" ]; then
     PRIORITY=$PREF_VALUE
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq .pushover_retry 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq .pushover_retry 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ] && [ "$PREF_VALUE" -eq "$PREF_VALUE" ]; then
     RETRY=$PREF_VALUE
 fi
 
-PREF_VALUE=$(cat $PREF_FILE | jq .pushover_expire 2>/dev/null)
+PREF_VALUE=$(get_prefs_json | jq .pushover_expire 2>/dev/null)
 
 if [ ! -z $PREF_VALUE ] && [ $PREF_VALUE != "null" ] && [ "$PREF_VALUE" -eq "$PREF_VALUE" ]; then
     EXPIRE=$PREF_VALUE
@@ -74,9 +78,9 @@ fi
 
 date
 
-if find monitor/ -mmin -$SNOOZE | grep -q pushover-sent; then
+if file_is_recent monitor/pushover-sent $SNOOZE; then
     echo "Last pushover sent less than $SNOOZE minutes ago."
-elif ! find $FILE -mmin -5 | grep -q $FILE; then
+elif ! file_is_recent "$FILE"; then
     echo "$FILE more than 5 minutes old"
     exit
 elif ! cat $FILE | egrep "add'l|maxBolus"; then
@@ -86,7 +90,7 @@ elif [[ $ONLYFOR =~ "carb" ]] && ! cat $FILE | egrep "add'l"; then
 elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus"; then
     echo "No additional insulin required."
 else
-    curl -s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent
+    curl -s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"carbsReq"}' | tee /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json
     echo
 fi
 
@@ -110,7 +114,7 @@ cob=`jq .COB $FILE`
 iob=`jq .IOB $FILE`
 
 #echo "carbsReq=${carbsReq} tick=${tick} bgNow=${bgNow} delta=${delta} cob=${cob} iob=${iob}"
-pushoverGlances=$(cat preferences.json | jq -M '.pushoverGlances')
+pushoverGlances=$(get_prefs_json | jq -M '.pushoverGlances')
 
 if [ "${pushoverGlances}" == "null" -o "${pushoverGlances}" == "false" ]; then
     echo "pushoverGlances not enabled in preferences.json"
@@ -171,7 +175,7 @@ fi
 #   vital facts. It will leave a voice mail if not answered.
 
 if [[ "$MAKER_KEY" != "null" ]] && cat $FILE | egrep "add'l"; then
-  if find monitor/ -mmin -60 | grep -q ifttt-sent; then
+  if file_is_recent monitor/ifttt-sent 60; then
      echo "carbsReq=${carbsReq} but last IFTTT event sent less than 60 minutes ago."
   else
      message="Carbs required = ${carbsReq}. Glucose = $bgNow Insulin on board = $iob Carbs on board = $cob grams."

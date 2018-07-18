@@ -2,24 +2,17 @@
 
 # Author: Ben West
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 HISTORY=${1-monitor/pump-history-zoned.json}
 MODEL=${2-model.json}
 OUTPUT=${3-/dev/fd/1}
 #TZ=${3-$(date +%z)}
-self=$(basename $0)
-function usage ( ) {
 
-cat <<EOT
-$self <pump-history-zoned.json> <model.json>
-$self - Format medtronic history data into Nightscout treatments data.
+usage "$@" <<EOT
+Usage: $self <pump-history-zoned.json> <model.json>
+Format medtronic history data into Nightscout treatments data.
 EOT
-}
-
-case "$1" in
-  --help|-h|help)
-    usage
-    exit 0
-esac
 
 
 # | json -e "this.type = 'mm://openaps/$self'" \

@@ -3,24 +3,16 @@
 # Author: Ben West
 # Maintainer: @cjo20, @scottleibrand
 
-self=$(basename $0)
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 ENTRIES=${1-entries.json}
 NIGHTSCOUT_HOST=${NIGHTSCOUT_HOST-localhost:1337}
 OUTPUT=${2}
 
-function usage ( ) {
-cat <<EOF
-$self <entries.json> <http://nightscout.host:1337>
-$self - Upload entries (glucose data) to NS.
+usage "$@" <<EOF
+Usage: $self <entries.json> <http://nightscout.host:1337>
+Upload entries (glucose data) to NS.
 EOF
-}
-
-case "$1" in
-  -h|--help|help)
-    usage
-    exit 0
-    ;;
-esac
 
 export ENTRIES API_SECRET NIGHTSCOUT_HOST
 
