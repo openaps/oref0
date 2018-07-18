@@ -22,7 +22,8 @@ describe("shell-script tests", function() {
                 encoding: "UTF-8",
             });
             
-            should.equal(utilProcess.status, 0, "Bash unit test returned failure.");
+            //console.error(utilProcess.error);
+            should.equal(utilProcess.status, 0, "Bash unit test returned failure: run " + testFile + " manualy for details.");
         });
     });
 });
