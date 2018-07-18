@@ -1,3 +1,6 @@
+#!/bin/bash
+
+oref0_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 interval=${1:-96}
 allowedload=${2:-5}
 
@@ -42,7 +45,8 @@ main() {
                             while highload; do
                                 sleep 30
                             done
-                            ~/src/oref0/bin/oref0-autosens-history.js $year-$month-entries.json $year-$month-treatments.json profile*.json 12 isf-$year-$month.json 2> $year-$month.out &
+                            echo "running $oref0_dir/bin/oref0-autosens-history.js $year-$month-entries.json $year-$month-treatments.json profile*.json 12 isf-$year-$month.json 2> $year-$month.out &"
+                            $oref0_dir/bin/oref0-autosens-history.js $year-$month-entries.json $year-$month-treatments.json profile*.json 12 isf-$year-$month.json 2> $year-$month.out &
                             sleep 5
                         fi
                     fi
