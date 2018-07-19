@@ -74,12 +74,12 @@ main() {
                 else
                     refresh_profile 15
                 fi
-		if ! glucose-fresh; then
-		    pumphistory_daily_refresh
-		    if ! glucose-fresh; then
+                if ! glucose-fresh; then
+                    pumphistory_daily_refresh
+                    if ! glucose-fresh; then
                         refresh_after_bolus_or_enact
                     fi
-		fi
+                fi
             fi
             cat /tmp/oref0-updates.txt 2>&3
             touch /tmp/pump_loop_success
