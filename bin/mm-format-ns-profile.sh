@@ -2,7 +2,8 @@
 
 # Author: Ben West
 
-self=$(basename $0)
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 SETTINGS=${1-monitor/settings.json}
 CARBS=${2-monitor/carb-ratios.json}
 BASALRATES=${3-monitor/active-basal-profile.json}
@@ -13,23 +14,20 @@ OUTPUT=${6-/dev/fd/1}
 # CARBRATIO
 #TZ=${3-$(date +%z)}
 
-function usage ( ) {
-cat <<EOF
-$self: Format known pump data into Nightscout "profile".
+usage "$@" <<EOT
+Usage: $self pump-settings carb-ratios active-basal-profile insulin-sensitivities bg-targets
+
+Format known pump data into Nightscout "profile".
 
 Profile documents allow Nightscout to establish a common set of settings for
 therapy, including the type of units used, the timezone, carb-ratios, active
 basal profiles, insulin sensitivities, and BG targets.  This compiles the
 separate pump reports into a single profile document for Nightscout.
 
-Usage:
-$self pump-settings carb-ratios active-basal-profile insulin-sensitivities bg-targets
-
 Examples:
-bewest@bewest-MacBookPro:~/Documents/openaps$ mm-format-ns-profile monitor/settings.json monitor/carb-ratios.json monitor/active-basal-profile.json monitor/insulin-sensitivities.json monitor/bg-targets.json  
+bewest@bewest-MacBookPro:~/Documents/openaps$ mm-format-ns-profile monitor/settings.json monitor/carb-ratios.json monitor/active-basal-profile.json monitor/insulin-sensitivities.json monitor/bg-targets.json
 
-EOF
-}
+EOT
 
 function dia ( ) {
   cat $1 | json insulin_action_curve
@@ -126,7 +124,7 @@ function fix-dates ( ) {
 }
 
 function stub ( ) {
-  zone=$(cat /etc/timezone | tr -d '\n')
+  zone=$(cat /etc/timezone | nonl)
   dt=$(date --rfc-3339=ns | tr ' ' 'T')
   DIA=$(dia $SETTINGS)
   cat <<EOF | json
@@ -146,12 +144,7 @@ function stub ( ) {
   }
 EOF
 }
-case $1 in
-  --help|config|help|-h)
-    usage
-    exit 0
-    ;;
-esac
+
 stub $SETTINGS | fix-dates \
   | add-carbs $CARBS \
   | add-basals $BASALRATES \

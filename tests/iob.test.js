@@ -106,7 +106,6 @@ describe('IOB', function() {
         //afterDIA.bolussnooze.should.equal(0);
     });
 
-
     it('should calculate IOB with Ultra-fast peak setting of 55', function() {
 
         var basalprofile = [{
@@ -318,8 +317,6 @@ describe('IOB', function() {
         //afterDIA.bolussnooze.should.equal(0);
     });
 
-
-
     it('should calculate IOB with Rapid-acting', function() {
 
         var basalprofile = [{
@@ -449,16 +446,6 @@ describe('IOB', function() {
             inputs = {
                 clock: timestamp,
                 history: [{
-                    _type: 'TempBasalDuration',
-                    'duration (min)': 30,
-                    date: timestamp60mAgo,
-                    timestamp: timestamp60mAgo
-                }, {
-                    _type: 'TempBasal',
-                    rate: 2,
-                    date: timestamp60mAgo,
-                    timestamp: timestamp60mAgo
-                }, {
                     _type: 'TempBasal',
                     rate: 2,
                     date: timestamp30mAgo,
@@ -466,8 +453,18 @@ describe('IOB', function() {
                 }, {
                     _type: 'TempBasalDuration',
                     'duration (min)': 30,
-                    date: timestamp,
-                    timestamp: timestamp
+                    date: timestamp30mAgo,
+                    timestamp: timestamp30mAgo
+                }, {
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 30,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
+                }, {
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
                 }],
                 profile: {
                     dia: 3,
@@ -479,7 +476,6 @@ describe('IOB', function() {
             };
 
         var iobInputs = inputs;
-        iobInputs.clock = timestamp
         var iobNow = require('../lib/iob')(iobInputs)[0];
 
         //console.log(iobNow);
@@ -510,16 +506,6 @@ describe('IOB', function() {
         var inputs = {
             clock: timestamp,
             history: [{
-                _type: 'TempBasalDuration',
-                'duration (min)': 30,
-                date: timestampEarly,
-                timestamp: timestampEarly,
-            }, {
-                _type: 'TempBasal',
-                rate: 2,
-                date: timestampEarly,
-                timestamp: timestampEarly
-            }, {
                 _type: 'TempBasal',
                 rate: 2,
                 date: timestamp,
@@ -529,6 +515,16 @@ describe('IOB', function() {
                 'duration (min)': 30,
                 date: timestamp,
                 timestamp: timestamp,
+            }, {
+                _type: 'TempBasalDuration',
+                'duration (min)': 30,
+                date: timestampEarly,
+                timestamp: timestampEarly,
+            }, {
+                _type: 'TempBasal',
+                rate: 2,
+                date: timestampEarly,
+                timestamp: timestampEarly
             }],
             profile: {
                 dia: 3,
@@ -572,16 +568,6 @@ describe('IOB', function() {
             inputs = {
                 clock: timestamp,
                 history: [{
-                    _type: 'TempBasalDuration',
-                    'duration (min)': 30,
-                    date: timestampEarly,
-                    timestamp: timestampEarly
-                }, {
-                    _type: 'TempBasal',
-                    rate: 2,
-                    date: timestampEarly,
-                    timestamp: timestampEarly
-                }, {
                     _type: 'TempBasal',
                     rate: 2,
                     date: timestamp,
@@ -591,6 +577,16 @@ describe('IOB', function() {
                     'duration (min)': 30,
                     date: timestamp,
                     timestamp: timestamp
+                }, {
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 30,
+                    date: timestampEarly,
+                    timestamp: timestampEarly
+                }, {
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestampEarly,
+                    timestamp: timestampEarly
                 }],
                 profile: {
                     dia: 3,
@@ -611,9 +607,6 @@ describe('IOB', function() {
 
     it('should calculate IOB with Temp Basals that overlap each other', function() {
 
-        var nowDate = new Date();
-        var now = Date.now();
-
         var basalprofile = [{
             'i': 0,
             'start': '00:00:00',
@@ -622,11 +615,62 @@ describe('IOB', function() {
         }];
 
         var startingPoint = moment('2016-06-13 00:30:00.000');
-        var timestampEarly = moment('2016-06-13 00:30:00.000').subtract(30, 'minutes');
-        var timestampEarly2 = moment('2016-06-13 00:30:00.000').subtract(29, 'minutes');
-        var timestampEarly3 = moment('2016-06-13 00:30:00.000').subtract(28, 'minutes');
-
         var timestamp = startingPoint;
+        var timestampEarly = startingPoint.clone().subtract(30, 'minutes');
+
+        var inputs = {
+            clock: timestamp,
+            history: [{
+                _type: 'TempBasalDuration',
+                'duration (min)': 30,
+                date: timestampEarly.unix(),
+                timestamp: timestampEarly.format()
+            }, {
+                _type: 'TempBasal',
+                rate: 2,
+                date: timestampEarly.unix(),
+                timestamp: timestampEarly.format()
+            }],
+            profile: {
+                dia: 3,
+                current_basal: 0.1,
+                max_daily_basal: 1,
+                //bolussnooze_dia_divisor: 2,
+                basalprofile: basalprofile
+            }
+        };
+
+        var hourLater = require('../lib/iob')(inputs)[0];
+
+        var timestampEarly2 = startingPoint.clone().subtract(29, 'minutes');
+        var timestampEarly3 = startingPoint.clone().subtract(28, 'minutes');
+
+        var inputs = {
+            clock: timestamp,
+            history: [{
+                _type: 'TempBasalDuration',
+                'duration (min)': 30,
+                date: timestampEarly.unix(),
+                timestamp: timestampEarly.format()
+            }, {
+                _type: 'TempBasal',
+                rate: 2,
+                date: timestampEarly.unix(),
+                timestamp: timestampEarly.format()
+            }],
+            profile: {
+                dia: 3,
+                current_basal: 0.1,
+                max_daily_basal: 1,
+                //bolussnooze_dia_divisor: 2,
+                basalprofile: basalprofile
+            }
+        };
+
+        var hourLaterInputs = inputs;
+        hourLaterInputs.clock = moment('2016-06-13 00:30:00.000');
+        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+
         var inputs = {
             clock: timestamp,
             history: [{
@@ -659,16 +703,6 @@ describe('IOB', function() {
                 rate: 2,
                 date: timestampEarly3.unix(),
                 timestamp: timestampEarly3.format()
-            }, {
-                _type: 'TempBasal',
-                rate: 2,
-                date: timestamp.unix(),
-                timestamp: timestamp.format()
-            }, {
-                _type: 'TempBasalDuration',
-                'duration (min)': 30,
-                date: timestamp.unix(),
-                timestamp: timestamp.format()
             }],
             profile: {
                 dia: 3,
@@ -679,17 +713,13 @@ describe('IOB', function() {
             }
         };
 
-        var hourLaterInputs = inputs;
-        hourLaterInputs.clock = moment('2016-06-13 00:30:00.000'); //new Date(now + (30 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLaterWithOverlap = require('../lib/iob')(inputs)[0];
 
-        hourLater.iob.should.be.lessThan(0.5);
-        hourLater.iob.should.be.greaterThan(0.45);
+        hourLater.iob.should.be.greaterThan(hourLaterWithOverlap.iob - 0.05);
+        hourLater.iob.should.be.lessThan(hourLaterWithOverlap.iob + 0.05);
     });
-    it('should calculate IOB with Temp Basals that overlap midnight and a basal profile, part deux', function() {
 
-        var nowDate = new Date();
-        var now = Date.now();
+    it('should calculate IOB with Temp Basals that overlap midnight and a basal profile, part deux', function() {
 
         var basalprofile = [{
                 'i': 0,
@@ -743,7 +773,7 @@ describe('IOB', function() {
             };
 
         var hourLaterInputs = inputs;
-        hourLaterInputs.clock = moment('2016-06-14 00:45:00.000'); //new Date(now + (30 * 60 * 1000)).toISOString();
+        hourLaterInputs.clock = moment('2016-06-14 00:45:00.000');
         var hourLater = require('../lib/iob')(hourLaterInputs)[0];
 
         hourLater.iob.should.be.lessThan(1);
@@ -771,16 +801,6 @@ describe('IOB', function() {
                 history: [{
                     _type: 'TempBasalDuration',
                     'duration (min)': 15,
-                    date: timestamp60mAgo,
-                    timestamp: timestamp60mAgo
-                }, {
-                    _type: 'TempBasal',
-                    rate: 2,
-                    date: timestamp60mAgo,
-                    timestamp: timestamp60mAgo
-                }, {
-                    _type: 'TempBasalDuration',
-                    'duration (min)': 15,
                     date: timestamp45mAgo,
                     timestamp: timestamp45mAgo
                 }, {
@@ -788,6 +808,16 @@ describe('IOB', function() {
                     rate: 0,
                     date: timestamp45mAgo,
                     timestamp: timestamp45mAgo
+                }, {
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 15,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
+                }, {
+                    _type: 'TempBasal',
+                    rate: 2,
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
                 }],
                 profile: {
                     dia: 3,
@@ -863,13 +893,13 @@ describe('IOB', function() {
                 history: [{
                     _type: 'TempBasalDuration',
                     'duration (min)': 15,
-                    date: timestamp60mAgo,
-                    timestamp: timestamp60mAgo
+                    date: timestamp30mAgo,
+                    timestamp: timestamp30mAgo
                 }, {
                     _type: 'TempBasal',
                     rate: 2,
-                    date: timestamp60mAgo,
-                    timestamp: timestamp60mAgo
+                    date: timestamp30mAgo,
+                    timestamp: timestamp30mAgo
                 }, {
                     _type: 'TempBasalDuration',
                     'duration (min)': 15,
@@ -883,16 +913,16 @@ describe('IOB', function() {
                 }, {
                     _type: 'TempBasalDuration',
                     'duration (min)': 15,
-                    date: timestamp30mAgo,
-                    timestamp: timestamp30mAgo
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
                 }, {
                     _type: 'TempBasal',
                     rate: 2,
-                    date: timestamp30mAgo,
-                    timestamp: timestamp30mAgo
+                    date: timestamp60mAgo,
+                    timestamp: timestamp60mAgo
                 }],
                 profile: {
-                    dia: 3,
+                    dia: 5,
                     current_basal: 1,
                     suspend_zeros_iob: true,
                     max_daily_basal: 1,
@@ -927,7 +957,7 @@ describe('IOB', function() {
                     timestamp: timestamp30mAgo
                 }],
                 profile: {
-                    dia: 3,
+                    dia: 5,
                     current_basal: 1,
                     suspend_zeros_iob: true,
                     max_daily_basal: 1,
@@ -941,7 +971,6 @@ describe('IOB', function() {
         var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
 
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
-
     });
 
     it('should calculate IOB without counting time pump suspended surrounding a basal', function() {
@@ -966,13 +995,13 @@ describe('IOB', function() {
                 history: [{
                     _type: 'TempBasalDuration',
                     'duration (min)': 15,
-                    date: timestamp90mAgo,
-                    timestamp: timestamp90mAgo
+                    date: timestamp30mAgo,
+                    timestamp: timestamp30mAgo
                 }, {
                     _type: 'TempBasal',
                     rate: 2,
-                    date: timestamp90mAgo,
-                    timestamp: timestamp90mAgo
+                    date: timestamp30mAgo,
+                    timestamp: timestamp30mAgo
                 }, {
                     _type: 'TempBasalDuration',
                     'duration (min)': 45,
@@ -986,13 +1015,13 @@ describe('IOB', function() {
                 }, {
                     _type: 'TempBasalDuration',
                     'duration (min)': 15,
-                    date: timestamp30mAgo,
-                    timestamp: timestamp30mAgo
+                    date: timestamp90mAgo,
+                    timestamp: timestamp90mAgo
                 }, {
                     _type: 'TempBasal',
                     rate: 2,
-                    date: timestamp30mAgo,
-                    timestamp: timestamp30mAgo
+                    date: timestamp90mAgo,
+                    timestamp: timestamp90mAgo
                 }],
                 profile: {
                     dia: 3,
@@ -1011,19 +1040,19 @@ describe('IOB', function() {
         inputs = {
             clock: timestamp,
             history: [{
+                _type: 'PumpResume',
+                date: timestamp30mAgo,
+                timestamp: timestamp30mAgo
+            }, {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
-                date: timestamp90mAgo,
-                timestamp: timestamp90mAgo
+                date: timestamp45mAgo,
+                timestamp: timestamp45mAgo
             }, {
                 _type: 'TempBasal',
                 rate: 2,
-                date: timestamp90mAgo,
-                timestamp: timestamp90mAgo
-            }, {
-                _type: 'PumpSuspend',
-                date: timestamp75mAgo,
-                timestamp: timestamp75mAgo
+                date: timestamp45mAgo,
+                timestamp: timestamp45mAgo
             }, {
                 _type: 'TempBasalDuration',
                 'duration (min)': 15,
@@ -1035,19 +1064,19 @@ describe('IOB', function() {
                 date: timestamp60mAgo,
                 timestamp: timestamp60mAgo
             }, {
+                _type: 'PumpSuspend',
+                date: timestamp75mAgo,
+                timestamp: timestamp75mAgo
+            }, {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
-                date: timestamp45mAgo,
-                timestamp: timestamp45mAgo
+                date: timestamp90mAgo,
+                timestamp: timestamp90mAgo
             }, {
                 _type: 'TempBasal',
                 rate: 2,
-                date: timestamp45mAgo,
-                timestamp: timestamp45mAgo
-            }, {
-                _type: 'PumpResume',
-                date: timestamp30mAgo,
-                timestamp: timestamp30mAgo
+                date: timestamp90mAgo,
+                timestamp: timestamp90mAgo
             }],
             profile: {
                 dia: 3,
@@ -1087,16 +1116,6 @@ describe('IOB', function() {
                 history: [{
                     _type: 'TempBasalDuration',
                     'duration (min)': 15,
-                    date: timestamp45mAgo,
-                    timestamp: timestamp45mAgo
-                }, {
-                    _type: 'TempBasal',
-                    rate: 0,
-                    date: timestamp45mAgo,
-                    timestamp: timestamp45mAgo
-                }, {
-                    _type: 'TempBasalDuration',
-                    'duration (min)': 15,
                     date: timestamp30mAgo,
                     timestamp: timestamp30mAgo
                 }, {
@@ -1104,6 +1123,16 @@ describe('IOB', function() {
                     rate: 2,
                     date: timestamp30mAgo,
                     timestamp: timestamp30mAgo
+                }, {
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 15,
+                    date: timestamp45mAgo,
+                    timestamp: timestamp45mAgo
+                }, {
+                    _type: 'TempBasal',
+                    rate: 0,
+                    date: timestamp45mAgo,
+                    timestamp: timestamp45mAgo
                 }],
                 profile: {
                     dia: 3,
@@ -1177,16 +1206,6 @@ describe('IOB', function() {
                 clock: timestamp,
                 history: [{
                     _type: 'TempBasalDuration',
-                    'duration (min)': 435,
-                    date: timestamp480mAgo,
-                    timestamp: timestamp480mAgo
-                }, {
-                    _type: 'TempBasal',
-                    rate: 0,
-                    date: timestamp480mAgo,
-                    timestamp: timestamp480mAgo
-                }, {
-                    _type: 'TempBasalDuration',
                     'duration (min)': 15,
                     date: timestamp45mAgo,
                     timestamp: timestamp45mAgo
@@ -1195,6 +1214,16 @@ describe('IOB', function() {
                     rate: 2,
                     date: timestamp45mAgo,
                     timestamp: timestamp45mAgo
+                }, {
+                    _type: 'TempBasalDuration',
+                    'duration (min)': 435,
+                    date: timestamp480mAgo,
+                    timestamp: timestamp480mAgo
+                }, {
+                    _type: 'TempBasal',
+                    rate: 0,
+                    date: timestamp480mAgo,
+                    timestamp: timestamp480mAgo
                 }],
                 profile: {
                     dia: 3,
@@ -1329,7 +1358,6 @@ describe('IOB', function() {
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
     });
 
-
     it('should not report negative IOB with Temp Basals and a basal profile with drastic changes', function() {
 
         var basalprofile = [{
@@ -1355,7 +1383,8 @@ describe('IOB', function() {
             history: [{
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
-                date: startingPoint
+                date: startingPoint,
+                timestamp: startingPoint
             }, {
                 _type: 'TempBasal',
                 rate: 0.1,
@@ -1369,7 +1398,8 @@ describe('IOB', function() {
             }, {
                 _type: 'TempBasalDuration',
                 'duration (min)': 30,
-                date: startingPoint2
+                date: startingPoint2,
+                timestamp: startingPoint2
             }],
             profile: {
                 dia: 3,
@@ -1434,7 +1464,6 @@ describe('IOB', function() {
 
         hourLater.iob.should.be.lessThan(1);
         hourLater.iob.should.be.greaterThan(0);
-
     });
 
     it('should calculate IOB with Temp Basals that are lower than base rate', function() {
@@ -1487,7 +1516,6 @@ describe('IOB', function() {
 
         hourLater.iob.should.be.lessThan(0);
         hourLater.iob.should.be.greaterThan(-1);
-
     });
 
     it('should show 0 IOB with Temp Basals if duration is not found', function() {
@@ -1498,6 +1526,7 @@ describe('IOB', function() {
             inputs = {
                 clock: timestamp,
                 history: [{
+                    debug: "should show 0 IOB with Temp Basals if duration is not found",
                     _type: 'TempBasal',
                     rate: 2,
                     date: timestamp,
@@ -1535,7 +1564,8 @@ describe('IOB', function() {
                     {
                         _type: 'TempBasalDuration',
                         'duration (min)': 30,
-                        date: timestamp
+                        date: timestamp,
+                        timestamp: timestamp
                     }
                 ],
                 profile: {
@@ -1553,7 +1583,6 @@ describe('IOB', function() {
 
         hourLater.iob.should.equal(0);
     });
-
 
     it('should calculate IOB using a 4 hour duration', function() {
 
@@ -1603,8 +1632,6 @@ describe('IOB', function() {
         after4hInputs.clock = new Date(now + (4 * 60 * 60 * 1000)).toISOString();
         var after4h = require('../lib/iob')(after4hInputs)[0];
         after4h.iob.should.equal(0);
-
     });
-
 
 });

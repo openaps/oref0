@@ -14,11 +14,11 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
+var getLastGlucose = require('oref0/lib/glucose-get-last');
+var determine_basal = require('oref0/lib/determine-basal/determine-basal');
 
 /* istanbul ignore next */
 if (!module.parent) {
-    var determinebasal = init();
-
     var argv = require('yargs')
       .usage("$0 iob.json currenttemp.json glucose.json profile.json [[--auto-sens] autosens.json] [meal.json] [--reservoir reservoir.json]")
       .option('auto-sens', {
@@ -97,7 +97,7 @@ if (!module.parent) {
         var currenttemp = require(cwd + '/' + currenttemp_input);
         var iob_data = require(cwd + '/' + iob_input);
         var profile = require(cwd + '/' + profile_input);
-        var glucose_status = determinebasal.getLastGlucose(glucose_data);
+        var glucose_status = getLastGlucose(glucose_data);
     } catch (e) {
         return console.error("Could not parse input data: ", e);
     }
@@ -203,7 +203,7 @@ if (!module.parent) {
 
     var tempBasalFunctions = require('oref0/lib/basal-set-temp');
 
-    rT = determinebasal.determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus'], reservoir_data);
+    rT = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus'], reservoir_data);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));
@@ -212,17 +212,3 @@ if (!module.parent) {
     }
 
 }
-
-function init() {
-
-    var determinebasal = {
-        name: 'determine-basal'
-        , label: "OpenAPS Determine Basal"
-    };
-
-    determinebasal.getLastGlucose = require('oref0/lib/glucose-get-last');
-    determinebasal.determine_basal = require('oref0/lib/determine-basal/determine-basal');
-    return determinebasal;
-
-}
-module.exports = init;

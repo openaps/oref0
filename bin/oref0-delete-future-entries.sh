@@ -8,8 +8,14 @@
 # This will delete all the data in the  
 # monitor directory. Allowing oref0 to gather all of the data again in pump-loop 
 
-NEWTIME=$(date -d `(jq .[1].display_time monitor/glucose.json; echo ) | sed 's/"//g'` +%s)
-TIME=$(date --date '5 minutes' +%s)  
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+usage "$@" <<EOT
+Usage: $self
+EOT
+
+NEWTIME=$(to_epochtime $(jq .[1].display_time monitor/glucose.json))
+TIME=$(to_epochtime '5 minutes')
 
 echo $NEWTIME 
 echo $TIME

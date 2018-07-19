@@ -18,13 +18,11 @@
 #
 # Example usage: ~/src/oref0/bin/oref0-autotune-recommends-report.sh <OpenAPS Loop Directory Path>
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+
 # fix problems with locales with printf output
 LC_NUMERIC=en_US.UTF-8
-
-die() {
-  echo "$@"
-  exit 1
-}
 
 # Use alternate date command if on OS X:
 shopt -s expand_aliases
@@ -33,8 +31,14 @@ if [[ `uname` == 'Darwin' ]] ; then
     alias date='gdate'
 fi
 
+usage "$@" <<EOT
+Usage: ./oref0-autotune-recommends-report.sh <OpenAPS Loop Directory Path>
+Create a summary report of Autotune recommendations, and store it in
+<loop directory>/autotune/autotune_recommendations.log
+EOT
+
 if [ $# -ne 1 ]; then
-    echo "Usage: ./oref0-autotune-recommends-report.sh <OpenAPS Loop Directory Path>"
+    print_usage
     exit 1
 fi
 

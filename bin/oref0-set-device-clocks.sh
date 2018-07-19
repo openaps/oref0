@@ -16,6 +16,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 CLOCK=${1-monitor/clock-zoned.json}
@@ -23,22 +26,10 @@ GLUCOSE=${2-monitor/glucose.json}
 PUMP=${3-pump}
 CGM=${4-cgm}
 
-die() { echo "$@" ; exit 1; }
-self=$(basename $0)
-function usage ( ) {
-
-cat <<EOF
-$self
-$self - Set pump and CGM clocks based on NTP time if avaialble.
+usage "$@" <<EOF
+Usage: $self
+Set pump and CGM clocks based on NTP time if available.
 EOF
-}
-
-case "$1" in
-  --help|help|-h)
-    usage
-    exit 0
-    ;;
-esac
 
 
 checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1 -v ) }
@@ -46,7 +37,15 @@ checkNTP() { ntp-wait -n 1 -v || ( sudo /etc/init.d/ntp restart && ntp-wait -n 1
 if checkNTP; then
     sudo ntpdate -s -b time.nist.gov
     echo Setting pump time to $(date)
-    openaps use $PUMP set_clock --to now 2>&1 >/dev/null | tail -1
-    echo Setting CGM time to $(date)
-    openaps use $CGM UpdateTime --to now 2>&1 >/dev/null | tail -1
+    mdt -f internal setclock now 2>&1 >/dev/null
+    if hash g4setclock 2>/dev/null; then
+        echo Setting G4 CGM time to $(date) with g4setclock
+        g4setclock now
+    fi
+    #TODO: deprecate openaps toolkit based CGM setups
+    # xdripaps CGM does not have a clock to set, so don't try. 
+    if [ ! -d xdrip ]; then
+        echo Setting CGM time to $(date) with openaps use $CGM UpdateTime --to now
+        openaps use $CGM UpdateTime --to now 2>&1 >/dev/null | tail -1
+    fi
 fi
