@@ -61,7 +61,7 @@ main() {
         echo "Waiting 10 seconds before processing next participant"
         sleep 10
     done # while read participant
-    
+
     # tailing the .out to help see that the script is done
     sleep 30
     tail */direct-sharing-31/*.out
