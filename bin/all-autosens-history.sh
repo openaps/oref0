@@ -46,7 +46,7 @@ main() {
                                 sleep 30
                             done
                             echo "running $oref0_dir/bin/oref0-autosens-history.js $year-$month-entries.json $year-$month-treatments.json profile*.json 12 isf-$year-$month.json 2> $year-$month.out &"
-                            $oref0_dir/bin/oref0-autosens-history.js $year-$month-entries.json $year-$month-treatments.json profile*.json 12 isf-$year-$month.json 2> $year-$month.out &
+                            $oref0_dir/oref0-autosens-history.js $year-$month-entries.json $year-$month-treatments.json profile*.json 12 isf-$year-$month.json 2> $year-$month.out &
                             sleep 5
                         fi
                     fi
