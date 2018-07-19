@@ -76,7 +76,9 @@ main() {
                 fi
 		if ! glucose-fresh; then
 		    pumphistory_daily_refresh
-                    refresh_after_bolus_or_enact
+		    if ! glucose-fresh; then
+                        refresh_after_bolus_or_enact
+                    fi
 		fi
             fi
             cat /tmp/oref0-updates.txt 2>&3
