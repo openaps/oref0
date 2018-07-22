@@ -12,12 +12,9 @@ assert_cwd_contains_ini
 
 CGM="$(get_pref_string .cgm)"
 ENABLE="$(get_pref_string .enable)"
-XDRIP_PATH="$(get_pref_string .xdrip_path)"
 ttyport="$(get_pref_string .ttyport)"
 
-if [[ "${CGM,,}" =~ "xdrip" ]]; then
-    python "$XDRIP_PATH/xDripAPS.py" &
-elif [[ "$ENABLE" =~ dexusb ]]; then
+if [[ "$ENABLE" =~ dexusb ]]; then
     /usr/bin/python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-dexusb-loop.log 2>&1 &
 fi
 
