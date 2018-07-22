@@ -43,6 +43,7 @@ function do_aliases ()
     alias cat-reservoir="cd ${myopenaps}/monitor && cat reservoir.json"
     alias stop-cron="cd ${myopenaps} && /etc/init.d/cron stop && killall -g oref0-pump-loop"
     alias start-cron="/etc/init.d/cron start"
+    alias tz="sudo dpkg-reconfigure tzdata"
 }
 
 function add_aliases_to_profile ()
