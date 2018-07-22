@@ -684,9 +684,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     set_pref_string .pushover_token "$PUSHOVER_TOKEN"
     set_pref_string .pushover_user "$PUSHOVER_USER"
     set_pref_string .myopenaps_path "$directory"
-    set_pref_string .cgm_loop_path "$directory-cgm-loop"
-    set_pref_string .xdrip_path "$HOME/.xDripAPS"
-    
+    set_pref_string .cgm_loop_path "$directory-cgm-loop"    
     cat preferences.json
 
     # fix log rotate file
@@ -998,11 +996,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # xdrip CGM (xDripAPS)
     if [[ ${CGM,,} =~ "xdrip" ]]; then
         echo xdrip selected as CGM, so configuring xDripAPS
-        sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
-        git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
-        mkdir -p $HOME/.xDripAPS_data
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/xdrip-cgm.json
-        touch /tmp/reboot-required
     fi
 
     # disable IPv6
