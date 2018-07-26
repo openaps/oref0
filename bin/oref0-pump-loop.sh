@@ -137,6 +137,7 @@ function fail {
 # If no loop has completed in that time, it performs the respective action.
 # !Note SPI reset is just tested for Pi0 and my produce errors on edison rigs.
 # !Note to enable an emergency action put a number in seconds when it should start and a 0 to disable.
+# !Note emergency actions can also be enabled without using enabling the duty cycle.
 #
 # The intention is two fold: 
 # First the battery consumption is reduced (Pump and Pi) if the loop runs less often.
@@ -217,18 +218,14 @@ function check_duty_cycle {
         
         if [ "$DUTY_CYCLE" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
-            return 0
-        elif [ "$DUTY_CYCLE" -eq "0" ]; then
-			#fast exit if duty cycling is disabled
-			echo "duty cycling disabled; start loop"
-			return 0    
+            return 0  
         else
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
             exit 0
         fi
-    else
+    elif [ "$SPI_RESET" -gt "0" ] || [ "$USB_RESET" -gt "0" ] || [ "$REBOOT" -gt "0" ] || [ "$DUTY_CYCLE" -gt "0" ]; then
         echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
-        # do not use timestamp from system uptime, since this could result in a endless reboot loop...
+		# do not use timestamp from system uptime, since this could result in a endless reboot loop...
         touch /tmp/pump_loop_success
         return 0
     fi
