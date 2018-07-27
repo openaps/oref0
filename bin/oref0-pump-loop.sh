@@ -218,7 +218,11 @@ function check_duty_cycle {
         
         if [ "$DUTY_CYCLE" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
-            return 0  
+            return 0
+        elif [ "$DUTY_CYCLE" -eq "0" ]; then
+            #fast exit if duty cycling is disabled
+            #echo "duty cycling disabled; start loop"
+            return 0   
         else
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
             exit 0
