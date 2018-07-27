@@ -29,6 +29,8 @@ directory=""
 EXTRAS=""
 radio_locale="US"
 buildgofromsource=false
+ecc1medtronicversion="latest"
+ecc1dexcomversion="latest"
 
 # Echo text, but in bright-blue. Used for confirmation echo text. This takes
 # the same arguments as echo, including the -n option.
@@ -314,12 +316,24 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo
         fi
     fi
-    read -p "Would you like to [D]ownload precompiled Go pump communication library or build them from [S]ource? [D]/S " -r
-    if [[ $REPLY =~ ^[Ss]$ ]]; then
-      buildgofromsource=true
-      echo "Building Go pump binaries from source"
+    read -p "Would you like to [D]ownload precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
+    if [[ $REPLY =~ ^[Uu]$ ]]; then
+      read -p "You could either build the library from [S]ource, or type the version you would like to use, example 'v2018.07.09' [S]/<version> " -r
+      if [[ $REPLY =~ ^[Ss]$ ]]; then
+        buildgofromsource=true
+        echo "Building Go pump binaries from source"
+      else
+        ecc1medtronicversion="tags/$REPLY"
+	echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
+
+	read -p "Also enter the ecc1/dexcom version, example 'v2018.07.09' <version> " -r
+        ecc1dexcomversion="tags/$REPLY"
+	echo "Will use https://github.com/ecc1/dexcom/releases/$REPLY if GO-dexcom is needed."
+      fi
     else
-      echo "Downloading precompiled Go pump binaries."
+      echo "Downloading latest precompiled Go pump binaries."
+      ecc1medtronicversion="latest"
+      ecc1dexcomversion="latest"
     fi
 
 
@@ -1187,7 +1201,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             arch=386-spi
           fi
           mkdir -p $HOME/go/bin && \
-          downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/latest | \
+          downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/$ecc1medtronicversion | \
             jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
           echo "Downloading Go pump binaries from:" $downloadUrl
           wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
@@ -1211,7 +1225,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             if egrep -i "edison" /etc/passwd &>/dev/null; then
                 arch=386
             fi
-            downloadUrl=$(curl -s https://api.github.com/repos/ecc1/dexcom/releases/latest | \
+            downloadUrl=$(curl -s https://api.github.com/repos/ecc1/dexcom/releases/$ecc1dexcomversion | \
             jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
             echo "Downloading Go dexcom binaries from:" $downloadUrl
             wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go dexcom binaries"
