@@ -860,7 +860,7 @@ function onbattery {
 }
 
 function wait_for_bg {
-    if grep "MDT cgm" openaps.ini 2>&3 >&4; then
+    if [ "$(get_pref_string .cgm '')" == "mdt" ]; then
         echo "MDT CGM configured; not waiting"
     elif egrep -q "Warning:" enact/smb-suggested.json 2>&3; then
         echo "Retrying without waiting for new BG"
