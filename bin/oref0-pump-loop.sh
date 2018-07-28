@@ -243,7 +243,7 @@ function smb_reservoir_before {
     retry_fail check_clock
     echo -n "Checking pump clock: "
     (cat monitor/clock-zoned.json; echo) | nonl
-    echo -n " is within 90s of current time: " && date
+    echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
         oref0-set-device-clocks
