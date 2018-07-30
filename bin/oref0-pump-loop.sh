@@ -169,27 +169,26 @@ REBOOT=${REBOOT:-0}			#0=off, other = delay in seconds
 function check_duty_cycle { 
     if [ -e /tmp/pump_loop_success ]; then
         DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
-		
-		if [ "$SPI_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$SPI_RESET" ]; then 
+        if [ "$SPI_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$SPI_RESET" ]; then 
             # try to reset usb to fix potential communication problems causing loop fails
             SPI_RESET_DIFF=$SPI_RESET
             if [ -e /tmp/spi_reset ]; then 
                 SPI_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/spi_reset))
             fi
-            
+
             if [ "$SPI_RESET_DIFF" -ge "$SPI_RESET" ]; then
                 # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
                 echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset spi... "
                 rmmod spi_bcm2835 2>&3 >&4
-				sleep 1
-				modprobe spi_bcm2835 2>&3 >&4
+                sleep 1
+                modprobe spi_bcm2835 2>&3 >&4
                 touch /tmp/spi_reset
                 echo "$(date '+%Y-%m-%d %H:%M:%S') SPI Reset" >> /var/log/openaps/hard_reset.log
                 echo " done. --> start new cycle."
                 return 0 #return to loop routine
             fi
         fi
-        
+
         if [ "$USB_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$USB_RESET" ]; then 
             # try to reset usb to fix potential communication problems causing loop fails
             USB_RESET_DIFF=$USB_RESET
@@ -207,7 +206,7 @@ function check_duty_cycle {
                 return 0 #return to loop routine
             fi
         fi
-        
+
         if [ "$REBOOT" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$REBOOT" ]; then
             # if usb reset doesn't help or is not enabled --> reboot system
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> emergency reboot."
@@ -229,7 +228,7 @@ function check_duty_cycle {
         fi
     elif [ "$SPI_RESET" -gt "0" ] || [ "$USB_RESET" -gt "0" ] || [ "$REBOOT" -gt "0" ] || [ "$DUTY_CYCLE" -gt "0" ]; then
         echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
-		# do not use timestamp from system uptime, since this could result in a endless reboot loop...
+        # do not use timestamp from system uptime, since this could result in a endless reboot loop...
         touch /tmp/pump_loop_success
         return 0
     fi
