@@ -878,7 +878,7 @@ function wait_for_bg {
                 echo -n .
                 sleep 10
                 # flash the radio LEDs so we know the rig is alive
-                listen -t 1s
+                listen -t 1s 2>&4
             fi
         done
         echo
