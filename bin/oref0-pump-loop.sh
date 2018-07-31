@@ -138,6 +138,7 @@ function fail {
 # If no loop has completed in that time, it performs the respective action.
 # !Note SPI reset is just tested for Pi0 and my produce errors on edison rigs.
 # !Note to enable an emergency action put a number in seconds when it should start and a 0 to disable.
+# !Note emergency actions can also be enabled without using enabling the duty cycle.
 #
 # The intention is two fold: 
 # First the battery consumption is reduced (Pump and Pi) if the loop runs less often.
@@ -169,27 +170,26 @@ REBOOT=${REBOOT:-0}			#0=off, other = delay in seconds
 function check_duty_cycle { 
     if [ -e /tmp/pump_loop_success ]; then
         DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
-		
-		if [ "$SPI_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$SPI_RESET" ]; then 
+        if [ "$SPI_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$SPI_RESET" ]; then 
             # try to reset usb to fix potential communication problems causing loop fails
             SPI_RESET_DIFF=$SPI_RESET
             if [ -e /tmp/spi_reset ]; then 
                 SPI_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/spi_reset))
             fi
-            
+
             if [ "$SPI_RESET_DIFF" -ge "$SPI_RESET" ]; then
                 # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
                 echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset spi... "
                 rmmod spi_bcm2835 2>&3 >&4
-				sleep 1
-				modprobe spi_bcm2835 2>&3 >&4
+                sleep 1
+                modprobe spi_bcm2835 2>&3 >&4
                 touch /tmp/spi_reset
                 echo "$(date '+%Y-%m-%d %H:%M:%S') SPI Reset" >> /var/log/openaps/hard_reset.log
                 echo " done. --> start new cycle."
                 return 0 #return to loop routine
             fi
         fi
-        
+
         if [ "$USB_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$USB_RESET" ]; then 
             # try to reset usb to fix potential communication problems causing loop fails
             USB_RESET_DIFF=$USB_RESET
@@ -207,7 +207,7 @@ function check_duty_cycle {
                 return 0 #return to loop routine
             fi
         fi
-        
+
         if [ "$REBOOT" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$REBOOT" ]; then
             # if usb reset doesn't help or is not enabled --> reboot system
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> emergency reboot."
@@ -220,14 +220,14 @@ function check_duty_cycle {
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
             return 0
         elif [ "$DUTY_CYCLE" -eq "0" ]; then
-			#fast exit if duty cycling is disabled
-			echo "duty cycling disabled; start loop"
-			return 0    
+            #fast exit if duty cycling is disabled
+            #echo "duty cycling disabled; start loop"
+            return 0   
         else
             echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
             exit 0
         fi
-    else
+    elif [ "$SPI_RESET" -gt "0" ] || [ "$USB_RESET" -gt "0" ] || [ "$REBOOT" -gt "0" ] || [ "$DUTY_CYCLE" -gt "0" ]; then
         echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
         # do not use timestamp from system uptime, since this could result in a endless reboot loop...
         touch /tmp/pump_loop_success
@@ -244,7 +244,7 @@ function smb_reservoir_before {
     retry_fail check_clock
     echo -n "Checking that pump clock: "
     (cat monitor/clock-zoned.json; echo) | nonl
-    echo -n " is within 90s of current time: " && date
+    echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
         oref0-set-device-clocks
@@ -863,7 +863,7 @@ function onbattery {
 }
 
 function wait_for_bg {
-    if grep "MDT cgm" openaps.ini 2>&3 >&4; then
+    if [ "$(get_pref_string .cgm '')" == "mdt" ]; then
         echo "MDT CGM configured; not waiting"
     elif egrep -q "Warning:" enact/smb-suggested.json 2>&3; then
         echo "Retrying without waiting for new BG"
