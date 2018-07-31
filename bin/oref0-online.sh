@@ -160,7 +160,8 @@ function bt_connect {
                 sudo bt-pan client $MAC -d
             for i in {1..3}
             do
-                sudo bt-pan client $MAC && sudo dhclient bnep0
+                sudo bt-pan client $MAC
+                sudo dhclient bnep0
             done
                 echo "...done."
             else
