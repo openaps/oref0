@@ -875,7 +875,10 @@ function wait_for_bg {
             if glucose-fresh; then
                 break
             else
-                echo -n .; sleep 10
+                echo -n .
+                sleep 10
+                # flash the radio LEDs so we know the rig is alive
+                listen -t 1
             fi
         done
         echo
