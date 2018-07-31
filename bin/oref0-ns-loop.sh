@@ -74,6 +74,7 @@ function get_ns_bg {
 
     # copy cgm/glucose.json over to monitor/glucose.json if it's newer
     cp -pu cgm/glucose.json monitor/glucose.json
+    cat monitor/glucose.json | colorize_json '.[0] | { sgv: .sgv, dateString: .dateString }'
 }
 
 function completed_recently {
