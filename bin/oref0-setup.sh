@@ -328,7 +328,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
 	read -p "Also enter the ecc1/dexcom version, example 'v2018.07.09' <version> " -r
         ecc1dexcomversion="tags/$REPLY"
-	echo "Will use https://github.com/ecc1/dexcom/releases/$REPLY if GO-dexcom is needed."
+	echo "Will use https://github.com/ecc1/dexcom/releases/$REPLY if Go-dexcom is needed."
       fi
     else
       echo "Downloading latest precompiled Go pump binaries."
