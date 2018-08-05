@@ -18,8 +18,15 @@ sudo apt-get install -y git python python-dev software-properties-common python-
 #if ! sudo apt-get install -y npm; then
 # install/upgrade to node 8
 if ! nodejs --version | grep 'v8.'; then
-    sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
-    sudo apt-get install -y nodejs || die "Couldn't install nodejs"
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product &>/dev/null ; then
+        mkdir $HOME/src/node && cd $HOME/src/node
+        wget https://nodejs.org/dist/v8.10.0/node-v8.10.0-linux-armv6l.tar.xz
+        tar -xf node-v8.10.0-linux-armv6l.tar.xz || die "Couldn't extract Node"
+        cd *6l && sudo cp -R * /usr/local/ || die "Couldn't copy Node to /usr/local"
+    else
+        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8" 
+        sudo apt-get install -y nodejs || die "Couldn't install nodejs" 
+    fi
 fi
 sudo pip install -U openaps || die "Couldn't install openaps toolkit"
 sudo pip install -U openaps-contrib || die "Couldn't install openaps-contrib"
@@ -28,5 +35,3 @@ sudo activate-global-python-argcomplete || die "Couldn't run activate-global-pyt
 sudo npm install -g json oref0 || die "Couldn't install json and oref0"
 echo openaps installed
 openaps --version
-
-
