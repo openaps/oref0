@@ -31,6 +31,7 @@ radio_locale="US"
 buildgofromsource=false
 ecc1medtronicversion="latest"
 ecc1dexcomversion="latest"
+radiotags="cc111x"
 
 # Echo text, but in bright-blue. Used for confirmation echo text. This takes
 # the same arguments as echo, including the -n option.
@@ -322,13 +323,25 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       if [[ $REPLY =~ ^[Ss]$ ]]; then
         buildgofromsource=true
         echo "Building Go pump binaries from source"
+        buildgofromsource=true
+        read -p "What type of radio do you use? [1] for cc1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r 
+        if [[ $REPLY =~ ^[1]$ ]]; then
+          radiotags="cc1101"
+        elif [[ $REPLY =~ ^[2]$ ]]; then
+          radiotags="cc111x"
+        elif [[ $REPLY =~ ^[3]$ ]]; then
+          radiotags="rfm69"
+        else 
+          radiotags="cc111x"
+        fi
+        echo "Building Go pump binaries from source with " + radiotags + " tags."
       else
         ecc1medtronicversion="tags/$REPLY"
-	echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
+        echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
 
-	read -p "Also enter the ecc1/dexcom version, example 'v2018.07.09' <version> " -r
+	      read -p "Also enter the ecc1/dexcom version, example 'v2018.07.09' <version> " -r
         ecc1dexcomversion="tags/$REPLY"
-	echo "Will use https://github.com/ecc1/dexcom/releases/$REPLY if Go-dexcom is needed."
+	      echo "Will use https://github.com/ecc1/dexcom/releases/$REPLY if Go-dexcom is needed."
       fi
     else
       echo "Downloading latest precompiled Go pump binaries."
@@ -1186,7 +1199,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ "$ttyport" =~ "spidev" ]]; then
         if $buildgofromsource; then
           #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
-          go get -u -v -tags cc111x github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+          go get -u -v -tags $radiotags github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
           #cd $HOME/go/src/github.com/ecc1/medtronic/cmd
           #cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
           #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
