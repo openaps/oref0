@@ -160,11 +160,11 @@ function fail {
 # REBOOT=900
 #
 # Default is DUTY_CYCLE=0 to disable this feature.
-DUTY_CYCLE=${DUTY_CYCLE:-0}	#0=off, other = delay in seconds
+DUTY_CYCLE=${DUTY_CYCLE:-0}    #0=off, other = delay in seconds
 
-SPI_RESET=${SPI_RESET:-0}		#0=off, other = delay in seconds
-USB_RESET=${USB_RESET:-0}		#0=off, other = delay in seconds
-REBOOT=${REBOOT:-0}			#0=off, other = delay in seconds
+SPI_RESET=${SPI_RESET:-0}        #0=off, other = delay in seconds
+USB_RESET=${USB_RESET:-0}        #0=off, other = delay in seconds
+REBOOT=${REBOOT:-0}            #0=off, other = delay in seconds
 
 function check_duty_cycle { 
     if [ -e /tmp/pump_loop_success ]; then
@@ -498,20 +498,20 @@ function prep {
 function if_mdt_get_bg {
     echo -n
     if [ "$(get_pref_string .cgm '')" == "mdt" ]; then
-		echo \
-		&& echo Attempting to retrieve MDT CGM data from pump
-		retry_fail mdt_get_bg 
-		echo MDT CGM data retrieved
+        echo \
+        && echo Attempting to retrieve MDT CGM data from pump
+        retry_fail mdt_get_bg 
+        echo MDT CGM data retrieved
     fi
 }
 
 # helper function for if_mdt_get_bg
 function mdt_get_bg {
-	if [ -e /root/src/oref0/bin/oref0-mdt-update.sh ]; then
-		/root/src/oref0/bin/oref0-mdt-update.sh 2>&1 | tee -a /var/log/openaps/cgm-loop.log >&3
-	else
-		echo "Update script \"oref0-mdt-update.sh\" missing."
-	fi
+    if [ -e /root/src/oref0/bin/oref0-mdt-update.sh ]; then
+        /root/src/oref0/bin/oref0-mdt-update.sh 2>&1 | tee -a /var/log/openaps/cgm-loop.log >&3
+    else
+        echo "Update script \"oref0-mdt-update.sh\" missing."
+    fi
 }
 
 # make sure we can talk to the pump and get a valid model number
@@ -546,7 +546,7 @@ function mmtune {
         done
       #Make sure we don't zero out the medtronic frequency. It will break everything.
       if [ $freq != "000000000" ] ; then
-	   MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
+       MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
       fi
     fi
     #Determine how long to wait, based on the RSSI value of the best frequency
@@ -711,7 +711,7 @@ function get_settings {
         retry_return read_insulin_sensitivities 2>&3 >&4 || return 1
         retry_return read_carb_ratios 2>&3 >&4 || return 1
         retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || return 1
-	#NON_X12_ITEMS=""
+    #NON_X12_ITEMS=""
     else
         # On all other supported pumps, we should be able to get all the data we need from the pump.
         retry_return check_model 2>&3 >&4 || return 1
