@@ -494,70 +494,26 @@ function prep {
     [ -f /sys/kernel/debug/gpio_debug/gpio110/current_pinmux ] && echo mode0 > /sys/kernel/debug/gpio_debug/gpio110/current_pinmux
 }
 
+# requests new cgm values from enlite sensor if configured as cgm
 function if_mdt_get_bg {
     echo -n
     if [ "$(get_pref_string .cgm '')" == "mdt" ]; then
-        echo \
-        && echo Attempting to retrieve MDT CGM data from pump
-        #due to sometimes the pump is not in a state to give this command repeat until it completes
-        #"decocare.errors.DataTransferCorruptionError: Page size too short"
-        n=0
-        until [ $n -ge 3 ]; do
-            openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&3 >&4 && break
-            echo
-            echo CGM data retrieval from pump disrupted, retrying in 5 seconds...
-            n=$[$n+1]
-            sleep 5;
-            echo Reattempting to retrieve MDT CGM data
-        done
-        if [ -f "monitor/cgm-mm-glucosedirty.json" ]; then
-            if [ -f "cgm/glucose.json" ]; then
-                if [ $(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json)) == $(to_epochtime $(jq .[0].display_time monitor/glucose.json)) ]; then
-                    echo MDT CGM data retrieved \
-                    && echo No new MDT CGM data to reformat \
-                    && echo
-                    # TODO: remove if still unused at next oref0 release
-                    # if you want to wait for new bg uncomment next lines and add a backslash after echo above
-                    #&& wait_for_mdt_get_bg \
-                    #&& mdt_get_bg
-                else
-                    mdt_get_bg
-                fi
-            else
-                mdt_get_bg
-            fi
-        else
-            echo "Unable to get cgm data from pump"
-        fi
+		echo \
+		&& echo Attempting to retrieve MDT CGM data from pump
+		retry_fail mdt_get_bg 
+		echo MDT CGM data retrieved
     fi
 }
-# TODO: remove if still unused at next oref0 release
-function wait_for_mdt_get_bg {
-    # This might not really be needed since very seldom does a loop take less time to run than CGM Data takes to refresh.
-    until [ $(to_epochtime @$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json)) + 300))) -lt $(epochtime_now) ]; do
-        CGMDIFFTIME=$(( $(to_epochtime @$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes)) + 300))) - $(epochtime_now) ))
-        echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes) +"%r") wait untill $(date --date="@$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes)) + 300))" +"%r")to continue"
-        echo "waiting for $CGMDIFFTIME seconds before continuing"
-        sleep $CGMDIFFTIME
-        until openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&3 >&4; do
-            echo cgm data from pump disrupted, retrying in 5 seconds...
-            sleep 5;
-            echo -n MDT cgm data retrieve
-        done
-    done
-}
+
+# helper function for if_mdt_get_bg
 function mdt_get_bg {
-    openaps report invoke monitor/cgm-mm-glucosetrend.json 2>&3 >&4 \
-    && openaps report invoke cgm/cgm-glucose.json 2>&3 >&4 \
-    && grep -q glucose cgm/cgm-glucose.json \
-    && echo MDT CGM data retrieved \
-    && cp -pu cgm/cgm-glucose.json cgm/glucose.json \
-    && cp -pu cgm/glucose.json monitor/glucose-unzoned.json \
-    && echo -n MDT New cgm data reformat \
-    && openaps report invoke monitor/glucose.json 2>&3 >&4 \
-    && openaps report invoke nightscout/glucose.json 2>&3 >&4 \
-    && echo ted
+	if [ -e /root/src/oref0/bin/oref0-mdt-update.sh ]; then
+		/root/src/oref0/bin/oref0-mdt-update.sh 2>&1 | tee -a /var/log/openaps/cgm-loop.log >&3
+	else
+		echo "Update script \"oref0-mdt-update.sh\" missing."
+	fi
 }
+
 # make sure we can talk to the pump and get a valid model number
 function preflight {
     echo -n "Preflight "
