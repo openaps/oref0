@@ -1,5 +1,5 @@
 #!/bin/bash
-# updated cgm values from enlite sensors
+# updates cgm values from enlite sensors
 # sould be called within pump-loop (and not in a separate loop) to avoid radio blocking issues.
 
 FILE_MDT='monitor/cgm-mm-glucosedirty.json'
@@ -11,7 +11,7 @@ CS_TIME_WAIT=5s
 
 usage "$@" <<EOT
 Usage: $self
-Updates cgm histroy from enlite sensors and uploads to nightscout. Has to be started within pump-loop.
+Updates cgm history from enlite sensors and uploads to Nightscout. Has to be started within pump-loop to avoid pump radio contention.
 EOT
 
 main() {
@@ -133,8 +133,7 @@ function trend_and_copy {
     && echo MDT CGM data retrieved \
     && cp -pu $FILE_POST_TREND $FILE_FINAL \
     && cp -pu $FILE_FINAL monitor/glucose.json \
-    && echo -n MDT New cgm data reformat \
-    && echo ted
+    && echo MDT New cgm data reformatted
 }
 
 # Listens for a free channel.
