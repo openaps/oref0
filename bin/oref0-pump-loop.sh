@@ -450,7 +450,13 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-        refresh_pumphistory_and_meal || return 1
+        if glucose-fresh; then
+            refresh_pumphistory_and_meal || return 1
+        else
+            # if we don't have a new BG waiting for us yet, do a full pumphistory refresh
+            # to fix any race conditions introduced by incremental refreshes
+            retry_return read_full_pumphistory || return 1
+        fi
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
