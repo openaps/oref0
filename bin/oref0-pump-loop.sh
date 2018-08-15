@@ -68,6 +68,8 @@ main() {
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+            # before each of these (optional) refresh checks, make sure we don't have fresh glucose data
+            # if we do, then skip the optional checks to finish up this loop and start the next one
             if ! glucose-fresh; then
                 if onbattery; then
                     refresh_profile 30
@@ -76,7 +78,7 @@ main() {
                 fi
                 if ! glucose-fresh; then
                     pumphistory_daily_refresh
-                    if ! glucose-fresh && ! onbattery; then
+                    if ! glucose-fresh; then
                         refresh_after_bolus_or_enact
                     fi
                 fi
@@ -860,11 +862,11 @@ function refresh_profile {
 }
 
 function onbattery {
-    # check whether battery level is < 98%
+    # check whether battery level is < 90%
     if is_edison; then
-        jq --exit-status ".battery < 98 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
+        jq --exit-status ".battery < 90 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
     else
-        jq --exit-status ".battery < 98" monitor/edison-battery.json >&4
+        jq --exit-status ".battery < 90" monitor/edison-battery.json >&4
     fi
 }
 
