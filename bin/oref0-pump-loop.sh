@@ -455,7 +455,7 @@ function refresh_after_bolus_or_enact {
         else
             # if we don't have a new BG waiting for us yet, do a full pumphistory refresh
             # to fix any race conditions introduced by incremental refreshes
-            read_full_pumphistory || return 1
+            retry_return read_full_pumphistory || return 1
         fi
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
