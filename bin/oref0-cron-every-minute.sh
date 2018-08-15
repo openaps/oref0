@@ -60,6 +60,9 @@ find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && (
     killall -g --older-than 5m openaps-report
 ) | tee -a /var/log/openaps/pump-loop.log &
 
+# if the rig doesn't recover after that, reboot:
+oref0-radio-reboot &
+
 if [[ ${CGM,,} =~ "g5-upload" ]]; then
     oref0-upload-entries &
 fi
@@ -69,6 +72,7 @@ if [[ ${CGM,,} =~ "g4-go" ]]; then
         if ! is_bash_process_running_named oref0-g4-loop; then
             oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log &
         fi
+        cd -
 # TODO: deprecate g4-upload and g4-local-only
 elif [[ ${CGM,,} =~ "g4-upload" ]]; then
     (

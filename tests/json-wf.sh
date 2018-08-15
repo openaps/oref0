@@ -12,7 +12,7 @@ red='\033[1;31m'
 green='\033[1;32m'
 nocolor='\033[0m'
 
-jsonfiles=$(find ${myloc}/.. -name '*.json')
+jsonfiles=$(find ${myloc}/.. -name '*.json' | grep -v node_modules)
 #echo jq -s . ${jsonfiles} 2>&1
 output=$(jq -s . ${jsonfiles} 2>&1)
 ret=$?
