@@ -250,7 +250,6 @@ function smb_reservoir_before {
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
         oref0-set-device-clocks
-        read_full_pumphistory
        fi
     (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
     && (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
@@ -450,13 +449,7 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-        if glucose-fresh; then
-            refresh_pumphistory_and_meal || return 1
-        else
-            # if we don't have a new BG waiting for us yet, do a full pumphistory refresh
-            # to fix any race conditions introduced by incremental refreshes
-            retry_return read_full_pumphistory || return 1
-        fi
+	refresh_pumphistory_and_meal || return 1
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
@@ -975,27 +968,27 @@ function pumphistory_daily_refresh() {
 
 function read_pumphistory() {
   set -o pipefail
-  topRecordTimestamp=$(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json 2>&3)
-  echo "Quering pump for history since: $topRecordTimestamp" >&3
-  if [[ -z "$topRecordTimestamp" || "$topRecordTimestamp" == *"null"* ]]; then
+  topRecordId=$(jq -r '.[0].id' monitor/pumphistory-24h-zoned.json 2>&3)
+  echo "Quering pump for history since: $topRecordId" >&3
+  if [[ -z "$topRecordId" || "$topRecordId" == *"null"* ]]; then
     read_full_pumphistory
   else
-    # FIXME: the following logic queries the pump for all records since the
-    # timestamp of the top record in the existing history file.
-    # This might miss some records if the pump clock has been moved forward.
-    # A better approach might to get all reconds until that top record
-    # has been found and matched exactly by it's base64 data or some other identifier
-    # other than the timestamp.
-    # The logic could be improved once the pumphistory command support this feature.
     echo -n "Pump history update"
     try_fail mv monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json
-    if ((pumphistory -s $topRecordTimestamp  2>&3 | jq -f openaps.jq 2>&3 ) && cat monitor/pumphistory-24h-zoned-old.json) | jq -s '.[0] + .[1]'  > monitor/pumphistory-24h-zoned.json; then
-        try_fail rm monitor/pumphistory-24h-zoned-old.json
-        echo -n "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json); "
+    if ((pumphistory -f $topRecordId  2>&3 | jq -f openaps.jq 2>&3 ) && cat monitor/pumphistory-24h-zoned-old.json) | jq -s '.[0] + .[1]'  > monitor/pumphistory-24h-zoned.json; then
+      newRecords=$(jq -s '(.[0] | length) - (.[1] | length)' monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json)
+      try_fail rm monitor/pumphistory-24h-zoned-old.json
+      echo -n "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json) with ${newRecords} new records; "
     else
+      # exit status 2 means we didn't find the topRecordId in the pump, we should request a full history refresh.
+      exit_status=$?
+      if [ $exit_status -eq 2 ]; then
+        read_full_pumphistory
+      else
         try_fail mv monitor/pumphistory-24h-zoned-old.json monitor/pumphistory-24h-zoned.json
         echo " failed. Last record $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
         return 1
+      fi
     fi
   fi
 }
