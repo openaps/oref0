@@ -969,7 +969,7 @@ function pumphistory_daily_refresh() {
     dateCutoff=$(to_epochtime "33 hours ago")
     echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
     if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || $(to_epochtime $lastRecordTimestamp) -le $dateCutoff ]]; then
-            echo -n "Pumphistory >33h long: " && read_full_pumphistory
+            echo -n "Pumphistory >33h long: " && retry_return read_full_pumphistory
     fi
 }
 
