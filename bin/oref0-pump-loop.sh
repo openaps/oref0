@@ -50,23 +50,26 @@ main() {
         # try_fail refresh_old_pumphistory
         try_fail refresh_old_profile
         try_fail touch /tmp/pump_loop_enacted -r monitor/glucose.json
-        if smb_check_everything; then
+        if retry_fail smb_check_everything; then
             if ( grep -q '"units":' enact/smb-suggested.json 2>&3); then
                 if try_return smb_bolus; then
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                     smb_verify_status
                 else
-                    echo "Bolus failed: falling back to basal-only pump-loop" \
-                    && refresh_temp_and_enact \
-                    && refresh_pumphistory_and_enact \
-                    && refresh_profile \
-                    && pumphistory_daily_refresh \
-                    && touch /tmp/pump_loop_success \
-                    && echo Completed pump-loop at $(date) \
-                    && echo
+                    echo "Bolus failed: retrying"
+                    if retry_fail smb_check_everything; then
+                        if ( grep -q '"units":' enact/smb-suggested.json 2>&3); then
+                            if try_fail smb_bolus; then
+                                touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+                                smb_verify_status
+                            fi
+                        fi
+                    fi
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+            # before each of these (optional) refresh checks, make sure we don't have fresh glucose data
+            # if we do, then skip the optional checks to finish up this loop and start the next one
             if ! glucose-fresh; then
                 if onbattery; then
                     refresh_profile 30
@@ -75,7 +78,7 @@ main() {
                 fi
                 if ! glucose-fresh; then
                     pumphistory_daily_refresh
-                    if ! glucose-fresh && ! onbattery; then
+                    if ! glucose-fresh; then
                         refresh_after_bolus_or_enact
                     fi
                 fi
@@ -241,7 +244,7 @@ function smb_reservoir_before {
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
     echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
     retry_fail check_clock
-    echo -n "Checking pump clock: "
+    echo -n "Checking that pump clock: "
     (cat monitor/clock-zoned.json; echo) | nonl
     echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
@@ -338,7 +341,8 @@ function smb_enact_temp {
     else
         echo -n "No smb_enact needed. "
     fi
-    ( smb_verify_enacted || ( smb_verify_status; smb_verify_enacted) )
+    try_fail smb_verify_status
+    smb_verify_enacted
 }
 
 function smb_verify_enacted {
@@ -446,7 +450,13 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-        refresh_pumphistory_and_meal || return 1
+        if glucose-fresh; then
+            refresh_pumphistory_and_meal || return 1
+        else
+            # if we don't have a new BG waiting for us yet, do a full pumphistory refresh
+            # to fix any race conditions introduced by incremental refreshes
+            retry_return read_full_pumphistory || return 1
+        fi
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
@@ -580,6 +590,10 @@ function mmtune {
 
     echo {} > monitor/mmtune.json
     echo -n "mmtune: " && mmtune_Go >&3 2>&3
+    # if mmtune.json is empty, re-run it and display output
+    if ! [ -s monitor/mmtune.json ]; then
+        mmtune_Go
+    fi
     #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
     #but only if it's not the default frequency
     if ! $([ -s monitor/mmtune.json ] && jq -e .usedDefault monitor/mmtune.json); then
@@ -604,7 +618,6 @@ function mmtune {
         fi
         echo "waiting for $rssi_wait second silence before continuing"
         wait_for_silence $rssi_wait
-        preflight
         echo "Done waiting for rigs with better signal."
     else
         echo "No wait required."
@@ -655,7 +668,6 @@ function wait_for_silence {
             break
         fi
     done
-    echo
 }
 
 # Refresh pumphistory etc.
@@ -693,7 +705,6 @@ function check_cp_meal {
         return 1
     fi
 }
-
 
 function calculate_iob {
     oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json.new || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
@@ -851,11 +862,11 @@ function refresh_profile {
 }
 
 function onbattery {
-    # check whether battery level is < 98%
+    # check whether battery level is < 90%
     if is_edison; then
-        jq --exit-status ".battery < 98 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
+        jq --exit-status ".battery < 90 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
     else
-        jq --exit-status ".battery < 98" monitor/edison-battery.json >&4
+        jq --exit-status ".battery < 90" monitor/edison-battery.json >&4
     fi
 }
 
@@ -872,7 +883,10 @@ function wait_for_bg {
             if glucose-fresh; then
                 break
             else
-                echo -n .; sleep 10
+                echo -n .
+                sleep 10
+                # flash the radio LEDs so we know the rig is alive
+                listen -t 1s 2>&4
             fi
         done
         echo
@@ -955,7 +969,7 @@ function pumphistory_daily_refresh() {
     dateCutoff=$(to_epochtime "33 hours ago")
     echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
     if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || $(to_epochtime $lastRecordTimestamp) -le $dateCutoff ]]; then
-            echo -n "Pumphistory >33h long: " && read_full_pumphistory
+            echo -n "Pumphistory >33h long: " && retry_return read_full_pumphistory
     fi
 }
 

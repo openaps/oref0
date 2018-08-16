@@ -429,3 +429,20 @@ set_pref_string () {
     # TODO: Escape quotes and backslashes
     set_pref_json "$1" "\"$2\""
 }
+
+dedupe_path() {
+    #from https://unix.stackexchange.com/a/40973
+    if [ -n "$PATH" ]; then
+        old_PATH=$PATH:; PATH=
+        while [ -n "$old_PATH" ]; do
+            x=${old_PATH%%:*}       # the first remaining entry
+            case $PATH: in
+            *:"$x":*) ;;         # already there
+            *) PATH=$PATH:$x;;    # not there yet
+            esac
+            old_PATH=${old_PATH#*:}
+        done
+        PATH=${PATH#:}
+        unset old_PATH x
+    fi
+}
