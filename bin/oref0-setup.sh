@@ -349,14 +349,14 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         buildgofromsource=true
         echo "Building Go pump binaries from source"
         buildgofromsource=true
-        read -p "What type of radio do you use? [1] for cc1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r 
+        read -p "What type of radio do you use? [1] for cc1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r
         if [[ $REPLY =~ ^[1]$ ]]; then
           radiotags="cc1101"
         elif [[ $REPLY =~ ^[2]$ ]]; then
           radiotags="cc111x"
         elif [[ $REPLY =~ ^[3]$ ]]; then
           radiotags="rfm69"
-        else 
+        else
           radiotags="cc111x"
         fi
         echo "Building Go pump binaries from source with " + radiotags + " tags."
@@ -656,7 +656,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
         mkdir -p xdrip || die "Can't mkdir xdrip"
     fi
-    
+
     # check whether decocare-0.0.31 has been installed
     #if ! ls /usr/local/lib/python2.7/dist-packages/decocare-0.0.31-py2.7.egg/ 2>/dev/null >/dev/null; then
         # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
@@ -676,7 +676,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     #echo Installing decocare 0.1.0-dev
     #cd $HOME/src/decocare
     #sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
-	
+
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
         (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
@@ -745,7 +745,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
         set_pref_string .dexcom_cgm_tx_id "$DEXCOM_CGM_TX_ID"
     fi
-    
+
     cat preferences.json
 
     # fix log rotate file
@@ -758,7 +758,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo cp $HOME/src/oref0/logrotate.rsyslog /etc/logrotate.d/rsyslog || die "Could not cp /etc/logrotate.d/rsyslog"
 
     test -d /var/log/openaps || sudo mkdir /var/log/openaps && sudo chown $USER /var/log/openaps || die "Could not create /var/log/openaps"
-    
+
     if [[ -f /etc/cron.daily/logrotate ]]; then
         mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
     fi
@@ -814,38 +814,32 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
         # use packaged bluez with Rapsbian
-        # TODO: uncomment or remove this
-        # try packaged bluez with Edison too
-        #if is_pi; then
-            bluetoothdminversion=5.43
-        #else
-            #bluetoothdminversion=5.48
-        #fi
+        bluetoothdminversion=5.43
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.50.tar.gz && tar xvfz bluez-5.50.tar.gz || die "Couldn't download bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-            cd $HOME/src/bluez-5.48 && ./configure --disable-systemd && make || die "Couldn't make bluez"
+            cd $HOME/src/bluez-5.50 && ./configure --disable-systemd && make || die "Couldn't make bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             sudo make install || die "Couldn't make install bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
-            sudo apt-get install bluez-tools
-            
+            sudo apt-get install -y bluez-tools
+
             # Replace all other instances of bluetoothd and bluetoothctl to make sure we are always using the self-compiled version
-            while IFS= read -r bt_location; do 
+            while IFS= read -r bt_location; do
                 if [[ $($bt_location -v|awk -F': ' '{print ($NF < 5.48)?1:0}') -eq 1 ]]; then
                     # Find latest version of bluez under $HOME/src and copy it to locations which have a version of bluetoothd/bluetoothctl < 5.48
                     if [[ $(find $(find $HOME/src -name "bluez-*" -type d | sort -rn | head -1) -name bluetoothd -o -name bluetoothctl | wc -l) -eq 2 ]]; then
                         killall $(basename $bt_location) &>/dev/null #Kill current running version if its out of date and we are updating it
                         sudo cp -p $(find $(find $HOME/src -name "bluez-*" -type d | sort -rn | head -1) -name $(basename $bt_location)) $bt_location || die "Couldn't replace $(basename $bt_location) in $(dirname $bt_location)"
                         touch /tmp/reboot-required
-                    else 
+                    else
                         echo "Latest version of bluez @ $(find $HOME/src -name "bluez-*" -type d | sort -rn | head -1) is missing or has extra copies of bluetoothd or bluetoothctl, unable to replace older binaries"
-                    fi       
+                    fi
                 fi
             done < <(find / \( -name "bluetoothctl" -o -name "bluetoothd" \) ! -path "*/src/bluez-*" ! -path "*.rootfs/*") # Find all locations with bluetoothctl or bluetoothd excluding directories with *bluez* in the path
-            
+
             oref0-bluetoothup
         else
             echo bluez version ${bluetoothdversion} already installed
@@ -1172,7 +1166,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export DEXCOM_CGM_RECV_ID" >> $HOME/.bash_profile
     echo DEXCOM_CGM_TX_ID="$DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
-    echo 
+    echo
 
     echo
 
