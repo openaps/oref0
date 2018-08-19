@@ -588,25 +588,10 @@ function mmtune {
     echo -n "Listening for $upto45s s silence before mmtuning: "
     wait_for_silence $upto45s
 
-    echo {} > monitor/mmtune.json
-    echo -n "mmtune: " && mmtune_Go >&3 2>&3
-    # if mmtune.json is empty, re-run it and display output
-    if ! [ -s monitor/mmtune.json ]; then
-        mmtune_Go
-    fi
-    #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
-    #but only if it's not the default frequency
-    if ! $([ -s monitor/mmtune.json ] && jq -e .usedDefault monitor/mmtune.json); then
-      freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
-      while [ ${#freq} -ne 9 ];
-        do
-         freq=$freq"0"
-        done
-      #Make sure we don't zero out the medtronic frequency. It will break everything.
-      if [ $freq != "000000000" ] ; then
-	   MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
-      fi
-    fi
+    oref0-radio-tune
+
+    MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
+
     #Determine how long to wait, based on the RSSI value of the best frequency
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
@@ -939,14 +924,6 @@ function check_status() {
     touch monitor/status.json
   else
     mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | colorize_json .status
-  fi
-}
-function mmtune_Go() {
-  set -o pipefail
-  if ( grep "WW" pump.ini ); then
-    Go-mmtune -ww | tee monitor/mmtune.json
-  else
-    Go-mmtune | tee monitor/mmtune.json
   fi
 }
 function check_clock() {

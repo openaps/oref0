@@ -34,7 +34,7 @@ import dateutil.parser
 # @reboot cd /home/pi/openapsdir && python -u /usr/local/bin/oref0-dexusb-cgm-loop >> /var/log/openaps/cgm-loop2.log
 # this will start this python script at reboot, and log to /var/log/openaps/cgm-loop2.log
 #
-# Step 3. Disable the default cgm loop in crontab, because this script will invoke openaps get-bg
+# Step 3. Disable the default cgm loop in crontab, because this script will invoke oref0-get-bg
 #
 # Step 4. Reboot
 

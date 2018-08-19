@@ -5,13 +5,5 @@
     "invoke": {
       "command": "report invoke"
     }
-  },
-  {
-    "//": "May be run directly by the user (mentioned in docs)",
-    "type": "alias",
-    "name": "mmtune",
-    "mmtune": {
-      "command": "! bash -c \"reset_spi_serial.py 2>/dev/null; oref0_init_pump_comms.py; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \\\"mmtune: \\\" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line; do echo -n \\\"$line \\\"; done\""
-    }
   }
 ]
