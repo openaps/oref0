@@ -390,14 +390,16 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
       # check if user has a TI USB stick and a WorldWide pump and want's to reset the USB subsystem during mmtune if the TI USB fails
       ww_ti_usb_reset="no" # assume you don't want it by default
-      if [[ $radio_locale =~ ^WW$ ]]; then
-        echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process. If so, enter Y. Otherwise just hit enter (default no):"
-        echo
-        if prompt_yn "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces?" N; then
-          ww_ti_usb_reset="yes"
-        else
-          ww_ti_usb_reset="no"
-        fi
+      if ! is_edison; then
+        if [[ $radio_locale =~ ^WW$ ]]; then
+          echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process. If so, enter Y. Otherwise just hit enter (default no):"
+          echo
+          if prompt_yn "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces?" N; then
+            ww_ti_usb_reset="yes"
+         else
+           ww_ti_usb_reset="no"
+         fi
+       fi
       fi
 
       if [[ -z "${radio_locale}" ]]; then
@@ -1227,11 +1229,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     mkdir -p $HOME/go
     source $HOME/.bash_profile
 
-    #Store radio_locale for later use
-    grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
+
     #Necessary to "bootstrap" Go commands...
-    if [[ $radio_locale =~ ^WW$ ]]; then
+    if [[ ${radio_locale,,} =~ "ww" ]]; then
       echo 868.4 > $directory/monitor/medtronic_frequency.ini
+      #Store radio_locale for later use
+      # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+      grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
     else
       echo 916.55 > $directory/monitor/medtronic_frequency.ini
     fi
