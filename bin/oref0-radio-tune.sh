@@ -8,6 +8,20 @@ Determine the optimum frequency to communicate with the pump and write
 the output to monitor/mmtune.json and monitor/medtronic_frequency.ini
 EOF
 
+export MEDTRONIC_PUMP_ID=`grep serial pump.ini | tr -cd 0-9`
+OREF0_DEBUG=${OREF0_DEBUG:-0}
+if [[ "$OREF0_DEBUG" -ge 1 ]] ; then
+  exec 3>&1
+else
+  exec 3>/dev/null
+fi
+if [[ "$OREF0_DEBUG" -ge 2 ]] ; then
+  exec 4>&1
+  set -x
+else
+  exec 4>/dev/null
+fi
+
 function mmtune_Go() {
   set -o pipefail
   if ( grep "WW" pump.ini ); then
