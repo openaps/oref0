@@ -344,11 +344,10 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     read -p "Would you like to [D]ownload precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
     if [[ $REPLY =~ ^[Uu]$ ]]; then
-      read -p "You could either build the library from [S]ource, or type the version you would like to use, example 'v2018.07.09' [S]/<version> " -r
+      read -p "You could either build the library from [S]ource, or type the version you would like to use, example 'v2018.08.08' [S]/<version> " -r
       if [[ $REPLY =~ ^[Ss]$ ]]; then
         buildgofromsource=true
         echo "Building Go pump binaries from source"
-        buildgofromsource=true
         read -p "What type of radio do you use? [1] for cc1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r
         if [[ $REPLY =~ ^[1]$ ]]; then
           radiotags="cc1101"
@@ -364,7 +363,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         ecc1medtronicversion="tags/$REPLY"
         echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
 
-	      read -p "Also enter the ecc1/dexcom version, example 'v2018.07.09' <version> " -r
+	      read -p "Also enter the ecc1/dexcom version, example 'v2018.07.26' <version> " -r
         ecc1dexcomversion="tags/$REPLY"
 	      echo "Will use https://github.com/ecc1/dexcom/releases/$REPLY if Go-dexcom is needed."
       fi
@@ -1154,8 +1153,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile for API_SECRET and NIGHTSCOUT_HOST, because a shell will look
     # for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from
     # the first one that exists and is readable. Remove API_SECRET and NIGHTSCOUT_HOST lines from ~/.profile if they exist
-    sed --in-place '/.*API_SECRET.*/d' .profile
-    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .profile
+    if [[ -f $HOME/.profile ]]; then
+      sed --in-place '/.*API_SECRET.*/d' $HOME/.profile
+      sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.profile
+    fi
 
     # Then append the variables
     echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
@@ -1230,9 +1231,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     grep -q radio_locale pump.ini || echo "radio_locale=$radio_locale" >> pump.ini
     #Necessary to "bootstrap" Go commands...
     if [[ $radio_locale =~ ^WW$ ]]; then
-      echo 868400000 > $directory/monitor/medtronic_frequency.ini
+      echo 868.4 > $directory/monitor/medtronic_frequency.ini
     else
-      echo 916550000 > $directory/monitor/medtronic_frequency.ini
+      echo 916.55 > $directory/monitor/medtronic_frequency.ini
     fi
 
     if [[ "$ttyport" =~ "spidev" ]]; then
