@@ -1123,6 +1123,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ $ENABLE =~ autotune ]]; then
         cd $directory || die "Can't cd $directory"
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/autotune.json
+        sudo locale-gen en_US.UTF-8
+        sudo update-locale 
     fi
 
     #Setup files for editing on the x12, and replace get-settings alias
