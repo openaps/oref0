@@ -818,9 +818,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         bluetoothdminversion=5.43
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
-            cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.50.tar.gz && tar xvfz bluez-5.50.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.43.tar.gz && tar xvfz bluez-5.43.tar.gz || die "Couldn't download bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-            cd $HOME/src/bluez-5.50 && ./configure --disable-systemd && make || die "Couldn't make bluez"
+            cd $HOME/src/bluez-5.43 && ./configure --disable-systemd && make || die "Couldn't make bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             sudo make install || die "Couldn't make install bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
@@ -829,7 +829,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
             # Replace all other instances of bluetoothd and bluetoothctl to make sure we are always using the self-compiled version
             while IFS= read -r bt_location; do
-                if [[ $($bt_location -v|awk -F': ' '{print ($NF < 5.50)?1:0}') -eq 1 ]]; then
+                if [[ $($bt_location -v|awk -F': ' '{print ($NF < 5.43)?1:0}') -eq 1 ]]; then
                     # Find latest version of bluez under $HOME/src and copy it to locations which have a version of bluetoothd/bluetoothctl < 5.48
                     if [[ $(find $(find $HOME/src -name "bluez-*" -type d | sort -rn | head -1) -name bluetoothd -o -name bluetoothctl | wc -l) -eq 2 ]]; then
                         killall $(basename $bt_location) &>/dev/null #Kill current running version if its out of date and we are updating it
