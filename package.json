@@ -77,7 +77,7 @@
     "oref0-pump-loop": "./bin/oref0-pump-loop.sh",
     "oref0-pushover": "./bin/oref0-pushover.sh",
     "oref0-radio-reboot": "./bin/oref0-radio-reboot.sh",
-    "oref0-radio-tune": "./bin/oref0-radio-tune.sh",
+    "oref0-mmtune": "./bin/oref0-mmtune.sh",
     "oref0-raw": "./bin/oref0-raw.js",
     "oref0-reset-git": "bin/oref0-reset-git.sh",
     "oref0-reset-usb": "bin/oref0-reset-usb.sh",
