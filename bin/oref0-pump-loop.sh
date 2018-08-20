@@ -593,9 +593,6 @@ function mmtune {
     MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
 
     #Determine how long to wait, based on the RSSI value of the best frequency
-    grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
-        do echo -n "$line "
-    done
     rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | tail -1 | awk '($1 < -60) {print -($1+60)*2}')
     if [[ $rssi_wait -gt 1 ]]; then
         if [[ $rssi_wait -gt 90 ]]; then
