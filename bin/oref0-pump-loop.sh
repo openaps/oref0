@@ -588,7 +588,7 @@ function mmtune {
     echo -n "Listening for $upto45s s silence before mmtuning: "
     wait_for_silence $upto45s
 
-    oref0-radio-tune
+    oref0-mmtune
 
     MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
 
