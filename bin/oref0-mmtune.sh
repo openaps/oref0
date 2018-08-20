@@ -44,14 +44,18 @@ fi
 #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
 #but only if it's not the default frequency
 if ! $([ -s monitor/mmtune.json ] && jq -e .usedDefault monitor/mmtune.json); then
-  freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
-  while [ ${#freq} -ne 9 ];
-    do
-     freq=$freq"0"
+    freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
+    while [ ${#freq} -ne 9 ];
+      do
+       freq=$freq"0"
     done
-  #Make sure we don't zero out the medtronic frequency. It will break everything.
-  if [ $freq != "000000000" ] ; then
+    #Make sure we don't zero out the medtronic frequency. It will break everything.
+    if [ $freq != "000000000" ] ; then
        echo $freq > monitor/medtronic_frequency.ini
-  fi
+    fi
+
+    grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
+        do echo -n "$line "
+    done
 fi
 
