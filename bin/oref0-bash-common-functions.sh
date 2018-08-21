@@ -119,9 +119,16 @@ file_is_recent_and_min_size () {
     return $?
 }
 
+function mydate {
+    if [[ `uname` == 'Darwin' ]] ; then
+        gdate "$@"
+    else
+        date "$@"
+    fi
+}
 # Output the number of seconds since epoch (Jan 1 1970).
 epochtime_now () {
-    date +%s
+    mydate +%s
 }
 
 # Usage: to_epochtime <datetime>
@@ -130,7 +137,7 @@ epochtime_now () {
 # and newlines, and the string can be spread across multiple arguments (so
 # you don't need to quote the parameters to avoid word-splitting).
 to_epochtime () {
-    date -d "$(echo "$@" |tr -d '"\n')" +%s
+    mydate -d "$(echo "$@" |tr -d '"\n')" +%s
 }
 
 # Filter input to output, removing any embedded newlines.
