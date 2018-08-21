@@ -979,6 +979,7 @@ function read_pumphistory() {
       newRecords=$(jq -s '(.[0] | length) - (.[1] | length)' monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json)
       try_fail rm monitor/pumphistory-24h-zoned-old.json
       echo -n "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json) with ${newRecords} new records; "
+      #compare_with_fullhistory;
     else
       # exit status 2 means we didn't find the topRecordId in the pump, we should request a full history refresh.
       exit_status=$?
@@ -990,6 +991,24 @@ function read_pumphistory() {
         return 1
       fi
     fi
+  fi
+}
+function compare_with_fullhistory() {
+  set -o pipefail
+  rm monitor/full-pumphistory-24h-zoned.json
+  echo -n "Full history for testing refresh" \
+  && ((( pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee monitor/full-pumphistory-24h-zoned.json 2>&3 >&4 ) \
+      && echo -n ed) \
+     || (echo " failed. "; return 1)) \
+  && echo " through $(jq -r '.[0].timestamp' monitor/full-pumphistory-24h-zoned.json)"
+  match=$(jq --slurpfile full monitor/full-pumphistory-24h-zoned.json --slurpfile inc monitor/pumphistory-24h-zoned.json -n '([($inc[] | length), ($full[] | length)] | min) as $len | $len <= 0 or $inc[][0:$len] == $full[][0:$len]')
+  if [ "$match" = "true" ] ; then
+    echo "Incremental pump history matches full history"
+  else
+    timestamp=`date +%Y-%m-%d.%H:%M:%S`
+    echo "ERROR! Incremental pump history does NOT matches full history, saving monitor/full-pumphistory-24h-zoned.json.$timestamp and monitor/pumphistory-24h-zoned.json.$timestamp"
+    cp monitor/full-pumphistory-24h-zoned.json monitor/full-pumphistory-24h-zoned.json.$timestamp
+    cp monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned.json.$timestamp
   fi
 }
 function read_full_pumphistory() {
