@@ -305,7 +305,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     if [[ ${CGM,,} =~ "xdrip-js" ]]; then
         prompt_and_validate DEXCOM_CGM_TX_ID "What is your current Dexcom Transmitter ID?" validate_g5transmitter_serial
-        DEXCOM_CGM_TX_ID=$REPLY
         echo "$DEXCOM_CGM_TX_ID? Got it."
         echo
     fi
