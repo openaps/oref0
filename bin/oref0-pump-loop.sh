@@ -1027,7 +1027,7 @@ function read_settings() {
 }
 function read_carb_ratios() {
   set -o pipefail
-  mdt carbratios 2>&3 | tee settings/carb_ratios.json && cat settings/carb_ratios.json | jq .units | grep grams
+  mdt carbratios 2>&3 | tee settings/carb_ratios.json && cat settings/carb_ratios.json | jq .units | grep -e grams -e exchanges
 }
 
 retry_fail() {
