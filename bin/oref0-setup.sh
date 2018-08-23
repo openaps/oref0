@@ -1071,11 +1071,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
         cd $HOME/src/Logger
         sudo npm run global-install
-	touch /tmp/reboot-required
-	#Set transmitter id & generate xdripjs.json config
-	if validate_g5transmitter_serial $DEXCOM_CGM_TX_ID; then
-	  cgm-transmitter "$DEXCOM_CGM_TX_ID"
-	fi
+        touch /tmp/reboot-required
+        #Set transmitter id & generate xdripjs.json config
+        if validate_g5transmitter_serial $DEXCOM_CGM_TX_ID; then
+            cgm-transmitter "$DEXCOM_CGM_TX_ID"
+        fi
     fi
 
     # disable IPv6
