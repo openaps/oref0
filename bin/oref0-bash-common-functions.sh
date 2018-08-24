@@ -119,9 +119,16 @@ file_is_recent_and_min_size () {
     return $?
 }
 
+function mydate {
+    if [[ `uname` == 'Darwin' ]] ; then
+        gdate "$@"
+    else
+        date "$@"
+    fi
+}
 # Output the number of seconds since epoch (Jan 1 1970).
 epochtime_now () {
-    date +%s
+    mydate +%s
 }
 
 # Usage: to_epochtime <datetime>
@@ -130,7 +137,7 @@ epochtime_now () {
 # and newlines, and the string can be spread across multiple arguments (so
 # you don't need to quote the parameters to avoid word-splitting).
 to_epochtime () {
-    date -d "$(echo "$@" |tr -d '"\n')" +%s
+    mydate -d "$(echo "$@" |tr -d '"\n')" +%s
 }
 
 # Filter input to output, removing any embedded newlines.
@@ -428,4 +435,21 @@ set_pref_json () {
 set_pref_string () {
     # TODO: Escape quotes and backslashes
     set_pref_json "$1" "\"$2\""
+}
+
+dedupe_path() {
+    #from https://unix.stackexchange.com/a/40973
+    if [ -n "$PATH" ]; then
+        old_PATH=$PATH:; PATH=
+        while [ -n "$old_PATH" ]; do
+            x=${old_PATH%%:*}       # the first remaining entry
+            case $PATH: in
+            *:"$x":*) ;;         # already there
+            *) PATH=$PATH:$x;;    # not there yet
+            esac
+            old_PATH=${old_PATH#*:}
+        done
+        PATH=${PATH#:}
+        unset old_PATH x
+    fi
 }

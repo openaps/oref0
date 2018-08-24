@@ -68,6 +68,8 @@ main() {
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+            # before each of these (optional) refresh checks, make sure we don't have fresh glucose data
+            # if we do, then skip the optional checks to finish up this loop and start the next one
             if ! glucose-fresh; then
                 if onbattery; then
                     refresh_profile 30
@@ -76,7 +78,7 @@ main() {
                 fi
                 if ! glucose-fresh; then
                     pumphistory_daily_refresh
-                    if ! glucose-fresh && ! onbattery; then
+                    if ! glucose-fresh; then
                         refresh_after_bolus_or_enact
                     fi
                 fi
@@ -129,76 +131,109 @@ function fail {
 
 # The function "check_duty_cycle" checks if the loop has to run and it returns 0 if so.
 # It exits the script with code 0 otherwise.
-# The desicion is based on the time since last *successful* loop.
+# The decision is based on the time since last *successful* loop.
 # !Note duty cycle times are set in seconds.
 #
 # Additionally it may start an "emergency action" if enabled.
-# Possible actions are usb power cycling or reboot the system.
-# The EMERGENCY_ACTION variable sets the allowable time between successful loops.
-# If no loop has completed in that time, it performs the enabled actions.
-# !Note to enable a emergency action use 0 to enable and 1 to disable
+# Possible actions are USB power cycling, SPI reset or reboot the system.
+# The variables SPI_RESET, USB_RESET and REBOOT are setting the allowable time between successful loops.
+# If no loop has completed in that time, it performs the respective action.
+# !Note SPI reset is just tested for Pi0 and my produce errors on edison rigs.
+# !Note to enable an emergency action put a number in seconds when it should start and a 0 to disable.
+# !Note emergency actions can also be enabled without using enabling the duty cycle.
 #
-# The intention is two fold:
+# The intention is two fold: 
 # First the battery consumption is reduced (Pump and Pi) if the loop runs less often.
 # This is most dramatic for Enlite CGM, where wait_for_bg can't be used.
 # Secondly, if Carelink USB is used with Enlite, and wait_for_silence can't be used, this
-# prevents the loop from disrupting the communication between the pump and enlite sensors.
+# prevents the loop from disrupting the communication between the pump and Enlite sensors.
 #
 # Use DUTY_CYCLE=0 (default) if you don't want to limit the loop
 #
-# Suggestion for Carelink USB users are
-# DUTY_CYCLE=120
-# EMERGENCY_ACTION=900
-# REBOOT_ENABLE=0        #0=true
-# USB_RESET_ENABLE=0    #0=true
+# Suggestion for Carelink USB users are 
+# DUTY_CYCLE=120 
+# SPI_RESET=0
+# USB_RESET=300
+# REBOOT=900
+#
+# Suggestion for PI HAT + MDT users are 
+# DUTY_CYCLE=120 
+# SPI_RESET=0
+# USB_RESET=0
+# REBOOT=900
 #
 # Default is DUTY_CYCLE=0 to disable this feature.
-DUTY_CYCLE=${DUTY_CYCLE:-0}
+DUTY_CYCLE=${DUTY_CYCLE:-0}	#0=off, other = delay in seconds
 
-EMERGENCY_ACTION=${EMERGENCY_ACTION:-900}
-REBOOT_ENABLE=${REBOOT_ENABLE:-1}          #0=true
-USB_RESET_ENABLE=${USB_RESET_ENABLE:-1}    #0=true
+SPI_RESET=${SPI_RESET:-0}		#0=off, other = delay in seconds
+USB_RESET=${USB_RESET:-0}		#0=off, other = delay in seconds
+REBOOT=${REBOOT:-0}			#0=off, other = delay in seconds
 
-function check_duty_cycle {
-    if [ "$DUTY_CYCLE" -gt "0" ]; then
-        if [ -e /tmp/pump_loop_success ]; then
-            DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
-
-            if ([ $USB_RESET_ENABLE ] || [ $REBOOT_ENABLE ]) && [ "$DIFF_SECONDS" -gt "$EMERGENCY_ACTION" ]; then
-                if [ $USB_RESET_ENABLE ]; then
-                    USB_RESET_DIFF=$EMERGENCY_ACTION
-                    if [ -e /tmp/usp_power_cycled ]; then
-                        USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usp_power_cycled))
-                    fi
-
-                    if [ "$USB_RESET_DIFF" -gt "$EMERGENCY_ACTION" ]; then
-                        # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
-                        echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> trying to reset USB... "
-                        /usr/local/bin/oref0-reset-usb 2>&3 >&4
-                        touch /tmp/usp_power_cycled
-                        echo " done. --> start new cycle."
-                        return 0 #return to loop routine
-                    fi
-                fi
-                # if usb reset doesn't help or is not enabled --> reboot system
-                if [ $REBOOT_ENABLE ]; then
-                    echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> rebooting."
-                    sudo shutdown -r now
-                    exit 0
-                fi
-            elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then
-                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
-                return 0
-            else
-                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
-                exit 0
+function check_duty_cycle { 
+    if [ -e /tmp/pump_loop_success ]; then
+        DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
+        if [ "$SPI_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$SPI_RESET" ]; then 
+            # try to reset usb to fix potential communication problems causing loop fails
+            SPI_RESET_DIFF=$SPI_RESET
+            if [ -e /tmp/spi_reset ]; then 
+                SPI_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/spi_reset))
             fi
-        else
-            echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
-            # if pump_loop_success does not exist, use the system uptime
-            touch -d "$(cat /proc/uptime | awk '{print $1}') seconds ago" /tmp/pump_loop_success
-            return 0
+
+            if [ "$SPI_RESET_DIFF" -ge "$SPI_RESET" ]; then
+                # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
+                echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset spi... "
+                rmmod spi_bcm2835 2>&3 >&4
+                sleep 1
+                modprobe spi_bcm2835 2>&3 >&4
+                touch /tmp/spi_reset
+                echo "$(date '+%Y-%m-%d %H:%M:%S') SPI Reset" >> /var/log/openaps/hard_reset.log
+                echo " done. --> start new cycle."
+                return 0 #return to loop routine
+            fi
         fi
+
+        if [ "$USB_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$USB_RESET" ]; then 
+            # try to reset usb to fix potential communication problems causing loop fails
+            USB_RESET_DIFF=$USB_RESET
+            if [ -e /tmp/usb_power_cycled ]; then 
+                USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usb_power_cycled))
+            fi
+            
+            if [ "$USB_RESET_DIFF" -ge "$USB_RESET" ]; then
+                # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
+                echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset usb... "
+                /usr/local/bin/oref0-reset-usb 2>&3 >&4
+                touch /tmp/usb_power_cycled
+                echo "$(date '+%Y-%m-%d %H:%M:%S') USB Reset" >> /var/log/openaps/hard_reset.log
+                echo " done. --> start new cycle."
+                return 0 #return to loop routine
+            fi
+        fi
+
+        if [ "$REBOOT" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$REBOOT" ]; then
+            # if usb reset doesn't help or is not enabled --> reboot system
+            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> emergency reboot."
+            echo "$(date '+%Y-%m-%d %H:%M:%S') reboot system" >> /var/log/openaps/hard_reset.log
+            sudo shutdown -r now
+            exit 0
+        fi
+        
+        if [ "$DUTY_CYCLE" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
+            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
+            return 0
+        elif [ "$DUTY_CYCLE" -eq "0" ]; then
+            #fast exit if duty cycling is disabled
+            #echo "duty cycling disabled; start loop"
+            return 0   
+        else
+            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
+            exit 0
+        fi
+    elif [ "$SPI_RESET" -gt "0" ] || [ "$USB_RESET" -gt "0" ] || [ "$REBOOT" -gt "0" ] || [ "$DUTY_CYCLE" -gt "0" ]; then
+        echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
+        # do not use timestamp from system uptime, since this could result in a endless reboot loop...
+        touch /tmp/pump_loop_success
+        return 0
     fi
 }
 
@@ -211,7 +246,7 @@ function smb_reservoir_before {
     retry_fail check_clock
     echo -n "Checking that pump clock: "
     (cat monitor/clock-zoned.json; echo) | nonl
-    echo -n " is within 90s of current time: " && date
+    echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
         oref0-set-device-clocks
@@ -415,7 +450,13 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-        refresh_pumphistory_and_meal || return 1
+        if glucose-fresh; then
+            refresh_pumphistory_and_meal || return 1
+        else
+            # if we don't have a new BG waiting for us yet, do a full pumphistory refresh
+            # to fix any race conditions introduced by incremental refreshes
+            retry_return read_full_pumphistory || return 1
+        fi
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
@@ -465,7 +506,7 @@ function prep {
 
 function if_mdt_get_bg {
     echo -n
-    if grep "MDT cgm" openaps.ini 2>&3 >&4; then
+    if [ "$(get_pref_string .cgm '')" == "mdt" ]; then
         echo \
         && echo Attempting to retrieve MDT CGM data from pump
         #due to sometimes the pump is not in a state to give this command repeat until it completes
@@ -530,6 +571,9 @@ function mdt_get_bg {
 # make sure we can talk to the pump and get a valid model number
 function preflight {
     echo -n "Preflight "
+    # re-create directories if they got manually deleted
+    mkdir -p settings
+    mkdir -p monitor
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( check_model || check_model ) 2>&3 >&4 \
     && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo -n "(x12 models do not support SMB safety checks, SMB will not be available.) ") ) \
@@ -547,25 +591,11 @@ function mmtune {
     echo -n "Listening for $upto45s s silence before mmtuning: "
     wait_for_silence $upto45s
 
-    echo {} > monitor/mmtune.json
-    echo -n "mmtune: " && mmtune_Go >&3 2>&3
-    #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
-    #but only if it's not the default frequency
-    if ! $([ -s monitor/mmtune.json ] && jq -e .usedDefault monitor/mmtune.json); then
-      freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
-      while [ ${#freq} -ne 9 ];
-        do
-         freq=$freq"0"
-        done
-      #Make sure we don't zero out the medtronic frequency. It will break everything.
-      if [ $freq != "000000000" ] ; then
-	   MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
-      fi
-    fi
+    oref0-mmtune
+
+    MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
+
     #Determine how long to wait, based on the RSSI value of the best frequency
-    grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
-        do echo -n "$line "
-    done
     rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | tail -1 | awk '($1 < -60) {print -($1+60)*2}')
     if [[ $rssi_wait -gt 1 ]]; then
         if [[ $rssi_wait -gt 90 ]]; then
@@ -817,16 +847,16 @@ function refresh_profile {
 }
 
 function onbattery {
-    # check whether battery level is < 98%
+    # check whether battery level is < 90%
     if is_edison; then
-        jq --exit-status ".battery < 98 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
+        jq --exit-status ".battery < 90 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
     else
-        jq --exit-status ".battery < 98" monitor/edison-battery.json >&4
+        jq --exit-status ".battery < 90" monitor/edison-battery.json >&4
     fi
 }
 
 function wait_for_bg {
-    if grep "MDT cgm" openaps.ini 2>&3 >&4; then
+    if [ "$(get_pref_string .cgm '')" == "mdt" ]; then
         echo "MDT CGM configured; not waiting"
     elif egrep -q "Warning:" enact/smb-suggested.json 2>&3; then
         echo "Retrying without waiting for new BG"
@@ -838,7 +868,10 @@ function wait_for_bg {
             if glucose-fresh; then
                 break
             else
-                echo -n .; sleep 10
+                echo -n .
+                sleep 10
+                # flash the radio LEDs so we know the rig is alive
+                listen -t 1s 2>&4
             fi
         done
         echo
@@ -893,14 +926,6 @@ function check_status() {
     mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | colorize_json .status
   fi
 }
-function mmtune_Go() {
-  set -o pipefail
-  if ( grep "WW" pump.ini ); then
-    Go-mmtune -ww | tee monitor/mmtune.json
-  else
-    Go-mmtune | tee monitor/mmtune.json
-  fi
-}
 function check_clock() {
   set -o pipefail
   mdt clock 2>&3 | tee monitor/clock-zoned.json >&4 && grep -q T monitor/clock-zoned.json
@@ -921,7 +946,7 @@ function pumphistory_daily_refresh() {
     dateCutoff=$(to_epochtime "33 hours ago")
     echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
     if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || $(to_epochtime $lastRecordTimestamp) -le $dateCutoff ]]; then
-            echo -n "Pumphistory >33h long: " && read_full_pumphistory
+            echo -n "Pumphistory >33h long: " && retry_return read_full_pumphistory
     fi
 }
 

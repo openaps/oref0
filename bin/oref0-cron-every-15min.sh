@@ -22,3 +22,4 @@ fi
     rm /tmp/disable_hotspot
 ) &
 
+oref0-version --check-for-updates > /tmp/oref0-updates.txt &
