@@ -58,7 +58,7 @@ if (!module.parent) {
         process.exit(1);
     }
 
-    if (!apisecret.startsWith('token=') && apisecret.length != 40) {
+    if (apisecret.indexOf('token=') !== 0 && apisecret.length != 40) {
         var shasum = crypto.createHash('sha1');
         shasum.update(String(apisecret));
         apisecret = shasum.digest('hex');
@@ -260,7 +260,7 @@ if (!module.parent) {
 
             nsurl = nsurl + '/api/v1/profile';
 
-            if (apisecret.startsWith('token=')) {
+            if (apisecret.indexOf('token=') === 0) {
                 nsurl = nsurl + '?' + apisecret;
             } else {
                 nsheaders['API-SECRET'] = apisecret;
