@@ -20,11 +20,11 @@ if getent passwd edison > /dev/null; then
 fi
 #if ! sudo apt-get install -y npm; then
 # install/upgrade to node 8
-if ! nodejs --version | grep 'v8.'; then
+if ! nodejs --version | grep 'v8.11'; then
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &>/dev/null ; then
         mkdir $HOME/src/node && cd $HOME/src/node
-        wget https://nodejs.org/dist/v8.10.0/node-v8.10.0-linux-armv6l.tar.xz
-        tar -xf node-v8.10.0-linux-armv6l.tar.xz || die "Couldn't extract Node"
+        wget https://nodejs.org/dist/v8.11.4/node-v8.11.4-linux-armv6l.tar.gz
+        tar -xf node-v8.11.4-linux-armv6l.tar.xz || die "Couldn't extract Node"
         cd *6l && sudo cp -R * /usr/local/ || die "Couldn't copy Node to /usr/local"
     else
         sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8" 
