@@ -1,17 +1,18 @@
 #!/bin/bash
-# updates cgm values from enlite sensors
+# updated cgm values from enlite sensors
 # sould be called within pump-loop (and not in a separate loop) to avoid radio blocking issues.
+
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
 FILE_MDT='monitor/cgm-mm-glucosedirty.json'
 FILE_POST_TREND='cgm/cgm-glucose.json'
 FILE_FINAL='cgm/glucose.json'
 
-CS_TIME_SENSE=1s
-CS_TIME_WAIT=5s
+CS_TIME_SENSE=1
 
 usage "$@" <<EOT
 Usage: $self
-Updates cgm history from enlite sensors and uploads to Nightscout. Has to be started within pump-loop to avoid pump radio contention.
+Updates cgm histroy from enlite sensors and uploads to nightscout. Has to be started within pump-loop.
 EOT
 
 main() {
@@ -20,7 +21,7 @@ main() {
     prep
     show_last_record
     if glucose_fresh; then
-        echo "cgm data < 5m old"
+        echo "cgm data < 2.5m old"
     elif glucose_lt_1h_old; then
         echo "updating cgm data"
         update_data
@@ -70,11 +71,14 @@ function show_last_record {
     jq -c -C 'sort_by(.date) | reverse | .[0] | { sgv: .sgv, dateString: .dateString }' $FILE_MDT
 }
 
-# Checks whether 5m has passed since newst cgm value
+# Checks whether 2.5m has passed since newst cgm value
 # returns 0 if ture, 1 if false
 function glucose_fresh {
     if [ ! -f $FILE_MDT ]; then return 1; fi
-    jq --exit-status "sort_by(.date) | reverse | .[0] | ($(date +%s) - .date / 1000) < 300" $FILE_MDT > /dev/null 
+    # Enlite CGM are synced to the pump with a certain delay (not constant).
+    # Thus we shouldn't wait the whole 5m cycle but sync more often to get most recent values.
+    # I don't know what a good schedule is but I thing the Nyquist theorem is good starting point...
+    jq --exit-status "sort_by(.date) | reverse | .[0] | ($(date +%s) - .date / 1000) < 150" $FILE_MDT > /dev/null 
 }
 
 # Checks whether 60m has passed since newst cgm value
@@ -87,7 +91,7 @@ function glucose_lt_1h_old {
 # Removes old cgm data file and requests cgm history from pump
 function full_refresh {
     clean_files
-    listen_before_talk
+    if ! wait_for_silence $CS_TIME_SENSE ; then echo "Radio jammed"; exit 1; fi
     cgmupdate -f $FILE_MDT -u -b 30h -k 48h 2>&1
     EXIT_CODE=$?
     if [ "$EXIT_CODE" -eq "0" ]; then
@@ -103,7 +107,7 @@ function full_refresh {
 
 # Updates local cgm data with just the last hour of pump request
 function update_data {
-    listen_before_talk
+    if ! wait_for_silence $CS_TIME_SENSE ; then echo "Radio jammed"; exit 1; fi
     cgmupdate -f $FILE_MDT -u -b 1h -k 48h 2>&1
     EXIT_CODE=$?
     if [ "$EXIT_CODE" -eq "0" ]; then
@@ -125,7 +129,7 @@ function trend_and_copy {
     jq -c '. + {"name": "GlucoseSensorData"} | . + {"date_type": "prevTimestamp"}' | \
     jq -c '. + {"glucose": .sgv}' | \
     jq -c '. + {"display_time": .dateString}' | \
-    jq -c 'del(.sgv) | del(.date) | del(.dateString) | del(.type)' | \
+    jq -c 'del(.sgv) | del(.dateString) | del(.type)' | \
     jq -s '.' > $FILE_POST_TREND
 
     # wild copy party
@@ -133,32 +137,8 @@ function trend_and_copy {
     && echo MDT CGM data retrieved \
     && cp -pu $FILE_POST_TREND $FILE_FINAL \
     && cp -pu $FILE_FINAL monitor/glucose.json \
-    && echo MDT New cgm data reformatted
-}
-
-# Listens for a free channel.
-# Poor man's CSMA/CA 
-#
-# exits with code 1 if channel is jammed for more than 1000 rounds or waiting.
-function listen_before_talk {
-    # fast sense
-    if listen -t $CS_TIME_SENSE 2>&1 ; then
-        # wait for a free channel
-        echo -n "Wait for radio silence:"
-        for i in $(seq 1 1000); do
-            echo -n .
-            #there should pass some time until listen fails again:
-            sleep $CS_TIME_WAIT 
-            if ! listen -t $CS_TIME_WAIT 2>&1 ; then
-                echo "radio channel is free!"
-                return 0
-            fi
-        done
-    else
-        return 0
-    fi
-    echo "radio channel is jammed! exit 1"
-    exit 1
+    && echo -n MDT New cgm data reformat \
+    && echo ted
 }
 
 # removes temporary and result files
