@@ -291,7 +291,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
     echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
     echo "xdrip: will work with an xDrip receiver app on your Android phone"
-	echo "xdrip-js: will work directly with a Dexcom G5 transmitter and will upload to Nightscout"
+    echo "xdrip-js: will work directly with a Dexcom G5 transmitter and will upload to Nightscout"
     echo "Note: no matter which option you choose, CGM data will also be downloaded from NS when available."
     echo
     prompt_and_validate CGM "What kind of CGM would you like to configure?:" validate_cgm
@@ -363,9 +363,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         ecc1medtronicversion="tags/$REPLY"
         echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
 
-	      read -p "Also enter the ecc1/dexcom version, example 'v2018.07.26' <version> " -r
+        read -p "Also enter the ecc1/dexcom version, example 'v2018.07.26' <version> " -r
         ecc1dexcomversion="tags/$REPLY"
-	      echo "Will use https://github.com/ecc1/dexcom/releases/$REPLY if Go-dexcom is needed."
+        echo "Will use https://github.com/ecc1/dexcom/releases/$REPLY if Go-dexcom is needed."
       fi
     else
       echo "Downloading latest precompiled Go pump binaries."
@@ -624,13 +624,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # TODO: delete this after openaps 0.2.1 release
     echo Checking openaps 0.2.1 installation with --nogit support
     if ! openaps --version 2>&1 | egrep "0.[2-9].[1-9]"; then
-        echo Installing latest openaps w/ nogit && sudo pip install git+https://github.com/openaps/openaps.git@nogit || die "Couldn't install openaps w/ nogit"
+        echo Installing latest openaps w/ nogit && sudo pip install --default-timeout=1000 git+https://github.com/openaps/openaps.git@nogit || die "Couldn't install openaps w/ nogit"
     fi
 
     echo -n "Checking $directory: "
     mkdir -p $directory
-    # if ( cd $directory && ls openaps.ini 2>/dev/null >/dev/null && openaps use -h >/dev/null ); then
-     #   echo $directory already exists
     if openaps init $directory --nogit; then
         echo $directory initialized
     else
@@ -657,27 +655,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
         mkdir -p xdrip || die "Can't mkdir xdrip"
     fi
-
-    # check whether decocare-0.0.31 has been installed
-    #if ! ls /usr/local/lib/python2.7/dist-packages/decocare-0.0.31-py2.7.egg/ 2>/dev/null >/dev/null; then
-        # install decocare with setuptools since 0.0.31 (with the 6.4U/h fix) isn't published properly to pypi
-        #sudo easy_install -U decocare || die "Can't easy_install decocare"
-    #fi
-
     mkdir -p $HOME/src/
-
-    # TODO: remove this and switch back to easy_install or pip once decocare 0.1.0 is released
-    #if [ -d "$HOME/src/decocare/" ]; then
-        #echo "$HOME/src/decocare/ already exists; pulling latest 0.1.0-dev"
-        #(cd $HOME/src/decocare && git fetch && git checkout 0.1.0-dev && git pull) || die "Couldn't pull latest decocare 0.1.0-dev"
-    #else
-        #echo -n "Cloning decocare 0.1.0-dev: "
-        #(cd $HOME/src && git clone -b 0.1.0-dev git://github.com/openaps/decocare.git) || die "Couldn't clone decocare 0.1.0-dev"
-    #fi
-    #echo Installing decocare 0.1.0-dev
-    #cd $HOME/src/decocare
-    #sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
-
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
         (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
@@ -701,7 +679,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
         pip show mmeowlink | egrep "Version: 0.11.1" || (
             echo Installing latest mmeowlink
-            sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
+            sudo pip install --default-timeout=1000 -U mmeowlink || die "Couldn't install mmeowlink"
         )
     fi
 
@@ -798,7 +776,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
         if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
             sudo apt-get -y install python3-pip
-            sudo pip3 install requests || die "Can't add pip3 requests - error installing"
+            sudo pip3 install --default-timeout=1000 requests || die "Can't add pip3 requests - error installing"
             oref0_nightscout_check || die "Error checking Nightscout permissions"
         fi
     fi
@@ -944,17 +922,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ "$ttyport" =~ "spi" ]] && [[ ${CGM,,} =~ "mdt" ]]; then
         echo Checking kernel for spi_serial installation
         if ! python -c "import spi_serial" 2>/dev/null; then
-            #if uname -r 2>&1 | egrep "^4.1[0-9]"; then # kernel >= 4.10+, use pietergit version of spi_serial (does not use mraa)
-            #    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/pietergit/spi_serial.git || die "Couldn't install pietergit/spi_serial"
-            #else # kernel < 4.10, use scottleibrand version of spi_serial (requires mraa)
-                if [[ "$ttyport" =~ "spidev0.0" ]]; then
-                    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
-                    sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
-                else
-                    echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
-                fi
-            #fi
-            #echo Installing spi_serial && sudo pip install --upgrade git+https://github.com/EnhancedRadioDevices/spi_serial || die "Couldn't install spi_serial"
+            if [[ "$ttyport" =~ "spidev0.0" ]]; then
+                echo Installing spi_serial && sudo pip install --default-timeout=1000 --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
+                sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+            else
+                echo Installing spi_serial && sudo pip install --default-timeout=1000 --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+            fi
         fi
 
         # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
@@ -996,7 +969,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     #echo Checking openaps dev installation
     #if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
         # TODO: switch this back to master once https://github.com/openaps/openaps/pull/116 is merged/released
-        #echo Installing latest openaps dev && sudo pip install git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
+        #echo Installing latest openaps dev && sudo pip install  --default-timeout=1000  git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
     #fi
 
     # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
@@ -1038,7 +1011,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Medtronic CGM
     if [[ ${CGM,,} =~ "mdt" ]]; then
-        sudo pip install -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
+        sudo pip install --default-timeout=1000 -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
         openaps device remove cgm 2>/dev/null
         if [[ -z "$ttyport" ]]; then
             openaps device add cgm medtronic $serial || die "Can't add cgm"
@@ -1048,8 +1021,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/mdt-cgm.json
     fi
 
-    sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
-    sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
+    sudo pip install --default-timeout=1000 flask flask-restful  || die "Can't add xdrip cgm - error installing flask packages"
 
     # xdrip CGM (xDripAPS), also gets installed when using xdrip-js
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
@@ -1063,11 +1035,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # xdrip-js specific installation tasks (in addition to xdrip tasks)
     if [[ ${CGM,,} =~ "xdrip-js" ]]; then
-		echo xdrip-js selected as CGM, so configuring xdrip-js
+        echo xdrip-js selected as CGM, so configuring xdrip-js
         git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
         cd $HOME/src/Logger
         sudo npm run global-install
-		touch /tmp/reboot-required
+        touch /tmp/reboot-required
     fi
 
     # disable IPv6
@@ -1104,8 +1076,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
         sudo apt-get -y install jq
-        sudo pip install libpebble2
-        sudo pip install --user git+git://github.com/mddub/pancreabble.git
+        sudo pip install --default-timeout=1000 libpebble2
+        sudo pip install --default-timeout=1000 --user git+git://github.com/mddub/pancreabble.git
         oref0-bluetoothup
         sudo rfcomm bind hci0 $BT_PEB
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/pancreabble.json
