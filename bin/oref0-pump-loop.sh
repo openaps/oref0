@@ -50,23 +50,26 @@ main() {
         # try_fail refresh_old_pumphistory
         try_fail refresh_old_profile
         try_fail touch /tmp/pump_loop_enacted -r monitor/glucose.json
-        if smb_check_everything; then
+        if retry_fail smb_check_everything; then
             if ( grep -q '"units":' enact/smb-suggested.json 2>&3); then
                 if try_return smb_bolus; then
                     touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
                     smb_verify_status
                 else
-                    echo "Bolus failed: falling back to basal-only pump-loop" \
-                    && refresh_temp_and_enact \
-                    && refresh_pumphistory_and_enact \
-                    && refresh_profile \
-                    && pumphistory_daily_refresh \
-                    && touch /tmp/pump_loop_success \
-                    && echo Completed pump-loop at $(date) \
-                    && echo
+                    echo "Bolus failed: retrying"
+                    if retry_fail smb_check_everything; then
+                        if ( grep -q '"units":' enact/smb-suggested.json 2>&3); then
+                            if try_fail smb_bolus; then
+                                touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+                                smb_verify_status
+                            fi
+                        fi
+                    fi
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+            # before each of these (optional) refresh checks, make sure we don't have fresh glucose data
+            # if we do, then skip the optional checks to finish up this loop and start the next one
             if ! glucose-fresh; then
                 if onbattery; then
                     refresh_profile 30
@@ -75,7 +78,7 @@ main() {
                 fi
                 if ! glucose-fresh; then
                     pumphistory_daily_refresh
-                    if ! glucose-fresh && ! onbattery; then
+                    if ! glucose-fresh; then
                         refresh_after_bolus_or_enact
                     fi
                 fi
@@ -160,11 +163,11 @@ function fail {
 # REBOOT=900
 #
 # Default is DUTY_CYCLE=0 to disable this feature.
-DUTY_CYCLE=${DUTY_CYCLE:-0}    #0=off, other = delay in seconds
+DUTY_CYCLE=${DUTY_CYCLE:-0}	#0=off, other = delay in seconds
 
-SPI_RESET=${SPI_RESET:-0}        #0=off, other = delay in seconds
-USB_RESET=${USB_RESET:-0}        #0=off, other = delay in seconds
-REBOOT=${REBOOT:-0}            #0=off, other = delay in seconds
+SPI_RESET=${SPI_RESET:-0}		#0=off, other = delay in seconds
+USB_RESET=${USB_RESET:-0}		#0=off, other = delay in seconds
+REBOOT=${REBOOT:-0}			#0=off, other = delay in seconds
 
 function check_duty_cycle { 
     if [ -e /tmp/pump_loop_success ]; then
@@ -241,7 +244,7 @@ function smb_reservoir_before {
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
     echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
     retry_fail check_clock
-    echo -n "Checking pump clock: "
+    echo -n "Checking that pump clock: "
     (cat monitor/clock-zoned.json; echo) | nonl
     echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
@@ -338,7 +341,8 @@ function smb_enact_temp {
     else
         echo -n "No smb_enact needed. "
     fi
-    ( smb_verify_enacted || ( smb_verify_status; smb_verify_enacted) )
+    try_fail smb_verify_status
+    smb_verify_enacted
 }
 
 function smb_verify_enacted {
@@ -446,7 +450,13 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-        refresh_pumphistory_and_meal || return 1
+        if glucose-fresh; then
+            refresh_pumphistory_and_meal || return 1
+        else
+            # if we don't have a new BG waiting for us yet, do a full pumphistory refresh
+            # to fix any race conditions introduced by incremental refreshes
+            retry_return read_full_pumphistory || return 1
+        fi
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
@@ -517,6 +527,9 @@ function mdt_get_bg {
 # make sure we can talk to the pump and get a valid model number
 function preflight {
     echo -n "Preflight "
+    # re-create directories if they got manually deleted
+    mkdir -p settings
+    mkdir -p monitor
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( check_model || check_model ) 2>&3 >&4 \
     && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo -n "(x12 models do not support SMB safety checks, SMB will not be available.) ") ) \
@@ -534,25 +547,11 @@ function mmtune {
     echo -n "Listening for $upto45s s silence before mmtuning: "
     wait_for_silence $upto45s
 
-    echo {} > monitor/mmtune.json
-    echo -n "mmtune: " && mmtune_Go >&3 2>&3
-    #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
-    #but only if it's not the default frequency
-    if ! $([ -s monitor/mmtune.json ] && jq -e .usedDefault monitor/mmtune.json); then
-      freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
-      while [ ${#freq} -ne 9 ];
-        do
-         freq=$freq"0"
-        done
-      #Make sure we don't zero out the medtronic frequency. It will break everything.
-      if [ $freq != "000000000" ] ; then
-       MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
-      fi
-    fi
+    oref0-mmtune
+
+    MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
+
     #Determine how long to wait, based on the RSSI value of the best frequency
-    grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
-        do echo -n "$line "
-    done
     rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | tail -1 | awk '($1 < -60) {print -($1+60)*2}')
     if [[ $rssi_wait -gt 1 ]]; then
         if [[ $rssi_wait -gt 90 ]]; then
@@ -560,7 +559,6 @@ function mmtune {
         fi
         echo "waiting for $rssi_wait second silence before continuing"
         wait_for_silence $rssi_wait
-        preflight
         echo "Done waiting for rigs with better signal."
     else
         echo "No wait required."
@@ -611,7 +609,6 @@ function wait_for_silence {
             break
         fi
     done
-    echo
 }
 
 # Refresh pumphistory etc.
@@ -649,7 +646,6 @@ function check_cp_meal {
         return 1
     fi
 }
-
 
 function calculate_iob {
     oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json.new || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
@@ -711,7 +707,7 @@ function get_settings {
         retry_return read_insulin_sensitivities 2>&3 >&4 || return 1
         retry_return read_carb_ratios 2>&3 >&4 || return 1
         retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || return 1
-    #NON_X12_ITEMS=""
+	#NON_X12_ITEMS=""
     else
         # On all other supported pumps, we should be able to get all the data we need from the pump.
         retry_return check_model 2>&3 >&4 || return 1
@@ -807,11 +803,11 @@ function refresh_profile {
 }
 
 function onbattery {
-    # check whether battery level is < 98%
+    # check whether battery level is < 90%
     if is_edison; then
-        jq --exit-status ".battery < 98 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
+        jq --exit-status ".battery < 90 and (.battery > 70 or .battery < 60)" monitor/edison-battery.json >&4
     else
-        jq --exit-status ".battery < 98" monitor/edison-battery.json >&4
+        jq --exit-status ".battery < 90" monitor/edison-battery.json >&4
     fi
 }
 
@@ -828,7 +824,10 @@ function wait_for_bg {
             if glucose-fresh; then
                 break
             else
-                echo -n .; sleep 10
+                echo -n .
+                sleep 10
+                # flash the radio LEDs so we know the rig is alive
+                listen -t 1s 2>&4
             fi
         done
         echo
@@ -883,14 +882,6 @@ function check_status() {
     mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | colorize_json .status
   fi
 }
-function mmtune_Go() {
-  set -o pipefail
-  if ( grep "WW" pump.ini ); then
-    Go-mmtune -ww | tee monitor/mmtune.json
-  else
-    Go-mmtune | tee monitor/mmtune.json
-  fi
-}
 function check_clock() {
   set -o pipefail
   mdt clock 2>&3 | tee monitor/clock-zoned.json >&4 && grep -q T monitor/clock-zoned.json
@@ -901,7 +892,7 @@ function check_battery() {
 }
 function check_tempbasal() {
   set -o pipefail
-  mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp >&4 && cp monitor/temp_basal.json monitor/last_temp_basal.json
+  mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp | grep absolute >&4 && cp monitor/temp_basal.json monitor/last_temp_basal.json
 }
 
 # clear and refresh the 24h pumphistory file approximatively every 6 hours.
@@ -911,7 +902,7 @@ function pumphistory_daily_refresh() {
     dateCutoff=$(to_epochtime "33 hours ago")
     echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
     if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || $(to_epochtime $lastRecordTimestamp) -le $dateCutoff ]]; then
-            echo -n "Pumphistory >33h long: " && read_full_pumphistory
+            echo -n "Pumphistory >33h long: " && retry_return read_full_pumphistory
     fi
 }
 
@@ -952,24 +943,24 @@ function read_full_pumphistory() {
 }
 function read_bg_targets() {
   set -o pipefail
-  mdt targets 2>&3 | tee settings/bg_targets_raw.json && cat settings/bg_targets_raw.json | jq .units
+  mdt targets 2>&3 | tee settings/bg_targets_raw.json && cat settings/bg_targets_raw.json | jq .units | grep -e "mg/dL" -e "mmol"
 }
 function read_insulin_sensitivities() {
   set -o pipefail
   mdt sensitivities 2>&3 | tee settings/insulin_sensitivities_raw.json \
-    && cat settings/insulin_sensitivities_raw.json | jq .units
+    && cat settings/insulin_sensitivities_raw.json | jq .units | grep -e "mg/dL" -e "mmol"
 }
 function read_basal_profile() {
   set -o pipefail
-  mdt basal 2>&3 | tee settings/basal_profile.json && cat settings/basal_profile.json | jq .[0].start
+  mdt basal 2>&3 | tee settings/basal_profile.json && cat settings/basal_profile.json | jq .[0].start | grep "00:00:00"
 }
 function read_settings() {
   set -o pipefail
-  mdt settings 2>&3 | tee settings/settings.json && cat settings/settings.json | jq .maxBolus
+  mdt settings 2>&3 | tee settings/settings.json && cat settings/settings.json | jq .maxBolus | grep -e "[0-9]\+"
 }
 function read_carb_ratios() {
   set -o pipefail
-  mdt carbratios 2>&3 | tee settings/carb_ratios.json && cat settings/carb_ratios.json | jq .units
+  mdt carbratios 2>&3 | tee settings/carb_ratios.json && cat settings/carb_ratios.json | jq .units | grep -e grams -e exchanges
 }
 
 retry_fail() {
