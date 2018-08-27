@@ -571,6 +571,9 @@ function mdt_get_bg {
 # make sure we can talk to the pump and get a valid model number
 function preflight {
     echo -n "Preflight "
+    # re-create directories if they got manually deleted
+    mkdir -p settings
+    mkdir -p monitor
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( check_model || check_model ) 2>&3 >&4 \
     && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo -n "(x12 models do not support SMB safety checks, SMB will not be available.) ") ) \
@@ -1001,7 +1004,7 @@ function read_settings() {
 }
 function read_carb_ratios() {
   set -o pipefail
-  mdt carbratios 2>&3 | tee settings/carb_ratios.json && cat settings/carb_ratios.json | jq .units | grep grams
+  mdt carbratios 2>&3 | tee settings/carb_ratios.json && cat settings/carb_ratios.json | jq .units | grep -e grams -e exchanges
 }
 
 retry_fail() {
