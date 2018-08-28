@@ -857,11 +857,7 @@ function glucose-fresh {
 #}
 
 function setglucosetimestamp {
-    if grep "MDT cgm" openaps.ini 2>&3 >&4; then
-      touch -d "$(date -R -d @$(jq .[0].date/1000 nightscout/glucose.json))" monitor/glucose.json
-    else
-      touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
-    fi
+    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
 }
 
 #These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
