@@ -1,5 +1,6 @@
 #!/bin/bash
 (
+BRANCH=master
 dmesg -D
 echo Scanning for wifi networks:
 ifup wlan0
@@ -29,6 +30,8 @@ ifdown wlan0; ifup wlan0
 sleep 10
 echo -ne "\nWifi SSID: "; iwgetid -r
 sleep 5
-curl https://raw.githubusercontent.com/openaps/oref0/master/bin/openaps-install.sh > /tmp/openaps-install.sh
+read -p "Enter the OREF0 branch name to install. default [master]" -r
+BRANCH=${REPLY:-master}
+curl https://raw.githubusercontent.com/openaps/oref0/$BRANCH/bin/openaps-install.sh > /tmp/openaps-install.sh $BRANCH
 bash /tmp/openaps-install.sh
 )
