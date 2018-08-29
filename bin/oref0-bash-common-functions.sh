@@ -453,3 +453,30 @@ dedupe_path() {
         unset old_PATH x
     fi
 }
+
+# Usage: wait_for_silence <seconds of silence>
+# listen for $1 seconds of silence (no other rigs or enlite transmitter talking to pump) before continuing
+# If communication is detected, it'll retry to listen for $1 seconds.
+#
+# returns 0 if radio is free, 1 if radio is jammed for 800 iterations.
+function wait_for_silence {
+    if [ -z $1 ]; then
+        upto45s=$[ ( $RANDOM / 728 + 1) ]
+        waitfor=$upto45s
+    else
+        waitfor=$1
+    fi
+    echo -n "Listening for ${waitfor}s: "
+    for i in $(seq 1 800); do
+        echo -n .
+        # returns true if it hears pump comms, false otherwise
+        if ! listen -t $waitfor's' ; then
+            echo "No interfering pump comms detected from other rigs (this is a good thing!)"
+            echo -n "Continuing oref0-pump-loop at "; date
+            return 0 
+        else
+            sleep 1
+        fi
+    done
+    return 1
+}
