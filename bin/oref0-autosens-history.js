@@ -24,12 +24,6 @@ if (!module.parent) {
 
     var argv = require('yargs')
         .usage("$0 <glucose.json> <pumphistory.json> <profile.json> <readings_per_run> [outputfile.json]")
-        .option('uploader', {
-            alias: 'u',
-            nargs: 1,
-            describe: "Uploader battery status",
-            default: false
-        })
         .strict(true)
         .help('help');
 
