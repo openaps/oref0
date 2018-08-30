@@ -44,7 +44,6 @@ if (!module.parent) {
     
     var argv = require('yargs')
       .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [<carb_ratios.json>] [<temptargets.json>] [--model model.json] [--autotune autotune.json]")
-      .demand(4)
       .option('model', {
         alias: 'm',
         describe: "Pump model response",
