@@ -84,6 +84,15 @@ if (!module.parent) {
         }
     }
 
+    // get insulin curve from pump profile that is maintained
+    profile_data.curve = pumpprofile_data.curve;
+
+    // if not tuning the insulinEndTime and insulinPeakTime, then use data from pump profile
+    if (!tune_insulin_curve) {
+      profile_data.dia = pumpprofile_data.dia;
+      profile_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
+    }
+
     try {
         var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
     } catch (e) {
