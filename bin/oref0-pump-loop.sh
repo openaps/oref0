@@ -425,7 +425,7 @@ function smb_bolus {
         echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
         try_return mdt -f internal button esc 2>&3 \
         && sleep 0.5s \  
-        && try_return mdt -f internal button esc esc esc 2>&3 \
+        && try_return mdt -f internal button esc esc esc esc 2>&3 \
         && echo -n "and bolusing " && jq .units enact/smb-suggested.json | nonl && echo " units" \
         && ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && rm -rf enact/smb-suggested.json
