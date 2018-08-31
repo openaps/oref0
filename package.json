@@ -66,6 +66,7 @@
     "oref0_init_pump_comms.py": "./bin/oref0_init_pump_comms.py",
     "oref0-log-shortcuts": "./bin/oref0-log-shortcuts.sh",
     "oref0-mdt-trend": "./bin/oref0-mdt-trend.js",
+    "oref0-mdt-update": "./bin/oref0-mdt-update.js",
     "oref0-meal": "./bin/oref0-meal.js",
     "oref0-monitor-cgm": "./bin/oref0-monitor-cgm.sh",
     "oref0-ns-loop": "./bin/oref0-ns-loop.sh",
