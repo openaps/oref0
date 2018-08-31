@@ -27,12 +27,6 @@ if (!module.parent) {
     var argv = require('yargs')
         .usage("$0 <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>")
         .demand(3)
-        .option('uploader', {
-            alias: 'u',
-            nargs: 1,
-            describe: "Uploader battery status",
-            default: false
-        })
         .strict(true)
         .help('help');
 
