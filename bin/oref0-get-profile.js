@@ -57,6 +57,7 @@ if (!module.parent) {
       .help('help')
       .option('exportDefaults', {
         describe: "Show typically-adjusted default preference values",
+        boolean: true,
         default: false
       })
       .option('updatePreferences', {
