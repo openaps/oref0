@@ -78,11 +78,6 @@ if (!module.parent) {
         process.exit(1);
     }
 
-    if (!clock_input || !iob_input || !suggested_input || !enacted_input || !battery_input || !reservoir_input || !status_input) {
-        argv.showHelp();
-        process.exit(1);
-    }
-
     var cwd = process.cwd() + '/';
 
     var hostname = 'unknown';
