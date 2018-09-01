@@ -28,11 +28,13 @@ if (!module.parent) {
         .usage("$0 <pumphistory.json> <profile.json> <glucose.json> [<pumpprofile.json>] [<carbhistory.json>] [--categorize_uam_as_basal] [--tune-insulin-curve]")
         .option('categorize_uam_as_basal', {
             alias: 'u',
+            boolean: true,
             describe: "Categorize UAM as basal",
             default: false
         })
         .option('tune-insulin-curve', {
             alias: 'i',
+            boolean: true,
             describe: "Tune peak time and end time",
             default: false
         })
