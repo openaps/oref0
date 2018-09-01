@@ -75,11 +75,8 @@ if (!module.parent) {
       }
     }
 
-    var pumpsettings_input = params._[0]
-    if ([null, '--help', '-h', 'help'].indexOf(pumpsettings_input) > 0) {
-      argv.showHelp();
-      process.exit(0);
-    }
+    var pumpsettings_input = params._[0];
+
     if (params.exportDefaults) {
         exportDefaults();
         process.exit(0);
@@ -100,11 +97,6 @@ if (!module.parent) {
     var temptargets_input = params._[6]
     var model_input = params.model;
     var autotune_input = params.autotune;
-
-    if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
-        argv.showHelp();
-        process.exit(1);
-    }
 
     var cwd = process.cwd()
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
