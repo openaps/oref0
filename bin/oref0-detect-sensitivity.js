@@ -20,16 +20,25 @@ var get_iob = require('oref0/lib/iob');
 var detect = require('oref0/lib/determine-basal/autosens');
 
 if (!module.parent) {
-    var glucose_input = process.argv[2];
-    var pumphistory_input = process.argv[3];
-    var isf_input = process.argv[4]
-    var basalprofile_input = process.argv[5]
-    var profile_input = process.argv[6];
-    var carb_input = process.argv[7]
-    var temptarget_input = process.argv[8]
+    var argv = require('yargs')
+      .usage("$0 <glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json> [<carbhistory.json>] [<temptargets.json>]")
+      .strict(true)
+      .help('help');
 
-    if (!glucose_input || !pumphistory_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json> [carbhistory.json] [temptargets.json]');
+    var params = argv.argv;
+    var inputs = params._;
+
+    var glucose_input = inputs[0];
+    var pumphistory_input = inputs[1];
+    var isf_input = inputs[2];
+    var basalprofile_input = inputs[3];
+    var profile_input = inputs[4];
+    var carb_input = inputs[5];
+    var temptarget_input = inputs[6];
+
+    if (inputs.length < 5 || inputs.length > 7) {
+        argv.showHelp();
+        console.error('Incorrect number of arguments');
         process.exit(1);
     }
     
