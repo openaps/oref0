@@ -148,37 +148,37 @@ function fail {
 #
 # Suggestion for PI HAT + MDT users
 # DUTY_CYCLE=150 
-DUTY_CYCLE=${DUTY_CYCLE:-0}	#0=off, other = delay in seconds
+DUTY_CYCLE=${DUTY_CYCLE:-0}    #0=off, other = delay in seconds
 
 function check_duty_cycle { 
-	DUTY_CYCLE_FILE="/tmp/pump_loop_start"
-	LOOP_SUCCESS_FILE="/tmp/pump_loop_success"
+    DUTY_CYCLE_FILE="/tmp/pump_loop_start"
+    LOOP_SUCCESS_FILE="/tmp/pump_loop_success"
     if [ -e "$DUTY_CYCLE_FILE" ]; then
         DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y $DUTY_CYCLE_FILE))
-		DIFF_NEXT_SECONDS=$(expr $DIFF_SECONDS + 30)
-		DIFF_SUCCESS=$(expr $(stat -c %Y $DUTY_CYCLE_FILE) - $(stat -c %Y $LOOP_SUCCESS_FILE))
+        DIFF_NEXT_SECONDS=$(expr $DIFF_SECONDS + 30)
+        DIFF_SUCCESS=$(expr $(stat -c %Y $DUTY_CYCLE_FILE) - $(stat -c %Y $LOOP_SUCCESS_FILE))
         
         if [ "$DUTY_CYCLE" -gt "0" ]; then
-			if [ "$DIFF_SUCCESS" -gt "0" ]; then
-				# fast return if last loop was unsuccessful
-				echo "Last loop was not successful --> start new cycle."
-				return 0
-			elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
-				touch "$DUTY_CYCLE_FILE"
-				echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
-				return 0
-			elif [ "$DIFF_NEXT_SECONDS" -gt "$DUTY_CYCLE" ]; then
-				WAIT=$(expr $DUTY_CYCLE - $DIFF_SECONDS)
-				echo -n "Wait for $WAIT seconds till duty cylce starts... "
-				# we want to avoid wait since it keeps the CPU busy
-				sleep $WAIT
-				touch "$DUTY_CYCLE_FILE"
-				echo "start new cycle."
-				return 0
-			else 
-				echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
-				exit 0
-			fi
+            if [ "$DIFF_SUCCESS" -gt "0" ]; then
+                # fast return if last loop was unsuccessful
+                echo "Last loop was not successful --> start new cycle."
+                return 0
+            elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
+                touch "$DUTY_CYCLE_FILE"
+                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
+                return 0
+            elif [ "$DIFF_NEXT_SECONDS" -gt "$DUTY_CYCLE" ]; then
+                WAIT=$(expr $DUTY_CYCLE - $DIFF_SECONDS)
+                echo -n "Wait for $WAIT seconds till duty cylce starts... "
+                # we want to avoid wait since it keeps the CPU busy
+                sleep $WAIT
+                touch "$DUTY_CYCLE_FILE"
+                echo "start new cycle."
+                return 0
+            else 
+                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
+                exit 0
+            fi
         else
             #fast return if duty cycling is disabled
             #echo "duty cycling disabled; start loop"
@@ -664,7 +664,7 @@ function get_settings {
         retry_return read_insulin_sensitivities 2>&3 >&4 || return 1
         retry_return read_carb_ratios 2>&3 >&4 || return 1
         retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || return 1
-	#NON_X12_ITEMS=""
+    #NON_X12_ITEMS=""
     else
         # On all other supported pumps, we should be able to get all the data we need from the pump.
         retry_return check_model 2>&3 >&4 || return 1
