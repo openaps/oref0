@@ -156,7 +156,12 @@ function check_duty_cycle {
     if [ -e "$DUTY_CYCLE_FILE" ]; then
         DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y $DUTY_CYCLE_FILE))
         DIFF_NEXT_SECONDS=$(expr $DIFF_SECONDS + 30)
-        DIFF_SUCCESS=$(expr $(stat -c %Y $DUTY_CYCLE_FILE) - $(stat -c %Y $LOOP_SUCCESS_FILE))
+        if [ -e "$LOOP_SUCCESS_FILE" ]; then
+            DIFF_SUCCESS=$(expr $(stat -c %Y $DUTY_CYCLE_FILE) - $(stat -c %Y $LOOP_SUCCESS_FILE))
+        else
+            # didn't find the loop success file --> start new cycle
+            DIFF_SUCCESS=1
+        fi
         
         if [ "$DUTY_CYCLE" -gt "0" ]; then
             if [ "$DIFF_SUCCESS" -gt "0" ]; then
