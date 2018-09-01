@@ -131,108 +131,63 @@ function fail {
 
 # The function "check_duty_cycle" checks if the loop has to run and it returns 0 if so.
 # It exits the script with code 0 otherwise.
-# The decision is based on the time since last *successful* loop.
-# !Note duty cycle times are set in seconds.
 #
-# Additionally it may start an "emergency action" if enabled.
-# Possible actions are USB power cycling, SPI reset or reboot the system.
-# The variables SPI_RESET, USB_RESET and REBOOT are setting the allowable time between successful loops.
-# If no loop has completed in that time, it performs the respective action.
-# !Note SPI reset is just tested for Pi0 and my produce errors on edison rigs.
-# !Note to enable an emergency action put a number in seconds when it should start and a 0 to disable.
-# !Note emergency actions can also be enabled without using enabling the duty cycle.
+# The given duty cycle time defines in which time frames the loop should start. 
+# E.g., if the duty cycle is 300 seconds (5 min) and a loop starts now and will be successful, the next round won't start earlier than in 300 seconds.
+# The decision is based on the time since last *successful* loop started.
+# Hence, the loop will not be limited if the last loop was unsuccessful.
+# On the other hand, it is not guaranteed that a loop will run as often as defined by the time frames.
+# This is due to the fact that the script is just called every minute, and thus may start later then the given number of seconds.
+# Additionally, if the loop takes more than the given time to complete it also can not execute in the given time frame.
 #
-# The intention is two fold: 
-# First the battery consumption is reduced (Pump and Pi) if the loop runs less often.
+# The intention is that the battery consumption is reduced (Pump and Pi) if the loop runs less often.
 # This is most dramatic for Enlite CGM, where wait_for_bg can't be used.
-# Secondly, if Carelink USB is used with Enlite, and wait_for_silence can't be used, this
-# prevents the loop from disrupting the communication between the pump and Enlite sensors.
 #
+# !Note duty cycle times are set in seconds.
 # Use DUTY_CYCLE=0 (default) if you don't want to limit the loop
 #
-# Suggestion for Carelink USB users are 
-# DUTY_CYCLE=120 
-# SPI_RESET=0
-# USB_RESET=300
-# REBOOT=900
-#
-# Suggestion for PI HAT + MDT users are 
-# DUTY_CYCLE=120 
-# SPI_RESET=0
-# USB_RESET=0
-# REBOOT=900
-#
-# Default is DUTY_CYCLE=0 to disable this feature.
+# Suggestion for PI HAT + MDT users
+# DUTY_CYCLE=150 
 DUTY_CYCLE=${DUTY_CYCLE:-0}	#0=off, other = delay in seconds
 
-SPI_RESET=${SPI_RESET:-0}		#0=off, other = delay in seconds
-USB_RESET=${USB_RESET:-0}		#0=off, other = delay in seconds
-REBOOT=${REBOOT:-0}			#0=off, other = delay in seconds
-
 function check_duty_cycle { 
-    if [ -e /tmp/pump_loop_success ]; then
-        DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
-        if [ "$SPI_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$SPI_RESET" ]; then 
-            # try to reset usb to fix potential communication problems causing loop fails
-            SPI_RESET_DIFF=$SPI_RESET
-            if [ -e /tmp/spi_reset ]; then 
-                SPI_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/spi_reset))
-            fi
-
-            if [ "$SPI_RESET_DIFF" -ge "$SPI_RESET" ]; then
-                # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
-                echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset spi... "
-                rmmod spi_bcm2835 2>&3 >&4
-                sleep 1
-                modprobe spi_bcm2835 2>&3 >&4
-                touch /tmp/spi_reset
-                echo "$(date '+%Y-%m-%d %H:%M:%S') SPI Reset" >> /var/log/openaps/hard_reset.log
-                echo " done. --> start new cycle."
-                return 0 #return to loop routine
-            fi
-        fi
-
-        if [ "$USB_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$USB_RESET" ]; then 
-            # try to reset usb to fix potential communication problems causing loop fails
-            USB_RESET_DIFF=$USB_RESET
-            if [ -e /tmp/usb_power_cycled ]; then 
-                USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usb_power_cycled))
-            fi
-            
-            if [ "$USB_RESET_DIFF" -ge "$USB_RESET" ]; then
-                # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
-                echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset usb... "
-                /usr/local/bin/oref0-reset-usb 2>&3 >&4
-                touch /tmp/usb_power_cycled
-                echo "$(date '+%Y-%m-%d %H:%M:%S') USB Reset" >> /var/log/openaps/hard_reset.log
-                echo " done. --> start new cycle."
-                return 0 #return to loop routine
-            fi
-        fi
-
-        if [ "$REBOOT" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$REBOOT" ]; then
-            # if usb reset doesn't help or is not enabled --> reboot system
-            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> emergency reboot."
-            echo "$(date '+%Y-%m-%d %H:%M:%S') reboot system" >> /var/log/openaps/hard_reset.log
-            sudo shutdown -r now
-            exit 0
-        fi
+	DUTY_CYCLE_FILE="/tmp/pump_loop_start"
+	LOOP_SUCCESS_FILE="/tmp/pump_loop_success"
+    if [ -e "$DUTY_CYCLE_FILE" ]; then
+        DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y $DUTY_CYCLE_FILE))
+		DIFF_NEXT_SECONDS=$(expr $DIFF_SECONDS + 30)
+		DIFF_SUCCESS=$(expr $(stat -c %Y $DUTY_CYCLE_FILE) - $(stat -c %Y $LOOP_SUCCESS_FILE))
         
-        if [ "$DUTY_CYCLE" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
-            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
-            return 0
-        elif [ "$DUTY_CYCLE" -eq "0" ]; then
-            #fast exit if duty cycling is disabled
-            #echo "duty cycling disabled; start loop"
-            return 0   
+        if [ "$DUTY_CYCLE" -gt "0" ]; then
+			if [ "$DIFF_SUCCESS" -gt "0" ]; then
+				# fast return if last loop was unsuccessful
+				echo "Last loop was not successful --> start new cycle."
+				return 0
+			elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
+				touch "$DUTY_CYCLE_FILE"
+				echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
+				return 0
+			elif [ "$DIFF_NEXT_SECONDS" -gt "$DUTY_CYCLE" ]; then
+				WAIT=$(expr $DUTY_CYCLE - $DIFF_SECONDS)
+				echo -n "Wait for $WAIT seconds till duty cylce starts... "
+				# we want to avoid wait since it keeps the CPU busy
+				sleep $WAIT
+				touch "$DUTY_CYCLE_FILE"
+				echo "start new cycle."
+				return 0
+			else 
+				echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
+				exit 0
+			fi
         else
-            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
-            exit 0
+            #fast return if duty cycling is disabled
+            #echo "duty cycling disabled; start loop"
+            return 0 
         fi
-    elif [ "$SPI_RESET" -gt "0" ] || [ "$USB_RESET" -gt "0" ] || [ "$REBOOT" -gt "0" ] || [ "$DUTY_CYCLE" -gt "0" ]; then
-        echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
+    elif [ "$DUTY_CYCLE" -gt "0" ]; then
+        echo "$DUTY_CYCLE_FILE does not exist; create it to start the loop duty cycle."
         # do not use timestamp from system uptime, since this could result in a endless reboot loop...
-        touch /tmp/pump_loop_success
+        touch "$DUTY_CYCLE_FILE"
         return 0
     fi
 }
