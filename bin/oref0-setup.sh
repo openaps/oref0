@@ -305,7 +305,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     if [[ ${CGM,,} =~ "xdrip-js" ]]; then
         prompt_and_validate DEXCOM_CGM_TX_ID "What is your current Dexcom Transmitter ID?" validate_g5transmitter_serial
-        DEXCOM_CGM_TX_ID=$REPLY
         echo "$DEXCOM_CGM_TX_ID? Got it."
         echo
     fi
@@ -742,9 +741,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     set_pref_string .myopenaps_path "$directory"
     set_pref_string .cgm_loop_path "$directory-cgm-loop"
     set_pref_string .xdrip_path "$HOME/.xDripAPS"
-    if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
-        set_pref_string .dexcom_cgm_tx_id "$DEXCOM_CGM_TX_ID"
-    fi
+    #if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
+        #set_pref_string .dexcom_cgm_tx_id "$DEXCOM_CGM_TX_ID"
+    #fi
     
     cat preferences.json
 
@@ -1068,11 +1067,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # xdrip-js specific installation tasks (in addition to xdrip tasks)
     if [[ ${CGM,,} =~ "xdrip-js" ]]; then
-		echo xdrip-js selected as CGM, so configuring xdrip-js
+        echo xdrip-js selected as CGM, so configuring xdrip-js
         git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
         cd $HOME/src/Logger
         sudo npm run global-install
-		touch /tmp/reboot-required
+        touch /tmp/reboot-required
+        #Set transmitter id & generate xdripjs.json config
+        if validate_g5transmitter_serial $DEXCOM_CGM_TX_ID; then
+            cgm-transmitter "$DEXCOM_CGM_TX_ID"
+        fi
     fi
 
     # disable IPv6
@@ -1170,8 +1173,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export API_SECRET" >> $HOME/.bash_profile
     echo DEXCOM_CGM_RECV_ID="$BLE_SERIAL" >> $HOME/.bash_profile
     echo "export DEXCOM_CGM_RECV_ID" >> $HOME/.bash_profile
-    echo DEXCOM_CGM_TX_ID="$DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
-    echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
+    #echo DEXCOM_CGM_TX_ID="$DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
+    #echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     echo 
 
     echo
@@ -1319,9 +1322,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if validate_g4share_serial $BLE_SERIAL; then
             (crontab -l; crontab -l | grep -q "DEXCOM_CGM_RECV_ID=" || echo DEXCOM_CGM_RECV_ID=$BLE_SERIAL) | crontab -
         fi
-        if validate_g5transmitter_serial $DEXCOM_CGM_TX_ID; then
-            (crontab -l; crontab -l | grep -q "DEXCOM_CGM_TX_ID=" || echo DEXCOM_CGM_TX_ID=$DEXCOM_CGM_TX_ID) | crontab -
-        fi
+        #if validate_g5transmitter_serial $DEXCOM_CGM_TX_ID; then
+        #    (crontab -l; crontab -l | grep -q "DEXCOM_CGM_TX_ID=" || echo DEXCOM_CGM_TX_ID=$DEXCOM_CGM_TX_ID) | crontab -
+        #fi
         # deduplicate to avoid multiple instances of $GOPATH in $PATH
         echo $PATH
         dedupe_path;
@@ -1348,7 +1351,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             add_to_crontab \
                 "Logger" \
                 "* * * * *" \
-                "cd $HOME/src/Logger && ps aux | grep -v grep | grep -q "$DEXCOM_CGM_TX_ID" || /usr/local/bin/Logger $DEXCOM_CGM_TX_ID >> /var/log/openaps/logger-loop.log 2>&1"
+                "cd $HOME/src/Logger && ps aux | grep -v grep | grep -q Logger || /usr/local/bin/Logger >> /var/log/openaps/logger-loop.log 2>&1"
         fi
         crontab -l | tee $HOME/crontab.txt
     fi
