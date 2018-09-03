@@ -79,7 +79,7 @@ if (!module.parent) {
     var glucose_input = inputs[2];
     var profile_input = inputs[3];
     var meal_input = params.meal;
-    var autosens_input = params['auto-sense'];
+    var autosens_input = params['auto-sens'];
     var reservoir_input = params.reservoir;
 
     var fs = require('fs');
