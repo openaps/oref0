@@ -25,7 +25,7 @@ var stringify = require('json-stable-stringify');
 
 if (!module.parent) {
     var argv = require('yargs')
-        .usage("$0 <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>")
+        .usage("$0 [--tune-insulin-curve] <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>")
         .demand(3)
         .strict(true)
         .help('help');
@@ -45,6 +45,12 @@ if (!module.parent) {
     } catch (e) {
         console.log('{ "error": "Could not parse input data" }');
         return console.error("Could not parse input data: ", e);
+    }
+
+    // if not tuning the insulinEndTime and insulinPeakTime, then use data from pump profile
+    if (!params["tune-insulin-curve"]) {
+      previous_autotune_data.dia = pumpprofile_data.dia;
+      previous_autotune_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
     }
 
     var inputs = {
