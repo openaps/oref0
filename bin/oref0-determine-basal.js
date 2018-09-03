@@ -25,7 +25,7 @@ if (!module.parent) {
         alias: 'a',
         nargs: 1,
         describe: "Auto-sensitivity configuration",
-        default: true
+        default: false
       })
       .option('currentTime', {
         alias: 'c',
@@ -44,7 +44,7 @@ if (!module.parent) {
         nargs: 1,
         describe: "json doc describing meals",
         default: false
-      }
+      })
       .option('missing-auto-sens-ok', {
         describe: "If auto-sens data is missing, try anyway.",
         boolean: true,
