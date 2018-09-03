@@ -65,14 +65,17 @@ if (!module.parent) {
       .strict(true)
       .help('help')
     ;
-    function usage ( ) {
-      argv.showHelp( );
-    }
 
     var params = argv.argv;
     var inputs = params._;
     var errors = [ ];
     var warnings = [ ];
+
+    if (inputs.length > 4) {
+      argv.showHelp( );
+      console.error('Too many arguments');
+      process.exit(1);
+    }
 
     var iob_input = inputs[0];
     var currenttemp_input = inputs[1];
