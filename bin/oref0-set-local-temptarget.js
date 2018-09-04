@@ -44,7 +44,6 @@ if (!module.parent) {
         temptarget.created_at = new Date();
     }
 
-
     console.log(JSON.stringify(temptarget));
 }
 
