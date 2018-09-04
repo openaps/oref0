@@ -70,7 +70,7 @@ if (!module.parent) {
     var enactedtemp_input = inputs[5];
     var meal_input = inputs[6];
     
-    if (inputs.length > 7)
+    if (inputs.length > 7) {
         argv.showHelp();
         console.error('Too many arguments');
         process.exit(1);
