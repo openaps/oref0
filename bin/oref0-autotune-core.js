@@ -26,6 +26,12 @@ var stringify = require('json-stable-stringify');
 if (!module.parent) {
     var argv = require('yargs')
         .usage("$0 [--tune-insulin-curve] <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>")
+        .option('tune-insulin-curve', {
+          alias: 't',
+          describe: "Tune insulin curve",
+          boolean: true,
+          default: false
+        })
         .demand(3)
         .strict(true)
         .help('help');

@@ -241,7 +241,7 @@ do
     
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 
     # output autotuned profile or what will be used as <autotune/autotune.json> in the next iteration
-    echo "oref0-autotune-core autotune.$i.json profile.json profile.pump.json > newprofile.$i.json"
+    echo "oref0-autotune-core $TUNE_INSULIN_CURVE_OPT autotune.$i.json profile.json profile.pump.json > newprofile.$i.json"
     if ! oref0-autotune-core $TUNE_INSULIN_CURVE_OPT autotune.$i.json profile.json profile.pump.json > newprofile.$i.json; then
         if cat profile.json | jq --exit-status .carb_ratio==null; then
             echo "ERROR: profile.json contains null carb_ratio: using profile.pump.json"
