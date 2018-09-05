@@ -22,6 +22,8 @@ main () {
 
     test-ns-status
 
+    test-autotune-core
+
     cleanup
 }
 
@@ -78,6 +80,21 @@ test-ns-status () {
     echo "ns-status test passed"
 }
 
+test-autotune-core () {
+    # Run autotune-core and capture output
+    ../bin/oref0-autotune-core.js autotune.data.json profile.json profile.json 2>stderr_output 1>stdout_output
+
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+    cat stderr_output | grep -q CRTotalCarbs || fail_test "ns-status didn't have expected oref0-autotune-core stderr output"
+
+    # Make sure output has accurate clock data
+    cat stdout_output | jq .carb_ratio | grep -q 22.142 || fail_test "ns-status reported incorrect oref0-autotune-core autotune output carb_ratio"
+
+    # If we made it here, the test passed
+    echo "oref0-autotune-core test passed"
+}
+
 generate_test_files () {
     
     # Make a fake preferences.json to test the commands that extract values from it
@@ -91,6 +108,110 @@ generate_test_files () {
             "string_hello": "hello",
             "null_value": null
         }
+EOT
+    # Make a dummy profile.json
+    cat >profile.json <<EOT
+{
+   "A52_risk_enable": false,
+   "adv_target_adjustments": false,
+   "allowSMB_with_high_temptarget": false,
+   "autosens_max": 1.2,
+   "autosens_min": 0.8,
+   "autotune_isf_adjustmentFraction": 0,
+   "basalprofile": [
+      {
+         "i": 0,
+         "minutes": 0,
+         "rate": 0.63,
+         "start": "00:00:00"
+      }
+   ],
+   "bg_targets": {
+      "first": 0,
+      "targets": [
+         {
+            "high": 110,
+            "i": 0,
+            "low": 110,
+            "max_bg": 110,
+            "min_bg": 110,
+            "offset": 0,
+            "start": "00:00:00",
+            "x": 0
+         }
+      ],
+      "units": "mg/dL",
+      "user_preferred_units": "mg/dL"
+   },
+   "bolussnooze_dia_divisor": 2,
+   "carb_ratio": 22.142,
+   "carb_ratios": {
+      "first": 1,
+      "schedule": [
+         {
+            "i": 0,
+            "offset": 0,
+            "ratio": 20,
+            "start": "00:00:00",
+            "x": 0
+         }
+      ],
+      "units": "grams"
+   },
+   "carbsReqThreshold": 1,
+   "csf": 3.815,
+   "current_basal": 0.65,
+   "current_basal_safety_multiplier": 4,
+   "curve": "rapid-acting",
+   "dia": 7,
+   "enableSMB_after_carbs": false,
+   "enableSMB_always": true,
+   "enableSMB_with_COB": true,
+   "enableSMB_with_temptarget": true,
+   "enableUAM": true,
+   "exercise_mode": false,
+   "half_basal_exercise_target": 160,
+   "high_temptarget_raises_sensitivity": false,
+   "insulinPeakTime": 85,
+   "isfProfile": {
+      "first": 1,
+      "sensitivities": [
+         {
+            "endOffset": 1440,
+            "i": 0,
+            "offset": 0,
+            "sensitivity": 100,
+            "start": "00:00:00",
+            "x": 0
+         }
+      ],
+      "units": "mg/dL",
+      "user_preferred_units": "mg/dL"
+   },
+   "low_temptarget_lowers_sensitivity": false,
+   "maxCOB": 120,
+   "maxSMBBasalMinutes": 30,
+   "max_basal": 2.8,
+   "max_bg": 110,
+   "max_daily_basal": 0.75,
+   "max_daily_safety_multiplier": 3,
+   "max_iob": 7,
+   "min_5m_carbimpact": 8,
+   "min_bg": 110,
+   "model": "723",
+   "offline_hotspot": false,
+   "out_units": "mg/dL",
+   "remainingCarbsCap": 90,
+   "remainingCarbsFraction": 1,
+   "resistance_lowers_target": false,
+   "rewind_resets_autosens": true,
+   "sens": 100,
+   "sensitivity_raises_target": true,
+   "suspend_zeros_iob": true,
+   "unsuspend_if_no_temp": false,
+   "useCustomPeakTime": true,
+   "wide_bg_target_range": false
+}
 EOT
 
     # Make a fake clock-zoned.json to test the commands that extract values from it
@@ -2718,7 +2839,371 @@ EOT
     "timestamp": "2018-09-04T07:29:37-05:00", "_type": "TempBasal", "temp": "absolute", "rate": 0
   }
 ]
+EOT
 
+  cat >autotune.data.json <<EOT
+{
+  "CRData": [
+    {
+      "CRInitialIOB": -1.374,
+      "CRInitialBG": 46,
+      "CRInitialCarbTime": "2018-09-05T00:28:11.742Z",
+      "CREndIOB": -1.136,
+      "CREndBG": 138,
+      "CREndTime": "2018-09-05T01:38:12.059Z",
+      "CRCarbs": 30,
+      "CRInsulin": -0.35
+    },
+    {
+      "CRInitialIOB": -0.916,
+      "CRInitialBG": 103,
+      "CRInitialCarbTime": "2018-09-05T02:03:12.202Z",
+      "CREndIOB": -0.085,
+      "CREndBG": 145,
+      "CREndTime": "2018-09-05T04:58:10.778Z",
+      "CRCarbs": 62,
+      "CRInsulin": 0
+    }
+  ],
+  "CSFGlucoseData": [
+    {
+      "glucose": 103,
+      "trend": 6.668422684640288,
+      "noise": 1,
+      "rssi": -66,
+      "unfiltered": 142912,
+      "_id": "5b8e861a82bf9b6cf6706b7f",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536067092481,
+      "dateString": "2018-09-04T13:18:12.481Z",
+      "sgv": 103,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 136160,
+      "avgDelta": "2.50",
+      "BGI": 0.95,
+      "deviation": "1.55",
+      "mealAbsorption": "start",
+      "mealCarbs": 15
+    },
+    {
+      "glucose": 116,
+      "trend": 15.330471645292878,
+      "noise": 1,
+      "rssi": -72,
+      "unfiltered": 156448,
+      "_id": "5b8e874782bf9b6cf67076e1",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536067392586,
+      "dateString": "2018-09-04T13:23:12.586Z",
+      "sgv": 116,
+      "direction": "FortyFiveUp",
+      "type": "sgv",
+      "filtered": 140992,
+      "avgDelta": "5.50",
+      "BGI": 1,
+      "deviation": "4.50",
+      "mealCarbs": 15
+    },
+    {
+      "glucose": 130,
+      "trend": 22.662058714728005,
+      "noise": 1,
+      "rssi": -73,
+      "unfiltered": 170944,
+      "_id": "5b8e887282bf9b6cf670823e",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536067692618,
+      "dateString": "2018-09-04T13:28:12.618Z",
+      "sgv": 130,
+      "direction": "SingleUp",
+      "type": "sgv",
+      "filtered": 149280,
+      "avgDelta": "8.75",
+      "BGI": 1,
+      "deviation": "7.75",
+      "mealCarbs": 15
+    },
+    {
+      "glucose": 142,
+      "trend": 26.667911169187896,
+      "noise": 1,
+      "rssi": -62,
+      "unfiltered": 182304,
+      "_id": "5b8e89a082bf9b6cf6708e14",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536067992439,
+      "dateString": "2018-09-04T13:33:12.439Z",
+      "sgv": 142,
+      "direction": "SingleUp",
+      "type": "sgv",
+      "filtered": 161056,
+      "avgDelta": "10.75",
+      "BGI": 1,
+      "deviation": "9.75",
+      "mealCarbs": 15
+    },
+    {
+      "glucose": 145,
+      "trend": 19.32678370107908,
+      "noise": 1,
+      "rssi": -66,
+      "unfiltered": 185504,
+      "_id": "5b8e8aca82bf9b6cf67099bc",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536068292891,
+      "dateString": "2018-09-04T13:38:12.891Z",
+      "sgv": 145,
+      "direction": "FortyFiveUp",
+      "type": "sgv",
+      "filtered": 173888,
+      "avgDelta": "10.50",
+      "BGI": 1,
+      "deviation": "9.50",
+      "mealCarbs": 15
+    },
+    {
+      "glucose": 151,
+      "trend": 14.003889969435955,
+      "noise": 1,
+      "rssi": -75,
+      "unfiltered": 191808,
+      "_id": "5b8e8bf882bf9b6cf670a560",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536068592368,
+      "dateString": "2018-09-04T13:43:12.368Z",
+      "sgv": 151,
+      "direction": "FortyFiveUp",
+      "type": "sgv",
+      "filtered": 184352,
+      "avgDelta": "8.75",
+      "BGI": 0.95,
+      "deviation": "7.80",
+      "mealCarbs": 15
+    },
+    {
+      "glucose": 156,
+      "trend": 10.00111123458162,
+      "noise": 1,
+      "rssi": -71,
+      "unfiltered": 197216,
+      "_id": "5b8e8d2282bf9b6cf670b098",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536068892339,
+      "dateString": "2018-09-04T13:48:12.339Z",
+      "sgv": 156,
+      "direction": "FortyFiveUp",
+      "type": "sgv",
+      "filtered": 191008,
+      "avgDelta": "6.50",
+      "BGI": 0.95,
+      "deviation": "5.55",
+      "mealCarbs": 15
+    }
+  ],
+  "ISFGlucoseData": [
+    {
+      "glucose": 221,
+      "trend": -0.6668526444597327,
+      "noise": 1,
+      "rssi": -52,
+      "unfiltered": 265984,
+      "_id": "5b8eda7a82bf9b6cf673a452",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536088692777,
+      "dateString": "2018-09-04T19:18:12.777Z",
+      "sgv": 221,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 266688,
+      "avgDelta": "0.00",
+      "BGI": -2.7,
+      "deviation": "2.70"
+    },
+    {
+      "glucose": 223,
+      "trend": 0.6667526036689173,
+      "noise": 1,
+      "rssi": -54,
+      "unfiltered": 267968,
+      "_id": "5b8edba682bf9b6cf673af8f",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536088992748,
+      "dateString": "2018-09-04T19:23:12.748Z",
+      "sgv": 223,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 266432,
+      "avgDelta": "0.00",
+      "BGI": -2.65,
+      "deviation": "2.65"
+    },
+    {
+      "glucose": 224,
+      "trend": 2.6664740879825346,
+      "noise": 1,
+      "rssi": -77,
+      "unfiltered": 269248,
+      "_id": "5b8edcd382bf9b6cf673ba6d",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536089292875,
+      "dateString": "2018-09-04T19:28:12.875Z",
+      "sgv": 224,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 266624,
+      "avgDelta": "0.25",
+      "BGI": -2.55,
+      "deviation": "2.80"
+    }
+  ],
+  "basalGlucoseData": [
+    {
+      "glucose": 100,
+      "trend": 1.332699560653378,
+      "noise": 1,
+      "rssi": -61,
+      "unfiltered": 137920,
+      "_id": "5b8e4f0d82bf9b6cf66e5b1f",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536052993966,
+      "dateString": "2018-09-04T09:23:13.966Z",
+      "sgv": 100,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 136928,
+      "avgDelta": "0.25",
+      "BGI": 1,
+      "deviation": "-0.75"
+    },
+    {
+      "glucose": 101,
+      "trend": 1.3339113615900222,
+      "noise": 1,
+      "rssi": -62,
+      "unfiltered": 138368,
+      "_id": "5b8e503382bf9b6cf66e662b",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536053293158,
+      "dateString": "2018-09-04T09:28:13.158Z",
+      "sgv": 101,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 137312,
+      "avgDelta": "0.50",
+      "BGI": 1.05,
+      "deviation": "-0.55"
+    },
+    {
+      "glucose": 101,
+      "trend": 1.3329852760668048,
+      "noise": 1,
+      "rssi": -62,
+      "unfiltered": 138752,
+      "_id": "5b8e515e82bf9b6cf66e7186",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536053593843,
+      "dateString": "2018-09-04T09:33:13.843Z",
+      "sgv": 101,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 137920,
+      "avgDelta": "0.50",
+      "BGI": 1.1,
+      "deviation": "-0.60"
+    },
+    {
+      "glucose": 102,
+      "trend": 1.3334948343743853,
+      "noise": 1,
+      "rssi": -61,
+      "unfiltered": 139744,
+      "_id": "5b8e528b82bf9b6cf66e7d0d",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536053893857,
+      "dateString": "2018-09-04T09:38:13.857Z",
+      "sgv": 102,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 138592,
+      "avgDelta": "0.50",
+      "BGI": 1.1,
+      "deviation": "-0.60"
+    },
+    {
+      "glucose": 103,
+      "trend": 1.9984367783422747,
+      "noise": 1,
+      "rssi": -62,
+      "unfiltered": 140800,
+      "_id": "5b8e53b782bf9b6cf66e8876",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536054193862,
+      "dateString": "2018-09-04T09:43:13.862Z",
+      "sgv": 103,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 139296,
+      "avgDelta": "0.75",
+      "BGI": 1.15,
+      "deviation": "-0.40"
+    },
+    {
+      "glucose": 104,
+      "trend": 1.999935557632032,
+      "noise": 1,
+      "rssi": -66,
+      "unfiltered": 141888,
+      "_id": "5b8e54e382bf9b6cf66e93ae",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536054493872,
+      "dateString": "2018-09-04T09:48:13.872Z",
+      "sgv": 104,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 140160,
+      "avgDelta": "0.75",
+      "BGI": 1.2,
+      "deviation": "-0.45"
+    },
+    {
+      "glucose": 108,
+      "trend": 4.002441489308478,
+      "noise": 1,
+      "rssi": -64,
+      "unfiltered": 145792,
+      "_id": "5b8e560f82bf9b6cf66e9ed8",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536054793308,
+      "dateString": "2018-09-04T09:53:13.308Z",
+      "sgv": 108,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 141504,
+      "avgDelta": "1.75",
+      "BGI": 1.25,
+      "deviation": "0.50"
+    },
+    {
+      "glucose": 109,
+      "trend": 4.002463738790322,
+      "noise": 1,
+      "rssi": -71,
+      "unfiltered": 147264,
+      "_id": "5b8e573c82bf9b6cf66eaa35",
+      "device": "xdripjs://MajorCAPP",
+      "date": 1536055093308,
+      "dateString": "2018-09-04T09:58:13.308Z",
+      "sgv": 109,
+      "direction": "Flat",
+      "type": "sgv",
+      "filtered": 143456,
+      "avgDelta": "1.75",
+      "BGI": 1.2,
+      "deviation": "0.55"
+    }
+  ]
+}
 EOT
 
 }
