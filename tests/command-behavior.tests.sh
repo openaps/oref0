@@ -65,7 +65,7 @@ test-ns-status () {
     cat stdout_output | jq ".mmtune.scanDetails | first | first" | grep -q 916.6 || fail_test "ns-status reported incorrect mmtune status value."
 
     # Run ns-status with uploader option and capture output
-    ../bin/ns-status.js lock-zoned.json iob.json suggested.json enacted.json battery.json reservoir.json status.json --uploader uploader.json 2>stderr_output 1>stdout_output
+    ../bin/ns-status.js clock-zoned.json iob.json suggested.json enacted.json battery.json reservoir.json status.json --uploader uploader.json 2>stderr_output 1>stdout_output
 
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
