@@ -519,11 +519,7 @@ function if_mdt_get_bg {
 
 # helper function for if_mdt_get_bg
 function mdt_get_bg {
-    if [ -e /root/src/oref0/bin/oref0-mdt-update.sh ]; then
-        /root/src/oref0/bin/oref0-mdt-update.sh 2>&1 | tee -a /var/log/openaps/cgm-loop.log >&3
-    else
-        echo "Update script \"oref0-mdt-update.sh\" missing."
-    fi
+        oref0-mdt-update 2>&1 | tee -a /var/log/openaps/cgm-loop.log >&3
 }
 
 # make sure we can talk to the pump and get a valid model number
