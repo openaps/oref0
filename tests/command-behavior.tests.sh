@@ -65,7 +65,7 @@ test-ns-status () {
     cat stdout_output | jq ".mmtune.scanDetails | first | first" | grep -q 916.6 || fail_test "ns-status reported incorrect mmtune status value."
 
     # Run ns-status with uploader option and capture output
-    ../bin/ns-status.js clock-zoned.json iob.json suggested.json enacted.json battery.json reservoir.json status.json --uploader uploader.json 2>stderr_output 1>stdout_output
+    ../bin/ns-status.js lock-zoned.json iob.json suggested.json enacted.json battery.json reservoir.json status.json --uploader uploader.json 2>stderr_output 1>stdout_output
 
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
@@ -705,7 +705,7 @@ EOT
     "glucoseType": "Finger",
     "carbs": 62,
     "units": "mg/dl",
-    "enteredBy": "Jeremy",
+    "enteredBy": "User",
     "NSCLIENT_ID": 1536115767681,
     "insulin": null
   },
@@ -733,1155 +733,1155 @@ EOT
 [
   {
     "direction": "SingleUp", "noise": 1, "dateString": "2018-09-05T14:58:09.623Z", "sgv": 142,
-    "device": "xdripjs://MajorCAPP", "filtered": 168800, "date": 1536159489623, "unfiltered": 184416,
+    "device": "xdripjs://RigName", "filtered": 168800, "date": 1536159489623, "unfiltered": 184416,
     "rssi": -82, "type": "sgv", "glucose": 142
   }, {
     "direction": "SingleUp", "noise": 1, "dateString": "2018-09-05T14:53:09.786Z", "sgv": 136,
-    "device": "xdripjs://MajorCAPP", "filtered": 153632, "date": 1536159189786, "unfiltered": 178496,
+    "device": "xdripjs://RigName", "filtered": 153632, "date": 1536159189786, "unfiltered": 178496,
     "rssi": -79, "type": "sgv", "glucose": 136
   }, {
     "direction": "DoubleUp", "noise": 1, "dateString": "2018-09-05T14:48:09.731Z", "sgv": 124,
-    "device": "xdripjs://MajorCAPP", "filtered": 141120, "date": 1536158889731, "unfiltered": 165536,
+    "device": "xdripjs://RigName", "filtered": 141120, "date": 1536158889731, "unfiltered": 165536,
     "rssi": -63, "type": "sgv", "glucose": 124
   }, {
     "direction": "DoubleUp", "noise": 1, "dateString": "2018-09-05T14:43:09.747Z", "sgv": 109,
-    "device": "xdripjs://MajorCAPP", "filtered": 134432, "date": 1536158589747, "unfiltered": 150048,
+    "device": "xdripjs://RigName", "filtered": 134432, "date": 1536158589747, "unfiltered": 150048,
     "rssi": -67, "type": "sgv", "glucose": 109
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T14:38:10.581Z", "sgv": 93,
-    "device": "xdripjs://MajorCAPP", "filtered": 133056, "date": 1536158290581, "unfiltered": 133728,
+    "device": "xdripjs://RigName", "filtered": 133056, "date": 1536158290581, "unfiltered": 133728,
     "rssi": -60, "type": "sgv", "glucose": 93
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T14:23:09.777Z", "sgv": 94,
-    "device": "xdripjs://MajorCAPP", "filtered": 138176, "date": 1536157389777, "unfiltered": 134592,
+    "device": "xdripjs://RigName", "filtered": 138176, "date": 1536157389777, "unfiltered": 134592,
     "rssi": -76, "type": "sgv", "glucose": 94
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T14:18:09.822Z", "sgv": 97,
-    "device": "xdripjs://MajorCAPP", "filtered": 140128, "date": 1536157089822, "unfiltered": 137376,
+    "device": "xdripjs://RigName", "filtered": 140128, "date": 1536157089822, "unfiltered": 137376,
     "rssi": -77, "type": "sgv", "glucose": 97
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T14:13:09.824Z", "sgv": 99,
-    "device": "xdripjs://MajorCAPP", "filtered": 141888, "date": 1536156789824, "unfiltered": 139520,
+    "device": "xdripjs://RigName", "filtered": 141888, "date": 1536156789824, "unfiltered": 139520,
     "rssi": -72, "type": "sgv", "glucose": 99
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T14:08:09.829Z", "sgv": 100,
-    "device": "xdripjs://MajorCAPP", "filtered": 143488, "date": 1536156489829, "unfiltered": 140416,
+    "device": "xdripjs://RigName", "filtered": 143488, "date": 1536156489829, "unfiltered": 140416,
     "rssi": -68, "type": "sgv", "glucose": 100
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T14:03:09.858Z", "sgv": 102,
-    "device": "xdripjs://MajorCAPP", "filtered": 144864, "date": 1536156189858, "unfiltered": 142784,
+    "device": "xdripjs://RigName", "filtered": 144864, "date": 1536156189858, "unfiltered": 142784,
     "rssi": -72, "type": "sgv", "glucose": 102
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:58:10.019Z", "sgv": 104,
-    "device": "xdripjs://MajorCAPP", "filtered": 146208, "date": 1536155890019, "unfiltered": 144416,
+    "device": "xdripjs://RigName", "filtered": 146208, "date": 1536155890019, "unfiltered": 144416,
     "rssi": -77, "type": "sgv", "glucose": 104
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:53:10.088Z", "sgv": 105,
-    "device": "xdripjs://MajorCAPP", "filtered": 147648, "date": 1536155590088, "unfiltered": 145984,
+    "device": "xdripjs://RigName", "filtered": 147648, "date": 1536155590088, "unfiltered": 145984,
     "rssi": -72, "type": "sgv", "glucose": 105
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:48:09.748Z", "sgv": 105,
-    "device": "xdripjs://MajorCAPP", "filtered": 149248, "date": 1536155289748, "unfiltered": 146144,
+    "device": "xdripjs://RigName", "filtered": 149248, "date": 1536155289748, "unfiltered": 146144,
     "rssi": -75, "type": "sgv", "glucose": 105
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:43:10.020Z", "sgv": 108,
-    "device": "xdripjs://MajorCAPP", "filtered": 150752, "date": 1536154990020, "unfiltered": 149024,
+    "device": "xdripjs://RigName", "filtered": 150752, "date": 1536154990020, "unfiltered": 149024,
     "rssi": -63, "type": "sgv", "glucose": 108
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:38:10.121Z", "sgv": 108,
-    "device": "xdripjs://MajorCAPP", "filtered": 151808, "date": 1536154690121, "unfiltered": 149440,
+    "device": "xdripjs://RigName", "filtered": 151808, "date": 1536154690121, "unfiltered": 149440,
     "rssi": -65, "type": "sgv", "glucose": 108
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:28:10.277Z", "sgv": 111,
-    "device": "xdripjs://MajorCAPP", "filtered": 152000, "date": 1536154090277, "unfiltered": 151808,
+    "device": "xdripjs://RigName", "filtered": 152000, "date": 1536154090277, "unfiltered": 151808,
     "rssi": -60, "type": "sgv", "glucose": 111
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:23:10.502Z", "sgv": 112,
-    "device": "xdripjs://MajorCAPP", "filtered": 151232, "date": 1536153790502, "unfiltered": 152832,
+    "device": "xdripjs://RigName", "filtered": 151232, "date": 1536153790502, "unfiltered": 152832,
     "rssi": -80, "type": "sgv", "glucose": 112
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:18:09.814Z", "sgv": 111,
-    "device": "xdripjs://MajorCAPP", "filtered": 149824, "date": 1536153489814, "unfiltered": 151776,
+    "device": "xdripjs://RigName", "filtered": 149824, "date": 1536153489814, "unfiltered": 151776,
     "rssi": -67, "type": "sgv", "glucose": 111
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:13:09.799Z", "sgv": 109,
-    "device": "xdripjs://MajorCAPP", "filtered": 147616, "date": 1536153189799, "unfiltered": 149920,
+    "device": "xdripjs://RigName", "filtered": 147616, "date": 1536153189799, "unfiltered": 149920,
     "rssi": -64, "type": "sgv", "glucose": 109
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:08:09.901Z", "sgv": 108,
-    "device": "xdripjs://MajorCAPP", "filtered": 144416, "date": 1536152889901, "unfiltered": 149344,
+    "device": "xdripjs://RigName", "filtered": 144416, "date": 1536152889901, "unfiltered": 149344,
     "rssi": -68, "type": "sgv", "glucose": 108
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T13:03:09.901Z", "sgv": 105,
-    "device": "xdripjs://MajorCAPP", "filtered": 140352, "date": 1536152589901, "unfiltered": 146144,
+    "device": "xdripjs://RigName", "filtered": 140352, "date": 1536152589901, "unfiltered": 146144,
     "rssi": -79, "type": "sgv", "glucose": 105
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:58:09.936Z", "sgv": 102,
-    "device": "xdripjs://MajorCAPP", "filtered": 136160, "date": 1536152289936, "unfiltered": 142656,
+    "device": "xdripjs://RigName", "filtered": 136160, "date": 1536152289936, "unfiltered": 142656,
     "rssi": -66, "type": "sgv", "glucose": 102
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:53:10.044Z", "sgv": 99,
-    "device": "xdripjs://MajorCAPP", "filtered": 132672, "date": 1536151990044, "unfiltered": 139520,
+    "device": "xdripjs://RigName", "filtered": 132672, "date": 1536151990044, "unfiltered": 139520,
     "rssi": -63, "type": "sgv", "glucose": 99
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:48:09.862Z", "sgv": 94,
-    "device": "xdripjs://MajorCAPP", "filtered": 130656, "date": 1536151689862, "unfiltered": 134080,
+    "device": "xdripjs://RigName", "filtered": 130656, "date": 1536151689862, "unfiltered": 134080,
     "rssi": -63, "type": "sgv", "glucose": 94
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:43:09.861Z", "sgv": 92,
-    "device": "xdripjs://MajorCAPP", "filtered": 130352, "date": 1536151389861, "unfiltered": 132192,
+    "device": "xdripjs://RigName", "filtered": 130352, "date": 1536151389861, "unfiltered": 132192,
     "rssi": -63, "type": "sgv", "glucose": 92
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:38:09.979Z", "sgv": 90,
-    "device": "xdripjs://MajorCAPP", "filtered": 131264, "date": 1536151089979, "unfiltered": 129952,
+    "device": "xdripjs://RigName", "filtered": 131264, "date": 1536151089979, "unfiltered": 129952,
     "rssi": -52, "type": "sgv", "glucose": 90
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:33:10.038Z", "sgv": 89,
-    "device": "xdripjs://MajorCAPP", "filtered": 132864, "date": 1536150790038, "unfiltered": 129792,
+    "device": "xdripjs://RigName", "filtered": 132864, "date": 1536150790038, "unfiltered": 129792,
     "rssi": -78, "type": "sgv", "glucose": 89
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:28:09.991Z", "sgv": 92,
-    "device": "xdripjs://MajorCAPP", "filtered": 134720, "date": 1536150489991, "unfiltered": 132320,
+    "device": "xdripjs://RigName", "filtered": 134720, "date": 1536150489991, "unfiltered": 132320,
     "rssi": -68, "type": "sgv", "glucose": 92
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:23:10.111Z", "sgv": 93,
-    "device": "xdripjs://MajorCAPP", "filtered": 136800, "date": 1536150190111, "unfiltered": 133952,
+    "device": "xdripjs://RigName", "filtered": 136800, "date": 1536150190111, "unfiltered": 133952,
     "rssi": -67, "type": "sgv", "glucose": 93
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:18:10.020Z", "sgv": 95,
-    "device": "xdripjs://MajorCAPP", "filtered": 138912, "date": 1536149890020, "unfiltered": 135488,
+    "device": "xdripjs://RigName", "filtered": 138912, "date": 1536149890020, "unfiltered": 135488,
     "rssi": -68, "type": "sgv", "glucose": 95
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:13:10.039Z", "sgv": 97,
-    "device": "xdripjs://MajorCAPP", "filtered": 140736, "date": 1536149590039, "unfiltered": 137376,
+    "device": "xdripjs://RigName", "filtered": 140736, "date": 1536149590039, "unfiltered": 137376,
     "rssi": -70, "type": "sgv", "glucose": 97
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:08:10.426Z", "sgv": 99,
-    "device": "xdripjs://MajorCAPP", "filtered": 142240, "date": 1536149290426, "unfiltered": 139808,
+    "device": "xdripjs://RigName", "filtered": 142240, "date": 1536149290426, "unfiltered": 139808,
     "rssi": -71, "type": "sgv", "glucose": 99
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T12:03:10.079Z", "sgv": 101,
-    "device": "xdripjs://MajorCAPP", "filtered": 143616, "date": 1536148990079, "unfiltered": 142208,
+    "device": "xdripjs://RigName", "filtered": 143616, "date": 1536148990079, "unfiltered": 142208,
     "rssi": -71, "type": "sgv", "glucose": 101
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:58:10.242Z", "sgv": 102,
-    "device": "xdripjs://MajorCAPP", "filtered": 145120, "date": 1536148690242, "unfiltered": 142752,
+    "device": "xdripjs://RigName", "filtered": 145120, "date": 1536148690242, "unfiltered": 142752,
     "rssi": -73, "type": "sgv", "glucose": 102
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:53:10.255Z", "sgv": 103,
-    "device": "xdripjs://MajorCAPP", "filtered": 146432, "date": 1536148390255, "unfiltered": 144128,
+    "device": "xdripjs://RigName", "filtered": 146432, "date": 1536148390255, "unfiltered": 144128,
     "rssi": -73, "type": "sgv", "glucose": 103
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:48:09.968Z", "sgv": 105,
-    "device": "xdripjs://MajorCAPP", "filtered": 147040, "date": 1536148089968, "unfiltered": 145568,
+    "device": "xdripjs://RigName", "filtered": 147040, "date": 1536148089968, "unfiltered": 145568,
     "rssi": -85, "type": "sgv", "glucose": 105
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:43:09.969Z", "sgv": 106,
-    "device": "xdripjs://MajorCAPP", "filtered": 146720, "date": 1536147789969, "unfiltered": 146592,
+    "device": "xdripjs://RigName", "filtered": 146720, "date": 1536147789969, "unfiltered": 146592,
     "rssi": -82, "type": "sgv", "glucose": 106
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:38:09.562Z", "sgv": 106,
-    "device": "xdripjs://MajorCAPP", "filtered": 145536, "date": 1536147489562, "unfiltered": 147296,
+    "device": "xdripjs://RigName", "filtered": 145536, "date": 1536147489562, "unfiltered": 147296,
     "rssi": -82, "type": "sgv", "glucose": 106
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:28:10.085Z", "sgv": 104,
-    "device": "xdripjs://MajorCAPP", "filtered": 141408, "date": 1536146890085, "unfiltered": 144672,
+    "device": "xdripjs://RigName", "filtered": 141408, "date": 1536146890085, "unfiltered": 144672,
     "rssi": -76, "type": "sgv", "glucose": 104
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:23:10.839Z", "sgv": 102,
-    "device": "xdripjs://MajorCAPP", "filtered": 138976, "date": 1536146590839, "unfiltered": 143040,
+    "device": "xdripjs://RigName", "filtered": 138976, "date": 1536146590839, "unfiltered": 143040,
     "rssi": -76, "type": "sgv", "glucose": 102
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:18:11.253Z", "sgv": 99,
-    "device": "xdripjs://MajorCAPP", "filtered": 136352, "date": 1536146291253, "unfiltered": 140160,
+    "device": "xdripjs://RigName", "filtered": 136352, "date": 1536146291253, "unfiltered": 140160,
     "rssi": -87, "type": "sgv", "glucose": 99
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:13:11.320Z", "sgv": 97,
-    "device": "xdripjs://MajorCAPP", "filtered": 133600, "date": 1536145991320, "unfiltered": 137600,
+    "device": "xdripjs://RigName", "filtered": 133600, "date": 1536145991320, "unfiltered": 137600,
     "rssi": -77, "type": "sgv", "glucose": 97
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:08:11.297Z", "sgv": 95,
-    "device": "xdripjs://MajorCAPP", "filtered": 130704, "date": 1536145691297, "unfiltered": 135584,
+    "device": "xdripjs://RigName", "filtered": 130704, "date": 1536145691297, "unfiltered": 135584,
     "rssi": -82, "type": "sgv", "glucose": 95
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T11:03:11.327Z", "sgv": 92,
-    "device": "xdripjs://MajorCAPP", "filtered": 127312, "date": 1536145391327, "unfiltered": 132000,
+    "device": "xdripjs://RigName", "filtered": 127312, "date": 1536145391327, "unfiltered": 132000,
     "rssi": -77, "type": "sgv", "glucose": 92
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:58:11.318Z", "sgv": 88,
-    "device": "xdripjs://MajorCAPP", "filtered": 123200, "date": 1536145091318, "unfiltered": 128544,
+    "device": "xdripjs://RigName", "filtered": 123200, "date": 1536145091318, "unfiltered": 128544,
     "rssi": -81, "type": "sgv", "glucose": 88
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:53:11.283Z", "sgv": 86,
-    "device": "xdripjs://MajorCAPP", "filtered": 118592, "date": 1536144791283, "unfiltered": 125808,
+    "device": "xdripjs://RigName", "filtered": 118592, "date": 1536144791283, "unfiltered": 125808,
     "rssi": -71, "type": "sgv", "glucose": 86
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:48:11.181Z", "sgv": 81,
-    "device": "xdripjs://MajorCAPP", "filtered": 113920, "date": 1536144491181, "unfiltered": 122160,
+    "device": "xdripjs://RigName", "filtered": 113920, "date": 1536144491181, "unfiltered": 122160,
     "rssi": -76, "type": "sgv", "glucose": 81
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:43:11.297Z", "sgv": 74,
-    "device": "xdripjs://MajorCAPP", "filtered": 109600, "date": 1536144191297, "unfiltered": 115712,
+    "device": "xdripjs://RigName", "filtered": 109600, "date": 1536144191297, "unfiltered": 115712,
     "rssi": -72, "type": "sgv", "glucose": 74
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:38:11.116Z", "sgv": 70,
-    "device": "xdripjs://MajorCAPP", "filtered": 105760, "date": 1536143891116, "unfiltered": 112048,
+    "device": "xdripjs://RigName", "filtered": 105760, "date": 1536143891116, "unfiltered": 112048,
     "rssi": -69, "type": "sgv", "glucose": 70
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:33:11.211Z", "sgv": 66,
-    "device": "xdripjs://MajorCAPP", "filtered": 102368, "date": 1536143591211, "unfiltered": 107984,
+    "device": "xdripjs://RigName", "filtered": 102368, "date": 1536143591211, "unfiltered": 107984,
     "rssi": -79, "type": "sgv", "glucose": 66
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:28:11.364Z", "sgv": 62,
-    "device": "xdripjs://MajorCAPP", "filtered": 99440, "date": 1536143291364, "unfiltered": 104128,
+    "device": "xdripjs://RigName", "filtered": 99440, "date": 1536143291364, "unfiltered": 104128,
     "rssi": -76, "type": "sgv", "glucose": 62
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:23:11.353Z", "sgv": 58,
-    "device": "xdripjs://MajorCAPP", "filtered": 96832, "date": 1536142991353, "unfiltered": 100528,
+    "device": "xdripjs://RigName", "filtered": 96832, "date": 1536142991353, "unfiltered": 100528,
     "rssi": -76, "type": "sgv", "glucose": 58
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:18:11.230Z", "sgv": 56,
-    "device": "xdripjs://MajorCAPP", "filtered": 94736, "date": 1536142691230, "unfiltered": 98288,
+    "device": "xdripjs://RigName", "filtered": 94736, "date": 1536142691230, "unfiltered": 98288,
     "rssi": -75, "type": "sgv", "glucose": 56
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:13:10.540Z", "sgv": 54,
-    "device": "xdripjs://MajorCAPP", "filtered": 93344, "date": 1536142390540, "unfiltered": 96560,
+    "device": "xdripjs://RigName", "filtered": 93344, "date": 1536142390540, "unfiltered": 96560,
     "rssi": -69, "type": "sgv", "glucose": 54
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:08:11.212Z", "sgv": 51,
-    "device": "xdripjs://MajorCAPP", "filtered": 92656, "date": 1536142091212, "unfiltered": 93616,
+    "device": "xdripjs://RigName", "filtered": 92656, "date": 1536142091212, "unfiltered": 93616,
     "rssi": -72, "type": "sgv", "glucose": 51
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T10:03:11.347Z", "sgv": 49,
-    "device": "xdripjs://MajorCAPP", "filtered": 92336, "date": 1536141791347, "unfiltered": 92496,
+    "device": "xdripjs://RigName", "filtered": 92336, "date": 1536141791347, "unfiltered": 92496,
     "rssi": -76, "type": "sgv", "glucose": 49
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:58:11.231Z", "sgv": 50,
-    "device": "xdripjs://MajorCAPP", "filtered": 92000, "date": 1536141491231, "unfiltered": 92672,
+    "device": "xdripjs://RigName", "filtered": 92000, "date": 1536141491231, "unfiltered": 92672,
     "rssi": -89, "type": "sgv", "glucose": 50
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:53:11.299Z", "sgv": 49,
-    "device": "xdripjs://MajorCAPP", "filtered": 91584, "date": 1536141191299, "unfiltered": 92048,
+    "device": "xdripjs://RigName", "filtered": 91584, "date": 1536141191299, "unfiltered": 92048,
     "rssi": -84, "type": "sgv", "glucose": 49
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:48:11.391Z", "sgv": 49,
-    "device": "xdripjs://MajorCAPP", "filtered": 91216, "date": 1536140891391, "unfiltered": 91968,
+    "device": "xdripjs://RigName", "filtered": 91216, "date": 1536140891391, "unfiltered": 91968,
     "rssi": -88, "type": "sgv", "glucose": 49
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:43:11.504Z", "sgv": 48,
-    "device": "xdripjs://MajorCAPP", "filtered": 90784, "date": 1536140591504, "unfiltered": 91664,
+    "device": "xdripjs://RigName", "filtered": 90784, "date": 1536140591504, "unfiltered": 91664,
     "rssi": -85, "type": "sgv", "glucose": 48
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:38:11.679Z", "sgv": 47,
-    "device": "xdripjs://MajorCAPP", "filtered": 89952, "date": 1536140291679, "unfiltered": 90640,
+    "device": "xdripjs://RigName", "filtered": 89952, "date": 1536140291679, "unfiltered": 90640,
     "rssi": -92, "type": "sgv", "glucose": 47
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:33:11.262Z", "sgv": 46,
-    "device": "xdripjs://MajorCAPP", "filtered": 88704, "date": 1536139991262, "unfiltered": 89792,
+    "device": "xdripjs://RigName", "filtered": 88704, "date": 1536139991262, "unfiltered": 89792,
     "rssi": -86, "type": "sgv", "glucose": 46
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:28:11.439Z", "sgv": 47,
-    "device": "xdripjs://MajorCAPP", "filtered": 87776, "date": 1536139691439, "unfiltered": 90224,
+    "device": "xdripjs://RigName", "filtered": 87776, "date": 1536139691439, "unfiltered": 90224,
     "rssi": -90, "type": "sgv", "glucose": 47
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:23:10.725Z", "sgv": 46,
-    "device": "xdripjs://MajorCAPP", "filtered": 88144, "date": 1536139390725, "unfiltered": 89520,
+    "device": "xdripjs://RigName", "filtered": 88144, "date": 1536139390725, "unfiltered": 89520,
     "rssi": -86, "type": "sgv", "glucose": 46
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:13:10.924Z", "sgv": 45,
-    "device": "xdripjs://MajorCAPP", "filtered": 92432, "date": 1536138790924, "unfiltered": 88160,
+    "device": "xdripjs://RigName", "filtered": 92432, "date": 1536138790924, "unfiltered": 88160,
     "rssi": -79, "type": "sgv", "glucose": 45
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:08:11.372Z", "sgv": 47,
-    "device": "xdripjs://MajorCAPP", "filtered": 94080, "date": 1536138491372, "unfiltered": 90176,
+    "device": "xdripjs://RigName", "filtered": 94080, "date": 1536138491372, "unfiltered": 90176,
     "rssi": -78, "type": "sgv", "glucose": 47
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T09:03:11.511Z", "sgv": 50,
-    "device": "xdripjs://MajorCAPP", "filtered": 95168, "date": 1536138191511, "unfiltered": 93200,
+    "device": "xdripjs://RigName", "filtered": 95168, "date": 1536138191511, "unfiltered": 93200,
     "rssi": -78, "type": "sgv", "glucose": 50
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:58:11.357Z", "sgv": 54,
-    "device": "xdripjs://MajorCAPP", "filtered": 96640, "date": 1536137891357, "unfiltered": 96624,
+    "device": "xdripjs://RigName", "filtered": 96640, "date": 1536137891357, "unfiltered": 96624,
     "rssi": -78, "type": "sgv", "glucose": 54
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:53:11.464Z", "sgv": 53,
-    "device": "xdripjs://MajorCAPP", "filtered": 99072, "date": 1536137591464, "unfiltered": 95840,
+    "device": "xdripjs://RigName", "filtered": 99072, "date": 1536137591464, "unfiltered": 95840,
     "rssi": -78, "type": "sgv", "glucose": 53
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:48:11.320Z", "sgv": 54,
-    "device": "xdripjs://MajorCAPP", "filtered": 101856, "date": 1536137291320, "unfiltered": 96560,
+    "device": "xdripjs://RigName", "filtered": 101856, "date": 1536137291320, "unfiltered": 96560,
     "rssi": -85, "type": "sgv", "glucose": 54
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:43:11.359Z", "sgv": 57,
-    "device": "xdripjs://MajorCAPP", "filtered": 104000, "date": 1536136991359, "unfiltered": 99648,
+    "device": "xdripjs://RigName", "filtered": 104000, "date": 1536136991359, "unfiltered": 99648,
     "rssi": -77, "type": "sgv", "glucose": 57
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:38:10.748Z", "sgv": 61,
-    "device": "xdripjs://MajorCAPP", "filtered": 105552, "date": 1536136690748, "unfiltered": 103424,
+    "device": "xdripjs://RigName", "filtered": 105552, "date": 1536136690748, "unfiltered": 103424,
     "rssi": -95, "type": "sgv", "glucose": 61
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:33:10.839Z", "sgv": 64,
-    "device": "xdripjs://MajorCAPP", "filtered": 107360, "date": 1536136390839, "unfiltered": 105696,
+    "device": "xdripjs://RigName", "filtered": 107360, "date": 1536136390839, "unfiltered": 105696,
     "rssi": -79, "type": "sgv", "glucose": 64
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:28:11.487Z", "sgv": 65,
-    "device": "xdripjs://MajorCAPP", "filtered": 109936, "date": 1536136091487, "unfiltered": 106592,
+    "device": "xdripjs://RigName", "filtered": 109936, "date": 1536136091487, "unfiltered": 106592,
     "rssi": -78, "type": "sgv", "glucose": 65
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:23:11.156Z", "sgv": 66,
-    "device": "xdripjs://MajorCAPP", "filtered": 112736, "date": 1536135791156, "unfiltered": 108096,
+    "device": "xdripjs://RigName", "filtered": 112736, "date": 1536135791156, "unfiltered": 108096,
     "rssi": -95, "type": "sgv", "glucose": 66
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:18:11.285Z", "sgv": 68,
-    "device": "xdripjs://MajorCAPP", "filtered": 115072, "date": 1536135491285, "unfiltered": 110016,
+    "device": "xdripjs://RigName", "filtered": 115072, "date": 1536135491285, "unfiltered": 110016,
     "rssi": -98, "type": "sgv", "glucose": 68
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:13:10.975Z", "sgv": 73,
-    "device": "xdripjs://MajorCAPP", "filtered": 116896, "date": 1536135190975, "unfiltered": 114544,
+    "device": "xdripjs://RigName", "filtered": 116896, "date": 1536135190975, "unfiltered": 114544,
     "rssi": -77, "type": "sgv", "glucose": 73
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T08:08:10.733Z", "sgv": 76,
-    "device": "xdripjs://MajorCAPP", "filtered": 118608, "date": 1536134890733, "unfiltered": 116928,
+    "device": "xdripjs://RigName", "filtered": 118608, "date": 1536134890733, "unfiltered": 116928,
     "rssi": -69, "type": "sgv", "glucose": 76
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:53:10.547Z", "sgv": 82,
-    "device": "xdripjs://MajorCAPP", "filtered": 126352, "date": 1536133990547, "unfiltered": 122864,
+    "device": "xdripjs://RigName", "filtered": 126352, "date": 1536133990547, "unfiltered": 122864,
     "rssi": -51, "type": "sgv", "glucose": 82
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:48:10.633Z", "sgv": 82,
-    "device": "xdripjs://MajorCAPP", "filtered": 129408, "date": 1536133690633, "unfiltered": 122928,
+    "device": "xdripjs://RigName", "filtered": 129408, "date": 1536133690633, "unfiltered": 122928,
     "rssi": -57, "type": "sgv", "glucose": 82
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:43:10.464Z", "sgv": 89,
-    "device": "xdripjs://MajorCAPP", "filtered": 132224, "date": 1536133390464, "unfiltered": 129216,
+    "device": "xdripjs://RigName", "filtered": 132224, "date": 1536133390464, "unfiltered": 129216,
     "rssi": -67, "type": "sgv", "glucose": 89
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:38:10.477Z", "sgv": 90,
-    "device": "xdripjs://MajorCAPP", "filtered": 134560, "date": 1536133090477, "unfiltered": 129952,
+    "device": "xdripjs://RigName", "filtered": 134560, "date": 1536133090477, "unfiltered": 129952,
     "rssi": -64, "type": "sgv", "glucose": 90
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:33:10.581Z", "sgv": 93,
-    "device": "xdripjs://MajorCAPP", "filtered": 136512, "date": 1536132790581, "unfiltered": 133568,
+    "device": "xdripjs://RigName", "filtered": 136512, "date": 1536132790581, "unfiltered": 133568,
     "rssi": -70, "type": "sgv", "glucose": 93
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:28:10.505Z", "sgv": 95,
-    "device": "xdripjs://MajorCAPP", "filtered": 138080, "date": 1536132490505, "unfiltered": 135488,
+    "device": "xdripjs://RigName", "filtered": 138080, "date": 1536132490505, "unfiltered": 135488,
     "rssi": -56, "type": "sgv", "glucose": 95
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:23:10.519Z", "sgv": 97,
-    "device": "xdripjs://MajorCAPP", "filtered": 139584, "date": 1536132190519, "unfiltered": 137824,
+    "device": "xdripjs://RigName", "filtered": 139584, "date": 1536132190519, "unfiltered": 137824,
     "rssi": -50, "type": "sgv", "glucose": 97
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:18:10.472Z", "sgv": 98,
-    "device": "xdripjs://MajorCAPP", "filtered": 141184, "date": 1536131890472, "unfiltered": 138560,
+    "device": "xdripjs://RigName", "filtered": 141184, "date": 1536131890472, "unfiltered": 138560,
     "rssi": -50, "type": "sgv", "glucose": 98
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:13:10.606Z", "sgv": 100,
-    "device": "xdripjs://MajorCAPP", "filtered": 142944, "date": 1536131590606, "unfiltered": 140448,
+    "device": "xdripjs://RigName", "filtered": 142944, "date": 1536131590606, "unfiltered": 140448,
     "rssi": -55, "type": "sgv", "glucose": 100
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:08:10.637Z", "sgv": 101,
-    "device": "xdripjs://MajorCAPP", "filtered": 144736, "date": 1536131290637, "unfiltered": 142016,
+    "device": "xdripjs://RigName", "filtered": 144736, "date": 1536131290637, "unfiltered": 142016,
     "rssi": -57, "type": "sgv", "glucose": 101
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T07:03:10.549Z", "sgv": 103,
-    "device": "xdripjs://MajorCAPP", "filtered": 146464, "date": 1536130990549, "unfiltered": 143520,
+    "device": "xdripjs://RigName", "filtered": 146464, "date": 1536130990549, "unfiltered": 143520,
     "rssi": -49, "type": "sgv", "glucose": 103
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:58:10.848Z", "sgv": 105,
-    "device": "xdripjs://MajorCAPP", "filtered": 148128, "date": 1536130690848, "unfiltered": 145760,
+    "device": "xdripjs://RigName", "filtered": 148128, "date": 1536130690848, "unfiltered": 145760,
     "rssi": -56, "type": "sgv", "glucose": 105
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:53:10.609Z", "sgv": 106,
-    "device": "xdripjs://MajorCAPP", "filtered": 149792, "date": 1536130390609, "unfiltered": 147424,
+    "device": "xdripjs://RigName", "filtered": 149792, "date": 1536130390609, "unfiltered": 147424,
     "rssi": -53, "type": "sgv", "glucose": 106
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:48:11.252Z", "sgv": 108,
-    "device": "xdripjs://MajorCAPP", "filtered": 151488, "date": 1536130091252, "unfiltered": 148864,
+    "device": "xdripjs://RigName", "filtered": 151488, "date": 1536130091252, "unfiltered": 148864,
     "rssi": -57, "type": "sgv", "glucose": 108
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:43:10.667Z", "sgv": 109,
-    "device": "xdripjs://MajorCAPP", "filtered": 153280, "date": 1536129790667, "unfiltered": 150496,
+    "device": "xdripjs://RigName", "filtered": 153280, "date": 1536129790667, "unfiltered": 150496,
     "rssi": -55, "type": "sgv", "glucose": 109
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:38:10.877Z", "sgv": 111,
-    "device": "xdripjs://MajorCAPP", "filtered": 155232, "date": 1536129490877, "unfiltered": 152512,
+    "device": "xdripjs://RigName", "filtered": 155232, "date": 1536129490877, "unfiltered": 152512,
     "rssi": -54, "type": "sgv", "glucose": 111
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:33:10.592Z", "sgv": 113,
-    "device": "xdripjs://MajorCAPP", "filtered": 157472, "date": 1536129190592, "unfiltered": 154272,
+    "device": "xdripjs://RigName", "filtered": 157472, "date": 1536129190592, "unfiltered": 154272,
     "rssi": -51, "type": "sgv", "glucose": 113
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:28:10.501Z", "sgv": 115,
-    "device": "xdripjs://MajorCAPP", "filtered": 160032, "date": 1536128890501, "unfiltered": 156416,
+    "device": "xdripjs://RigName", "filtered": 160032, "date": 1536128890501, "unfiltered": 156416,
     "rssi": -50, "type": "sgv", "glucose": 115
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:23:10.560Z", "sgv": 117,
-    "device": "xdripjs://MajorCAPP", "filtered": 162560, "date": 1536128590560, "unfiltered": 158496,
+    "device": "xdripjs://RigName", "filtered": 162560, "date": 1536128590560, "unfiltered": 158496,
     "rssi": -50, "type": "sgv", "glucose": 117
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:18:11.011Z", "sgv": 119,
-    "device": "xdripjs://MajorCAPP", "filtered": 164704, "date": 1536128291011, "unfiltered": 160672,
+    "device": "xdripjs://RigName", "filtered": 164704, "date": 1536128291011, "unfiltered": 160672,
     "rssi": -51, "type": "sgv", "glucose": 119
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:13:11.025Z", "sgv": 122,
-    "device": "xdripjs://MajorCAPP", "filtered": 166368, "date": 1536127991025, "unfiltered": 163904,
+    "device": "xdripjs://RigName", "filtered": 166368, "date": 1536127991025, "unfiltered": 163904,
     "rssi": -52, "type": "sgv", "glucose": 122
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:08:10.753Z", "sgv": 124,
-    "device": "xdripjs://MajorCAPP", "filtered": 167840, "date": 1536127690753, "unfiltered": 166016,
+    "device": "xdripjs://RigName", "filtered": 167840, "date": 1536127690753, "unfiltered": 166016,
     "rssi": -60, "type": "sgv", "glucose": 124
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T06:03:10.572Z", "sgv": 125,
-    "device": "xdripjs://MajorCAPP", "filtered": 169376, "date": 1536127390572, "unfiltered": 166976,
+    "device": "xdripjs://RigName", "filtered": 169376, "date": 1536127390572, "unfiltered": 166976,
     "rssi": -54, "type": "sgv", "glucose": 125
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:58:10.631Z", "sgv": 127,
-    "device": "xdripjs://MajorCAPP", "filtered": 171072, "date": 1536127090631, "unfiltered": 168512,
+    "device": "xdripjs://RigName", "filtered": 171072, "date": 1536127090631, "unfiltered": 168512,
     "rssi": -57, "type": "sgv", "glucose": 127
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:53:10.690Z", "sgv": 129,
-    "device": "xdripjs://MajorCAPP", "filtered": 172896, "date": 1536126790690, "unfiltered": 170368,
+    "device": "xdripjs://RigName", "filtered": 172896, "date": 1536126790690, "unfiltered": 170368,
     "rssi": -53, "type": "sgv", "glucose": 129
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:48:11.064Z", "sgv": 130,
-    "device": "xdripjs://MajorCAPP", "filtered": 174944, "date": 1536126491064, "unfiltered": 171904,
+    "device": "xdripjs://RigName", "filtered": 174944, "date": 1536126491064, "unfiltered": 171904,
     "rssi": -51, "type": "sgv", "glucose": 130
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:43:10.792Z", "sgv": 132,
-    "device": "xdripjs://MajorCAPP", "filtered": 177088, "date": 1536126190792, "unfiltered": 174016,
+    "device": "xdripjs://RigName", "filtered": 177088, "date": 1536126190792, "unfiltered": 174016,
     "rssi": -52, "type": "sgv", "glucose": 132
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:38:10.790Z", "sgv": 134,
-    "device": "xdripjs://MajorCAPP", "filtered": 179008, "date": 1536125890790, "unfiltered": 175488,
+    "device": "xdripjs://RigName", "filtered": 179008, "date": 1536125890790, "unfiltered": 175488,
     "rssi": -52, "type": "sgv", "glucose": 134
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:33:10.999Z", "sgv": 136,
-    "device": "xdripjs://MajorCAPP", "filtered": 180576, "date": 1536125590999, "unfiltered": 178048,
+    "device": "xdripjs://RigName", "filtered": 180576, "date": 1536125590999, "unfiltered": 178048,
     "rssi": -52, "type": "sgv", "glucose": 136
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:28:10.699Z", "sgv": 138,
-    "device": "xdripjs://MajorCAPP", "filtered": 181792, "date": 1536125290699, "unfiltered": 180032,
+    "device": "xdripjs://RigName", "filtered": 181792, "date": 1536125290699, "unfiltered": 180032,
     "rssi": -54, "type": "sgv", "glucose": 138
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:23:10.935Z", "sgv": 139,
-    "device": "xdripjs://MajorCAPP", "filtered": 183008, "date": 1536124990935, "unfiltered": 181184,
+    "device": "xdripjs://RigName", "filtered": 183008, "date": 1536124990935, "unfiltered": 181184,
     "rssi": -53, "type": "sgv", "glucose": 139
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:18:10.814Z", "sgv": 141,
-    "device": "xdripjs://MajorCAPP", "filtered": 184352, "date": 1536124690814, "unfiltered": 182880,
+    "device": "xdripjs://RigName", "filtered": 184352, "date": 1536124690814, "unfiltered": 182880,
     "rssi": -51, "type": "sgv", "glucose": 141
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:13:10.767Z", "sgv": 141,
-    "device": "xdripjs://MajorCAPP", "filtered": 185664, "date": 1536124390767, "unfiltered": 183328,
+    "device": "xdripjs://RigName", "filtered": 185664, "date": 1536124390767, "unfiltered": 183328,
     "rssi": -51, "type": "sgv", "glucose": 141
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:08:10.782Z", "sgv": 142,
-    "device": "xdripjs://MajorCAPP", "filtered": 186720, "date": 1536124090782, "unfiltered": 184512,
+    "device": "xdripjs://RigName", "filtered": 186720, "date": 1536124090782, "unfiltered": 184512,
     "rssi": -54, "type": "sgv", "glucose": 142
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T05:03:10.854Z", "sgv": 144,
-    "device": "xdripjs://MajorCAPP", "filtered": 187552, "date": 1536123790854, "unfiltered": 186592,
+    "device": "xdripjs://RigName", "filtered": 187552, "date": 1536123790854, "unfiltered": 186592,
     "rssi": -51, "type": "sgv", "glucose": 144
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:58:10.778Z", "sgv": 145,
-    "device": "xdripjs://MajorCAPP", "filtered": 188512, "date": 1536123490778, "unfiltered": 187200,
+    "device": "xdripjs://RigName", "filtered": 188512, "date": 1536123490778, "unfiltered": 187200,
     "rssi": -52, "type": "sgv", "glucose": 145
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:53:10.793Z", "sgv": 146,
-    "device": "xdripjs://MajorCAPP", "filtered": 190016, "date": 1536123190793, "unfiltered": 188576,
+    "device": "xdripjs://RigName", "filtered": 190016, "date": 1536123190793, "unfiltered": 188576,
     "rssi": -51, "type": "sgv", "glucose": 146
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:48:10.792Z", "sgv": 147,
-    "device": "xdripjs://MajorCAPP", "filtered": 191936, "date": 1536122890792, "unfiltered": 189056,
+    "device": "xdripjs://RigName", "filtered": 191936, "date": 1536122890792, "unfiltered": 189056,
     "rssi": -64, "type": "sgv", "glucose": 147
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:43:10.716Z", "sgv": 148,
-    "device": "xdripjs://MajorCAPP", "filtered": 193856, "date": 1536122590716, "unfiltered": 190240,
+    "device": "xdripjs://RigName", "filtered": 193856, "date": 1536122590716, "unfiltered": 190240,
     "rssi": -68, "type": "sgv", "glucose": 148
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:38:10.970Z", "sgv": 150,
-    "device": "xdripjs://MajorCAPP", "filtered": 195424, "date": 1536122290970, "unfiltered": 192832,
+    "device": "xdripjs://RigName", "filtered": 195424, "date": 1536122290970, "unfiltered": 192832,
     "rssi": -59, "type": "sgv", "glucose": 150
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:33:11.224Z", "sgv": 153,
-    "device": "xdripjs://MajorCAPP", "filtered": 196256, "date": 1536121991224, "unfiltered": 195360,
+    "device": "xdripjs://RigName", "filtered": 196256, "date": 1536121991224, "unfiltered": 195360,
     "rssi": -58, "type": "sgv", "glucose": 153
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:28:10.745Z", "sgv": 152,
-    "device": "xdripjs://MajorCAPP", "filtered": 196288, "date": 1536121690745, "unfiltered": 194720,
+    "device": "xdripjs://RigName", "filtered": 196288, "date": 1536121690745, "unfiltered": 194720,
     "rssi": -64, "type": "sgv", "glucose": 152
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:23:10.880Z", "sgv": 154,
-    "device": "xdripjs://MajorCAPP", "filtered": 195776, "date": 1536121390880, "unfiltered": 197088,
+    "device": "xdripjs://RigName", "filtered": 195776, "date": 1536121390880, "unfiltered": 197088,
     "rssi": -91, "type": "sgv", "glucose": 154
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:18:10.865Z", "sgv": 154,
-    "device": "xdripjs://MajorCAPP", "filtered": 195296, "date": 1536121090865, "unfiltered": 196576,
+    "device": "xdripjs://RigName", "filtered": 195296, "date": 1536121090865, "unfiltered": 196576,
     "rssi": -64, "type": "sgv", "glucose": 154
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:13:11.119Z", "sgv": 153,
-    "device": "xdripjs://MajorCAPP", "filtered": 195488, "date": 1536120791119, "unfiltered": 195968,
+    "device": "xdripjs://RigName", "filtered": 195488, "date": 1536120791119, "unfiltered": 195968,
     "rssi": -76, "type": "sgv", "glucose": 153
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:08:10.803Z", "sgv": 152,
-    "device": "xdripjs://MajorCAPP", "filtered": 196352, "date": 1536120490803, "unfiltered": 195040,
+    "device": "xdripjs://RigName", "filtered": 196352, "date": 1536120490803, "unfiltered": 195040,
     "rssi": -57, "type": "sgv", "glucose": 152
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T04:03:11.269Z", "sgv": 153,
-    "device": "xdripjs://MajorCAPP", "filtered": 197408, "date": 1536120191269, "unfiltered": 195648,
+    "device": "xdripjs://RigName", "filtered": 197408, "date": 1536120191269, "unfiltered": 195648,
     "rssi": -65, "type": "sgv", "glucose": 153
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:58:11.192Z", "sgv": 154,
-    "device": "xdripjs://MajorCAPP", "filtered": 198016, "date": 1536119891192, "unfiltered": 196608,
+    "device": "xdripjs://RigName", "filtered": 198016, "date": 1536119891192, "unfiltered": 196608,
     "rssi": -63, "type": "sgv", "glucose": 154
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:53:10.909Z", "sgv": 155,
-    "device": "xdripjs://MajorCAPP", "filtered": 197952, "date": 1536119590909, "unfiltered": 197536,
+    "device": "xdripjs://RigName", "filtered": 197952, "date": 1536119590909, "unfiltered": 197536,
     "rssi": -73, "type": "sgv", "glucose": 155
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:48:11.011Z", "sgv": 156,
-    "device": "xdripjs://MajorCAPP", "filtered": 197280, "date": 1536119291011, "unfiltered": 198432,
+    "device": "xdripjs://RigName", "filtered": 197280, "date": 1536119291011, "unfiltered": 198432,
     "rssi": -72, "type": "sgv", "glucose": 156
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:43:11.038Z", "sgv": 155,
-    "device": "xdripjs://MajorCAPP", "filtered": 195968, "date": 1536118991038, "unfiltered": 197952,
+    "device": "xdripjs://RigName", "filtered": 195968, "date": 1536118991038, "unfiltered": 197952,
     "rssi": -58, "type": "sgv", "glucose": 155
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:38:10.939Z", "sgv": 154,
-    "device": "xdripjs://MajorCAPP", "filtered": 193856, "date": 1536118690939, "unfiltered": 196256,
+    "device": "xdripjs://RigName", "filtered": 193856, "date": 1536118690939, "unfiltered": 196256,
     "rssi": -57, "type": "sgv", "glucose": 154
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:33:10.884Z", "sgv": 153,
-    "device": "xdripjs://MajorCAPP", "filtered": 190688, "date": 1536118390884, "unfiltered": 195136,
+    "device": "xdripjs://RigName", "filtered": 190688, "date": 1536118390884, "unfiltered": 195136,
     "rssi": -69, "type": "sgv", "glucose": 153
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:28:12.033Z", "sgv": 150,
-    "device": "xdripjs://MajorCAPP", "filtered": 186880, "date": 1536118092033, "unfiltered": 192224,
+    "device": "xdripjs://RigName", "filtered": 186880, "date": 1536118092033, "unfiltered": 192224,
     "rssi": -77, "type": "sgv", "glucose": 150
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:23:12.090Z", "sgv": 148,
-    "device": "xdripjs://MajorCAPP", "filtered": 183232, "date": 1536117792090, "unfiltered": 190368,
+    "device": "xdripjs://RigName", "filtered": 183232, "date": 1536117792090, "unfiltered": 190368,
     "rssi": -82, "type": "sgv", "glucose": 148
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:18:12.359Z", "sgv": 143,
-    "device": "xdripjs://MajorCAPP", "filtered": 180256, "date": 1536117492359, "unfiltered": 185120,
+    "device": "xdripjs://RigName", "filtered": 180256, "date": 1536117492359, "unfiltered": 185120,
     "rssi": -77, "type": "sgv", "glucose": 143
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:13:12.087Z", "sgv": 139,
-    "device": "xdripjs://MajorCAPP", "filtered": 178016, "date": 1536117192087, "unfiltered": 181280,
+    "device": "xdripjs://RigName", "filtered": 178016, "date": 1536117192087, "unfiltered": 181280,
     "rssi": -67, "type": "sgv", "glucose": 139
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:08:12.073Z", "sgv": 137,
-    "device": "xdripjs://MajorCAPP", "filtered": 175776, "date": 1536116892073, "unfiltered": 179456,
+    "device": "xdripjs://RigName", "filtered": 175776, "date": 1536116892073, "unfiltered": 179456,
     "rssi": -58, "type": "sgv", "glucose": 137
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T03:03:12.283Z", "sgv": 134,
-    "device": "xdripjs://MajorCAPP", "filtered": 173152, "date": 1536116592283, "unfiltered": 175872,
+    "device": "xdripjs://RigName", "filtered": 173152, "date": 1536116592283, "unfiltered": 175872,
     "rssi": -66, "type": "sgv", "glucose": 134
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:58:11.992Z", "sgv": 133,
-    "device": "xdripjs://MajorCAPP", "filtered": 170016, "date": 1536116291992, "unfiltered": 175360,
+    "device": "xdripjs://RigName", "filtered": 170016, "date": 1536116291992, "unfiltered": 175360,
     "rssi": -59, "type": "sgv", "glucose": 133
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:53:12.142Z", "sgv": 130,
-    "device": "xdripjs://MajorCAPP", "filtered": 166656, "date": 1536115992142, "unfiltered": 171776,
+    "device": "xdripjs://RigName", "filtered": 166656, "date": 1536115992142, "unfiltered": 171776,
     "rssi": -76, "type": "sgv", "glucose": 130
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:48:12.022Z", "sgv": 127,
-    "device": "xdripjs://MajorCAPP", "filtered": 163616, "date": 1536115692022, "unfiltered": 168672,
+    "device": "xdripjs://RigName", "filtered": 163616, "date": 1536115692022, "unfiltered": 168672,
     "rssi": -64, "type": "sgv", "glucose": 127
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:43:11.927Z", "sgv": 124,
-    "device": "xdripjs://MajorCAPP", "filtered": 160544, "date": 1536115391927, "unfiltered": 165824,
+    "device": "xdripjs://RigName", "filtered": 160544, "date": 1536115391927, "unfiltered": 165824,
     "rssi": -73, "type": "sgv", "glucose": 124
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:38:12.227Z", "sgv": 119,
-    "device": "xdripjs://MajorCAPP", "filtered": 157120, "date": 1536115092227, "unfiltered": 160480,
+    "device": "xdripjs://RigName", "filtered": 157120, "date": 1536115092227, "unfiltered": 160480,
     "rssi": -72, "type": "sgv", "glucose": 119
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:33:12.030Z", "sgv": 118,
-    "device": "xdripjs://MajorCAPP", "filtered": 153600, "date": 1536114792030, "unfiltered": 159744,
+    "device": "xdripjs://RigName", "filtered": 153600, "date": 1536114792030, "unfiltered": 159744,
     "rssi": -66, "type": "sgv", "glucose": 118
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:28:12.254Z", "sgv": 115,
-    "device": "xdripjs://MajorCAPP", "filtered": 150400, "date": 1536114492254, "unfiltered": 156736,
+    "device": "xdripjs://RigName", "filtered": 150400, "date": 1536114492254, "unfiltered": 156736,
     "rssi": -70, "type": "sgv", "glucose": 115
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:23:11.981Z", "sgv": 110,
-    "device": "xdripjs://MajorCAPP", "filtered": 147744, "date": 1536114191981, "unfiltered": 151488,
+    "device": "xdripjs://RigName", "filtered": 147744, "date": 1536114191981, "unfiltered": 151488,
     "rssi": -60, "type": "sgv", "glucose": 110
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:18:12.071Z", "sgv": 108,
-    "device": "xdripjs://MajorCAPP", "filtered": 145024, "date": 1536113892071, "unfiltered": 148544,
+    "device": "xdripjs://RigName", "filtered": 145024, "date": 1536113892071, "unfiltered": 148544,
     "rssi": -70, "type": "sgv", "glucose": 108
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:13:12.085Z", "sgv": 105,
-    "device": "xdripjs://MajorCAPP", "filtered": 142496, "date": 1536113592085, "unfiltered": 145664,
+    "device": "xdripjs://RigName", "filtered": 142496, "date": 1536113592085, "unfiltered": 145664,
     "rssi": -62, "type": "sgv", "glucose": 105
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:08:12.263Z", "sgv": 105,
-    "device": "xdripjs://MajorCAPP", "filtered": 142048, "date": 1536113292263, "unfiltered": 145728,
+    "device": "xdripjs://RigName", "filtered": 142048, "date": 1536113292263, "unfiltered": 145728,
     "rssi": -63, "type": "sgv", "glucose": 105
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T02:03:12.202Z", "sgv": 103,
-    "device": "xdripjs://MajorCAPP", "filtered": 145696, "date": 1536112992202, "unfiltered": 144000,
+    "device": "xdripjs://RigName", "filtered": 145696, "date": 1536112992202, "unfiltered": 144000,
     "rssi": -65, "type": "sgv", "glucose": 103
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-05T01:58:11.592Z", "sgv": 102,
-    "device": "xdripjs://MajorCAPP", "filtered": 153632, "date": 1536112691592, "unfiltered": 142784,
+    "device": "xdripjs://RigName", "filtered": 153632, "date": 1536112691592, "unfiltered": 142784,
     "rssi": -77, "type": "sgv", "glucose": 102
   }, {
     "direction": "SingleDown", "noise": 1, "dateString": "2018-09-05T01:53:11.560Z", "sgv": 106,
-    "device": "xdripjs://MajorCAPP", "filtered": 164032, "date": 1536112391560, "unfiltered": 146912,
+    "device": "xdripjs://RigName", "filtered": 164032, "date": 1536112391560, "unfiltered": 146912,
     "rssi": -79, "type": "sgv", "glucose": 106
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-05T01:48:12.182Z", "sgv": 117,
-    "device": "xdripjs://MajorCAPP", "filtered": 174240, "date": 1536112092182, "unfiltered": 157952,
+    "device": "xdripjs://RigName", "filtered": 174240, "date": 1536112092182, "unfiltered": 157952,
     "rssi": -62, "type": "sgv", "glucose": 117
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-05T01:43:12.060Z", "sgv": 126,
-    "device": "xdripjs://MajorCAPP", "filtered": 183072, "date": 1536111792060, "unfiltered": 167456,
+    "device": "xdripjs://RigName", "filtered": 183072, "date": 1536111792060, "unfiltered": 167456,
     "rssi": -73, "type": "sgv", "glucose": 126
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-05T01:38:12.059Z", "sgv": 138,
-    "device": "xdripjs://MajorCAPP", "filtered": 190400, "date": 1536111492059, "unfiltered": 180224,
+    "device": "xdripjs://RigName", "filtered": 190400, "date": 1536111492059, "unfiltered": 180224,
     "rssi": -62, "type": "sgv", "glucose": 138
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T01:33:12.042Z", "sgv": 145,
-    "device": "xdripjs://MajorCAPP", "filtered": 196000, "date": 1536111192042, "unfiltered": 186784,
+    "device": "xdripjs://RigName", "filtered": 196000, "date": 1536111192042, "unfiltered": 186784,
     "rssi": -71, "type": "sgv", "glucose": 145
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T01:28:12.175Z", "sgv": 149,
-    "device": "xdripjs://MajorCAPP", "filtered": 199616, "date": 1536110892175, "unfiltered": 191712,
+    "device": "xdripjs://RigName", "filtered": 199616, "date": 1536110892175, "unfiltered": 191712,
     "rssi": -85, "type": "sgv", "glucose": 149
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T01:23:12.144Z", "sgv": 156,
-    "device": "xdripjs://MajorCAPP", "filtered": 200896, "date": 1536110592144, "unfiltered": 198528,
+    "device": "xdripjs://RigName", "filtered": 200896, "date": 1536110592144, "unfiltered": 198528,
     "rssi": -70, "type": "sgv", "glucose": 156
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T01:18:12.308Z", "sgv": 158,
-    "device": "xdripjs://MajorCAPP", "filtered": 199968, "date": 1536110292308, "unfiltered": 201216,
+    "device": "xdripjs://RigName", "filtered": 199968, "date": 1536110292308, "unfiltered": 201216,
     "rssi": -80, "type": "sgv", "glucose": 158
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T01:13:11.774Z", "sgv": 158,
-    "device": "xdripjs://MajorCAPP", "filtered": 196384, "date": 1536109991774, "unfiltered": 201120,
+    "device": "xdripjs://RigName", "filtered": 196384, "date": 1536109991774, "unfiltered": 201120,
     "rssi": -60, "type": "sgv", "glucose": 158
   }, {
     "direction": "FortyFiveUp", "noise": 1, "dateString": "2018-09-05T01:08:12.100Z", "sgv": 154,
-    "device": "xdripjs://MajorCAPP", "filtered": 189152, "date": 1536109692100, "unfiltered": 196224,
+    "device": "xdripjs://RigName", "filtered": 189152, "date": 1536109692100, "unfiltered": 196224,
     "rssi": -65, "type": "sgv", "glucose": 154
   }, {
     "direction": "SingleUp", "noise": 1, "dateString": "2018-09-05T01:03:11.375Z", "sgv": 152,
-    "device": "xdripjs://MajorCAPP", "filtered": 177856, "date": 1536109391375, "unfiltered": 194080,
+    "device": "xdripjs://RigName", "filtered": 177856, "date": 1536109391375, "unfiltered": 194080,
     "rssi": -62, "type": "sgv", "glucose": 152
   }, {
     "direction": "SingleUp", "noise": 1, "dateString": "2018-09-05T00:58:11.403Z", "sgv": 144,
-    "device": "xdripjs://MajorCAPP", "filtered": 162752, "date": 1536109091403, "unfiltered": 185920,
+    "device": "xdripjs://RigName", "filtered": 162752, "date": 1536109091403, "unfiltered": 185920,
     "rssi": -64, "type": "sgv", "glucose": 144
   }, {
     "direction": "DoubleUp", "noise": 1, "dateString": "2018-09-05T00:53:11.449Z", "sgv": 129,
-    "device": "xdripjs://MajorCAPP", "filtered": 144448, "date": 1536108791449, "unfiltered": 170400,
+    "device": "xdripjs://RigName", "filtered": 144448, "date": 1536108791449, "unfiltered": 170400,
     "rssi": -74, "type": "sgv", "glucose": 129
   }, {
     "direction": "DoubleUp", "noise": 1, "dateString": "2018-09-05T00:48:11.417Z", "sgv": 112,
-    "device": "xdripjs://MajorCAPP", "filtered": 124656, "date": 1536108491417, "unfiltered": 153120,
+    "device": "xdripjs://RigName", "filtered": 124656, "date": 1536108491417, "unfiltered": 153120,
     "rssi": -69, "type": "sgv", "glucose": 112
   }, {
     "direction": "DoubleUp", "noise": 1, "dateString": "2018-09-05T00:43:11.384Z", "sgv": 98,
-    "device": "xdripjs://MajorCAPP", "filtered": 107120, "date": 1536108191384, "unfiltered": 138976,
+    "device": "xdripjs://RigName", "filtered": 107120, "date": 1536108191384, "unfiltered": 138976,
     "rssi": -76, "type": "sgv", "glucose": 98
   }, {
     "direction": "FortyFiveUp", "noise": 1, "dateString": "2018-09-05T00:38:11.985Z", "sgv": 79,
-    "device": "xdripjs://MajorCAPP", "filtered": 95520, "date": 1536107891985, "unfiltered": 119904,
+    "device": "xdripjs://RigName", "filtered": 95520, "date": 1536107891985, "unfiltered": 119904,
     "rssi": -67, "type": "sgv", "glucose": 79
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T00:33:12.181Z", "sgv": 57,
-    "device": "xdripjs://MajorCAPP", "filtered": 90672, "date": 1536107592181, "unfiltered": 99104,
+    "device": "xdripjs://RigName", "filtered": 90672, "date": 1536107592181, "unfiltered": 99104,
     "rssi": -68, "type": "sgv", "glucose": 57
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T00:28:11.742Z", "sgv": 46,
-    "device": "xdripjs://MajorCAPP", "filtered": 90400, "date": 1536107291742, "unfiltered": 89728,
+    "device": "xdripjs://RigName", "filtered": 90400, "date": 1536107291742, "unfiltered": 89728,
     "rssi": -63, "type": "sgv", "glucose": 46
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T00:23:11.454Z", "sgv": 47,
-    "device": "xdripjs://MajorCAPP", "filtered": 92208, "date": 1536106991454, "unfiltered": 90352,
+    "device": "xdripjs://RigName", "filtered": 92208, "date": 1536106991454, "unfiltered": 90352,
     "rssi": -66, "type": "sgv", "glucose": 47
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T00:18:11.331Z", "sgv": 48,
-    "device": "xdripjs://MajorCAPP", "filtered": 95248, "date": 1536106691331, "unfiltered": 90992,
+    "device": "xdripjs://RigName", "filtered": 95248, "date": 1536106691331, "unfiltered": 90992,
     "rssi": -71, "type": "sgv", "glucose": 48
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T00:13:11.389Z", "sgv": 50,
-    "device": "xdripjs://MajorCAPP", "filtered": 99440, "date": 1536106391389, "unfiltered": 93264,
+    "device": "xdripjs://RigName", "filtered": 99440, "date": 1536106391389, "unfiltered": 93264,
     "rssi": -59, "type": "sgv", "glucose": 50
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T00:08:11.701Z", "sgv": 55,
-    "device": "xdripjs://MajorCAPP", "filtered": 104176, "date": 1536106091701, "unfiltered": 97680,
+    "device": "xdripjs://RigName", "filtered": 104176, "date": 1536106091701, "unfiltered": 97680,
     "rssi": -72, "type": "sgv", "glucose": 55
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-05T00:03:12.207Z", "sgv": 58,
-    "device": "xdripjs://MajorCAPP", "filtered": 108672, "date": 1536105792207, "unfiltered": 100336,
+    "device": "xdripjs://RigName", "filtered": 108672, "date": 1536105792207, "unfiltered": 100336,
     "rssi": -62, "type": "sgv", "glucose": 58
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T23:58:11.352Z", "sgv": 64,
-    "device": "xdripjs://MajorCAPP", "filtered": 111984, "date": 1536105491352, "unfiltered": 106400,
+    "device": "xdripjs://RigName", "filtered": 111984, "date": 1536105491352, "unfiltered": 106400,
     "rssi": -75, "type": "sgv", "glucose": 64
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T23:53:11.659Z", "sgv": 68,
-    "device": "xdripjs://MajorCAPP", "filtered": 113744, "date": 1536105191659, "unfiltered": 109840,
+    "device": "xdripjs://RigName", "filtered": 113744, "date": 1536105191659, "unfiltered": 109840,
     "rssi": -70, "type": "sgv", "glucose": 68
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T23:48:11.323Z", "sgv": 72,
-    "device": "xdripjs://MajorCAPP", "filtered": 114528, "date": 1536104891323, "unfiltered": 113648,
+    "device": "xdripjs://RigName", "filtered": 114528, "date": 1536104891323, "unfiltered": 113648,
     "rssi": -63, "type": "sgv", "glucose": 72
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T23:43:11.446Z", "sgv": 74,
-    "device": "xdripjs://MajorCAPP", "filtered": 114944, "date": 1536104591446, "unfiltered": 115008,
+    "device": "xdripjs://RigName", "filtered": 114944, "date": 1536104591446, "unfiltered": 115008,
     "rssi": -66, "type": "sgv", "glucose": 74
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T23:38:11.473Z", "sgv": 73,
-    "device": "xdripjs://MajorCAPP", "filtered": 115520, "date": 1536104291473, "unfiltered": 114272,
+    "device": "xdripjs://RigName", "filtered": 115520, "date": 1536104291473, "unfiltered": 114272,
     "rssi": -70, "type": "sgv", "glucose": 73
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T23:33:11.363Z", "sgv": 74,
-    "device": "xdripjs://MajorCAPP", "filtered": 116528, "date": 1536103991363, "unfiltered": 115376,
+    "device": "xdripjs://RigName", "filtered": 116528, "date": 1536103991363, "unfiltered": 115376,
     "rssi": -76, "type": "sgv", "glucose": 74
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T23:28:11.370Z", "sgv": 75,
-    "device": "xdripjs://MajorCAPP", "filtered": 118288, "date": 1536103691370, "unfiltered": 116176,
+    "device": "xdripjs://RigName", "filtered": 118288, "date": 1536103691370, "unfiltered": 116176,
     "rssi": -73, "type": "sgv", "glucose": 75
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T23:23:11.380Z", "sgv": 76,
-    "device": "xdripjs://MajorCAPP", "filtered": 121648, "date": 1536103391380, "unfiltered": 117344,
+    "device": "xdripjs://RigName", "filtered": 121648, "date": 1536103391380, "unfiltered": 117344,
     "rssi": -70, "type": "sgv", "glucose": 76
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T23:18:11.383Z", "sgv": 80,
-    "device": "xdripjs://MajorCAPP", "filtered": 127376, "date": 1536103091383, "unfiltered": 120448,
+    "device": "xdripjs://RigName", "filtered": 127376, "date": 1536103091383, "unfiltered": 120448,
     "rssi": -73, "type": "sgv", "glucose": 80
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T23:13:11.327Z", "sgv": 84,
-    "device": "xdripjs://MajorCAPP", "filtered": 135008, "date": 1536102791327, "unfiltered": 124880,
+    "device": "xdripjs://RigName", "filtered": 135008, "date": 1536102791327, "unfiltered": 124880,
     "rssi": -73, "type": "sgv", "glucose": 84
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T23:08:11.409Z", "sgv": 88,
-    "device": "xdripjs://MajorCAPP", "filtered": 142464, "date": 1536102491409, "unfiltered": 128784,
+    "device": "xdripjs://RigName", "filtered": 142464, "date": 1536102491409, "unfiltered": 128784,
     "rssi": -68, "type": "sgv", "glucose": 88
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T23:03:11.428Z", "sgv": 96,
-    "device": "xdripjs://MajorCAPP", "filtered": 147328, "date": 1536102191428, "unfiltered": 136288,
+    "device": "xdripjs://RigName", "filtered": 147328, "date": 1536102191428, "unfiltered": 136288,
     "rssi": -69, "type": "sgv", "glucose": 96
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T22:58:11.490Z", "sgv": 105,
-    "device": "xdripjs://MajorCAPP", "filtered": 148896, "date": 1536101891490, "unfiltered": 145920,
+    "device": "xdripjs://RigName", "filtered": 148896, "date": 1536101891490, "unfiltered": 145920,
     "rssi": -70, "type": "sgv", "glucose": 105
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T22:53:11.708Z", "sgv": 109,
-    "device": "xdripjs://MajorCAPP", "filtered": 148576, "date": 1536101591708, "unfiltered": 149824,
+    "device": "xdripjs://RigName", "filtered": 148576, "date": 1536101591708, "unfiltered": 149824,
     "rssi": -75, "type": "sgv", "glucose": 109
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T22:48:11.420Z", "sgv": 109,
-    "device": "xdripjs://MajorCAPP", "filtered": 148320, "date": 1536101291420, "unfiltered": 149664,
+    "device": "xdripjs://RigName", "filtered": 148320, "date": 1536101291420, "unfiltered": 149664,
     "rssi": -66, "type": "sgv", "glucose": 109
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T22:43:11.464Z", "sgv": 108,
-    "device": "xdripjs://MajorCAPP", "filtered": 148960, "date": 1536100991464, "unfiltered": 148768,
+    "device": "xdripjs://RigName", "filtered": 148960, "date": 1536100991464, "unfiltered": 148768,
     "rssi": -73, "type": "sgv", "glucose": 108
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T22:38:11.520Z", "sgv": 107,
-    "device": "xdripjs://MajorCAPP", "filtered": 150432, "date": 1536100691520, "unfiltered": 148128,
+    "device": "xdripjs://RigName", "filtered": 150432, "date": 1536100691520, "unfiltered": 148128,
     "rssi": -67, "type": "sgv", "glucose": 107
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T22:33:11.790Z", "sgv": 108,
-    "device": "xdripjs://MajorCAPP", "filtered": 152288, "date": 1536100391790, "unfiltered": 149184,
+    "device": "xdripjs://RigName", "filtered": 152288, "date": 1536100391790, "unfiltered": 149184,
     "rssi": -82, "type": "sgv", "glucose": 108
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T22:28:11.471Z", "sgv": 110,
-    "device": "xdripjs://MajorCAPP", "filtered": 154432, "date": 1536100091471, "unfiltered": 151168,
+    "device": "xdripjs://RigName", "filtered": 154432, "date": 1536100091471, "unfiltered": 151168,
     "rssi": -63, "type": "sgv", "glucose": 110
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T22:23:11.936Z", "sgv": 112,
-    "device": "xdripjs://MajorCAPP", "filtered": 157600, "date": 1536099791936, "unfiltered": 153696,
+    "device": "xdripjs://RigName", "filtered": 157600, "date": 1536099791936, "unfiltered": 153696,
     "rssi": -88, "type": "sgv", "glucose": 112
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T22:18:11.528Z", "sgv": 116,
-    "device": "xdripjs://MajorCAPP", "filtered": 162496, "date": 1536099491528, "unfiltered": 156896,
+    "device": "xdripjs://RigName", "filtered": 162496, "date": 1536099491528, "unfiltered": 156896,
     "rssi": -67, "type": "sgv", "glucose": 116
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T22:13:11.601Z", "sgv": 118,
-    "device": "xdripjs://MajorCAPP", "filtered": 169344, "date": 1536099191601, "unfiltered": 159136,
+    "device": "xdripjs://RigName", "filtered": 169344, "date": 1536099191601, "unfiltered": 159136,
     "rssi": -59, "type": "sgv", "glucose": 118
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T22:08:11.764Z", "sgv": 124,
-    "device": "xdripjs://MajorCAPP", "filtered": 177248, "date": 1536098891764, "unfiltered": 165600,
+    "device": "xdripjs://RigName", "filtered": 177248, "date": 1536098891764, "unfiltered": 165600,
     "rssi": -65, "type": "sgv", "glucose": 124
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T22:03:11.642Z", "sgv": 130,
-    "device": "xdripjs://MajorCAPP", "filtered": 184608, "date": 1536098591642, "unfiltered": 171712,
+    "device": "xdripjs://RigName", "filtered": 184608, "date": 1536098591642, "unfiltered": 171712,
     "rssi": -65, "type": "sgv", "glucose": 130
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T21:58:11.655Z", "sgv": 138,
-    "device": "xdripjs://MajorCAPP", "filtered": 190368, "date": 1536098291655, "unfiltered": 180096,
+    "device": "xdripjs://RigName", "filtered": 190368, "date": 1536098291655, "unfiltered": 180096,
     "rssi": -69, "type": "sgv", "glucose": 138
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T21:53:11.459Z", "sgv": 146,
-    "device": "xdripjs://MajorCAPP", "filtered": 193984, "date": 1536097991459, "unfiltered": 188384,
+    "device": "xdripjs://RigName", "filtered": 193984, "date": 1536097991459, "unfiltered": 188384,
     "rssi": -68, "type": "sgv", "glucose": 146
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T21:48:11.787Z", "sgv": 149,
-    "device": "xdripjs://MajorCAPP", "filtered": 196224, "date": 1536097691787, "unfiltered": 191328,
+    "device": "xdripjs://RigName", "filtered": 196224, "date": 1536097691787, "unfiltered": 191328,
     "rssi": -79, "type": "sgv", "glucose": 149
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T21:43:11.575Z", "sgv": 154,
-    "device": "xdripjs://MajorCAPP", "filtered": 198592, "date": 1536097391575, "unfiltered": 196832,
+    "device": "xdripjs://RigName", "filtered": 198592, "date": 1536097391575, "unfiltered": 196832,
     "rssi": -66, "type": "sgv", "glucose": 154
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T21:38:11.651Z", "sgv": 156,
-    "device": "xdripjs://MajorCAPP", "filtered": 202432, "date": 1536097091651, "unfiltered": 198464,
+    "device": "xdripjs://RigName", "filtered": 202432, "date": 1536097091651, "unfiltered": 198464,
     "rssi": -52, "type": "sgv", "glucose": 156
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T21:33:11.500Z", "sgv": 157,
-    "device": "xdripjs://MajorCAPP", "filtered": 208032, "date": 1536096791500, "unfiltered": 199936,
+    "device": "xdripjs://RigName", "filtered": 208032, "date": 1536096791500, "unfiltered": 199936,
     "rssi": -58, "type": "sgv", "glucose": 157
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T21:28:11.510Z", "sgv": 161,
-    "device": "xdripjs://MajorCAPP", "filtered": 214336, "date": 1536096491510, "unfiltered": 203648,
+    "device": "xdripjs://RigName", "filtered": 214336, "date": 1536096491510, "unfiltered": 203648,
     "rssi": -54, "type": "sgv", "glucose": 161
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T21:23:11.882Z", "sgv": 168,
-    "device": "xdripjs://MajorCAPP", "filtered": 219456, "date": 1536096191882, "unfiltered": 211264,
+    "device": "xdripjs://RigName", "filtered": 219456, "date": 1536096191882, "unfiltered": 211264,
     "rssi": -72, "type": "sgv", "glucose": 168
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T21:18:11.618Z", "sgv": 172,
-    "device": "xdripjs://MajorCAPP", "filtered": 222368, "date": 1536095891618, "unfiltered": 214720,
+    "device": "xdripjs://RigName", "filtered": 222368, "date": 1536095891618, "unfiltered": 214720,
     "rssi": -58, "type": "sgv", "glucose": 172
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T21:13:11.822Z", "sgv": 178,
-    "device": "xdripjs://MajorCAPP", "filtered": 224288, "date": 1536095591822, "unfiltered": 221792,
+    "device": "xdripjs://RigName", "filtered": 224288, "date": 1536095591822, "unfiltered": 221792,
     "rssi": -73, "type": "sgv", "glucose": 178
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T21:08:11.851Z", "sgv": 184,
-    "device": "xdripjs://MajorCAPP", "filtered": 227200, "date": 1536095291851, "unfiltered": 227168,
+    "device": "xdripjs://RigName", "filtered": 227200, "date": 1536095291851, "unfiltered": 227168,
     "rssi": -55, "type": "sgv", "glucose": 184
   }, {
     "direction": "Flat", "noise": 4, "dateString": "2018-09-04T21:03:12.298Z", "sgv": 181,
-    "device": "xdripjs://MajorCAPP", "filtered": 232288, "date": 1536094992298, "unfiltered": 224512,
+    "device": "xdripjs://RigName", "filtered": 232288, "date": 1536094992298, "unfiltered": 224512,
     "rssi": -57, "type": "sgv", "glucose": 181
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T20:28:11.686Z", "sgv": 215,
-    "device": "xdripjs://MajorCAPP", "filtered": 260704, "date": 1536092891686, "unfiltered": 259936,
+    "device": "xdripjs://RigName", "filtered": 260704, "date": 1536092891686, "unfiltered": 259936,
     "rssi": -44, "type": "sgv", "glucose": 215
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T20:23:11.985Z", "sgv": 213,
-    "device": "xdripjs://MajorCAPP", "filtered": 261504, "date": 1536092591985, "unfiltered": 258080,
+    "device": "xdripjs://RigName", "filtered": 261504, "date": 1536092591985, "unfiltered": 258080,
     "rssi": -48, "type": "sgv", "glucose": 213
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T20:18:11.642Z", "sgv": 216,
-    "device": "xdripjs://MajorCAPP", "filtered": 260960, "date": 1536092291642, "unfiltered": 260992,
+    "device": "xdripjs://RigName", "filtered": 260960, "date": 1536092291642, "unfiltered": 260992,
     "rssi": -59, "type": "sgv", "glucose": 216
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T20:13:11.834Z", "sgv": 217,
-    "device": "xdripjs://MajorCAPP", "filtered": 259648, "date": 1536091991834, "unfiltered": 261504,
+    "device": "xdripjs://RigName", "filtered": 259648, "date": 1536091991834, "unfiltered": 261504,
     "rssi": -72, "type": "sgv", "glucose": 217
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T20:08:11.774Z", "sgv": 218,
-    "device": "xdripjs://MajorCAPP", "filtered": 259456, "date": 1536091691774, "unfiltered": 262272,
+    "device": "xdripjs://RigName", "filtered": 259456, "date": 1536091691774, "unfiltered": 262272,
     "rssi": -53, "type": "sgv", "glucose": 218
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T20:03:11.758Z", "sgv": 216,
-    "device": "xdripjs://MajorCAPP", "filtered": 261088, "date": 1536091391758, "unfiltered": 260864,
+    "device": "xdripjs://RigName", "filtered": 261088, "date": 1536091391758, "unfiltered": 260864,
     "rssi": -74, "type": "sgv", "glucose": 216
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:58:11.714Z", "sgv": 213,
-    "device": "xdripjs://MajorCAPP", "filtered": 263680, "date": 1536091091714, "unfiltered": 257440,
+    "device": "xdripjs://RigName", "filtered": 263680, "date": 1536091091714, "unfiltered": 257440,
     "rssi": -64, "type": "sgv", "glucose": 213
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:53:12.100Z", "sgv": 217,
-    "device": "xdripjs://MajorCAPP", "filtered": 266048, "date": 1536090792100, "unfiltered": 261504,
+    "device": "xdripjs://RigName", "filtered": 266048, "date": 1536090792100, "unfiltered": 261504,
     "rssi": -64, "type": "sgv", "glucose": 217
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:48:11.859Z", "sgv": 221,
-    "device": "xdripjs://MajorCAPP", "filtered": 267520, "date": 1536090491859, "unfiltered": 266176,
+    "device": "xdripjs://RigName", "filtered": 267520, "date": 1536090491859, "unfiltered": 266176,
     "rssi": -53, "type": "sgv", "glucose": 221
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:43:11.739Z", "sgv": 222,
-    "device": "xdripjs://MajorCAPP", "filtered": 268416, "date": 1536090191739, "unfiltered": 267008,
+    "device": "xdripjs://RigName", "filtered": 268416, "date": 1536090191739, "unfiltered": 267008,
     "rssi": -57, "type": "sgv", "glucose": 222
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:38:11.872Z", "sgv": 222,
-    "device": "xdripjs://MajorCAPP", "filtered": 268416, "date": 1536089891872, "unfiltered": 267200,
+    "device": "xdripjs://RigName", "filtered": 268416, "date": 1536089891872, "unfiltered": 267200,
     "rssi": -58, "type": "sgv", "glucose": 222
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:33:12.502Z", "sgv": 223,
-    "device": "xdripjs://MajorCAPP", "filtered": 267584, "date": 1536089592502, "unfiltered": 268288,
+    "device": "xdripjs://RigName", "filtered": 267584, "date": 1536089592502, "unfiltered": 268288,
     "rssi": -79, "type": "sgv", "glucose": 223
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:28:12.875Z", "sgv": 224,
-    "device": "xdripjs://MajorCAPP", "filtered": 266624, "date": 1536089292875, "unfiltered": 269248,
+    "device": "xdripjs://RigName", "filtered": 266624, "date": 1536089292875, "unfiltered": 269248,
     "rssi": -77, "type": "sgv", "glucose": 224
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:23:12.748Z", "sgv": 223,
-    "device": "xdripjs://MajorCAPP", "filtered": 266432, "date": 1536088992748, "unfiltered": 267968,
+    "device": "xdripjs://RigName", "filtered": 266432, "date": 1536088992748, "unfiltered": 267968,
     "rssi": -54, "type": "sgv", "glucose": 223
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:18:12.777Z", "sgv": 221,
-    "device": "xdripjs://MajorCAPP", "filtered": 266688, "date": 1536088692777, "unfiltered": 265984,
+    "device": "xdripjs://RigName", "filtered": 266688, "date": 1536088692777, "unfiltered": 265984,
     "rssi": -52, "type": "sgv", "glucose": 221
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:13:12.810Z", "sgv": 220,
-    "device": "xdripjs://MajorCAPP", "filtered": 266880, "date": 1536088392810, "unfiltered": 265216,
+    "device": "xdripjs://RigName", "filtered": 266880, "date": 1536088392810, "unfiltered": 265216,
     "rssi": -58, "type": "sgv", "glucose": 220
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:08:12.864Z", "sgv": 223,
-    "device": "xdripjs://MajorCAPP", "filtered": 266624, "date": 1536088092864, "unfiltered": 267648,
+    "device": "xdripjs://RigName", "filtered": 266624, "date": 1536088092864, "unfiltered": 267648,
     "rssi": -62, "type": "sgv", "glucose": 223
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T19:03:13.028Z", "sgv": 223,
-    "device": "xdripjs://MajorCAPP", "filtered": 266048, "date": 1536087793028, "unfiltered": 267520,
+    "device": "xdripjs://RigName", "filtered": 266048, "date": 1536087793028, "unfiltered": 267520,
     "rssi": -48, "type": "sgv", "glucose": 223
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:58:12.876Z", "sgv": 221,
-    "device": "xdripjs://MajorCAPP", "filtered": 265280, "date": 1536087492876, "unfiltered": 265600,
+    "device": "xdripjs://RigName", "filtered": 265280, "date": 1536087492876, "unfiltered": 265600,
     "rssi": -50, "type": "sgv", "glucose": 221
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:53:12.769Z", "sgv": 221,
-    "device": "xdripjs://MajorCAPP", "filtered": 264256, "date": 1536087192769, "unfiltered": 265984,
+    "device": "xdripjs://RigName", "filtered": 264256, "date": 1536087192769, "unfiltered": 265984,
     "rssi": -48, "type": "sgv", "glucose": 221
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:48:12.917Z", "sgv": 221,
-    "device": "xdripjs://MajorCAPP", "filtered": 262720, "date": 1536086892917, "unfiltered": 265472,
+    "device": "xdripjs://RigName", "filtered": 262720, "date": 1536086892917, "unfiltered": 265472,
     "rssi": -47, "type": "sgv", "glucose": 221
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:43:12.796Z", "sgv": 218,
-    "device": "xdripjs://MajorCAPP", "filtered": 260160, "date": 1536086592796, "unfiltered": 262912,
+    "device": "xdripjs://RigName", "filtered": 260160, "date": 1536086592796, "unfiltered": 262912,
     "rssi": -49, "type": "sgv", "glucose": 218
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:38:12.988Z", "sgv": 216,
-    "device": "xdripjs://MajorCAPP", "filtered": 256288, "date": 1536086292988, "unfiltered": 260864,
+    "device": "xdripjs://RigName", "filtered": 256288, "date": 1536086292988, "unfiltered": 260864,
     "rssi": -49, "type": "sgv", "glucose": 216
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:33:13.041Z", "sgv": 215,
-    "device": "xdripjs://MajorCAPP", "filtered": 251584, "date": 1536085993041, "unfiltered": 259520,
+    "device": "xdripjs://RigName", "filtered": 251584, "date": 1536085993041, "unfiltered": 259520,
     "rssi": -67, "type": "sgv", "glucose": 215
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:28:13.105Z", "sgv": 211,
-    "device": "xdripjs://MajorCAPP", "filtered": 246880, "date": 1536085693105, "unfiltered": 255360,
+    "device": "xdripjs://RigName", "filtered": 246880, "date": 1536085693105, "unfiltered": 255360,
     "rssi": -80, "type": "sgv", "glucose": 211
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:23:12.936Z", "sgv": 204,
-    "device": "xdripjs://MajorCAPP", "filtered": 242560, "date": 1536085392936, "unfiltered": 248608,
+    "device": "xdripjs://RigName", "filtered": 242560, "date": 1536085392936, "unfiltered": 248608,
     "rssi": -70, "type": "sgv", "glucose": 204
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:18:12.919Z", "sgv": 200,
-    "device": "xdripjs://MajorCAPP", "filtered": 238496, "date": 1536085092919, "unfiltered": 244384,
+    "device": "xdripjs://RigName", "filtered": 238496, "date": 1536085092919, "unfiltered": 244384,
     "rssi": -50, "type": "sgv", "glucose": 200
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:13:13.117Z", "sgv": 197,
-    "device": "xdripjs://MajorCAPP", "filtered": 234720, "date": 1536084793117, "unfiltered": 241344,
+    "device": "xdripjs://RigName", "filtered": 234720, "date": 1536084793117, "unfiltered": 241344,
     "rssi": -62, "type": "sgv", "glucose": 197
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:08:12.990Z", "sgv": 193,
-    "device": "xdripjs://MajorCAPP", "filtered": 231232, "date": 1536084492990, "unfiltered": 236992,
+    "device": "xdripjs://RigName", "filtered": 231232, "date": 1536084492990, "unfiltered": 236992,
     "rssi": -53, "type": "sgv", "glucose": 193
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T18:03:12.838Z", "sgv": 189,
-    "device": "xdripjs://MajorCAPP", "filtered": 227680, "date": 1536084192838, "unfiltered": 232448,
+    "device": "xdripjs://RigName", "filtered": 227680, "date": 1536084192838, "unfiltered": 232448,
     "rssi": -54, "type": "sgv", "glucose": 189
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:58:13.094Z", "sgv": 185,
-    "device": "xdripjs://MajorCAPP", "filtered": 223840, "date": 1536083893094, "unfiltered": 228896,
+    "device": "xdripjs://RigName", "filtered": 223840, "date": 1536083893094, "unfiltered": 228896,
     "rssi": -65, "type": "sgv", "glucose": 185
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:53:13.029Z", "sgv": 184,
-    "device": "xdripjs://MajorCAPP", "filtered": 219616, "date": 1536083593029, "unfiltered": 227424,
+    "device": "xdripjs://RigName", "filtered": 219616, "date": 1536083593029, "unfiltered": 227424,
     "rssi": -65, "type": "sgv", "glucose": 184
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:48:12.256Z", "sgv": 178,
-    "device": "xdripjs://MajorCAPP", "filtered": 215008, "date": 1536083292256, "unfiltered": 221024,
+    "device": "xdripjs://RigName", "filtered": 215008, "date": 1536083292256, "unfiltered": 221024,
     "rssi": -65, "type": "sgv", "glucose": 178
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:43:13.039Z", "sgv": 174,
-    "device": "xdripjs://MajorCAPP", "filtered": 209920, "date": 1536082993039, "unfiltered": 217408,
+    "device": "xdripjs://RigName", "filtered": 209920, "date": 1536082993039, "unfiltered": 217408,
     "rssi": -60, "type": "sgv", "glucose": 174
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:38:12.517Z", "sgv": 170,
-    "device": "xdripjs://MajorCAPP", "filtered": 204320, "date": 1536082692517, "unfiltered": 212992,
+    "device": "xdripjs://RigName", "filtered": 204320, "date": 1536082692517, "unfiltered": 212992,
     "rssi": -62, "type": "sgv", "glucose": 170
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:33:13.110Z", "sgv": 165,
-    "device": "xdripjs://MajorCAPP", "filtered": 198944, "date": 1536082393110, "unfiltered": 207552,
+    "device": "xdripjs://RigName", "filtered": 198944, "date": 1536082393110, "unfiltered": 207552,
     "rssi": -62, "type": "sgv", "glucose": 165
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:28:13.003Z", "sgv": 159,
-    "device": "xdripjs://MajorCAPP", "filtered": 194624, "date": 1536082093003, "unfiltered": 202240,
+    "device": "xdripjs://RigName", "filtered": 194624, "date": 1536082093003, "unfiltered": 202240,
     "rssi": -61, "type": "sgv", "glucose": 159
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:23:12.286Z", "sgv": 155,
-    "device": "xdripjs://MajorCAPP", "filtered": 191552, "date": 1536081792286, "unfiltered": 197728,
+    "device": "xdripjs://RigName", "filtered": 191552, "date": 1536081792286, "unfiltered": 197728,
     "rssi": -55, "type": "sgv", "glucose": 155
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:18:12.226Z", "sgv": 149,
-    "device": "xdripjs://MajorCAPP", "filtered": 189312, "date": 1536081492226, "unfiltered": 191648,
+    "device": "xdripjs://RigName", "filtered": 189312, "date": 1536081492226, "unfiltered": 191648,
     "rssi": -66, "type": "sgv", "glucose": 149
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:13:12.596Z", "sgv": 148,
-    "device": "xdripjs://MajorCAPP", "filtered": 187136, "date": 1536081192596, "unfiltered": 190304,
+    "device": "xdripjs://RigName", "filtered": 187136, "date": 1536081192596, "unfiltered": 190304,
     "rssi": -54, "type": "sgv", "glucose": 148
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:08:12.934Z", "sgv": 146,
-    "device": "xdripjs://MajorCAPP", "filtered": 184768, "date": 1536080892934, "unfiltered": 188480,
+    "device": "xdripjs://RigName", "filtered": 184768, "date": 1536080892934, "unfiltered": 188480,
     "rssi": -54, "type": "sgv", "glucose": 146
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T17:03:12.947Z", "sgv": 144,
-    "device": "xdripjs://MajorCAPP", "filtered": 182432, "date": 1536080592947, "unfiltered": 186560,
+    "device": "xdripjs://RigName", "filtered": 182432, "date": 1536080592947, "unfiltered": 186560,
     "rssi": -49, "type": "sgv", "glucose": 144
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:58:12.991Z", "sgv": 141,
-    "device": "xdripjs://MajorCAPP", "filtered": 179968, "date": 1536080292991, "unfiltered": 183520,
+    "device": "xdripjs://RigName", "filtered": 179968, "date": 1536080292991, "unfiltered": 183520,
     "rssi": -70, "type": "sgv", "glucose": 141
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:53:13.079Z", "sgv": 139,
-    "device": "xdripjs://MajorCAPP", "filtered": 177280, "date": 1536079993079, "unfiltered": 180608,
+    "device": "xdripjs://RigName", "filtered": 177280, "date": 1536079993079, "unfiltered": 180608,
     "rssi": -56, "type": "sgv", "glucose": 139
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:48:13.092Z", "sgv": 137,
-    "device": "xdripjs://MajorCAPP", "filtered": 174592, "date": 1536079693092, "unfiltered": 179360,
+    "device": "xdripjs://RigName", "filtered": 174592, "date": 1536079693092, "unfiltered": 179360,
     "rssi": -76, "type": "sgv", "glucose": 137
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:43:13.045Z", "sgv": 135,
-    "device": "xdripjs://MajorCAPP", "filtered": 172352, "date": 1536079393045, "unfiltered": 176736,
+    "device": "xdripjs://RigName", "filtered": 172352, "date": 1536079393045, "unfiltered": 176736,
     "rssi": -65, "type": "sgv", "glucose": 135
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:38:12.329Z", "sgv": 131,
-    "device": "xdripjs://MajorCAPP", "filtered": 170368, "date": 1536079092329, "unfiltered": 173248,
+    "device": "xdripjs://RigName", "filtered": 170368, "date": 1536079092329, "unfiltered": 173248,
     "rssi": -73, "type": "sgv", "glucose": 131
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:33:13.147Z", "sgv": 129,
-    "device": "xdripjs://MajorCAPP", "filtered": 168064, "date": 1536078793147, "unfiltered": 170336,
+    "device": "xdripjs://RigName", "filtered": 168064, "date": 1536078793147, "unfiltered": 170336,
     "rssi": -72, "type": "sgv", "glucose": 129
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:28:12.175Z", "sgv": 128,
-    "device": "xdripjs://MajorCAPP", "filtered": 165408, "date": 1536078492175, "unfiltered": 169536,
+    "device": "xdripjs://RigName", "filtered": 165408, "date": 1536078492175, "unfiltered": 169536,
     "rssi": -62, "type": "sgv", "glucose": 128
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:23:13.157Z", "sgv": 126,
-    "device": "xdripjs://MajorCAPP", "filtered": 163040, "date": 1536078193157, "unfiltered": 167968,
+    "device": "xdripjs://RigName", "filtered": 163040, "date": 1536078193157, "unfiltered": 167968,
     "rssi": -59, "type": "sgv", "glucose": 126
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:18:12.215Z", "sgv": 123,
-    "device": "xdripjs://MajorCAPP", "filtered": 161472, "date": 1536077892215, "unfiltered": 164512,
+    "device": "xdripjs://RigName", "filtered": 161472, "date": 1536077892215, "unfiltered": 164512,
     "rssi": -73, "type": "sgv", "glucose": 123
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:13:12.288Z", "sgv": 120,
-    "device": "xdripjs://MajorCAPP", "filtered": 160320, "date": 1536077592288, "unfiltered": 161600,
+    "device": "xdripjs://RigName", "filtered": 160320, "date": 1536077592288, "unfiltered": 161600,
     "rssi": -64, "type": "sgv", "glucose": 120
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:08:13.106Z", "sgv": 119,
-    "device": "xdripjs://MajorCAPP", "filtered": 158976, "date": 1536077293106, "unfiltered": 160096,
+    "device": "xdripjs://RigName", "filtered": 158976, "date": 1536077293106, "unfiltered": 160096,
     "rssi": -65, "type": "sgv", "glucose": 119
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T16:03:12.285Z", "sgv": 119,
-    "device": "xdripjs://MajorCAPP", "filtered": 157536, "date": 1536076992285, "unfiltered": 160288,
+    "device": "xdripjs://RigName", "filtered": 157536, "date": 1536076992285, "unfiltered": 160288,
     "rssi": -73, "type": "sgv", "glucose": 119
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T15:58:13.088Z", "sgv": 118,
-    "device": "xdripjs://MajorCAPP", "filtered": 156512, "date": 1536076693088, "unfiltered": 158944,
+    "device": "xdripjs://RigName", "filtered": 156512, "date": 1536076693088, "unfiltered": 158944,
     "rssi": -68, "type": "sgv", "glucose": 118
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T15:53:12.190Z", "sgv": 116,
-    "device": "xdripjs://MajorCAPP", "filtered": 156192, "date": 1536076392190, "unfiltered": 157152,
+    "device": "xdripjs://RigName", "filtered": 156192, "date": 1536076392190, "unfiltered": 157152,
     "rssi": -64, "type": "sgv", "glucose": 116
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T15:48:12.184Z", "sgv": 115,
-    "device": "xdripjs://MajorCAPP", "filtered": 156096, "date": 1536076092184, "unfiltered": 155840,
+    "device": "xdripjs://RigName", "filtered": 156096, "date": 1536076092184, "unfiltered": 155840,
     "rssi": -66, "type": "sgv", "glucose": 115
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T15:43:12.517Z", "sgv": 114,
-    "device": "xdripjs://MajorCAPP", "filtered": 155904, "date": 1536075792517, "unfiltered": 155264,
+    "device": "xdripjs://RigName", "filtered": 155904, "date": 1536075792517, "unfiltered": 155264,
     "rssi": -64, "type": "sgv", "glucose": 114
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T15:38:12.169Z", "sgv": 116,
-    "device": "xdripjs://MajorCAPP", "filtered": 155712, "date": 1536075492169, "unfiltered": 157248,
+    "device": "xdripjs://RigName", "filtered": 155712, "date": 1536075492169, "unfiltered": 157248,
     "rssi": -68, "type": "sgv", "glucose": 116
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T15:33:13.123Z", "sgv": 115,
-    "device": "xdripjs://MajorCAPP", "filtered": 155744, "date": 1536075193123, "unfiltered": 156096,
+    "device": "xdripjs://RigName", "filtered": 155744, "date": 1536075193123, "unfiltered": 156096,
     "rssi": -75, "type": "sgv", "glucose": 115
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T15:28:12.581Z", "sgv": 113,
-    "device": "xdripjs://MajorCAPP", "filtered": 156416, "date": 1536074892581, "unfiltered": 154400,
+    "device": "xdripjs://RigName", "filtered": 156416, "date": 1536074892581, "unfiltered": 154400,
     "rssi": -67, "type": "sgv", "glucose": 113
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T15:23:12.375Z", "sgv": 116,
-    "device": "xdripjs://MajorCAPP", "filtered": 158784, "date": 1536074592375, "unfiltered": 156832,
+    "device": "xdripjs://RigName", "filtered": 158784, "date": 1536074592375, "unfiltered": 156832,
     "rssi": -64, "type": "sgv", "glucose": 116
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T15:18:12.178Z", "sgv": 118,
-    "device": "xdripjs://MajorCAPP", "filtered": 164736, "date": 1536074292178, "unfiltered": 159040,
+    "device": "xdripjs://RigName", "filtered": 164736, "date": 1536074292178, "unfiltered": 159040,
     "rssi": -70, "type": "sgv", "glucose": 118
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T15:13:12.567Z", "sgv": 121,
-    "device": "xdripjs://MajorCAPP", "filtered": 174688, "date": 1536073992567, "unfiltered": 162688,
+    "device": "xdripjs://RigName", "filtered": 174688, "date": 1536073992567, "unfiltered": 162688,
     "rssi": -93, "type": "sgv", "glucose": 121
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T15:08:12.279Z", "sgv": 125,
-    "device": "xdripjs://MajorCAPP", "filtered": 185248, "date": 1536073692279, "unfiltered": 166656,
+    "device": "xdripjs://RigName", "filtered": 185248, "date": 1536073692279, "unfiltered": 166656,
     "rssi": -75, "type": "sgv", "glucose": 125
   }, {
     "direction": "FortyFiveDown", "noise": 1, "dateString": "2018-09-04T15:03:12.238Z", "sgv": 133,
-    "device": "xdripjs://MajorCAPP", "filtered": 192192, "date": 1536073392238, "unfiltered": 174432,
+    "device": "xdripjs://RigName", "filtered": 192192, "date": 1536073392238, "unfiltered": 174432,
     "rssi": -68, "type": "sgv", "glucose": 133
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:58:12.717Z", "sgv": 149,
-    "device": "xdripjs://MajorCAPP", "filtered": 193088, "date": 1536073092717, "unfiltered": 190880,
+    "device": "xdripjs://RigName", "filtered": 193088, "date": 1536073092717, "unfiltered": 190880,
     "rssi": -66, "type": "sgv", "glucose": 149
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:53:12.671Z", "sgv": 151,
-    "device": "xdripjs://MajorCAPP", "filtered": 190144, "date": 1536072792671, "unfiltered": 192960,
+    "device": "xdripjs://RigName", "filtered": 190144, "date": 1536072792671, "unfiltered": 192960,
     "rssi": -74, "type": "sgv", "glucose": 151
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:48:12.549Z", "sgv": 155,
-    "device": "xdripjs://MajorCAPP", "filtered": 187584, "date": 1536072492549, "unfiltered": 196832,
+    "device": "xdripjs://RigName", "filtered": 187584, "date": 1536072492549, "unfiltered": 196832,
     "rssi": -82, "type": "sgv", "glucose": 155
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:43:12.475Z", "sgv": 148,
-    "device": "xdripjs://MajorCAPP", "filtered": 187264, "date": 1536072192475, "unfiltered": 189664,
+    "device": "xdripjs://RigName", "filtered": 187264, "date": 1536072192475, "unfiltered": 189664,
     "rssi": -85, "type": "sgv", "glucose": 148
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:38:12.278Z", "sgv": 142,
-    "device": "xdripjs://MajorCAPP", "filtered": 188768, "date": 1536071892278, "unfiltered": 184032,
+    "device": "xdripjs://RigName", "filtered": 188768, "date": 1536071892278, "unfiltered": 184032,
     "rssi": -82, "type": "sgv", "glucose": 142
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:33:12.381Z", "sgv": 146,
-    "device": "xdripjs://MajorCAPP", "filtered": 190336, "date": 1536071592381, "unfiltered": 187680,
+    "device": "xdripjs://RigName", "filtered": 190336, "date": 1536071592381, "unfiltered": 187680,
     "rssi": -74, "type": "sgv", "glucose": 146
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:28:12.348Z", "sgv": 148,
-    "device": "xdripjs://MajorCAPP", "filtered": 191424, "date": 1536071292348, "unfiltered": 190016,
+    "device": "xdripjs://RigName", "filtered": 191424, "date": 1536071292348, "unfiltered": 190016,
     "rssi": -70, "type": "sgv", "glucose": 148
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:23:12.378Z", "sgv": 150,
-    "device": "xdripjs://MajorCAPP", "filtered": 192704, "date": 1536070992378, "unfiltered": 191424,
+    "device": "xdripjs://RigName", "filtered": 192704, "date": 1536070992378, "unfiltered": 191424,
     "rssi": -72, "type": "sgv", "glucose": 150
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:18:12.316Z", "sgv": 150,
-    "device": "xdripjs://MajorCAPP", "filtered": 194432, "date": 1536070692316, "unfiltered": 191936,
+    "device": "xdripjs://RigName", "filtered": 194432, "date": 1536070692316, "unfiltered": 191936,
     "rssi": -74, "type": "sgv", "glucose": 150
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:13:12.689Z", "sgv": 152,
-    "device": "xdripjs://MajorCAPP", "filtered": 196416, "date": 1536070392689, "unfiltered": 193536,
+    "device": "xdripjs://RigName", "filtered": 196416, "date": 1536070392689, "unfiltered": 193536,
     "rssi": -73, "type": "sgv", "glucose": 152
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:08:12.328Z", "sgv": 153,
-    "device": "xdripjs://MajorCAPP", "filtered": 197920, "date": 1536070092328, "unfiltered": 195008,
+    "device": "xdripjs://RigName", "filtered": 197920, "date": 1536070092328, "unfiltered": 195008,
     "rssi": -75, "type": "sgv", "glucose": 153
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T14:03:12.372Z", "sgv": 155,
-    "device": "xdripjs://MajorCAPP", "filtered": 198240, "date": 1536069792372, "unfiltered": 196704,
+    "device": "xdripjs://RigName", "filtered": 198240, "date": 1536069792372, "unfiltered": 196704,
     "rssi": -65, "type": "sgv", "glucose": 155
   }, {
     "direction": "Flat", "noise": 1, "dateString": "2018-09-04T13:58:12.944Z", "sgv": 157,
-    "device": "xdripjs://MajorCAPP", "filtered": 197088, "date": 1536069492944, "unfiltered": 198176,
+    "device": "xdripjs://RigName", "filtered": 197088, "date": 1536069492944, "unfiltered": 198176,
     "rssi": -67, "type": "sgv", "glucose": 157
   }
 ]
