@@ -25,7 +25,7 @@ var generate = require('oref0/lib/autotune-prep');
 if (!module.parent) {
 
     var argv = require('yargs')
-        .usage("$0 <pumphistory.json> <profile.json> <glucose.json> [<pumpprofile.json>] [<carbhistory.json>] [--categorize_uam_as_basal] [--tune-insulin-curve]")
+        .usage("$0 <pumphistory.json> <profile.json> <glucose.json> <pumpprofile.json> [<carbhistory.json>] [--categorize_uam_as_basal] [--tune-insulin-curve]")
         .option('categorize_uam_as_basal', {
             alias: 'u',
             boolean: true,
@@ -44,7 +44,7 @@ if (!module.parent) {
     var params = argv.argv;
     var inputs = params._;
 
-    if (inputs.length < 3 || inputs.length > 5) {
+    if (inputs.length < 4 || inputs.length > 5) {
         argv.showHelp();
         console.log('{ "error": "Insufficient arguments" }');
         process.exit(1);
