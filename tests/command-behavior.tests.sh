@@ -26,6 +26,8 @@ main () {
 
     test-autotune-prep
 
+    test-calculate-iob
+
     cleanup
 }
 
@@ -103,9 +105,9 @@ test-autotune-prep () {
 
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
-    [[ $(cat stderr_output | grep mealCOB | wc -l) -eq 82 ]] || fail_test "ns-status didn't have expected oref0-autotune-prep stderr output"
+    [[ $(cat stderr_output | grep mealCOB | wc -l) -eq 82 ]] || fail_test "oref0-autotune-prep didn't contain expected stderr output"
 
-    # Make sure output has accurate data
+    # Make sure output has expected data
     cat stdout_output | jq ".CRData | first" | grep -q CRInitialBG || fail_test "oref0-autotune-prep didn't contain expected CR Data output"
     cat stdout_output | jq ".CSFGlucoseData | first" | grep -q dateString || fail_test "oref0-autotune-prep didn't contain expected CSF Glucose Data"
     cat stdout_output | jq ".ISFGlucoseData | first" | grep -q null || fail_test "oref0-autotune-prep didn't contain expected ISF Glucose Data"
@@ -114,7 +116,7 @@ test-autotune-prep () {
     # Run autotune-prep with categorize_uam_as_basal option
     ../bin/oref0-autotune-prep.js --categorize_uam_as_basal autotune.treatments.json profile.json autotune.entries.json profile.json 2>stderr_output 1>stdout_output
 
-    # Make sure output has accurate data
+    # Make sure output has expected data
     cat stdout_output | jq ".CRData | first" | grep -q CRInitialBG || fail_test "oref0-autotune-prep with categorize_uam_as_basal didn't contain expected CR Data output"
     cat stdout_output | jq ".CSFGlucoseData | first" | grep -q dateString || fail_test "oref0-autotune-prep with categorize_uam_as_basal didn't contain expected CSF Glucose Data"
     cat stdout_output | jq ".ISFGlucoseData | first" | grep -q null || fail_test "oref0-autotune-prep with categorize_uam_as_basal didn't contain expected ISF Glucose Data"
@@ -125,14 +127,62 @@ test-autotune-prep () {
 
     cat stderr_output | grep -q Peak || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected insulin peak results"
 
-    # Make sure output has accurate data
+    # Make sure output has expected data
     cat stdout_output | jq ".CRData | first" | grep -q CRInitialBG || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected CR Data output"
     cat stdout_output | jq ".CSFGlucoseData | first" | grep -q dateString || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected CSF Glucose Data"
     cat stdout_output | jq ".ISFGlucoseData | first" | grep -q null || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected ISF Glucose Data"
     cat stdout_output | jq ".basalGlucoseData | first" | grep -q dateString || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected basal Glucose Data"
 
+    # TODO: test the carbhistory.json argument
+
     # If we made it here, the test passed
     echo "oref0-autotune-prep test passed"
+}
+
+test-calculate-iob () {
+    # Run calculate-iob and capture output
+    ../bin/oref0-calculate-iob.js pumphistory_zoned.json profile.json clock-zoned.json  2>stderr_output 1>stdout_output
+
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "ns-status error: \n$ERROR_LINES"
+
+    # Make sure output has iob
+    cat stdout_output | jq ". | first" | grep -q "\"iob\":" || fail_test "oref0-calculate-iob did not report an iob"
+
+    # Make sure output has iobWithZeroTemp
+    cat stdout_output | jq ". | first" | grep -q "iobWithZeroTemp" || fail_test "oref0-calculate-iob did not report an iobWithZeroTemp"
+
+    # Run calculate-iob with autosens option and capture output
+    ../bin/oref0-calculate-iob.js pumphistory_zoned.json profile.json clock-zoned.json autosens.json 2>stderr_output 1>stdout_output
+
+    # NOTE: oref0-calculate-iob doesn't print an error if autosens file is unable to be read
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "ns-status error: \n$ERROR_LINES"
+
+    # Make sure output has iob
+    cat stdout_output | jq ". | first" | grep -q "\"iob\":" || fail_test "oref0-calculate-iob did not report an iob"
+
+    # Make sure output has iobWithZeroTemp
+    cat stdout_output | jq ". | first" | grep -q "iobWithZeroTemp" || fail_test "oref0-calculate-iob did not report an iobWithZeroTemp"
+
+    # Run calculate-iob with 24 hour pumphistory option and capture output
+    ../bin/oref0-calculate-iob.js pumphistory_zoned.json profile.json clock-zoned.json autosens.json pumphistory_zoned.json 2>stderr_output 1>stdout_output
+
+    # NOTE: oref0-calculate-iob doesn't print an error if autosens or 24 hour pump history files are unable to be read
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "ns-status error: \n$ERROR_LINES"
+
+    # Make sure output has iob
+    cat stdout_output | jq ". | first" | grep -q "\"iob\":" || fail_test "oref0-calculate-iob did not report an iob"
+
+    # Make sure output has iobWithZeroTemp
+    cat stdout_output | jq ". | first" | grep -q "iobWithZeroTemp" || fail_test "oref0-calculate-iob did not report an iobWithZeroTemp"
+
+    # If we made it here, the test passed
+    echo "oref0-calculate-iob test passed"
 }
 
 generate_test_files () {
@@ -252,6 +302,11 @@ EOT
    "useCustomPeakTime": true,
    "wide_bg_target_range": false
 }
+EOT
+
+    # Make a fake autosens.json
+    cat >autosens.json <<EOT
+{ "ratio": .8 }
 EOT
 
     # Make a fake clock-zoned.json to test the commands that extract values from it
@@ -2913,7 +2968,7 @@ EOT
       "rssi": -66,
       "unfiltered": 142912,
       "_id": "5b8e861a82bf9b6cf6706b7f",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536067092481,
       "dateString": "2018-09-04T13:18:12.481Z",
       "sgv": 103,
@@ -2933,7 +2988,7 @@ EOT
       "rssi": -72,
       "unfiltered": 156448,
       "_id": "5b8e874782bf9b6cf67076e1",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536067392586,
       "dateString": "2018-09-04T13:23:12.586Z",
       "sgv": 116,
@@ -2952,7 +3007,7 @@ EOT
       "rssi": -73,
       "unfiltered": 170944,
       "_id": "5b8e887282bf9b6cf670823e",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536067692618,
       "dateString": "2018-09-04T13:28:12.618Z",
       "sgv": 130,
@@ -2971,7 +3026,7 @@ EOT
       "rssi": -62,
       "unfiltered": 182304,
       "_id": "5b8e89a082bf9b6cf6708e14",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536067992439,
       "dateString": "2018-09-04T13:33:12.439Z",
       "sgv": 142,
@@ -2990,7 +3045,7 @@ EOT
       "rssi": -66,
       "unfiltered": 185504,
       "_id": "5b8e8aca82bf9b6cf67099bc",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536068292891,
       "dateString": "2018-09-04T13:38:12.891Z",
       "sgv": 145,
@@ -3009,7 +3064,7 @@ EOT
       "rssi": -75,
       "unfiltered": 191808,
       "_id": "5b8e8bf882bf9b6cf670a560",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536068592368,
       "dateString": "2018-09-04T13:43:12.368Z",
       "sgv": 151,
@@ -3028,7 +3083,7 @@ EOT
       "rssi": -71,
       "unfiltered": 197216,
       "_id": "5b8e8d2282bf9b6cf670b098",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536068892339,
       "dateString": "2018-09-04T13:48:12.339Z",
       "sgv": 156,
@@ -3049,7 +3104,7 @@ EOT
       "rssi": -52,
       "unfiltered": 265984,
       "_id": "5b8eda7a82bf9b6cf673a452",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536088692777,
       "dateString": "2018-09-04T19:18:12.777Z",
       "sgv": 221,
@@ -3067,7 +3122,7 @@ EOT
       "rssi": -54,
       "unfiltered": 267968,
       "_id": "5b8edba682bf9b6cf673af8f",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536088992748,
       "dateString": "2018-09-04T19:23:12.748Z",
       "sgv": 223,
@@ -3085,7 +3140,7 @@ EOT
       "rssi": -77,
       "unfiltered": 269248,
       "_id": "5b8edcd382bf9b6cf673ba6d",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536089292875,
       "dateString": "2018-09-04T19:28:12.875Z",
       "sgv": 224,
@@ -3105,7 +3160,7 @@ EOT
       "rssi": -61,
       "unfiltered": 137920,
       "_id": "5b8e4f0d82bf9b6cf66e5b1f",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536052993966,
       "dateString": "2018-09-04T09:23:13.966Z",
       "sgv": 100,
@@ -3123,7 +3178,7 @@ EOT
       "rssi": -62,
       "unfiltered": 138368,
       "_id": "5b8e503382bf9b6cf66e662b",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536053293158,
       "dateString": "2018-09-04T09:28:13.158Z",
       "sgv": 101,
@@ -3141,7 +3196,7 @@ EOT
       "rssi": -62,
       "unfiltered": 138752,
       "_id": "5b8e515e82bf9b6cf66e7186",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536053593843,
       "dateString": "2018-09-04T09:33:13.843Z",
       "sgv": 101,
@@ -3159,7 +3214,7 @@ EOT
       "rssi": -61,
       "unfiltered": 139744,
       "_id": "5b8e528b82bf9b6cf66e7d0d",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536053893857,
       "dateString": "2018-09-04T09:38:13.857Z",
       "sgv": 102,
@@ -3177,7 +3232,7 @@ EOT
       "rssi": -62,
       "unfiltered": 140800,
       "_id": "5b8e53b782bf9b6cf66e8876",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536054193862,
       "dateString": "2018-09-04T09:43:13.862Z",
       "sgv": 103,
@@ -3195,7 +3250,7 @@ EOT
       "rssi": -66,
       "unfiltered": 141888,
       "_id": "5b8e54e382bf9b6cf66e93ae",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536054493872,
       "dateString": "2018-09-04T09:48:13.872Z",
       "sgv": 104,
@@ -3213,7 +3268,7 @@ EOT
       "rssi": -64,
       "unfiltered": 145792,
       "_id": "5b8e560f82bf9b6cf66e9ed8",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536054793308,
       "dateString": "2018-09-04T09:53:13.308Z",
       "sgv": 108,
@@ -3231,7 +3286,7 @@ EOT
       "rssi": -71,
       "unfiltered": 147264,
       "_id": "5b8e573c82bf9b6cf66eaa35",
-      "device": "xdripjs://MajorCAPP",
+      "device": "xdripjs://RigName",
       "date": 1536055093308,
       "dateString": "2018-09-04T09:58:13.308Z",
       "sgv": 109,
@@ -3690,7 +3745,7 @@ EOT
     "rssi": -78,
     "unfiltered": 96624,
     "_id": "5b8f9aa982bf9b6cf67a8df5",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536137891357,
     "dateString": "2018-09-05T08:58:11.357Z",
     "sgv": 54,
@@ -3705,7 +3760,7 @@ EOT
     "rssi": -78,
     "unfiltered": 95840,
     "_id": "5b8f997c82bf9b6cf67a82e7",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536137591464,
     "dateString": "2018-09-05T08:53:11.464Z",
     "sgv": 53,
@@ -3720,7 +3775,7 @@ EOT
     "rssi": -85,
     "unfiltered": 96560,
     "_id": "5b8f985082bf9b6cf67a77e6",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536137291320,
     "dateString": "2018-09-05T08:48:11.320Z",
     "sgv": 54,
@@ -3735,7 +3790,7 @@ EOT
     "rssi": -77,
     "unfiltered": 99648,
     "_id": "5b8f972482bf9b6cf67a6ce9",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536136991359,
     "dateString": "2018-09-05T08:43:11.359Z",
     "sgv": 57,
@@ -3750,7 +3805,7 @@ EOT
     "rssi": -95,
     "unfiltered": 103424,
     "_id": "5b8f95f982bf9b6cf67a61fe",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536136690748,
     "dateString": "2018-09-05T08:38:10.748Z",
     "sgv": 61,
@@ -3765,7 +3820,7 @@ EOT
     "rssi": -79,
     "unfiltered": 105696,
     "_id": "5b8f94cd82bf9b6cf67a572b",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536136390839,
     "dateString": "2018-09-05T08:33:10.839Z",
     "sgv": 64,
@@ -3780,7 +3835,7 @@ EOT
     "rssi": -78,
     "unfiltered": 106592,
     "_id": "5b8f93a082bf9b6cf67a4c4b",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536136091487,
     "dateString": "2018-09-05T08:28:11.487Z",
     "sgv": 65,
@@ -3795,7 +3850,7 @@ EOT
     "rssi": -95,
     "unfiltered": 108096,
     "_id": "5b8f927582bf9b6cf67a41ad",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536135791156,
     "dateString": "2018-09-05T08:23:11.156Z",
     "sgv": 66,
@@ -3810,7 +3865,7 @@ EOT
     "rssi": -98,
     "unfiltered": 110016,
     "_id": "5b8f914882bf9b6cf67a36fb",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536135491285,
     "dateString": "2018-09-05T08:18:11.285Z",
     "sgv": 68,
@@ -3825,7 +3880,7 @@ EOT
     "rssi": -77,
     "unfiltered": 114544,
     "_id": "5b8f901d82bf9b6cf67a2c4e",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536135190975,
     "dateString": "2018-09-05T08:13:10.975Z",
     "sgv": 73,
@@ -3840,7 +3895,7 @@ EOT
     "rssi": -69,
     "unfiltered": 116928,
     "_id": "5b8f8ef082bf9b6cf67a2172",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536134890733,
     "dateString": "2018-09-05T08:08:10.733Z",
     "sgv": 76,
@@ -3855,7 +3910,7 @@ EOT
     "rssi": -51,
     "unfiltered": 122864,
     "_id": "5b8f8b6c82bf9b6cf67a0434",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536133990547,
     "dateString": "2018-09-05T07:53:10.547Z",
     "sgv": 82,
@@ -3870,7 +3925,7 @@ EOT
     "rssi": -57,
     "unfiltered": 122928,
     "_id": "5b8f8a4182bf9b6cf679f977",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536133690633,
     "dateString": "2018-09-05T07:48:10.633Z",
     "sgv": 82,
@@ -3885,7 +3940,7 @@ EOT
     "rssi": -67,
     "unfiltered": 129216,
     "_id": "5b8f891482bf9b6cf679eee4",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536133390464,
     "dateString": "2018-09-05T07:43:10.464Z",
     "sgv": 89,
@@ -3900,7 +3955,7 @@ EOT
     "rssi": -64,
     "unfiltered": 129952,
     "_id": "5b8f87e882bf9b6cf679e452",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536133090477,
     "dateString": "2018-09-05T07:38:10.477Z",
     "sgv": 90,
@@ -3915,7 +3970,7 @@ EOT
     "rssi": -70,
     "unfiltered": 133568,
     "_id": "5b8f86bc82bf9b6cf679d9be",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536132790581,
     "dateString": "2018-09-05T07:33:10.581Z",
     "sgv": 93,
@@ -3930,7 +3985,7 @@ EOT
     "rssi": -56,
     "unfiltered": 135488,
     "_id": "5b8f859082bf9b6cf679cf01",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536132490505,
     "dateString": "2018-09-05T07:28:10.505Z",
     "sgv": 95,
@@ -3945,7 +4000,7 @@ EOT
     "rssi": -50,
     "unfiltered": 137824,
     "_id": "5b8f846582bf9b6cf679c41f",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536132190519,
     "dateString": "2018-09-05T07:23:10.519Z",
     "sgv": 97,
@@ -3960,7 +4015,7 @@ EOT
     "rssi": -50,
     "unfiltered": 138560,
     "_id": "5b8f833882bf9b6cf679b947",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536131890472,
     "dateString": "2018-09-05T07:18:10.472Z",
     "sgv": 98,
@@ -3975,7 +4030,7 @@ EOT
     "rssi": -55,
     "unfiltered": 140448,
     "_id": "5b8f820c82bf9b6cf679ae2b",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536131590606,
     "dateString": "2018-09-05T07:13:10.606Z",
     "sgv": 100,
@@ -3990,7 +4045,7 @@ EOT
     "rssi": -57,
     "unfiltered": 142016,
     "_id": "5b8f80e082bf9b6cf679a36b",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536131290637,
     "dateString": "2018-09-05T07:08:10.637Z",
     "sgv": 101,
@@ -4005,7 +4060,7 @@ EOT
     "rssi": -49,
     "unfiltered": 143520,
     "_id": "5b8f7fb482bf9b6cf6799886",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536130990549,
     "dateString": "2018-09-05T07:03:10.549Z",
     "sgv": 103,
@@ -4020,7 +4075,7 @@ EOT
     "rssi": -56,
     "unfiltered": 145760,
     "_id": "5b8f7e8982bf9b6cf6798dde",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536130690848,
     "dateString": "2018-09-05T06:58:10.848Z",
     "sgv": 105,
@@ -4035,7 +4090,7 @@ EOT
     "rssi": -53,
     "unfiltered": 147424,
     "_id": "5b8f7d5c82bf9b6cf6798332",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536130390609,
     "dateString": "2018-09-05T06:53:10.609Z",
     "sgv": 106,
@@ -4050,7 +4105,7 @@ EOT
     "rssi": -57,
     "unfiltered": 148864,
     "_id": "5b8f7c3182bf9b6cf67978a5",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536130091252,
     "dateString": "2018-09-05T06:48:11.252Z",
     "sgv": 108,
@@ -4065,7 +4120,7 @@ EOT
     "rssi": -55,
     "unfiltered": 150496,
     "_id": "5b8f7b0482bf9b6cf6796dcc",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536129790667,
     "dateString": "2018-09-05T06:43:10.667Z",
     "sgv": 109,
@@ -4080,7 +4135,7 @@ EOT
     "rssi": -54,
     "unfiltered": 152512,
     "_id": "5b8f79d982bf9b6cf6796337",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536129490877,
     "dateString": "2018-09-05T06:38:10.877Z",
     "sgv": 111,
@@ -4095,7 +4150,7 @@ EOT
     "rssi": -51,
     "unfiltered": 154272,
     "_id": "5b8f78ac82bf9b6cf679587c",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536129190592,
     "dateString": "2018-09-05T06:33:10.592Z",
     "sgv": 113,
@@ -4110,7 +4165,7 @@ EOT
     "rssi": -50,
     "unfiltered": 156416,
     "_id": "5b8f778082bf9b6cf6794df5",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536128890501,
     "dateString": "2018-09-05T06:28:10.501Z",
     "sgv": 115,
@@ -4125,7 +4180,7 @@ EOT
     "rssi": -50,
     "unfiltered": 158496,
     "_id": "5b8f765482bf9b6cf679432c",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536128590560,
     "dateString": "2018-09-05T06:23:10.560Z",
     "sgv": 117,
@@ -4140,7 +4195,7 @@ EOT
     "rssi": -51,
     "unfiltered": 160672,
     "_id": "5b8f752982bf9b6cf6793852",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536128291011,
     "dateString": "2018-09-05T06:18:11.011Z",
     "sgv": 119,
@@ -4155,7 +4210,7 @@ EOT
     "rssi": -52,
     "unfiltered": 163904,
     "_id": "5b8f73fd82bf9b6cf6792cf1",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536127991025,
     "dateString": "2018-09-05T06:13:11.025Z",
     "sgv": 122,
@@ -4170,7 +4225,7 @@ EOT
     "rssi": -60,
     "unfiltered": 166016,
     "_id": "5b8f72d182bf9b6cf67921ff",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536127690753,
     "dateString": "2018-09-05T06:08:10.753Z",
     "sgv": 124,
@@ -4185,7 +4240,7 @@ EOT
     "rssi": -54,
     "unfiltered": 166976,
     "_id": "5b8f71a482bf9b6cf6791712",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536127390572,
     "dateString": "2018-09-05T06:03:10.572Z",
     "sgv": 125,
@@ -4200,7 +4255,7 @@ EOT
     "rssi": -57,
     "unfiltered": 168512,
     "_id": "5b8f707982bf9b6cf6790c09",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536127090631,
     "dateString": "2018-09-05T05:58:10.631Z",
     "sgv": 127,
@@ -4215,7 +4270,7 @@ EOT
     "rssi": -53,
     "unfiltered": 170368,
     "_id": "5b8f6f4d82bf9b6cf6790124",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536126790690,
     "dateString": "2018-09-05T05:53:10.690Z",
     "sgv": 129,
@@ -4230,7 +4285,7 @@ EOT
     "rssi": -51,
     "unfiltered": 171904,
     "_id": "5b8f6e2182bf9b6cf678f64d",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536126491064,
     "dateString": "2018-09-05T05:48:11.064Z",
     "sgv": 130,
@@ -4245,7 +4300,7 @@ EOT
     "rssi": -52,
     "unfiltered": 174016,
     "_id": "5b8f6cf582bf9b6cf678eb7b",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536126190792,
     "dateString": "2018-09-05T05:43:10.792Z",
     "sgv": 132,
@@ -4260,7 +4315,7 @@ EOT
     "rssi": -52,
     "unfiltered": 175488,
     "_id": "5b8f6bc982bf9b6cf678e09f",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536125890790,
     "dateString": "2018-09-05T05:38:10.790Z",
     "sgv": 134,
@@ -4275,7 +4330,7 @@ EOT
     "rssi": -52,
     "unfiltered": 178048,
     "_id": "5b8f6a9d82bf9b6cf678d56f",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536125590999,
     "dateString": "2018-09-05T05:33:10.999Z",
     "sgv": 136,
@@ -4290,7 +4345,7 @@ EOT
     "rssi": -54,
     "unfiltered": 180032,
     "_id": "5b8f697382bf9b6cf678ca6c",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536125290699,
     "dateString": "2018-09-05T05:28:10.699Z",
     "sgv": 138,
@@ -4305,7 +4360,7 @@ EOT
     "rssi": -53,
     "unfiltered": 181184,
     "_id": "5b8f684582bf9b6cf678bf35",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536124990935,
     "dateString": "2018-09-05T05:23:10.935Z",
     "sgv": 139,
@@ -4320,7 +4375,7 @@ EOT
     "rssi": -51,
     "unfiltered": 182880,
     "_id": "5b8f671882bf9b6cf678b42a",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536124690814,
     "dateString": "2018-09-05T05:18:10.814Z",
     "sgv": 141,
@@ -4335,7 +4390,7 @@ EOT
     "rssi": -51,
     "unfiltered": 183328,
     "_id": "5b8f65ec82bf9b6cf678a908",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536124390767,
     "dateString": "2018-09-05T05:13:10.767Z",
     "sgv": 141,
@@ -4350,7 +4405,7 @@ EOT
     "rssi": -54,
     "unfiltered": 184512,
     "_id": "5b8f64c182bf9b6cf6789dbe",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536124090782,
     "dateString": "2018-09-05T05:08:10.782Z",
     "sgv": 142,
@@ -4365,7 +4420,7 @@ EOT
     "rssi": -51,
     "unfiltered": 186592,
     "_id": "5b8f639582bf9b6cf6789262",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536123790854,
     "dateString": "2018-09-05T05:03:10.854Z",
     "sgv": 144,
@@ -4380,7 +4435,7 @@ EOT
     "rssi": -52,
     "unfiltered": 187200,
     "_id": "5b8f626982bf9b6cf678870a",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536123490778,
     "dateString": "2018-09-05T04:58:10.778Z",
     "sgv": 145,
@@ -4395,7 +4450,7 @@ EOT
     "rssi": -51,
     "unfiltered": 188576,
     "_id": "5b8f613d82bf9b6cf6787c09",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536123190793,
     "dateString": "2018-09-05T04:53:10.793Z",
     "sgv": 146,
@@ -4410,7 +4465,7 @@ EOT
     "rssi": -64,
     "unfiltered": 189056,
     "_id": "5b8f601182bf9b6cf67870f3",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536122890792,
     "dateString": "2018-09-05T04:48:10.792Z",
     "sgv": 147,
@@ -4425,7 +4480,7 @@ EOT
     "rssi": -68,
     "unfiltered": 190240,
     "_id": "5b8f5ee582bf9b6cf678661f",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536122590716,
     "dateString": "2018-09-05T04:43:10.716Z",
     "sgv": 148,
@@ -4440,7 +4495,7 @@ EOT
     "rssi": -59,
     "unfiltered": 192832,
     "_id": "5b8f5db982bf9b6cf6785b03",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536122290970,
     "dateString": "2018-09-05T04:38:10.970Z",
     "sgv": 150,
@@ -4455,7 +4510,7 @@ EOT
     "rssi": -58,
     "unfiltered": 195360,
     "_id": "5b8f5c8d82bf9b6cf6785020",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536121991224,
     "dateString": "2018-09-05T04:33:11.224Z",
     "sgv": 153,
@@ -4470,7 +4525,7 @@ EOT
     "rssi": -64,
     "unfiltered": 194720,
     "_id": "5b8f5b6182bf9b6cf6784464",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536121690745,
     "dateString": "2018-09-05T04:28:10.745Z",
     "sgv": 152,
@@ -4485,7 +4540,7 @@ EOT
     "rssi": -91,
     "unfiltered": 197088,
     "_id": "5b8f5a3582bf9b6cf67839aa",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536121390880,
     "dateString": "2018-09-05T04:23:10.880Z",
     "sgv": 154,
@@ -4500,7 +4555,7 @@ EOT
     "rssi": -64,
     "unfiltered": 196576,
     "_id": "5b8f590a82bf9b6cf6782ebb",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536121090865,
     "dateString": "2018-09-05T04:18:10.865Z",
     "sgv": 154,
@@ -4515,7 +4570,7 @@ EOT
     "rssi": -76,
     "unfiltered": 195968,
     "_id": "5b8f57de82bf9b6cf67823e9",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536120791119,
     "dateString": "2018-09-05T04:13:11.119Z",
     "sgv": 153,
@@ -4530,7 +4585,7 @@ EOT
     "rssi": -57,
     "unfiltered": 195040,
     "_id": "5b8f56b182bf9b6cf67818e8",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536120490803,
     "dateString": "2018-09-05T04:08:10.803Z",
     "sgv": 152,
@@ -4545,7 +4600,7 @@ EOT
     "rssi": -65,
     "unfiltered": 195648,
     "_id": "5b8f558582bf9b6cf6780e23",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536120191269,
     "dateString": "2018-09-05T04:03:11.269Z",
     "sgv": 153,
@@ -4560,7 +4615,7 @@ EOT
     "rssi": -63,
     "unfiltered": 196608,
     "_id": "5b8f545982bf9b6cf678031a",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536119891192,
     "dateString": "2018-09-05T03:58:11.192Z",
     "sgv": 154,
@@ -4575,7 +4630,7 @@ EOT
     "rssi": -73,
     "unfiltered": 197536,
     "_id": "5b8f532d82bf9b6cf677f818",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536119590909,
     "dateString": "2018-09-05T03:53:10.909Z",
     "sgv": 155,
@@ -4590,7 +4645,7 @@ EOT
     "rssi": -72,
     "unfiltered": 198432,
     "_id": "5b8f520282bf9b6cf677ed50",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536119291011,
     "dateString": "2018-09-05T03:48:11.011Z",
     "sgv": 156,
@@ -4605,7 +4660,7 @@ EOT
     "rssi": -58,
     "unfiltered": 197952,
     "_id": "5b8f50d582bf9b6cf677e261",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536118991038,
     "dateString": "2018-09-05T03:43:11.038Z",
     "sgv": 155,
@@ -4620,7 +4675,7 @@ EOT
     "rssi": -57,
     "unfiltered": 196256,
     "_id": "5b8f4faa82bf9b6cf677d771",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536118690939,
     "dateString": "2018-09-05T03:38:10.939Z",
     "sgv": 154,
@@ -4635,7 +4690,7 @@ EOT
     "rssi": -69,
     "unfiltered": 195136,
     "_id": "5b8f4e7d82bf9b6cf677cc6b",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536118390884,
     "dateString": "2018-09-05T03:33:10.884Z",
     "sgv": 153,
@@ -4650,7 +4705,7 @@ EOT
     "rssi": -77,
     "unfiltered": 192224,
     "_id": "5b8f4d5182bf9b6cf677c198",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536118092033,
     "dateString": "2018-09-05T03:28:12.033Z",
     "sgv": 150,
@@ -4665,7 +4720,7 @@ EOT
     "rssi": -82,
     "unfiltered": 190368,
     "_id": "5b8f4c2682bf9b6cf677b697",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536117792090,
     "dateString": "2018-09-05T03:23:12.090Z",
     "sgv": 148,
@@ -4680,7 +4735,7 @@ EOT
     "rssi": -77,
     "unfiltered": 185120,
     "_id": "5b8f4af982bf9b6cf677abcd",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536117492359,
     "dateString": "2018-09-05T03:18:12.359Z",
     "sgv": 143,
@@ -4695,7 +4750,7 @@ EOT
     "rssi": -67,
     "unfiltered": 181280,
     "_id": "5b8f49cd82bf9b6cf677a091",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536117192087,
     "dateString": "2018-09-05T03:13:12.087Z",
     "sgv": 139,
@@ -4710,7 +4765,7 @@ EOT
     "rssi": -58,
     "unfiltered": 179456,
     "_id": "5b8f48a282bf9b6cf67795a6",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536116892073,
     "dateString": "2018-09-05T03:08:12.073Z",
     "sgv": 137,
@@ -4725,7 +4780,7 @@ EOT
     "rssi": -66,
     "unfiltered": 175872,
     "_id": "5b8f477582bf9b6cf6778aca",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536116592283,
     "dateString": "2018-09-05T03:03:12.283Z",
     "sgv": 134,
@@ -4740,7 +4795,7 @@ EOT
     "rssi": -59,
     "unfiltered": 175360,
     "_id": "5b8f464982bf9b6cf6777fee",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536116291992,
     "dateString": "2018-09-05T02:58:11.992Z",
     "sgv": 133,
@@ -4755,7 +4810,7 @@ EOT
     "rssi": -76,
     "unfiltered": 171776,
     "_id": "5b8f451e82bf9b6cf677753a",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536115992142,
     "dateString": "2018-09-05T02:53:12.142Z",
     "sgv": 130,
@@ -4770,7 +4825,7 @@ EOT
     "rssi": -64,
     "unfiltered": 168672,
     "_id": "5b8f43f182bf9b6cf6776a7d",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536115692022,
     "dateString": "2018-09-05T02:48:12.022Z",
     "sgv": 127,
@@ -4785,7 +4840,7 @@ EOT
     "rssi": -73,
     "unfiltered": 165824,
     "_id": "5b8f42c782bf9b6cf6775fa4",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536115391927,
     "dateString": "2018-09-05T02:43:11.927Z",
     "sgv": 124,
@@ -4800,7 +4855,7 @@ EOT
     "rssi": -72,
     "unfiltered": 160480,
     "_id": "5b8f419982bf9b6cf67754cd",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536115092227,
     "dateString": "2018-09-05T02:38:12.227Z",
     "sgv": 119,
@@ -4815,7 +4870,7 @@ EOT
     "rssi": -66,
     "unfiltered": 159744,
     "_id": "5b8f406d82bf9b6cf67749eb",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536114792030,
     "dateString": "2018-09-05T02:33:12.030Z",
     "sgv": 118,
@@ -4830,7 +4885,7 @@ EOT
     "rssi": -70,
     "unfiltered": 156736,
     "_id": "5b8f3f4282bf9b6cf6773ef4",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536114492254,
     "dateString": "2018-09-05T02:28:12.254Z",
     "sgv": 115,
@@ -4845,7 +4900,7 @@ EOT
     "rssi": -60,
     "unfiltered": 151488,
     "_id": "5b8f3e1582bf9b6cf67733ec",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536114191981,
     "dateString": "2018-09-05T02:23:11.981Z",
     "sgv": 110,
@@ -4860,7 +4915,7 @@ EOT
     "rssi": -70,
     "unfiltered": 148544,
     "_id": "5b8f3cea82bf9b6cf677288e",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536113892071,
     "dateString": "2018-09-05T02:18:12.071Z",
     "sgv": 108,
@@ -4875,7 +4930,7 @@ EOT
     "rssi": -62,
     "unfiltered": 145664,
     "_id": "5b8f3cba82bf9b6cf67726a4",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536113592085,
     "dateString": "2018-09-05T02:13:12.085Z",
     "sgv": 105,
@@ -4890,7 +4945,7 @@ EOT
     "rssi": -63,
     "unfiltered": 145728,
     "_id": "5b8f3cba82bf9b6cf67726a1",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536113292263,
     "dateString": "2018-09-05T02:08:12.263Z",
     "sgv": 105,
@@ -4905,7 +4960,7 @@ EOT
     "rssi": -65,
     "unfiltered": 144000,
     "_id": "5b8f396582bf9b6cf67707dd",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536112992202,
     "dateString": "2018-09-05T02:03:12.202Z",
     "sgv": 103,
@@ -4920,7 +4975,7 @@ EOT
     "rssi": -77,
     "unfiltered": 142784,
     "_id": "5b8f383982bf9b6cf676fd2b",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536112691592,
     "dateString": "2018-09-05T01:58:11.592Z",
     "sgv": 102,
@@ -4935,7 +4990,7 @@ EOT
     "rssi": -79,
     "unfiltered": 146912,
     "_id": "5b8f370d82bf9b6cf676f25d",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536112391560,
     "dateString": "2018-09-05T01:53:11.560Z",
     "sgv": 106,
@@ -4950,7 +5005,7 @@ EOT
     "rssi": -62,
     "unfiltered": 157952,
     "_id": "5b8f35e182bf9b6cf676e777",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536112092182,
     "dateString": "2018-09-05T01:48:12.182Z",
     "sgv": 117,
@@ -4965,7 +5020,7 @@ EOT
     "rssi": -73,
     "unfiltered": 167456,
     "_id": "5b8f34b782bf9b6cf676dcb0",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536111792060,
     "dateString": "2018-09-05T01:43:12.060Z",
     "sgv": 126,
@@ -4980,7 +5035,7 @@ EOT
     "rssi": -62,
     "unfiltered": 180224,
     "_id": "5b8f338982bf9b6cf676d1c7",
-    "device": "xdripjs://MajorCAPP",
+    "device": "xdripjs://RigName",
     "date": 1536111492059,
     "dateString": "2018-09-05T01:38:12.059Z",
     "sgv": 138,
