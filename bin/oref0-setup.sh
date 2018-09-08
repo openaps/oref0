@@ -129,13 +129,21 @@ function validate_cgm ()
     # Conver to lowercase
     local selection="${1,,}"
 
-    # Compare against list of supported CGMs
-    # TODO: deprecate g4-upload and g4-local-only
-    if ! [[ $selection =~ "g4-upload" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "g4-go" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
-        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-upload, G4-local-only, G5, G5-upload, MDT, xdrip, or xdrip-js."
+    if [[ $selection =~ "g4-upload"  ]]; then
+        echo "Unsupported CGM.  CGM=G4-upload has been replaced by CGM=G4-go (default). Please change your CGM in oref0-runagain.sh"
         echo
         return 1
     fi
+
+    # TODO: Compare against list of supported CGMs
+    # list of CGM supported by oref0 0.6.x: "g4-upload", "g5", "g5-upload", "mdt", "shareble", "xdrip", "g4-local"
+
+    if ! [[ $selection =~ "g4-go" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
+        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-local-only, G5, G5-upload, MDT, xdrip, or xdrip-js."
+        echo
+        return 1
+    fi
+
 }
 
 function validate_g4share_serial ()
