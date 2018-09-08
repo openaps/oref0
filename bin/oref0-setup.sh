@@ -1006,6 +1006,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     else
         echo '[device "pump"]' > pump.ini
         echo "serial = $serial" >> pump.ini
+        echo "radio_locale = $radio_locale" >> pump.ini
     fi
 
     # Medtronic CGM
