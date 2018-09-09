@@ -34,6 +34,8 @@ main () {
 
     test-find-insulin-uses
 
+    test-get-profile
+
     cleanup
 }
 
@@ -200,7 +202,7 @@ test-detect-sensitivity () {
     cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
 
     # Make sure output has ratio
-    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-determine-sensitivity did not report correct sensitivity"
 
     # Run detect-sensitivity with carbhistory and capture output
     ../bin/oref0-detect-sensitivity.js glucose.json pumphistory_zoned.json insulin_sensitivities.json basal_profile.json profile.json carbhistory.json 2>stderr_output 1>stdout_output
@@ -210,7 +212,7 @@ test-detect-sensitivity () {
     cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
 
     # Make sure output has ratio
-    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-determine-sensitivity did not report correct sensitivity"
 
     # Run oref0-detect-sensitivity with carbhistory and temptargets and capture output
     ../bin/oref0-detect-sensitivity.js glucose.json pumphistory_zoned.json insulin_sensitivities.json basal_profile.json profile.json carbhistory.json temptargets.json 2>stderr_output 1>stdout_output
@@ -220,7 +222,7 @@ test-detect-sensitivity () {
     cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
 
     # Make sure output has ratio
-    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-determine-sensitivity did not report correct sensitivity"
 
     # If we made it here, the test passed
     echo "oref0-detect-sensitivites test passed"
@@ -234,8 +236,8 @@ test-determine-basal () {
     ERROR_LINES=$( cat stderr_output )
     cat stderr_output | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
-    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+    # Make sure output has reason
+    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-determine-basal did not report correct reason"
 
     # Run determine-basal with options
     ../bin/oref0-determine-basal.js --reservoir reservoir.json iob.json --currentTime "2018-09-05T09:44:11-05:00" temp_basal.json glucose.json --auto-sens autosens.json profile.json meal.json 2>stderr_output 1>stdout_output
@@ -244,8 +246,8 @@ test-determine-basal () {
     ERROR_LINES=$( cat stderr_output )
     cat stderr_output | tail -n 2 | head -n 1 | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
-    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+    # Make sure output has reason
+    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-determine-basal did not report correct reason"
 
     # Run determine-basal with alternate methods of arguments
     ../bin/oref0-determine-basal.js iob.json temp_basal.json glucose.json profile.json autosens.json meal.json 2>stderr_output 1>stdout_output
@@ -254,8 +256,8 @@ test-determine-basal () {
     ERROR_LINES=$( cat stderr_output )
     cat stderr_output | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
-    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+    # Make sure output has reason
+    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-determine-basal did not report correct reason"
 
     # If we made it here, the test passed
     echo "oref0-determine-basal test passed"
@@ -268,14 +270,55 @@ test-find-insulin-uses () {
     # Make sure stderr output contains expected string
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
-    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "ns-status error: \n$ERROR_LINES"
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "find-insulin-uses error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
-    cat stdout_output | jq ".[] | .started_at " | grep -q "2018-09-04T12:29:37.000Z" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+    # Make sure output has started_at
+    cat stdout_output | jq ".[] | .started_at " | grep -q "2018-09-04T12:29:37.000Z" || fail_test "oref0-find-insulin-uses did not report correct started_at"
 
     # If we made it here, the test passed
     echo "oref0-find-insulin-uses test passed"
 }
+
+test-get-profile () {
+    # Run get-profile and capture output
+    ../bin/oref0-get-profile.js settings.json bg_targets.json insulin_sensitivities.json basal_profile.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINES=$( cat stderr_output )
+
+    cat stderr_output | grep -q "No temptargets found" || fail_test "oref0-get-profile did not provide expected stderr output:\n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct sensitivity"
+
+    # Run get-profile and capture output
+    ../bin/oref0-get-profile.js settings.json bg_targets.json insulin_sensitivities.json basal_profile.json preferences.json carb_ratios.json temptargets.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "get-profile error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct sensitivity"
+
+    # Run get-profile and capture output
+    ../bin/oref0-get-profile.js settings.json bg_targets.json insulin_sensitivities.json basal_profile.json preferences.json carb_ratios.json temptargets.json --model=model.json --autotune profile.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "get-profile error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct sensitivity"
+
+    # If we made it here, the test passed
+    echo "oref0-get-profile test passed"
+}
+
 generate_test_files () {
     
     # Make a fake preferences.json to test the commands that extract values from it
@@ -5192,6 +5235,72 @@ EOT
 
     cat >meal.json <<EOT
 {"carbs":36,"nsCarbs":36,"bwCarbs":0,"journalCarbs":0,"mealCOB":0,"currentDeviation":-2.85,"maxDeviation":2.98,"minDeviation":-0.42,"slopeFromMaxDeviation":-1.15,"slopeFromMinDeviation":0,"allDeviations":[-3,0,1,2,1,3],"lastCarbTime":1536522546000,"bwFound":false}
+EOT
+
+    cat >carb_ratios.json <<EOT
+{
+  "first": 1,
+  "units": "grams",
+  "schedule": [
+    {
+      "x": 0,
+      "i": 0,
+      "start": "00:00:00",
+      "offset": 0,
+      "ratio": 15
+    }
+  ]
+}
+EOT
+
+    cat >settings.json <<EOT
+{
+  "auto_off_duration_hrs": 0,
+  "insulin_action_curve": 7,
+  "insulinConcentration": 50,
+  "maxBolus": 3,
+  "maxBasal": 2.8,
+  "rf_enable": false,
+  "selected_pattern": 0
+}
+EOT
+
+    cat >bg_targets.json <<EOT
+{
+  "units": "mg/dL",
+  "user_preferred_units": "mg/dL",
+  "targets": [
+    {
+      "i": 0,
+      "high": 250,
+      "start": "00:00:00",
+      "low": 110,
+      "offset": 0,
+      "x": 0
+    },
+    {
+      "i": 12,
+      "high": 250,
+      "start": "06:00:00",
+      "low": 105,
+      "offset": 360,
+      "x": 1
+    },
+    {
+      "i": 44,
+      "high": 250,
+      "start": "22:00:00",
+      "low": 110,
+      "offset": 1320,
+      "x": 2
+    }
+  ],
+  "first": 1
+}
+EOT
+
+    cat >model.json <<EOT
+"723"
 EOT
 
 }
