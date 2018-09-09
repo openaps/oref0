@@ -38,7 +38,9 @@ main () {
 #
 #    test-html
 #
-    test-meal
+#    test-meal
+#
+    test-normalize-temps
 
     cleanup
 }
@@ -377,6 +379,22 @@ test-meal () {
 
     # If we made it here, the test passed
     echo "oref0-meal test passed"
+}
+
+test-normalize-temps () {
+    # Run normalize-temps and capture output
+    ../bin/oref0-normalize-temps.js pumphistory_zoned.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "normalize-temps error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".[] | .timestamp" | head -n 1 | grep -q "2018-09-05T10:24:59-05:00" || fail_test "oref0-normalize-temps did not report correct first timestamp"
+
+    # If we made it here, the test passed
+    echo "oref0-normalize-temps test passed"
 }
 
 generate_test_files () {
