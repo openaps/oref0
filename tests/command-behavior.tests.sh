@@ -35,8 +35,10 @@ main () {
 #    test-find-insulin-uses
 #
 #    test-get-profile
-
-    test-html
+#
+#    test-html
+#
+    test-meal
 
     cleanup
 }
@@ -347,6 +349,34 @@ test-html () {
 
     # If we made it here, the test passed
     echo "oref0-html test passed"
+}
+
+test-meal () {
+    # Run meal and capture output
+    ../bin/oref0-meal.js pumphistory_zoned.json profile.json clock-zoned.json glucose.json basal_profile.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "meal error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq .carbs | grep -q "0" || fail_test "oref0-meal did not report correct carbs"
+
+    # Run meal and capture output
+    ../bin/oref0-meal.js pumphistory_zoned.json profile.json clock-zoned.json glucose.json basal_profile.json carbhistory.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "meal error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq .carbs | grep -q "0" || fail_test "oref0-meal did not report correct carbs"
+
+    # If we made it here, the test passed
+    echo "oref0-meal test passed"
 }
 
 generate_test_files () {
