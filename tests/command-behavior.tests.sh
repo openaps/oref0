@@ -28,6 +28,8 @@ main () {
 
     test-calculate-iob
 
+    test-detect-sensitivity
+
     cleanup
 }
 
@@ -145,7 +147,7 @@ test-calculate-iob () {
 
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
-    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "ns-status error: \n$ERROR_LINES"
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "oref0-calculate-iob error: \n$ERROR_LINES"
 
     # Make sure output has iob
     cat stdout_output | jq ". | first" | grep -q "\"iob\":" || fail_test "oref0-calculate-iob did not report an iob"
@@ -159,7 +161,7 @@ test-calculate-iob () {
     # NOTE: oref0-calculate-iob doesn't print an error if autosens file is unable to be read
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
-    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "ns-status error: \n$ERROR_LINES"
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "oref0-calculate-iob error: \n$ERROR_LINES"
 
     # Make sure output has iob
     cat stdout_output | jq ". | first" | grep -q "\"iob\":" || fail_test "oref0-calculate-iob did not report an iob"
@@ -173,7 +175,7 @@ test-calculate-iob () {
     # NOTE: oref0-calculate-iob doesn't print an error if autosens or 24 hour pump history files are unable to be read
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
-    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "ns-status error: \n$ERROR_LINES"
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "oref0-calculate-iob error: \n$ERROR_LINES"
 
     # Make sure output has iob
     cat stdout_output | jq ". | first" | grep -q "\"iob\":" || fail_test "oref0-calculate-iob did not report an iob"
@@ -183,6 +185,38 @@ test-calculate-iob () {
 
     # If we made it here, the test passed
     echo "oref0-calculate-iob test passed"
+}
+
+test-detect-sensitivity () {
+    # Run detect-sensitivity and capture output
+    ../bin/oref0-detect-sensitivity.js glucose.json pumphistory_zoned.json insulin_sensitivities.json basal_profile.json profile.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+
+    # Run detect-sensitivity with carbhistory and capture output
+    ../bin/oref0-detect-sensitivity.js glucose.json pumphistory_zoned.json insulin_sensitivities.json basal_profile.json profile.json carbhistory.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+
+    # Run oref0-detect-sensitivity with carbhistory and temptargets and capture output
+    ../bin/oref0-detect-sensitivity.js glucose.json pumphistory_zoned.json insulin_sensitivities.json basal_profile.json profile.json carbhistory.json temptargets.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+
+    # If we made it here, the test passed
+    echo "oref0-detect-sensitivites test passed"
 }
 
 generate_test_files () {
@@ -199,6 +233,7 @@ generate_test_files () {
             "null_value": null
         }
 EOT
+
     # Make a dummy profile.json
     cat >profile.json <<EOT
 {
@@ -302,6 +337,24 @@ EOT
    "useCustomPeakTime": true,
    "wide_bg_target_range": false
 }
+EOT
+
+    # Make a dummy basal_profile.json
+    cat >basal_profile.json <<EOT
+[
+  {
+    "i": 0,
+    "start": "00:00:00",
+    "minutes": 0,
+    "rate": 0.5
+  },
+  {
+    "i": 1,
+    "start": "05:00:00",
+    "minutes": 300,
+    "rate": 1.1
+  }
+]
 EOT
 
     # Make a fake autosens.json
@@ -5042,6 +5095,40 @@ EOT
     "direction": "FortyFiveDown",
     "type": "sgv",
     "filtered": 190400
+  }
+]
+EOT
+
+    cat >insulin_sensitivities.json <<EOT
+{
+  "units": "mg/dL",
+  "user_preferred_units": "mg/dL",
+  "sensitivities": [
+    {
+      "i": 0,
+      "x": 0,
+      "sensitivity": 100,
+      "offset": 0,
+      "start": "00:00:00"
+    }
+  ],
+  "first": 1
+}
+EOT
+
+    cat >temptargets.json <<EOT
+[
+  {
+    "_id": "5b942fa682bf9b6cf6a48ae2",
+    "enteredBy": "IFTTT-button",
+    "eventType": "Temporary Target",
+    "reason": "treat high",
+    "targetTop": 80,
+    "targetBottom": 80,
+    "duration": 60,
+    "created_at": "2018-09-04T20:23:02.888Z",
+    "carbs": null,
+    "insulin": null
   }
 ]
 EOT
