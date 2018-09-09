@@ -1230,7 +1230,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
           #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
           cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
-          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
+          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune
           ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
         else
           arch=arm-spi
@@ -1245,7 +1245,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           echo "Installing Go pump binaries ..."
           ln -sf $HOME/go/bin/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
           cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
-          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't mv mmtune"
+          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune
         fi
     fi
     if [[ ${CGM,,} =~ "g4-go" ]]; then
