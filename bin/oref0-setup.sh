@@ -562,7 +562,7 @@ echo
 OREF0_RUNAGAIN=`mktemp /tmp/oref0-runagain.XXXXXXXXXX`
 echo "#!/bin/bash" > $OREF0_RUNAGAIN
 echo "# To run again with these same options, use: " | tee $OREF0_RUNAGAIN
-echo -n "oref0-setup --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
+echo -n "$HOME/src/oref0/bin/oref0-setup.sh --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
 if [[ ! -z $BLE_SERIAL ]]; then
     echo -n " --bleserial=$BLE_SERIAL" | tee -a $OREF0_RUNAGAIN
 fi
