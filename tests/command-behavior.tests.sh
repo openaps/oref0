@@ -20,21 +20,23 @@ main () {
 
     generate_test_files
 
-    test-ns-status
+#    test-ns-status
+#
+#    test-autotune-core
+#
+#    test-autotune-prep
+#
+#    test-calculate-iob
+#
+#    test-detect-sensitivity
+#
+#    test-determine-basal
+#
+#    test-find-insulin-uses
+#
+#    test-get-profile
 
-    test-autotune-core
-
-    test-autotune-prep
-
-    test-calculate-iob
-
-    test-detect-sensitivity
-
-    test-determine-basal
-
-    test-find-insulin-uses
-
-    test-get-profile
+    test-html
 
     cleanup
 }
@@ -289,7 +291,7 @@ test-get-profile () {
     cat stderr_output | grep -q "No temptargets found" || fail_test "oref0-get-profile did not provide expected stderr output:\n$ERROR_LINES"
 
     # Make sure output has ratio
-    cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct sensitivity"
+    cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct suspend_zeros_iob setting"
 
     # Run get-profile and capture output
     ../bin/oref0-get-profile.js settings.json bg_targets.json insulin_sensitivities.json basal_profile.json preferences.json carb_ratios.json temptargets.json 2>stderr_output 1>stdout_output
@@ -301,7 +303,7 @@ test-get-profile () {
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "get-profile error: \n$ERROR_LINES"
 
     # Make sure output has ratio
-    cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct sensitivity"
+    cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct suspend_zeros_iob setting"
 
     # Run get-profile and capture output
     ../bin/oref0-get-profile.js settings.json bg_targets.json insulin_sensitivities.json basal_profile.json preferences.json carb_ratios.json temptargets.json --model=model.json --autotune profile.json 2>stderr_output 1>stdout_output
@@ -313,10 +315,38 @@ test-get-profile () {
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "get-profile error: \n$ERROR_LINES"
 
     # Make sure output has ratio
-    cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct sensitivity"
+    cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct suspend_zeros_iob setting"
 
     # If we made it here, the test passed
     echo "oref0-get-profile test passed"
+}
+
+test-html () {
+    # Run html and capture output
+    ../bin/oref0-html.js glucose.json iob.json basal_profile.json temp_basal.json suggested.json enacted.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "html error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | grep -q "mealCOB: ???g" || fail_test "oref0-html did not report correct mealCOB"
+
+    # Run html and capture output
+    ../bin/oref0-html.js glucose.json iob.json basal_profile.json temp_basal.json suggested.json enacted.json meal.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "html error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | grep -q "mealCOB: 0g" || fail_test "oref0-html did not report correct mealCOB"
+
+    # If we made it here, the test passed
+    echo "oref0-html test passed"
 }
 
 generate_test_files () {
