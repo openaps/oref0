@@ -32,6 +32,8 @@ main () {
 
     test-determine-basal
 
+    test-find-insulin-uses
+
     cleanup
 }
 
@@ -259,6 +261,21 @@ test-determine-basal () {
     echo "oref0-determine-basal test passed"
 }
 
+test-find-insulin-uses () {
+    # Run find-insulin-uses and capture output
+    ../bin/oref0-find-insulin-uses.js pumphistory_zoned.json profile.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "ns-status error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".[] | .started_at " | grep -q "2018-09-04T12:29:37.000Z" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+
+    # If we made it here, the test passed
+    echo "oref0-find-insulin-uses test passed"
+}
 generate_test_files () {
     
     # Make a fake preferences.json to test the commands that extract values from it
