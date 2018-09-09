@@ -30,6 +30,8 @@ main () {
 
     test-detect-sensitivity
 
+    test-determine-basal
+
     cleanup
 }
 
@@ -192,6 +194,7 @@ test-detect-sensitivity () {
     ../bin/oref0-detect-sensitivity.js glucose.json pumphistory_zoned.json insulin_sensitivities.json basal_profile.json profile.json 2>stderr_output 1>stdout_output
 
     # Make sure stderr output contains expected string
+    ERROR_LINES=$( cat stderr_output )
     cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
 
     # Make sure output has ratio
@@ -201,6 +204,7 @@ test-detect-sensitivity () {
     ../bin/oref0-detect-sensitivity.js glucose.json pumphistory_zoned.json insulin_sensitivities.json basal_profile.json profile.json carbhistory.json 2>stderr_output 1>stdout_output
 
     # Make sure stderr output contains expected string
+    ERROR_LINES=$( cat stderr_output )
     cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
 
     # Make sure output has ratio
@@ -210,6 +214,7 @@ test-detect-sensitivity () {
     ../bin/oref0-detect-sensitivity.js glucose.json pumphistory_zoned.json insulin_sensitivities.json basal_profile.json profile.json carbhistory.json temptargets.json 2>stderr_output 1>stdout_output
 
     # Make sure stderr output contains expected string
+    ERROR_LINES=$( cat stderr_output )
     cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
 
     # Make sure output has ratio
@@ -217,6 +222,41 @@ test-detect-sensitivity () {
 
     # If we made it here, the test passed
     echo "oref0-detect-sensitivites test passed"
+}
+
+test-determine-basal () {
+    # Run determine-basal and capture output
+    ../bin/oref0-determine-basal.js iob.json temp_basal.json glucose.json profile.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINES=$( cat stderr_output )
+    cat stderr_output | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+
+    # Run determine-basal with options
+    ../bin/oref0-determine-basal.js --reservoir reservoir.json iob.json --currentTime "2018-09-05T09:44:11-05:00" temp_basal.json glucose.json --auto-sens autosens.json profile.json meal.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINES=$( cat stderr_output )
+    cat stderr_output | tail -n 2 | head -n 1 | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+
+    # Run determine-basal with alternate methods of arguments
+    ../bin/oref0-determine-basal.js iob.json temp_basal.json glucose.json profile.json autosens.json meal.json 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINES=$( cat stderr_output )
+    cat stderr_output | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-calculate-iob did not report correct sensitivity"
+
+    # If we made it here, the test passed
+    echo "oref0-determine-basal test passed"
 }
 
 generate_test_files () {
@@ -359,7 +399,7 @@ EOT
 
     # Make a fake autosens.json
     cat >autosens.json <<EOT
-{ "ratio": .8 }
+{ "ratio": 0.8 }
 EOT
 
     # Make a fake clock-zoned.json to test the commands that extract values from it
@@ -5131,6 +5171,10 @@ EOT
     "insulin": null
   }
 ]
+EOT
+
+    cat >meal.json <<EOT
+{"carbs":36,"nsCarbs":36,"bwCarbs":0,"journalCarbs":0,"mealCOB":0,"currentDeviation":-2.85,"maxDeviation":2.98,"minDeviation":-0.42,"slopeFromMaxDeviation":-1.15,"slopeFromMinDeviation":0,"allDeviations":[-3,0,1,2,1,3],"lastCarbTime":1536522546000,"bwFound":false}
 EOT
 
 }
