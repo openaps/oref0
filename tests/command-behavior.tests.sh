@@ -24,12 +24,12 @@ main () {
 
     test-autotune-core
 
-    test-autotune-prep
-
-    test-calculate-iob
-
-    test-detect-sensitivity
-
+#    test-autotune-prep
+#
+#    test-calculate-iob
+#
+#    test-detect-sensitivity
+#
 #    test-determine-basal
 #
 #    test-find-insulin-uses
