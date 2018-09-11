@@ -20,29 +20,31 @@ main () {
 
     generate_test_files
 
-#    test-ns-status
-#
-#    test-autotune-core
-#
-#    test-autotune-prep
-#
-#    test-calculate-iob
-#
-#    test-detect-sensitivity
-#
-#    test-determine-basal
-#
-#    test-find-insulin-uses
-#
-#    test-get-profile
-#
-#    test-html
-#
-#    test-meal
-#
-#    test-normalize-temps
-#
+    test-ns-status
+
+    test-autotune-core
+
+    test-autotune-prep
+
+    test-calculate-iob
+
+    test-detect-sensitivity
+
+    test-determine-basal
+
+    test-find-insulin-uses
+
+    test-get-profile
+
+    test-html
+
+    test-meal
+
+    test-normalize-temps
+
     test-raw
+
+    test-set-local-temptarget
 
     cleanup
 }
@@ -83,7 +85,7 @@ test-ns-status () {
     ERROR_LINES=$( cat stderr_output )
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "ns-status error: \n$ERROR_LINES"
 
-    # Make sure output has uploader dat
+    # Make sure output has mmtune data
     cat stdout_output | jq ".mmtune.scanDetails | first | first" | grep -q 916.6 || fail_test "ns-status reported incorrect mmtune status value."
 
     # Run ns-status with uploader option and capture output
@@ -93,7 +95,7 @@ test-ns-status () {
     ERROR_LINES=$( cat stderr_output )
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "ns-status error: \n$ERROR_LINES"
 
-    # Make sure output has uploader dat
+    # Make sure output has uploader data
     cat stdout_output | jq ".uploader.battery" | grep -q 50 || fail_test "ns-status reported incorrect uploader battery status value."
 
     # If we made it here, the test passed
@@ -108,7 +110,7 @@ test-autotune-core () {
     ERROR_LINES=$( cat stderr_output )
     cat stderr_output | grep -q CRTotalCarbs || fail_test "oref0-autotune-core didn't contain expected stderr output"
 
-    # Make sure output has accurate clock data
+    # Make sure output has accurate carb ratio data
     cat stdout_output | jq .carb_ratio | grep -q 22.142 || fail_test "oref0-autotune-core didn't contain expected carb_ratio output"
 
     # If we made it here, the test passed
@@ -141,7 +143,7 @@ test-autotune-prep () {
     # Run autotune-prep with tune-insulin-curve option
     ../bin/oref0-autotune-prep.js --tune-insulin-curve autotune.treatments.json profile.json autotune.entries.json profile.json 2>stderr_output 1>stdout_output
 
-    cat stderr_output | grep -q Peak || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected insulin peak results"
+    cat stderr_output | grep SMRDeviation | grep -q RMSDeviation || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected insulin peak results"
 
     # Make sure output has expected data
     cat stdout_output | jq ".CRData | first" | grep -q CRInitialBG || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected CR Data output"
@@ -149,7 +151,7 @@ test-autotune-prep () {
     cat stdout_output | jq ".ISFGlucoseData | first" | grep -q null || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected ISF Glucose Data"
     cat stdout_output | jq ".basalGlucoseData | first" | grep -q dateString || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected basal Glucose Data"
 
-    # TODO: test the carbhistory.json argument
+    # TODO: test the carbhistory argument
 
     # If we made it here, the test passed
     echo "oref0-autotune-prep test passed"
@@ -240,17 +242,17 @@ test-determine-basal () {
     # Run determine-basal and capture output
     ../bin/oref0-determine-basal.js iob.json temp_basal.json glucose.json profile.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output contains expected time
     ERROR_LINES=$( cat stderr_output )
     cat stderr_output | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal error: \n$ERROR_LINES"
 
-    # Make sure output has reason
+    # Make sure output has expected reason
     cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-determine-basal did not report correct reason"
 
     # Run determine-basal with options
     ../bin/oref0-determine-basal.js --reservoir reservoir.json iob.json --currentTime "2018-09-05T09:44:11-05:00" temp_basal.json glucose.json --auto-sens autosens.json profile.json meal.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output contains expected time
     ERROR_LINES=$( cat stderr_output )
     cat stderr_output | tail -n 2 | head -n 1 | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal error: \n$ERROR_LINES"
 
@@ -260,7 +262,7 @@ test-determine-basal () {
     # Run determine-basal with alternate methods of arguments
     ../bin/oref0-determine-basal.js iob.json temp_basal.json glucose.json profile.json autosens.json meal.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output contains expected time
     ERROR_LINES=$( cat stderr_output )
     cat stderr_output | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal error: \n$ERROR_LINES"
 
@@ -296,31 +298,31 @@ test-get-profile () {
 
     cat stderr_output | grep -q "No temptargets found" || fail_test "oref0-get-profile did not provide expected stderr output:\n$ERROR_LINES"
 
-    # Make sure output has ratio
+    # Make sure output has suspend_zeros_iob
     cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct suspend_zeros_iob setting"
 
     # Run get-profile and capture output
     ../bin/oref0-get-profile.js settings.json bg_targets.json insulin_sensitivities.json basal_profile.json preferences.json carb_ratios.json temptargets.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output doesn't have anything
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
 
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "get-profile error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
+    # Make sure output has suspend_zeros_iob
     cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct suspend_zeros_iob setting"
 
     # Run get-profile and capture output
     ../bin/oref0-get-profile.js settings.json bg_targets.json insulin_sensitivities.json basal_profile.json preferences.json carb_ratios.json temptargets.json --model=model.json --autotune profile.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output doesn't have anything
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
 
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "get-profile error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
+    # Make sure output has suspend_zeros_iob
     cat stdout_output | jq ".suspend_zeros_iob" | grep -q "true" || fail_test "oref0-get-profile did not report correct suspend_zeros_iob setting"
 
     # If we made it here, the test passed
@@ -331,24 +333,24 @@ test-html () {
     # Run html and capture output
     ../bin/oref0-html.js glucose.json iob.json basal_profile.json temp_basal.json suggested.json enacted.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output doesn't have anything
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "html error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
+    # Make sure output has expected mealCOB value
     cat stdout_output | grep -q "mealCOB: ???g" || fail_test "oref0-html did not report correct mealCOB"
 
     # Run html and capture output
     ../bin/oref0-html.js glucose.json iob.json basal_profile.json temp_basal.json suggested.json enacted.json meal.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output doesn't have anything
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
 
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "html error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
+    # Make sure output has expected mealCOB value
     cat stdout_output | grep -q "mealCOB: 0g" || fail_test "oref0-html did not report correct mealCOB"
 
     # If we made it here, the test passed
@@ -359,24 +361,24 @@ test-meal () {
     # Run meal and capture output
     ../bin/oref0-meal.js pumphistory_zoned.json profile.json clock-zoned.json glucose.json basal_profile.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output doesn't have anything
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "meal error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
+    # Make sure output has expected carbs value
     cat stdout_output | jq .carbs | grep -q "0" || fail_test "oref0-meal did not report correct carbs"
 
     # Run meal and capture output
     ../bin/oref0-meal.js pumphistory_zoned.json profile.json clock-zoned.json glucose.json basal_profile.json carbhistory.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output doesn't have anything
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
 
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "meal error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
+    # Make sure output has expected carbs value
     cat stdout_output | jq .carbs | grep -q "0" || fail_test "oref0-meal did not report correct carbs"
 
     # If we made it here, the test passed
@@ -387,12 +389,12 @@ test-normalize-temps () {
     # Run normalize-temps and capture output
     ../bin/oref0-normalize-temps.js pumphistory_zoned.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output doesn't have anything
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "normalize-temps error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
+    # Make sure output has expected timestamp
     cat stdout_output | jq ".[] | .timestamp" | head -n 1 | grep -q "2018-09-05T10:24:59-05:00" || fail_test "oref0-normalize-temps did not report correct first timestamp"
 
     # If we made it here, the test passed
@@ -403,28 +405,56 @@ test-raw () {
     # Run raw and capture output
     ../bin/oref0-raw.js raw_glucose.json cal.json 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output doesn't have anything
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "raw error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
+    # Make sure output has expected number of glucose values
     cat stdout_output | jq ".[] | .glucose" | wc -l | grep -q "288" || fail_test "oref0-raw did not report correct number of glucose readings"
 
     # Run raw and capture output
     ../bin/oref0-raw.js raw_glucose.json cal.json 120 2>stderr_output 1>stdout_output
 
-    # Make sure stderr output contains expected string
+    # Make sure stderr output doesn't have anything
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
     ERROR_LINES=$( cat stderr_output )
 
     [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "raw error: \n$ERROR_LINES"
 
-    # Make sure output has ratio
+    # Make sure output has expected number of glucose values above MAX_RAW
     cat stdout_output | jq ".[] | .noise" | grep "3" | wc -l | grep -q 175 || fail_test "oref0-raw did not report correct glucose readings above MAX_RAW"
 
     # If we made it here, the test passed
     echo "oref0-raw test passed"
+}
+
+test-set-local-temptarget () {
+    # Run raw and capture output
+    ../bin/oref0-set-local-temptarget.js 80 60 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output doesn't have anything
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "set-local-temptarget error: \n$ERROR_LINES"
+
+    # Make sure output has expected targetBottom
+    cat stdout_output | jq ".targetBottom" | grep -q "80" || fail_test "oref0-set-local-temptarget did not report correct targetBottom"
+
+    # Run set-local-temptarget and capture output
+    ../bin/oref0-set-local-temptarget.js 80 60 2017-10-18:00:15:00.000Z 2>stderr_output 1>stdout_output
+
+    # Make sure stderr output contains expected string
+    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
+    ERROR_LINES=$( cat stderr_output )
+
+    [[ $ERROR_LINE_COUNT = 0 ]] || fail_test "set-local-temptarget error: \n$ERROR_LINES"
+
+    # Make sure output has ratio
+    cat stdout_output | jq ".created_at" | grep -q "2017-10-18T00:15:00.000Z" || fail_test "oref0-set-local-temptarget did not report correct created_at"
+
+    # If we made it here, the test passed
+    echo "oref0-set-local-temptarget test passed"
 }
 
 generate_test_files () {
