@@ -20,10 +20,10 @@ main () {
 
     generate_test_files
 
-    test-ns-status
-
-    test-autotune-core
-
+#    test-ns-status
+#
+#    test-autotune-core
+#
 #    test-autotune-prep
 #
 #    test-calculate-iob
@@ -6610,4 +6610,6 @@ EOT
 }
 
 main
+
+exit 0
 
