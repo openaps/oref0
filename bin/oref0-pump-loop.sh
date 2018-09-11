@@ -669,7 +669,6 @@ function get_settings {
         retry_return read_insulin_sensitivities 2>&3 >&4 || return 1
         retry_return read_carb_ratios 2>&3 >&4 || return 1
         retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || return 1
-    #NON_X12_ITEMS=""
     else
         # On all other supported pumps, we should be able to get all the data we need from the pump.
         retry_return check_model 2>&3 >&4 || return 1
