@@ -18,7 +18,7 @@ describe("shell-script tests", function() {
     bashUnitTestFiles.forEach(function(testFile) {
         it(testFile, function() {
             var utilProcess = child_process.spawnSync(testFile, [], {
-                timeout: 1000, //milliseconds
+                timeout: 60000, //milliseconds
                 encoding: "UTF-8",
             });
             

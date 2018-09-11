@@ -20,31 +20,31 @@ main () {
 
     generate_test_files
 
-#    test-ns-status
-#
-#    test-autotune-core
-#
-#    test-autotune-prep
-#
-#    test-calculate-iob
-#
-#    test-detect-sensitivity
-#
-#    test-determine-basal
-#
-#    test-find-insulin-uses
-#
-#    test-get-profile
-#
-#    test-html
-#
-#    test-meal
-#
-#    test-normalize-temps
-#
-#    test-raw
-#
-#    test-set-local-temptarget
+    test-ns-status
+
+    test-autotune-core
+
+    test-autotune-prep
+
+    test-calculate-iob
+
+    test-detect-sensitivity
+
+    test-determine-basal
+
+    test-find-insulin-uses
+
+    test-get-profile
+
+    test-html
+
+    test-meal
+
+    test-normalize-temps
+
+    test-raw
+
+    test-set-local-temptarget
 
     cleanup
 }
