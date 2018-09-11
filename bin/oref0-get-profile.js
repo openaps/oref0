@@ -16,7 +16,7 @@
 
 */
 
-var generate = require('oref0/lib/profile/');
+var generate = require('../lib/profile/');
 
 function exportDefaults () {
 	var defaults = generate.displayedDefaults();

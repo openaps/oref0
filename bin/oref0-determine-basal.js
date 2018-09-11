@@ -14,8 +14,8 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-var getLastGlucose = require('oref0/lib/glucose-get-last');
-var determine_basal = require('oref0/lib/determine-basal/determine-basal');
+var getLastGlucose = require('../lib/glucose-get-last');
+var determine_basal = require('../lib/determine-basal/determine-basal');
 
 /* istanbul ignore next */
 if (!module.parent) {

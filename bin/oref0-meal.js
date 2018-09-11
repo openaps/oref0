@@ -19,7 +19,7 @@
 
 */
 
-var generate = require('oref0/lib/meal');
+var generate = require('../lib/meal');
 
 if (!module.parent) {
     var argv = require('yargs')

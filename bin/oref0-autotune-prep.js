@@ -20,7 +20,7 @@
 
 */
 
-var generate = require('oref0/lib/autotune-prep');
+var generate = require('../lib/autotune-prep');
 
 if (!module.parent) {
 

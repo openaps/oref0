@@ -20,7 +20,7 @@
 
 */
 
-var autotune = require('oref0/lib/autotune');
+var autotune = require('../lib/autotune');
 var stringify = require('json-stable-stringify');
 
 if (!module.parent) {

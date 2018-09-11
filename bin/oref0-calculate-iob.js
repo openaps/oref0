@@ -18,7 +18,7 @@
 
 */
 
-var generate = require('oref0/lib/iob');
+var generate = require('../lib/iob');
 function usage ( ) {
     console.log('usage: ', process.argv.slice(0, 2), '<pumphistory-zoned.json> <profile.json> <clock-zoned.json> [autosens.json] [pumphistory-24h-zoned.json]');
 
