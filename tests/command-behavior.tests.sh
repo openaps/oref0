@@ -30,21 +30,21 @@ main () {
 
     test-detect-sensitivity
 
-    test-determine-basal
-
-    test-find-insulin-uses
-
-    test-get-profile
-
-    test-html
-
-    test-meal
-
-    test-normalize-temps
-
-    test-raw
-
-    test-set-local-temptarget
+#    test-determine-basal
+#
+#    test-find-insulin-uses
+#
+#    test-get-profile
+#
+#    test-html
+#
+#    test-meal
+#
+#    test-normalize-temps
+#
+#    test-raw
+#
+#    test-set-local-temptarget
 
     cleanup
 }
