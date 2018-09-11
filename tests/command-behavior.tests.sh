@@ -151,7 +151,14 @@ test-autotune-prep () {
     cat stdout_output | jq ".ISFGlucoseData | first" | grep -q null || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected ISF Glucose Data"
     cat stdout_output | jq ".basalGlucoseData | first" | grep -q dateString || fail_test "oref0-autotune-prep with tune-insulin-curve didn't contain expected basal Glucose Data"
 
-    # TODO: test the carbhistory argument
+    # Run autotune-prep with carbhistory option
+    ../bin/oref0-autotune-prep.js autotune.treatments.json profile.json autotune.entries.json profile.json carbhistory.json 2>stderr_output 1>stdout_output
+
+    # Make sure output has expected data
+    cat stdout_output | jq ".CRData | first" | grep -q CRInitialBG || fail_test "oref0-autotune-prep with carbhistory didn't contain expected CR Data output"
+    cat stdout_output | jq ".CSFGlucoseData | first" | grep -q null || fail_test "oref0-autotune-prep with carbhistory didn't contain expected CSF Glucose Data"
+    cat stdout_output | jq ".ISFGlucoseData | first" | grep -q dateString || fail_test "oref0-autotune-prep with carbhistory didn't contain expected ISF Glucose Data"
+    cat stdout_output | jq ".basalGlucoseData | first" | grep -q dateString || fail_test "oref0-autotune-prep with carbhistory didn't contain expected basal Glucose Data"
 
     # If we made it here, the test passed
     echo "oref0-autotune-prep test passed"
