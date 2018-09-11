@@ -254,7 +254,7 @@ test-determine-basal () {
     cat stderr_output | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal error: \n$ERROR_LINES"
 
     # Make sure output has expected reason
-    cat stdout_output #| jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-determine-basal did not report correct reason"
+    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-determine-basal did not report correct reason"
 
     # Run determine-basal with options
     ../bin/oref0-determine-basal.js --reservoir reservoir.json iob.json --currentTime "2018-09-05T09:44:11-05:00" temp_basal.json glucose.json --auto-sens autosens.json profile.json meal.json 2>stderr_output 1>stdout_output
