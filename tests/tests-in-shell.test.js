@@ -8,6 +8,10 @@ var fs = require("fs");
 var path = require("path");
 var child_process = require("child_process");
 
+before(function() {
+    this.timeout(120000);
+});
+
 describe("shell-script tests", function() {
     this.timeout(120000);
 
