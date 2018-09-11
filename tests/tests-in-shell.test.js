@@ -31,8 +31,8 @@ describe("shell-script tests", function() {
             //console.error("=================");
             //console.error(testFile);
             //console.error("=================");
-            console.error(testFile + "stdout: \n", utilProcess.stdout);
-            console.error(testFile + "stderr: \n", utilProcess.stderr);
+            //console.error(testFile + "stdout: \n", utilProcess.stdout);
+            //console.error(testFile + "stderr: \n", utilProcess.stderr);
             //console.error(utilProcess.error);
             should.equal(utilProcess.status, 0, "Bash unit test returned failure: run " + testFile + " manually for details.");
         });
