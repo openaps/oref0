@@ -16,7 +16,6 @@ assert_cwd_contains_ini
 CGM="$(get_pref_string .cgm)"
 directory="$PWD"
 CGM_LOOPDIR="$(get_pref_string .cgm_loop_path)"
-ENABLE="$(get_pref_string .enable "")"
 BT_PEB="$(get_pref_string .bt_peb "")"
 BT_MAC="$(get_pref_string .bt_mac "")"
 PUSHOVER_TOKEN="$(get_pref_string .pushover_token "")"
@@ -60,6 +59,9 @@ find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && (
     killall -g --older-than 5m openaps-report
 ) | tee -a /var/log/openaps/pump-loop.log &
 
+# if the rig doesn't recover after that, reboot:
+oref0-radio-reboot &
+
 if [[ ${CGM,,} =~ "g5-upload" ]]; then
     oref0-upload-entries &
 fi
@@ -69,6 +71,7 @@ if [[ ${CGM,,} =~ "g4-go" ]]; then
         if ! is_bash_process_running_named oref0-g4-loop; then
             oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log &
         fi
+        cd -
 # TODO: deprecate g4-upload and g4-local-only
 elif [[ ${CGM,,} =~ "g4-upload" ]]; then
     (
@@ -82,8 +85,6 @@ elif [[ ${CGM,,} =~ "xdrip" ]]; then
     if ! is_process_running_named "monitor-xdrip"; then
         monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log &
     fi
-elif [[ $ENABLE =~ dexusb ]]; then
-    true
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
     if ! is_process_running_named "oref0-get-bg"; then
         (

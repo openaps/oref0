@@ -119,9 +119,16 @@ file_is_recent_and_min_size () {
     return $?
 }
 
+function mydate {
+    if [[ `uname` == 'Darwin' ]] ; then
+        gdate "$@"
+    else
+        date "$@"
+    fi
+}
 # Output the number of seconds since epoch (Jan 1 1970).
 epochtime_now () {
-    date +%s
+    mydate +%s
 }
 
 # Usage: to_epochtime <datetime>
@@ -130,7 +137,7 @@ epochtime_now () {
 # and newlines, and the string can be spread across multiple arguments (so
 # you don't need to quote the parameters to avoid word-splitting).
 to_epochtime () {
-    date -d "$(echo "$@" |tr -d '"\n')" +%s
+    mydate -d "$(echo "$@" |tr -d '"\n')" +%s
 }
 
 # Filter input to output, removing any embedded newlines.
@@ -428,4 +435,48 @@ set_pref_json () {
 set_pref_string () {
     # TODO: Escape quotes and backslashes
     set_pref_json "$1" "\"$2\""
+}
+
+dedupe_path() {
+    #from https://unix.stackexchange.com/a/40973
+    if [ -n "$PATH" ]; then
+        old_PATH=$PATH:; PATH=
+        while [ -n "$old_PATH" ]; do
+            x=${old_PATH%%:*}       # the first remaining entry
+            case $PATH: in
+            *:"$x":*) ;;         # already there
+            *) PATH=$PATH:$x;;    # not there yet
+            esac
+            old_PATH=${old_PATH#*:}
+        done
+        PATH=${PATH#:}
+        unset old_PATH x
+    fi
+}
+
+# Usage: wait_for_silence <seconds of silence>
+# listen for $1 seconds of silence (no other rigs or enlite transmitter talking to pump) before continuing
+# If communication is detected, it'll retry to listen for $1 seconds.
+#
+# returns 0 if radio is free, 1 if radio is jammed for 800 iterations.
+function wait_for_silence {
+    if [ -z $1 ]; then
+        upto45s=$[ ( $RANDOM / 728 + 1) ]
+        waitfor=$upto45s
+    else
+        waitfor=$1
+    fi
+    echo -n "Listening for ${waitfor}s: "
+    for i in $(seq 1 800); do
+        echo -n .
+        # returns true if it hears pump comms, false otherwise
+        if ! listen -t $waitfor's' ; then
+            echo "No interfering pump comms detected from other rigs (this is a good thing!)"
+            echo -n "Continuing oref0-pump-loop at "; date
+            return 0 
+        else
+            sleep 1
+        fi
+    done
+    return 1
 }

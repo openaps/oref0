@@ -20,11 +20,17 @@ var determine_basal = require('oref0/lib/determine-basal/determine-basal');
 /* istanbul ignore next */
 if (!module.parent) {
     var argv = require('yargs')
-      .usage("$0 iob.json currenttemp.json glucose.json profile.json [[--auto-sens] autosens.json] [meal.json] [--reservoir reservoir.json]")
+      .usage("$0 iob.json currenttemp.json glucose.json profile.json [[--auto-sens] autosens.json] [meal.json] [--reservoir reservoir.json] --currentTime [currentTime]")
       .option('auto-sens', {
         alias: 'a',
         describe: "Auto-sensitivity configuration",
         default: true
+
+      })
+      .option('currentTime', {
+        alias: 'c',
+        describe: "Override current time (for R&D only - disables safety checks)",
+        default: false
 
       })
       .option('reservoir', {
@@ -126,7 +132,7 @@ if (!module.parent) {
     if (meal_input && typeof meal_input != 'undefined') {
         try {
             meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
-            console.error(JSON.stringify(meal_data));
+            //console.error(JSON.stringify(meal_data));
         } catch (e) {
             var msg = {
               msg: "Optional feature Meal Assist enabled, but could not read required meal data."
@@ -181,6 +187,20 @@ if (!module.parent) {
             console.error(msg.msg);
         }
     }
+    var currentTime_input = params.currentTime;
+    var currentTime = null;
+    if (currentTime_input && typeof currentTime_input != 'undefined') {
+        try {
+            currentTime = new Date(currentTime_input);
+            console.error(currentTime);
+        } catch (e) {
+            var msg = {
+              msg: "Warning: Could not parse current time: "+currentTime_input+"."
+            , error: e
+            };
+            console.error(msg.msg);
+        }
+    }
 
     if (warnings.length) {
       console.error(JSON.stringify(warnings));
@@ -203,7 +223,7 @@ if (!module.parent) {
 
     var tempBasalFunctions = require('oref0/lib/basal-set-temp');
 
-    rT = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus'], reservoir_data);
+    rT = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus'], reservoir_data, currentTime);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));

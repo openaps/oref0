@@ -18,7 +18,7 @@ source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to r
 
 # TODO: deprecate g4-upload and g4-local-only
 usage "$@" <<EOT
-Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|G4-go|G5|MDT|xdrip)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]
+Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|G4-go|G5|MDT|xdrip|xdrip-js)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--dexcom_tx_sn=12A34B] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]
 EOT
 
 # defaults
@@ -29,6 +29,9 @@ directory=""
 EXTRAS=""
 radio_locale="US"
 buildgofromsource=false
+ecc1medtronicversion="latest"
+ecc1dexcomversion="latest"
+radiotags="cc111x"
 
 # Echo text, but in bright-blue. Used for confirmation echo text. This takes
 # the same arguments as echo, including the -n option.
@@ -92,6 +95,9 @@ case $i in
     -l=*|--blemac=*)
     BLE_MAC="${i#*=}"
     ;;
+    -dtx=*|--dexcom_tx_sn=*)
+    DEXCOM_CGM_TX_ID="${i#*=}"
+    ;;
     --btmac=*)
     BT_MAC="${i#*=}"
     ;;
@@ -110,7 +116,7 @@ case $i in
     -npm=*|--npm_install=*)
     npm_option="${i#*=}"
     shift
-	;;
+    ;;
     *)
     # unknown option
     echo "Option ${i#*=} unknown"
@@ -122,11 +128,11 @@ function validate_cgm ()
 {
     # Conver to lowercase
     local selection="${1,,}"
-    
+
     # Compare against list of supported CGMs
     # TODO: deprecate g4-upload and g4-local-only
-    if ! [[ $selection =~ "g4-upload" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "g4-go" || $selection =~ "xdrip" || $selection =~ "g4-local" ]]; then
-        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-upload, G4-local-only, G5, G5-upload, MDT or xdrip."
+    if ! [[ $selection =~ "g4-upload" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "g4-go" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
+        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-upload, G4-local-only, G5, G5-upload, MDT, xdrip, or xdrip-js."
         echo
         return 1
     fi
@@ -138,7 +144,22 @@ function validate_g4share_serial ()
         echo Dexcom G4 Share serial not provided: continuing
         return 1
     else
-        #TODO: actually validate the DEXCOM_CGM_ID if provided
+        if [[ $1 == SM???????? ]]; then
+            return 0
+        else
+            echo Dexcom G4 Share serial numbers are of the form SM????????
+            return 1
+        fi
+    fi
+}
+
+function validate_g5transmitter_serial ()
+{
+    if [[ -z "$1" ]]; then
+        echo Dexcom G5 transmitter serial not provided: continuing
+        return 1
+    else
+        #TODO: actually validate the DEXCOM_CGM_TX_ID if provided
         return 0
     fi
 }
@@ -270,6 +291,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
     echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
     echo "xdrip: will work with an xDrip receiver app on your Android phone"
+	echo "xdrip-js: will work directly with a Dexcom G5 transmitter and will upload to Nightscout"
     echo "Note: no matter which option you choose, CGM data will also be downloaded from NS when available."
     echo
     prompt_and_validate CGM "What kind of CGM would you like to configure?:" validate_cgm
@@ -279,6 +301,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         prompt_and_validate BLE_SERIAL "If your G4 has Share, what is your G4 Share Serial Number? (i.e. SM12345678)" validate_g4share_serial
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
+        echo
+    fi
+    if [[ ${CGM,,} =~ "xdrip-js" ]]; then
+        prompt_and_validate DEXCOM_CGM_TX_ID "What is your current Dexcom Transmitter ID?" validate_g5transmitter_serial
+        echo "$DEXCOM_CGM_TX_ID? Got it."
         echo
     fi
 
@@ -314,15 +341,37 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo
         fi
     fi
-    read -p "Would you like to [D]ownload precompiled Go pump communication library or build them from [S]ource? [D]/S " -r
-    if [[ $REPLY =~ ^[Ss]$ ]]; then
-      buildgofromsource=true
-      echo "Building Go pump binaries from source"
+    read -p "Would you like to [D]ownload precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
+    if [[ $REPLY =~ ^[Uu]$ ]]; then
+      read -p "You could either build the library from [S]ource, or type the version you would like to use, example 'v2018.07.09' [S]/<version> " -r
+      if [[ $REPLY =~ ^[Ss]$ ]]; then
+        buildgofromsource=true
+        echo "Building Go pump binaries from source"
+        buildgofromsource=true
+        read -p "What type of radio do you use? [1] for cc1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r 
+        if [[ $REPLY =~ ^[1]$ ]]; then
+          radiotags="cc1101"
+        elif [[ $REPLY =~ ^[2]$ ]]; then
+          radiotags="cc111x"
+        elif [[ $REPLY =~ ^[3]$ ]]; then
+          radiotags="rfm69"
+        else 
+          radiotags="cc111x"
+        fi
+        echo "Building Go pump binaries from source with " + radiotags + " tags."
+      else
+        ecc1medtronicversion="tags/$REPLY"
+        echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
+
+	      read -p "Also enter the ecc1/dexcom version, example 'v2018.07.09' <version> " -r
+        ecc1dexcomversion="tags/$REPLY"
+	      echo "Will use https://github.com/ecc1/dexcom/releases/$REPLY if Go-dexcom is needed."
+      fi
     else
-      echo "Downloading precompiled Go pump binaries."
+      echo "Downloading latest precompiled Go pump binaries."
+      ecc1medtronicversion="latest"
+      ecc1dexcomversion="latest"
     fi
-
-
 
     if [[ ! -z "${ttyport}" ]]; then
       echo -e "\e[1mMedtronic pumps come in two types: WW (Worldwide) pumps, and NA (North America) pumps.\e[0m"
@@ -462,6 +511,9 @@ echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
 if [[ ! -z $BLE_SERIAL ]]; then
     echo -n "G4 Share serial $BLE_SERIAL, "
 fi
+if [[ ! -z $DEXCOM_CGM_TX_ID ]]; then
+    echo -n "G5 transmitter serial $DEXCOM_CGM_TX_ID, "
+fi
 echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
 if [[ ${pumpmodel,,} =~ "x12" ]]; then
@@ -537,6 +589,9 @@ fi
 if [[ ! -z "$BLE_MAC" ]]; then
     echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN
 fi
+if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
+    echo -n " --dexcom_tx_sn='$DEXCOM_CGM_TX_ID'" | tee -a $OREF0_RUNAGAIN
+fi
 if [[ ! -z "$BT_MAC" ]]; then
     echo -n " --btmac='$BT_MAC'" | tee -a $OREF0_RUNAGAIN
 fi
@@ -580,7 +635,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         die "Can't init $directory"
     fi
     cd $directory || die "Can't cd $directory"
-    
+
     # Clear out any OpenAPS aliases from previous versions (they'll get
     # recreated if they're still used)
     remove_all_openaps_aliases
@@ -597,7 +652,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     mkdir -p settings || die "Can't mkdir settings"
     mkdir -p enact || die "Can't mkdir enact"
     mkdir -p upload || die "Can't mkdir upload"
-    if [[ ${CGM,,} =~ "xdrip" ]]; then
+    if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
         mkdir -p xdrip || die "Can't mkdir xdrip"
     fi
     
@@ -620,7 +675,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     #echo Installing decocare 0.1.0-dev
     #cd $HOME/src/decocare
     #sudo python setup.py develop || die "Couldn't install decocare 0.1.0-dev"
-
+	
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
         (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
@@ -686,6 +741,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     set_pref_string .myopenaps_path "$directory"
     set_pref_string .cgm_loop_path "$directory-cgm-loop"
     set_pref_string .xdrip_path "$HOME/.xDripAPS"
+    #if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
+        #set_pref_string .dexcom_cgm_tx_id "$DEXCOM_CGM_TX_ID"
+    #fi
     
     cat preferences.json
 
@@ -748,8 +806,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/device.json
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/report.json
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/alias.json
-    echo Checking for BT Mac, BT Peb or Shareble
-    if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL ]]; then
+
+    echo Checking for BT Mac, BT Peb, Shareble, or xdrip-js
+    if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL || ! -z $DEXCOM_CGM_TX_ID ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
@@ -770,6 +829,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             sudo make install || die "Couldn't make install bluez"
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
             sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
+            sudo apt-get install bluez-tools
             
             # Replace all other instances of bluetoothd and bluetoothctl to make sure we are always using the self-compiled version
             while IFS= read -r bt_location; do 
@@ -995,14 +1055,27 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo pip install flask || die "Can't add xdrip cgm - error installing flask"
     sudo pip install flask-restful || die "Can't add xdrip cgm - error installing flask-restful"
 
-    # xdrip CGM (xDripAPS)
-    if [[ ${CGM,,} =~ "xdrip" ]]; then
-        echo xdrip selected as CGM, so configuring xDripAPS
+    # xdrip CGM (xDripAPS), also gets installed when using xdrip-js
+    if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
+        echo xdrip or xdrip-js selected as CGM, so configuring xDripAPS
         sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
         git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/xdrip-cgm.json
         touch /tmp/reboot-required
+    fi
+
+    # xdrip-js specific installation tasks (in addition to xdrip tasks)
+    if [[ ${CGM,,} =~ "xdrip-js" ]]; then
+        echo xdrip-js selected as CGM, so configuring xdrip-js
+        git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
+        cd $HOME/src/Logger
+        sudo npm run global-install
+        touch /tmp/reboot-required
+        #Set transmitter id & generate xdripjs.json config
+        if validate_g5transmitter_serial $DEXCOM_CGM_TX_ID; then
+            cgm-transmitter "$DEXCOM_CGM_TX_ID"
+        fi
     fi
 
     # disable IPv6
@@ -1098,8 +1171,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export NIGHTSCOUT_HOST" >> $HOME/.bash_profile
     echo API_SECRET="${API_HASHED_SECRET}" >> $HOME/.bash_profile
     echo "export API_SECRET" >> $HOME/.bash_profile
-    echo DEXCOM_CGM_ID="$BLE_SERIAL" >> $HOME/.bash_profile
-    echo "export DEXCOM_CGM_ID" >> $HOME/.bash_profile
+    echo DEXCOM_CGM_RECV_ID="$BLE_SERIAL" >> $HOME/.bash_profile
+    echo "export DEXCOM_CGM_RECV_ID" >> $HOME/.bash_profile
+    #echo DEXCOM_CGM_TX_ID="$DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
+    #echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     echo 
 
     echo
@@ -1172,7 +1247,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ "$ttyport" =~ "spidev" ]]; then
         if $buildgofromsource; then
           #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
-          go get -u -v -tags cc111x github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+          go get -u -v -tags $radiotags github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
           #cd $HOME/go/src/github.com/ecc1/medtronic/cmd
           #cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
           #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
@@ -1187,7 +1262,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             arch=386-spi
           fi
           mkdir -p $HOME/go/bin && \
-          downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/latest | \
+          downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/$ecc1medtronicversion | \
             jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
           echo "Downloading Go pump binaries from:" $downloadUrl
           wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
@@ -1211,7 +1286,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             if egrep -i "edison" /etc/passwd &>/dev/null; then
                 arch=386
             fi
-            downloadUrl=$(curl -s https://api.github.com/repos/ecc1/dexcom/releases/latest | \
+            downloadUrl=$(curl -s https://api.github.com/repos/ecc1/dexcom/releases/$ecc1dexcomversion | \
             jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
             echo "Downloading Go dexcom binaries from:" $downloadUrl
             wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go dexcom binaries"
@@ -1245,8 +1320,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
         if validate_g4share_serial $BLE_SERIAL; then
-            (crontab -l; crontab -l | grep -q "DEXCOM_CGM_ID=" || echo DEXCOM_CGM_ID=$BLE_SERIAL) | crontab -
+            (crontab -l; crontab -l | grep -q "DEXCOM_CGM_RECV_ID=" || echo DEXCOM_CGM_RECV_ID=$BLE_SERIAL) | crontab -
         fi
+        #if validate_g5transmitter_serial $DEXCOM_CGM_TX_ID; then
+        #    (crontab -l; crontab -l | grep -q "DEXCOM_CGM_TX_ID=" || echo DEXCOM_CGM_TX_ID=$DEXCOM_CGM_TX_ID) | crontab -
+        #fi
+        # deduplicate to avoid multiple instances of $GOPATH in $PATH
+        echo $PATH
+        dedupe_path;
+        echo $PATH
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
 
         add_to_crontab \
@@ -1265,6 +1347,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             "oref0-cron-every-15min" \
             "*/15 * * * *" \
             "cd $directory && oref0-cron-every-15min"
+        if [[ ${CGM,,} =~ "xdrip-js" ]]; then
+            add_to_crontab \
+                "Logger" \
+                "* * * * *" \
+                "cd $HOME/src/Logger && ps aux | grep -v grep | grep -q Logger || /usr/local/bin/Logger >> /var/log/openaps/logger-loop.log 2>&1"
+        fi
         crontab -l | tee $HOME/crontab.txt
     fi
 

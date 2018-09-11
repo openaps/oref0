@@ -44,7 +44,8 @@ if checkNTP; then
     fi
     #TODO: deprecate openaps toolkit based CGM setups
     # xdripaps CGM does not have a clock to set, so don't try. 
-    if [ ! -d xdrip ]; then
+    # suppress cgm update if mdt is configured, since it is same clock as pump
+    if [ ! -d xdrip ] && [ "$(get_pref_string .cgm '')" != "mdt" ]; then
         echo Setting CGM time to $(date) with openaps use $CGM UpdateTime --to now
         openaps use $CGM UpdateTime --to now 2>&1 >/dev/null | tail -1
     fi

@@ -15,19 +15,24 @@ EOF
 # If it will restore within 5 minutes, then the reboot will be cancelled
 # Note that this is a workaround, until we found the root cause of why the rig pump communication fails
 
-radio_errors=`tail --lines=20 /var/log/openaps/pump-loop.log | egrep "spidev.* already in use|retry 0|TimeoutExpired. Killing process"`
-logfile=/var/log/openaps/pump-loop.log
-if [ ! -z "$radio_errors" ]; then
-    if [ ! -e /run/nologin ]; then
-        echo >> $logfile
-        echo -n "Radio error found at " | tee -a $logfile
-        date >> $logfile
-        shutdown -r +5 "Rebooting to fix radio errors!" | tee -a $logfile
-        echo >> $logfile
-    fi
-else
-    if [ -e /run/nologin ]; then
-        echo "No more radio errors; canceling reboot" | tee -a $logfile
-        shutdown -c | tee -a $logfile
-    fi
+SYSTEM_UP=$(date --date="$(uptime -s)" +%s)
+# Start checking only when the system has been up for some time.
+START_CHECKING=$(date -d"30 minutes ago" +%s)
+if [ $SYSTEM_UP -lt $START_CHECKING ]; then
+  radio_errors=`tail --lines=20 /var/log/openaps/pump-loop.log | egrep "spidev.* in use|retry 0|illing process"`
+  logfile=/var/log/openaps/pump-loop.log
+  if [ ! -z "$radio_errors" ]; then
+      if [ ! -e /run/nologin ]; then
+          echo >> $logfile
+          echo -n "Radio error found at " | tee -a $logfile
+          date >> $logfile
+          shutdown -r +5 "Rebooting to fix radio errors!" | tee -a $logfile
+          echo >> $logfile
+      fi
+  else
+      if [ -e /run/nologin ]; then
+          echo "No more radio errors; canceling reboot" | tee -a $logfile
+          shutdown -c | tee -a $logfile
+      fi
+  fi
 fi
