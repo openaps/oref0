@@ -6604,7 +6604,7 @@ EOT
 EOT
 
     cat >model.json <<EOT
-"723"
+"722"
 EOT
 
 }
