@@ -9,7 +9,7 @@ var path = require("path");
 var child_process = require("child_process");
 
 describe("shell-script tests", function() {
-    this.timeout(60000);
+    this.timeout(120000);
 
     var bashUnitTestFiles = [];
     fs.readdirSync("tests").forEach(function(filename) {
@@ -20,7 +20,7 @@ describe("shell-script tests", function() {
     bashUnitTestFiles.forEach(function(testFile) {
         it(testFile, function() {
             var utilProcess = child_process.spawnSync(testFile, [], {
-                timeout: 50000, //milliseconds
+                timeout: 120000, //milliseconds
                 encoding: "UTF-8",
             });
             
