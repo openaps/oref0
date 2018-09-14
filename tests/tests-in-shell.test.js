@@ -22,12 +22,12 @@ describe("shell-script tests", function() {
                 encoding: "UTF-8",
             });
             
-            console.error("=================");
-            console.error(testFile);
-            console.error("=================");
-            console.error(utilProcess.error);
-            console.error(utilProcess.stderr);
-            console.error(utilProcess.stdout);
+            //console.error("=================");
+            //console.error(testFile);
+            //console.error("=================");
+            //console.error(utilProcess.error);
+            //console.error(utilProcess.stderr);
+            //console.error(utilProcess.stdout);
             should.equal(utilProcess.status, 0, "Bash unit test returned failure: run " + testFile + " manualy for details.");
         });
     });
