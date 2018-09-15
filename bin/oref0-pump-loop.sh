@@ -663,24 +663,25 @@ function get_settings {
         # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
         # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
         retry_return check_model 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS = 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS = 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS = 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
     else
         # On all other supported pumps, we should be able to get all the data we need from the pump.
-        [[ $SUCCESS = 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS = 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS = 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS = 1 ]] && retry_return read_bg_targets 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS = 1 ]] && retry_return read_basal_profile 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS = 1 ]] && retry_return read_settings 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS = 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_bg_targets 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_basal_profile 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_settings 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
 #        NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
     fi
 #    retry_return openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
 
     # If there was a failure, force a full refresh on the next loop
-    if [[ $SUCCESS = 0 ]]; then
+    if [[ $SUCCESS -eq 0 ]]; then
+        echo "pump profile refresh unsuccessful; trying again on next loop"
         touch -d "1 hour ago" settings/settings.json
         touch -d "1 hour ago" settings/profile.json
         return 1
