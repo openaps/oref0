@@ -897,13 +897,13 @@ function read_pumphistory() {
 function valid_pump_settings() {
   SUCCESS=1
 
-  [[ $SUCCESS -eq 1 ]] && valid_insulin_sensitivities || { echo "Invalid insulin_sensitivites.json"; SUCCESS=0; }
-  [[ $SUCCESS -eq 1 ]] && valid_carb_ratios || { echo "Invalid carb_ratios.json"; SUCCESS=0; }
+  [[ $SUCCESS -eq 1 ]] && valid_insulin_sensitivities >&3 || { echo "Invalid insulin_sensitivites.json"; SUCCESS=0; }
+  [[ $SUCCESS -eq 1 ]] && valid_carb_ratios >&3 || { echo "Invalid carb_ratios.json"; SUCCESS=0; }
 
   if ! grep -q 12 settings/model.json; then
-    [[ $SUCCESS -eq 1 ]] && valid_bg_targets || { echo "Invalid bg_targets.json"; SUCCESS=0; }
-    [[ $SUCCESS -eq 1 ]] && valid_basal_profile || { echo "Invalid basal_profile.json"; SUCCESS=0; }
-    [[ $SUCCESS -eq 1 ]] && valid_settings || { echo "Invalid settings.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_bg_targets >&3 || { echo "Invalid bg_targets.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_basal_profile >&3 || { echo "Invalid basal_profile.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_settings >&3 || { echo "Invalid settings.json"; SUCCESS=0; }
   fi
 
   return $SUCCESS
@@ -924,7 +924,7 @@ function read_bg_targets() {
 function valid_bg_targets() {
   set -o pipefail
   local FILE="${1:-settings/bg_targets_raw.json}"
-  cat $FILE | jq .units | grep -q -e "mg/dL" -e "mmol"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e "mg/dL" -e "mmol"
 }
 function read_insulin_sensitivities() {
   set -o pipefail
@@ -933,7 +933,7 @@ function read_insulin_sensitivities() {
 function valid_insulin_sensitivities() {
   set -o pipefail
   local FILE="${1:-settings/insulin_sensitivities_raw.json}"
-  cat $FILE | jq .units | grep -q -e "mg/dL" -e "mmol"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e "mg/dL" -e "mmol"
 }
 function read_basal_profile() {
   set -o pipefail
@@ -942,7 +942,7 @@ function read_basal_profile() {
 function valid_basal_profile() {
   set -o pipefail
   local FILE="${1:-settings/basal_profile.json}"
-  cat $1 | jq .[0].start | grep -q "00:00:00"
+  [ -s $FILE ] && cat $FILE | jq .[0].start | grep "00:00:00"
 }
 function read_settings() {
   set -o pipefail
@@ -951,7 +951,7 @@ function read_settings() {
 function valid_settings() {
   set -o pipefail
   local FILE="${1:-settings/settings.json}"
-  cat $FILE | jq .maxBolus | grep -q -e "[0-9]\+"
+  [ -s $FILE ] && cat $FILE | jq .maxBolus | grep -e "[0-9]\+"
 }
 function read_carb_ratios() {
   set -o pipefail
@@ -960,7 +960,7 @@ function read_carb_ratios() {
 function valid_carb_ratios() {
   set -o pipefail
   local FILE="${1:-settings/carb_ratios.json}"
-  cat $FILE | jq .units | grep -e grams -e exchanges
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e grams -e exchanges
 }
 
 retry_fail() {
