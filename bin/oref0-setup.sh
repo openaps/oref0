@@ -349,13 +349,13 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
             echo
         fi
     fi
-    read -p "Would you like to [D]ownload precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
+    read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
     if [[ $REPLY =~ ^[Uu]$ ]]; then
-      read -p "You could either build the library from [S]ource, or type the version you would like to use, example 'v2018.08.08' [S]/<version> " -r
+      read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2018.08.08' [S]/<version> " -r
       if [[ $REPLY =~ ^[Ss]$ ]]; then
         buildgofromsource=true
         echo "Building Go pump binaries from source"
-        read -p "What type of radio do you use? [1] for cc1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r
+        read -p "What type of radio do you use? [1] for CC1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r
         if [[ $REPLY =~ ^[1]$ ]]; then
           radiotags="cc1101"
         elif [[ $REPLY =~ ^[2]$ ]]; then
@@ -372,7 +372,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
         read -p "Also enter the ecc1/dexcom version, example 'v2018.07.26' <version> " -r
         ecc1dexcomversion="tags/$REPLY"
-        echo "Will use https://github.com/ecc1/dexcom/releases/$REPLY if Go-dexcom is needed."
+        echo "Will use https://github.com/ecc1/dexcom/$REPLY if Go-dexcom is needed."
       fi
     else
       echo "Downloading latest precompiled Go pump binaries."
@@ -716,8 +716,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     fi
 
     # Save information to preferences.json
+    # Starting from 0.7.x all preferences for oref0 will be stored in this file
     set_pref_string .nightscout_host "$NIGHTSCOUT_HOST"
-    set_pref_string .nightscout_api_secret "$API_SECRET"
     set_pref_string .cgm "${CGM,,}"
     set_pref_string .bt_peb "$BT_PEB"
     set_pref_string .bt_mac "$BT_MAC"
@@ -726,8 +726,19 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     set_pref_string .pushover_token "$PUSHOVER_TOKEN"
     set_pref_string .pushover_user "$PUSHOVER_USER"
     set_pref_string .myopenaps_path "$directory"
-    set_pref_string .cgm_loop_path "$directory-cgm-loop"
-    set_pref_string .xdrip_path "$HOME/.xDripAPS"
+    # TODO: API_SECRET has not been converted to using preference.json yet. Convert API_SECRET to .nightscout_api_secret or .nightscout_hashed_api_secret
+    # The Nightscout API_SECRET (admin password) should not be written in plain text, but in a hashed form
+    # set_pref_string .nightscout_api_secret "$API_SECRET"
+
+    if [[ ${CGM,,} =~ "g4-go" ]]; then
+        set_pref_string .cgm_loop_path "$directory"
+    elif [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g4-local-only" ]]; then # TODO: deprecate g4-upload and g4-local-only
+        set_pref_string .cgm_loop_path "$directory-cgm-loop"
+    fi
+
+    if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
+        set_pref_string .xdrip_path "$HOME/.xDripAPS"
+    fi
     #if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
         #set_pref_string .dexcom_cgm_tx_id "$DEXCOM_CGM_TX_ID"
     #fi
@@ -1181,14 +1192,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
       if $buildgofromsource; then
         source $HOME/.bash_profile
-        if go version | grep go1.9.; then
+        if go version | grep go1.11.; then
             echo Go already installed
         else
             echo "Installing Golang..."
             if uname -m | grep armv; then
-                cd /tmp && wget -c https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.2.linux-armv6l.tar.gz
+                cd /tmp && wget -c https://storage.googleapis.com/golang/go1.11.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-armv6l.tar.gz
             elif uname -m | grep i686; then
-                cd /tmp && wget -c https://dl.google.com/go/go1.9.3.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.9.3.linux-386.tar.gz
+                cd /tmp && wget -c https://dl.google.com/go/go1.11.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-386.tar.gz
             fi
         fi
         if ! grep GOROOT $HOME/.bash_profile; then
