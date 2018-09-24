@@ -22,18 +22,26 @@ var detect = require('oref0/lib/determine-basal/autosens');
 if (!module.parent) {
     var detectsensitivity = init();
 
-    var glucose_input = process.argv[2];
-    var pumphistory_input = process.argv[3];
-    var profile_input = process.argv[4];
-    var readings_per_run = process.argv[5];
-    var output_file;
-    if (process.argv[5]) {
-        output_file = process.argv[6];
+    var argv = require('yargs')
+        .usage("$0 <glucose.json> <pumphistory.json> <profile.json> <readings_per_run> [outputfile.json]")
+        .strict(true)
+        .help('help');
+
+    var params = argv.argv;
+    var inputs = params._;
+
+    if (inputs.length < 4 || inputs.length > 5) {
+        argv.showHelp();
+        process.exit(1);
     }
 
-    if (!glucose_input || !pumphistory_input || !profile_input || !readings_per_run) {
-        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <profile.json> <readings_per_run> [outputfile.json]');
-        process.exit(1);
+    var glucose_input = inputs[0];
+    var pumphistory_input = inputs[1];
+    var profile_input = inputs[2];
+    var readings_per_run = inputs[3];
+    var output_file;
+    if (inputs.length == 5) {
+        output_file = inputs[4];
     }
 
     var fs = require('fs');
