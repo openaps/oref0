@@ -646,7 +646,7 @@ function refresh_old_pumphistory {
 function refresh_old_profile {
     file_is_recent_and_min_size settings/profile.json 60 && echo -n "Profile less than 60m old; " \
         || { echo -n "Old settings: " && get_settings; }
-    if [ -s settings/profile.json ] && jq -e .current_basal settings/profile.json >&3; then
+    if valid_pump_settings; then
         echo -n "Profile valid. "
     else
         echo -n "Profile invalid: "
@@ -662,7 +662,7 @@ function get_settings {
     then
         # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
         # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
-        retry_return check_model 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
         [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
         [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
         [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
@@ -894,6 +894,24 @@ function read_pumphistory() {
     fi
   fi
 }
+function valid_pump_settings() {
+  SUCCESS=1
+
+  [[ $SUCCESS -eq 1 ]] && valid_insulin_sensitivities >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid insulin_sensitivites.json"; SUCCESS=0; }
+  [[ $SUCCESS -eq 1 ]] && valid_carb_ratios >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid carb_ratios.json"; SUCCESS=0; }
+
+  if ! grep -q 12 settings/model.json; then
+    [[ $SUCCESS -eq 1 ]] && valid_bg_targets >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid bg_targets.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_basal_profile >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid basal_profile.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_settings >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid settings.json"; SUCCESS=0; }
+  fi
+
+  if [[ $SUCCESS -eq 0 ]]; then
+    return 1
+  else
+    return 0
+  fi
+}
 function read_full_pumphistory() {
   set -o pipefail
   rm monitor/pumphistory-24h-zoned.json
@@ -905,24 +923,48 @@ function read_full_pumphistory() {
 }
 function read_bg_targets() {
   set -o pipefail
-  mdt targets 2>&3 | tee settings/bg_targets_raw.json && cat settings/bg_targets_raw.json | jq .units | grep -e "mg/dL" -e "mmol"
+  mdt targets 2>&3 | tee settings/bg_targets_raw.json && valid_bg_targets
+}
+function valid_bg_targets() {
+  set -o pipefail
+  local FILE="${1:-settings/bg_targets_raw.json}"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e "mg/dL" -e "mmol"
 }
 function read_insulin_sensitivities() {
   set -o pipefail
-  mdt sensitivities 2>&3 | tee settings/insulin_sensitivities_raw.json \
-    && cat settings/insulin_sensitivities_raw.json | jq .units | grep -e "mg/dL" -e "mmol"
+  mdt sensitivities 2>&3 | tee settings/insulin_sensitivities_raw.json && valid_insulin_sensitivities
+}
+function valid_insulin_sensitivities() {
+  set -o pipefail
+  local FILE="${1:-settings/insulin_sensitivities_raw.json}"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e "mg/dL" -e "mmol"
 }
 function read_basal_profile() {
   set -o pipefail
-  mdt basal 2>&3 | tee settings/basal_profile.json && cat settings/basal_profile.json | jq .[0].start | grep "00:00:00"
+  mdt basal 2>&3 | tee settings/basal_profile.json && valid_basal_profile
+}
+function valid_basal_profile() {
+  set -o pipefail
+  local FILE="${1:-settings/basal_profile.json}"
+  [ -s $FILE ] && cat $FILE | jq .[0].start | grep "00:00:00"
 }
 function read_settings() {
   set -o pipefail
-  mdt settings 2>&3 | tee settings/settings.json && cat settings/settings.json | jq .maxBolus | grep -e "[0-9]\+"
+  mdt settings 2>&3 | tee settings/settings.json && valid_settings
+}
+function valid_settings() {
+  set -o pipefail
+  local FILE="${1:-settings/settings.json}"
+  [ -s $FILE ] && cat $FILE | jq .maxBolus | grep -e "[0-9]\+"
 }
 function read_carb_ratios() {
   set -o pipefail
-  mdt carbratios 2>&3 | tee settings/carb_ratios.json && cat settings/carb_ratios.json | jq .units | grep -e grams -e exchanges
+  mdt carbratios 2>&3 | tee settings/carb_ratios.json && valid_carb_ratios
+}
+function valid_carb_ratios() {
+  set -o pipefail
+  local FILE="${1:-settings/carb_ratios.json}"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e grams -e exchanges
 }
 
 retry_fail() {
