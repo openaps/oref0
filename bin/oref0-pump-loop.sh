@@ -895,18 +895,22 @@ function read_pumphistory() {
   fi
 }
 function valid_pump_settings() {
-  SUCCESS=0
+  SUCCESS=1
 
-  [[ $SUCCESS -eq 0 ]] && valid_insulin_sensitivities >&3 || { [[ $SUCCESS -eq 1 ]] || echo "Invalid insulin_sensitivites.json"; SUCCESS=1; }
-  [[ $SUCCESS -eq 0 ]] && valid_carb_ratios >&3 || { [[ $SUCCESS -eq 1 ]] || echo "Invalid carb_ratios.json"; SUCCESS=1; }
+  [[ $SUCCESS -eq 1 ]] && valid_insulin_sensitivities >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid insulin_sensitivites.json"; SUCCESS=0; }
+  [[ $SUCCESS -eq 1 ]] && valid_carb_ratios >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid carb_ratios.json"; SUCCESS=0; }
 
   if ! grep -q 12 settings/model.json; then
-    [[ $SUCCESS -eq 0 ]] && valid_bg_targets >&3 || { [[ $SUCCESS -eq 1 ]] || echo "Invalid bg_targets.json"; SUCCESS=1; }
-    [[ $SUCCESS -eq 0 ]] && valid_basal_profile >&3 || { [[ $SUCCESS -eq 1 ]] || echo "Invalid basal_profile.json"; SUCCESS=1; }
-    [[ $SUCCESS -eq 0 ]] && valid_settings >&3 || { [[ $SUCCESS -eq 1 ]] || echo "Invalid settings.json"; SUCCESS=1; }
+    [[ $SUCCESS -eq 1 ]] && valid_bg_targets >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid bg_targets.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_basal_profile >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid basal_profile.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_settings >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid settings.json"; SUCCESS=0; }
   fi
 
-  return $SUCCESS
+  if [[ $SUCCESS -eq 0 ]]; then
+    return 1
+  else
+    return 0
+  fi
 }
 function read_full_pumphistory() {
   set -o pipefail
