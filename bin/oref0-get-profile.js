@@ -17,9 +17,6 @@
 */
 
 var generate = require('oref0/lib/profile/');
-function usage ( ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>] [<temptargets.json>] [--model model.json] [--autotune autotune.json]');
-}
 
 function exportDefaults () {
 	var defaults = generate.displayedDefaults();
@@ -43,34 +40,43 @@ function updatePreferences (prefs) {
 if (!module.parent) {
     
     var argv = require('yargs')
-      .usage("$0 pump_settings.json bg_targets.json insulin_sensitivities.json basal_profile.json [preferences.json] [<carb_ratios.json>] [<temptargets.json>] [--model model.json] [--autotune autotune.json]")
+      .usage("$0 <pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>] [<temptargets.json>] [--model <model.json>] [--autotune <autotune.json>] [--exportDefaults] [--updatePreferences <preferences.json>]")
       .option('model', {
         alias: 'm',
         describe: "Pump model response",
+        nargs: 1,
         default: false
       })
       .option('autotune', {
         alias: 'a',
         describe: "Autotuned profile.json",
+        nargs: 1,
         default: false
       })
       .strict(true)
       .help('help')
       .option('exportDefaults', {
         describe: "Show typically-adjusted default preference values",
+        boolean: true,
         default: false
       })
       .option('updatePreferences', {
-        describe: "Check for any keys missing from current prefs and add from defaults",
+        describe: "Check for any keys missing from current prefs and add from defaults. Requires preference file argument.",
+        nargs: 1,
         default: false
       })
 
     var params = argv.argv;
-    var pumpsettings_input = params._[0]
-    if ([null, '--help', '-h', 'help'].indexOf(pumpsettings_input) > 0) {
-      usage( );
-      process.exit(0);
+
+    if (!params.exportDefaults && !params.updatePreferences) {
+      if (params._.length < 4 || params._.length > 7) {
+        argv.showHelp();
+        process.exit(1);
+      }
     }
+
+    var pumpsettings_input = params._[0];
+
     if (params.exportDefaults) {
         exportDefaults();
         process.exit(0);
@@ -91,11 +97,6 @@ if (!module.parent) {
     var temptargets_input = params._[6]
     var model_input = params.model;
     var autotune_input = params.autotune;
-
-    if (!pumpsettings_input || !bgtargets_input || !isf_input || !basalprofile_input) {
-        usage( );
-        process.exit(1);
-    }
 
     var cwd = process.cwd()
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
