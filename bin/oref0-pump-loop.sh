@@ -131,108 +131,68 @@ function fail {
 
 # The function "check_duty_cycle" checks if the loop has to run and it returns 0 if so.
 # It exits the script with code 0 otherwise.
-# The decision is based on the time since last *successful* loop.
-# !Note duty cycle times are set in seconds.
 #
-# Additionally it may start an "emergency action" if enabled.
-# Possible actions are USB power cycling, SPI reset or reboot the system.
-# The variables SPI_RESET, USB_RESET and REBOOT are setting the allowable time between successful loops.
-# If no loop has completed in that time, it performs the respective action.
-# !Note SPI reset is just tested for Pi0 and my produce errors on edison rigs.
-# !Note to enable an emergency action put a number in seconds when it should start and a 0 to disable.
-# !Note emergency actions can also be enabled without using enabling the duty cycle.
+# The given duty cycle time defines in which time frames the loop should start. 
+# E.g., if the duty cycle is 300 seconds (5 min) and a loop starts now and will be successful, the next round won't start earlier than in 300 seconds.
+# The decision is based on the time since last *successful* loop started.
+# Hence, the loop will not be limited if the last loop was unsuccessful.
+# On the other hand, it is not guaranteed that a loop will run as often as defined by the time frames.
+# This is due to the fact that the script is just called every minute, and thus may start later then the given number of seconds.
+# Additionally, if the loop takes more than the given time to complete it also can not execute in the given time frame.
 #
-# The intention is two fold: 
-# First the battery consumption is reduced (Pump and Pi) if the loop runs less often.
+# The intention is that the battery consumption is reduced (Pump and Pi) if the loop runs less often.
 # This is most dramatic for Enlite CGM, where wait_for_bg can't be used.
-# Secondly, if Carelink USB is used with Enlite, and wait_for_silence can't be used, this
-# prevents the loop from disrupting the communication between the pump and Enlite sensors.
 #
+# !Note duty cycle times are set in seconds.
 # Use DUTY_CYCLE=0 (default) if you don't want to limit the loop
 #
-# Suggestion for Carelink USB users are 
-# DUTY_CYCLE=120 
-# SPI_RESET=0
-# USB_RESET=300
-# REBOOT=900
-#
-# Suggestion for PI HAT + MDT users are 
-# DUTY_CYCLE=120 
-# SPI_RESET=0
-# USB_RESET=0
-# REBOOT=900
-#
-# Default is DUTY_CYCLE=0 to disable this feature.
-DUTY_CYCLE=${DUTY_CYCLE:-0}	#0=off, other = delay in seconds
-
-SPI_RESET=${SPI_RESET:-0}		#0=off, other = delay in seconds
-USB_RESET=${USB_RESET:-0}		#0=off, other = delay in seconds
-REBOOT=${REBOOT:-0}			#0=off, other = delay in seconds
+# Suggestion for PI HAT + MDT users
+# DUTY_CYCLE=150 
+DUTY_CYCLE=${DUTY_CYCLE:-0}    #0=off, other = delay in seconds
 
 function check_duty_cycle { 
-    if [ -e /tmp/pump_loop_success ]; then
-        DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y /tmp/pump_loop_success))
-        if [ "$SPI_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$SPI_RESET" ]; then 
-            # try to reset usb to fix potential communication problems causing loop fails
-            SPI_RESET_DIFF=$SPI_RESET
-            if [ -e /tmp/spi_reset ]; then 
-                SPI_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/spi_reset))
-            fi
-
-            if [ "$SPI_RESET_DIFF" -ge "$SPI_RESET" ]; then
-                # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
-                echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset spi... "
-                rmmod spi_bcm2835 2>&3 >&4
-                sleep 1
-                modprobe spi_bcm2835 2>&3 >&4
-                touch /tmp/spi_reset
-                echo "$(date '+%Y-%m-%d %H:%M:%S') SPI Reset" >> /var/log/openaps/hard_reset.log
-                echo " done. --> start new cycle."
-                return 0 #return to loop routine
-            fi
-        fi
-
-        if [ "$USB_RESET" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$USB_RESET" ]; then 
-            # try to reset usb to fix potential communication problems causing loop fails
-            USB_RESET_DIFF=$USB_RESET
-            if [ -e /tmp/usb_power_cycled ]; then 
-                USB_RESET_DIFF=$(expr $(date +%s) - $(stat -c %Y /tmp/usb_power_cycled))
-            fi
-            
-            if [ "$USB_RESET_DIFF" -ge "$USB_RESET" ]; then
-                # file is old --> power-cycling is long time ago (most probably not this round) --> power-cycling
-                echo -n "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> try to reset usb... "
-                /usr/local/bin/oref0-reset-usb 2>&3 >&4
-                touch /tmp/usb_power_cycled
-                echo "$(date '+%Y-%m-%d %H:%M:%S') USB Reset" >> /var/log/openaps/hard_reset.log
-                echo " done. --> start new cycle."
-                return 0 #return to loop routine
-            fi
-        fi
-
-        if [ "$REBOOT" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$REBOOT" ]; then
-            # if usb reset doesn't help or is not enabled --> reboot system
-            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> emergency reboot."
-            echo "$(date '+%Y-%m-%d %H:%M:%S') reboot system" >> /var/log/openaps/hard_reset.log
-            sudo shutdown -r now
-            exit 0
+    DUTY_CYCLE_FILE="/tmp/pump_loop_start"
+    LOOP_SUCCESS_FILE="/tmp/pump_loop_success"
+    if [ -e "$DUTY_CYCLE_FILE" ]; then
+        DIFF_SECONDS=$(expr $(date +%s) - $(stat -c %Y $DUTY_CYCLE_FILE))
+        DIFF_NEXT_SECONDS=$(expr $DIFF_SECONDS + 30)
+        if [ -e "$LOOP_SUCCESS_FILE" ]; then
+            DIFF_SUCCESS=$(expr $(stat -c %Y $DUTY_CYCLE_FILE) - $(stat -c %Y $LOOP_SUCCESS_FILE))
+        else
+            # didn't find the loop success file --> start new cycle
+            DIFF_SUCCESS=1
         fi
         
-        if [ "$DUTY_CYCLE" -gt "0" ] && [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
-            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
-            return 0
-        elif [ "$DUTY_CYCLE" -eq "0" ]; then
-            #fast exit if duty cycling is disabled
-            #echo "duty cycling disabled; start loop"
-            return 0   
+        if [ "$DUTY_CYCLE" -gt "0" ]; then
+            if [ "$DIFF_SUCCESS" -gt "0" ]; then
+                # fast return if last loop was unsuccessful
+                echo "Last loop was not successful --> start new cycle."
+                return 0
+            elif [ "$DIFF_SECONDS" -gt "$DUTY_CYCLE" ]; then 
+                touch "$DUTY_CYCLE_FILE"
+                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> start new cycle."
+                return 0
+            elif [ "$DIFF_NEXT_SECONDS" -gt "$DUTY_CYCLE" ]; then
+                WAIT=$(expr $DUTY_CYCLE - $DIFF_SECONDS)
+                echo -n "Wait for $WAIT seconds till duty cylce starts... "
+                # we want to avoid wait since it keeps the CPU busy
+                sleep $WAIT
+                touch "$DUTY_CYCLE_FILE"
+                echo "start new cycle."
+                return 0
+            else 
+                echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
+                exit 0
+            fi
         else
-            echo "$DIFF_SECONDS (of $DUTY_CYCLE) since last run --> stop now."
-            exit 0
+            #fast return if duty cycling is disabled
+            #echo "duty cycling disabled; start loop"
+            return 0 
         fi
-    elif [ "$SPI_RESET" -gt "0" ] || [ "$USB_RESET" -gt "0" ] || [ "$REBOOT" -gt "0" ] || [ "$DUTY_CYCLE" -gt "0" ]; then
-        echo "/tmp/pump_loop_success does not exist; create it to start the loop duty cycle."
+    elif [ "$DUTY_CYCLE" -gt "0" ]; then
+        echo "$DUTY_CYCLE_FILE does not exist; create it to start the loop duty cycle."
         # do not use timestamp from system uptime, since this could result in a endless reboot loop...
-        touch /tmp/pump_loop_success
+        touch "$DUTY_CYCLE_FILE"
         return 0
     fi
 }
@@ -421,8 +381,10 @@ function smb_bolus {
     file_is_recent enact/smb-suggested.json \
     && if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # press ESC four times on the pump to exit Bolus Wizard before SMBing, to help prevent A52 errors
-        echo -n "Sending ESC ESC ESC ESC to exit any open menus before SMBing "
-        try_return mdt -f internal button esc esc esc esc 2>&3 \
+        echo -n "Sending ESC ESC, ESC ESC ESC ESC to exit any open menus before SMBing "
+        try_return mdt -f internal button esc esc 2>&3 \
+        && sleep 0.5s \
+        && try_return mdt -f internal button esc esc esc esc 2>&3 \
         && echo -n "and bolusing " && jq .units enact/smb-suggested.json | nonl && echo " units" \
         && ( try_return mdt bolus enact/smb-suggested.json 2>&3 && jq '.  + {"received": true}' enact/smb-suggested.json > enact/bolused.json ) \
         && rm -rf enact/smb-suggested.json
@@ -497,73 +459,28 @@ function prep {
     [ -f /sys/kernel/debug/gpio_debug/gpio110/current_pinmux ] && echo mode0 > /sys/kernel/debug/gpio_debug/gpio110/current_pinmux
 }
 
+# requests new cgm values from enlite sensor if configured as cgm
 function if_mdt_get_bg {
     echo -n
     if [ "$(get_pref_string .cgm '')" == "mdt" ]; then
         echo \
         && echo Attempting to retrieve MDT CGM data from pump
-        #due to sometimes the pump is not in a state to give this command repeat until it completes
-        #"decocare.errors.DataTransferCorruptionError: Page size too short"
-        n=0
-        until [ $n -ge 3 ]; do
-            openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&3 >&4 && break
-            echo
-            echo CGM data retrieval from pump disrupted, retrying in 5 seconds...
-            n=$[$n+1]
-            sleep 5;
-            echo Reattempting to retrieve MDT CGM data
-        done
-        if [ -f "monitor/cgm-mm-glucosedirty.json" ]; then
-            if [ -f "cgm/glucose.json" ]; then
-                if [ $(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json)) == $(to_epochtime $(jq .[0].display_time monitor/glucose.json)) ]; then
-                    echo MDT CGM data retrieved \
-                    && echo No new MDT CGM data to reformat \
-                    && echo
-                    # TODO: remove if still unused at next oref0 release
-                    # if you want to wait for new bg uncomment next lines and add a backslash after echo above
-                    #&& wait_for_mdt_get_bg \
-                    #&& mdt_get_bg
-                else
-                    mdt_get_bg
-                fi
-            else
-                mdt_get_bg
-            fi
-        else
-            echo "Unable to get cgm data from pump"
-        fi
+        retry_fail mdt_get_bg 
+        echo MDT CGM data retrieved
     fi
 }
-# TODO: remove if still unused at next oref0 release
-function wait_for_mdt_get_bg {
-    # This might not really be needed since very seldom does a loop take less time to run than CGM Data takes to refresh.
-    until [ $(to_epochtime @$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json)) + 300))) -lt $(epochtime_now) ]; do
-        CGMDIFFTIME=$(( $(to_epochtime @$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes)) + 300))) - $(epochtime_now) ))
-        echo "Last CGM Time was $(date -d $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes) +"%r") wait untill $(date --date="@$(($(to_epochtime $(jq .[1].date monitor/cgm-mm-glucosedirty.json |noquotes)) + 300))" +"%r")to continue"
-        echo "waiting for $CGMDIFFTIME seconds before continuing"
-        sleep $CGMDIFFTIME
-        until openaps report invoke monitor/cgm-mm-glucosedirty.json 2>&3 >&4; do
-            echo cgm data from pump disrupted, retrying in 5 seconds...
-            sleep 5;
-            echo -n MDT cgm data retrieve
-        done
-    done
-}
+
+# helper function for if_mdt_get_bg
 function mdt_get_bg {
-    openaps report invoke monitor/cgm-mm-glucosetrend.json 2>&3 >&4 \
-    && openaps report invoke cgm/cgm-glucose.json 2>&3 >&4 \
-    && grep -q glucose cgm/cgm-glucose.json \
-    && echo MDT CGM data retrieved \
-    && cp -pu cgm/cgm-glucose.json cgm/glucose.json \
-    && cp -pu cgm/glucose.json monitor/glucose-unzoned.json \
-    && echo -n MDT New cgm data reformat \
-    && openaps report invoke monitor/glucose.json 2>&3 >&4 \
-    && openaps report invoke nightscout/glucose.json 2>&3 >&4 \
-    && echo ted
+        oref0-mdt-update 2>&1 | tee -a /var/log/openaps/cgm-loop.log >&3
 }
+
 # make sure we can talk to the pump and get a valid model number
 function preflight {
     echo -n "Preflight "
+    # re-create directories if they got manually deleted
+    mkdir -p settings
+    mkdir -p monitor
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
     ( check_model || check_model ) 2>&3 >&4 \
     && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo -n "(x12 models do not support SMB safety checks, SMB will not be available.) ") ) \
@@ -581,29 +498,11 @@ function mmtune {
     echo -n "Listening for $upto45s s silence before mmtuning: "
     wait_for_silence $upto45s
 
-    echo {} > monitor/mmtune.json
-    echo -n "mmtune: " && mmtune_Go >&3 2>&3
-    # if mmtune.json is empty, re-run it and display output
-    if ! [ -s monitor/mmtune.json ]; then
-        mmtune_Go
-    fi
-    #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
-    #but only if it's not the default frequency
-    if ! $([ -s monitor/mmtune.json ] && jq -e .usedDefault monitor/mmtune.json); then
-      freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
-      while [ ${#freq} -ne 9 ];
-        do
-         freq=$freq"0"
-        done
-      #Make sure we don't zero out the medtronic frequency. It will break everything.
-      if [ $freq != "000000000" ] ; then
-	   MEDTRONIC_FREQUENCY=$freq && echo $freq > monitor/medtronic_frequency.ini
-      fi
-    fi
+    oref0-mmtune
+
+    MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
+
     #Determine how long to wait, based on the RSSI value of the best frequency
-    grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
-        do echo -n "$line "
-    done
     rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | tail -1 | awk '($1 < -60) {print -($1+60)*2}')
     if [[ $rssi_wait -gt 1 ]]; then
         if [[ $rssi_wait -gt 90 ]]; then
@@ -740,7 +639,7 @@ function refresh_old_pumphistory {
 function refresh_old_profile {
     file_is_recent_and_min_size settings/profile.json 60 && echo -n "Profile less than 60m old; " \
         || { echo -n "Old settings: " && get_settings; }
-    if [ -s settings/profile.json ] && jq -e .current_basal settings/profile.json >&3; then
+    if valid_pump_settings; then
         echo -n "Profile valid. "
     else
         echo -n "Profile invalid: "
@@ -751,30 +650,38 @@ function refresh_old_profile {
 
 # get-settings report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json
 function get_settings {
+    SUCCESS=1
     if grep -q 12 settings/model.json
     then
         # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
         # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
-        retry_return check_model 2>&3 >&4 || return 1
-        retry_return read_insulin_sensitivities 2>&3 >&4 || return 1
-        retry_return read_carb_ratios 2>&3 >&4 || return 1
-        retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || return 1
-	#NON_X12_ITEMS=""
+        [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
     else
         # On all other supported pumps, we should be able to get all the data we need from the pump.
-        retry_return check_model 2>&3 >&4 || return 1
-        retry_return read_insulin_sensitivities 2>&3 >&4 || return 1
-        retry_return read_carb_ratios 2>&3 >&4 || return 1
-        retry_return read_bg_targets 2>&3 >&4 || return 1
-        retry_return read_basal_profile 2>&3 >&4 || return 1
-        retry_return read_settings 2>&3 >&4 || return 1
-        retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || return 1
+        [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_bg_targets 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_basal_profile 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return read_settings 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
 #        NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
     fi
 #    retry_return openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
 
+    # If there was a failure, force a full refresh on the next loop
+    if [[ $SUCCESS -eq 0 ]]; then
+        echo "pump profile refresh unsuccessful; trying again on next loop"
+        touch -d "1 hour ago" settings/settings.json
+        touch -d "1 hour ago" settings/profile.json
+        return 1
+    fi
+
     # generate settings/pumpprofile.json without autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json settings/autotune.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
+    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     if [ -s settings/pumpprofile.json.new ] && jq -e .current_basal settings/pumpprofile.json.new >&4; then
         mv settings/pumpprofile.json.new settings/pumpprofile.json
         echo -n "Pump profile refreshed; "
@@ -909,11 +816,7 @@ function glucose-fresh {
 #}
 
 function setglucosetimestamp {
-    if grep "MDT cgm" openaps.ini 2>&3 >&4; then
-      touch -d "$(date -R -d @$(jq .[0].date/1000 nightscout/glucose.json))" monitor/glucose.json
-    else
-      touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
-    fi
+    touch -d "$(date -R -d @$(jq .[0].date/1000 monitor/glucose.json))" monitor/glucose.json
 }
 
 #These are replacements for pump control functions which call ecc1's mdt and medtronic repositories
@@ -934,14 +837,6 @@ function check_status() {
     mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | colorize_json .status
   fi
 }
-function mmtune_Go() {
-  set -o pipefail
-  if ( grep "WW" pump.ini ); then
-    Go-mmtune -ww | tee monitor/mmtune.json
-  else
-    Go-mmtune | tee monitor/mmtune.json
-  fi
-}
 function check_clock() {
   set -o pipefail
   mdt clock 2>&3 | tee monitor/clock-zoned.json >&4 && grep -q T monitor/clock-zoned.json
@@ -952,7 +847,7 @@ function check_battery() {
 }
 function check_tempbasal() {
   set -o pipefail
-  mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp >&4 && cp monitor/temp_basal.json monitor/last_temp_basal.json
+  mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp | grep absolute >&4 && cp monitor/temp_basal.json monitor/last_temp_basal.json
 }
 
 # clear and refresh the 24h pumphistory file approximatively every 6 hours.
@@ -962,7 +857,7 @@ function pumphistory_daily_refresh() {
     dateCutoff=$(to_epochtime "33 hours ago")
     echo "Daily refresh if $lastRecordTimestamp < $dateCutoff " >&3
     if [[ -z "$lastRecordTimestamp" || "$lastRecordTimestamp" == *"null"* || $(to_epochtime $lastRecordTimestamp) -le $dateCutoff ]]; then
-            echo -n "Pumphistory >33h long: " && read_full_pumphistory
+            echo -n "Pumphistory >33h long: " && retry_return read_full_pumphistory
     fi
 }
 
@@ -993,6 +888,7 @@ function read_pumphistory() {
     fi
   fi
 }
+
 function compare_with_fullhistory() {
   set -o pipefail
   rm monitor/full-pumphistory-24h-zoned.json
@@ -1011,6 +907,26 @@ function compare_with_fullhistory() {
     cp monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned.json.$timestamp
   fi
 }
+
+function valid_pump_settings() {
+  SUCCESS=1
+
+  [[ $SUCCESS -eq 1 ]] && valid_insulin_sensitivities >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid insulin_sensitivites.json"; SUCCESS=0; }
+  [[ $SUCCESS -eq 1 ]] && valid_carb_ratios >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid carb_ratios.json"; SUCCESS=0; }
+
+  if ! grep -q 12 settings/model.json; then
+    [[ $SUCCESS -eq 1 ]] && valid_bg_targets >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid bg_targets.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_basal_profile >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid basal_profile.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_settings >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid settings.json"; SUCCESS=0; }
+  fi
+
+  if [[ $SUCCESS -eq 0 ]]; then
+    return 1
+  else
+    return 0
+  fi
+}
+
 function read_full_pumphistory() {
   set -o pipefail
   rm monitor/pumphistory-24h-zoned.json
@@ -1022,24 +938,48 @@ function read_full_pumphistory() {
 }
 function read_bg_targets() {
   set -o pipefail
-  mdt targets 2>&3 | tee settings/bg_targets_raw.json && cat settings/bg_targets_raw.json | jq .units
+  mdt targets 2>&3 | tee settings/bg_targets_raw.json && valid_bg_targets
+}
+function valid_bg_targets() {
+  set -o pipefail
+  local FILE="${1:-settings/bg_targets_raw.json}"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e "mg/dL" -e "mmol"
 }
 function read_insulin_sensitivities() {
   set -o pipefail
-  mdt sensitivities 2>&3 | tee settings/insulin_sensitivities_raw.json \
-    && cat settings/insulin_sensitivities_raw.json | jq .units
+  mdt sensitivities 2>&3 | tee settings/insulin_sensitivities_raw.json && valid_insulin_sensitivities
+}
+function valid_insulin_sensitivities() {
+  set -o pipefail
+  local FILE="${1:-settings/insulin_sensitivities_raw.json}"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e "mg/dL" -e "mmol"
 }
 function read_basal_profile() {
   set -o pipefail
-  mdt basal 2>&3 | tee settings/basal_profile.json && cat settings/basal_profile.json | jq .[0].start
+  mdt basal 2>&3 | tee settings/basal_profile.json && valid_basal_profile
+}
+function valid_basal_profile() {
+  set -o pipefail
+  local FILE="${1:-settings/basal_profile.json}"
+  [ -s $FILE ] && cat $FILE | jq .[0].start | grep "00:00:00"
 }
 function read_settings() {
   set -o pipefail
-  mdt settings 2>&3 | tee settings/settings.json && cat settings/settings.json | jq .maxBolus
+  mdt settings 2>&3 | tee settings/settings.json && valid_settings
+}
+function valid_settings() {
+  set -o pipefail
+  local FILE="${1:-settings/settings.json}"
+  [ -s $FILE ] && cat $FILE | jq .maxBolus | grep -e "[0-9]\+"
 }
 function read_carb_ratios() {
   set -o pipefail
-  mdt carbratios 2>&3 | tee settings/carb_ratios.json && cat settings/carb_ratios.json | jq .units
+  mdt carbratios 2>&3 | tee settings/carb_ratios.json && valid_carb_ratios
+}
+function valid_carb_ratios() {
+  set -o pipefail
+  local FILE="${1:-settings/carb_ratios.json}"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e grams -e exchanges
 }
 
 retry_fail() {

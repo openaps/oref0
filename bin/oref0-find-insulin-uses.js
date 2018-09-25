@@ -18,22 +18,24 @@
 
 */
 
-var find_insulin = require('oref0/lib/iob/history');
-function usage ( ) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json>');
-}
+var find_insulin = require('../lib/iob/history');
 
 if (!module.parent) {
-  var iob_input = process.argv[2]
-  if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
-    usage( );
-    process.exit(0)
-  }
-  var profile_input = process.argv[3]
-  var clock_input = process.argv[4]
+  var argv = require('yargs')
+    .usage('$0 <pumphistory.json> <profile.json>')
+    .demand(2)
+    .strict(true)
+    .help('help');
 
-  if (!iob_input || !profile_input) {
-    usage( );
+  var params = argv.argv;
+  var inputs = params._;
+
+  var iob_input = inputs[0];
+  var profile_input = inputs[1];
+
+  if (inputs.length > 2) {
+    argv.showHelp();
+    console.error("Too many arguments");
     process.exit(1);
   }
 

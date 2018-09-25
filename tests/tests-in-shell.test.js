@@ -8,7 +8,13 @@ var fs = require("fs");
 var path = require("path");
 var child_process = require("child_process");
 
+before(function() {
+    this.timeout(120000);
+});
+
 describe("shell-script tests", function() {
+    this.timeout(120000);
+
     var bashUnitTestFiles = [];
     fs.readdirSync("tests").forEach(function(filename) {
         if(filename.endsWith(".sh"))
@@ -18,12 +24,17 @@ describe("shell-script tests", function() {
     bashUnitTestFiles.forEach(function(testFile) {
         it(testFile, function() {
             var utilProcess = child_process.spawnSync(testFile, [], {
-                timeout: 1000, //milliseconds
+                timeout: 120000, //milliseconds
                 encoding: "UTF-8",
             });
             
+            //console.error("=================");
+            //console.error(testFile);
+            //console.error("=================");
+            //console.error(testFile + "stdout: \n", utilProcess.stdout);
+            //console.error(testFile + "stderr: \n", utilProcess.stderr);
             //console.error(utilProcess.error);
-            should.equal(utilProcess.status, 0, "Bash unit test returned failure: run " + testFile + " manualy for details.");
+            should.equal(utilProcess.status, 0, "Bash unit test returned failure: run " + testFile + " manually for details.");
         });
     });
 });
