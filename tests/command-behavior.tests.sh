@@ -68,7 +68,7 @@ test-ns-status () {
 
     # Make sure output has enacted data
     cat stdout_output | jq ".openaps.enacted.deliverAt" | grep -q "2018-09-05T14:52:02.138Z" || fail_test "ns-status reported incorrect suggested deliverAt value"
-    
+
     # Make sure output has battery data
     cat stdout_output | jq ".pump.battery.voltage" | grep -q 1.56 || fail_test "ns-status reported incorrect pump battery value."
 
@@ -465,7 +465,7 @@ test-set-local-temptarget () {
 }
 
 generate_test_files () {
-    
+
     # Make a fake preferences.json to test the commands that extract values from it
     cat >preferences.json <<EOT
         {
