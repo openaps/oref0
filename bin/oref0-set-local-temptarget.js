@@ -14,23 +14,23 @@
 
 */
 
-function usage ( ) {
-    console.log('usage: ', process.argv[1], '<target> <duration> [starttime]');
-    console.log('example: ', process.argv[1], '110 60');
-    console.log('example: ', process.argv[1], '120 30 2017-10-18:00:15:00.000Z');
-}
-
 if (!module.parent) {
-    var target = process.argv[2];
-    var duration = process.argv[3];
-    var start = process.argv[4];
+    var argv = require('yargs')
+      .usage('$0 <target> <duration> [<startime>]\nexample: $0 110 60\nexample: $0 120 30 2017-10-18:00:15:00.000Z')
+      // error and show help if some other args given
+      .strict(true)
+      .help('help');
 
-    if ([null, '--help', '-h', 'help'].indexOf(target) > 0) {
-        usage( );
-        process.exit(0)
-    }
-    if (!target || !duration) {
-        usage( )
+    var params = argv.argv;
+    var inputs = params._;
+
+    var target = inputs[0];
+    var duration = inputs[1];
+    var start = inputs[2];
+
+    if (inputs.length < 2 || inputs.length > 3) {
+        argv.showHelp();
+        console.error('Incorrect number of arguments');
         process.exit(1);
     }
 
@@ -43,7 +43,6 @@ if (!module.parent) {
     } else {
         temptarget.created_at = new Date();
     }
-
 
     console.log(JSON.stringify(temptarget));
 }
