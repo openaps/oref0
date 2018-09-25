@@ -97,7 +97,10 @@ main() {
 
 function update_display {
     # TODO: install this globally
-    if [ -e /root/src/openaps-menu/scripts/status.js ]; then
+    if [ -e /root/src/openaps-menu/scripts/status.sh ]; then
+        /root/src/openaps-menu/scripts/status.sh
+    elif [ -e /root/src/openaps-menu/scripts/status.js ]; then
+        echo "Updating HAT Display..."
         node /root/src/openaps-menu/scripts/status.js
     fi
 }
