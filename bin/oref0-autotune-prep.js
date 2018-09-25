@@ -88,7 +88,7 @@ if (!module.parent) {
     profile_data.curve = pumpprofile_data.curve;
 
     // if not tuning the insulinEndTime and insulinPeakTime, then use data from pump profile
-    if (!tune_insulin_curve) {
+    if (!params['tune-insulin-curve']) {
       profile_data.dia = pumpprofile_data.dia;
       profile_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
     }
