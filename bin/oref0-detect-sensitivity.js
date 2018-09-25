@@ -15,9 +15,9 @@
   THE SOFTWARE.
 */
 
-var basal = require('oref0/lib/profile/basal');
-var get_iob = require('oref0/lib/iob');
-var detect = require('oref0/lib/determine-basal/autosens');
+var basal = require('../lib/profile/basal');
+var get_iob = require('../lib/iob');
+var detect = require('../lib/determine-basal/autosens');
 
 if (!module.parent) {
     var argv = require('yargs')

@@ -14,9 +14,9 @@
 
 */
 
-var find_insulin = require('oref0/lib/temps');
-var find_bolus = require('oref0/lib/bolus');
-var describe_pump = require('oref0/lib/pump');
+var find_insulin = require('../lib/temps');
+var find_bolus = require('../lib/bolus');
+var describe_pump = require('../lib/pump');
 
 if (!module.parent) {
   var argv = require('yargs')
