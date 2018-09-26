@@ -111,17 +111,6 @@ test-autotune-core () {
     cat stderr_output | grep -q CRTotalCarbs || fail_test "oref0-autotune-core didn't contain expected stderr output"
 
     # Make sure output has accurate carb ratio data
-    cat stdout_output | jq .dia | grep -q 8 || fail_test "oref0-autotune-core didn't contain expected dia output"
-    cat stdout_output | jq .insulinPeakTime | grep -q 90 || fail_test "oref0-autotune-core didn't contain expected insulinPeakTime output"
-
-    # Run autotune-core and capture output
-    ../bin/oref0-autotune-core.js --tune-insulin-curve autotune.data.json profile.json pumpprofile.json 2>stderr_output 1>stdout_output
-
-    ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
-    ERROR_LINES=$( cat stderr_output )
-    cat stderr_output | grep -q CRTotalCarbs || fail_test "oref0-autotune-core didn't contain expected stderr output"
-
-    # Make sure output has accurate carb ratio data
     cat stdout_output | jq .dia | grep -q 7 || fail_test "oref0-autotune-core didn't contain expected dia output"
     cat stdout_output | jq .insulinPeakTime | grep -q 85 || fail_test "oref0-autotune-core didn't contain expected insulinPeakTime output"
 

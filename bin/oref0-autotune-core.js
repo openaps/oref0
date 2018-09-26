@@ -25,13 +25,7 @@ var stringify = require('json-stable-stringify');
 
 if (!module.parent) {
     var argv = require('yargs')
-        .usage("$0 [--tune-insulin-curve] <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>")
-        .option('tune-insulin-curve', {
-          alias: 't',
-          describe: "Tune insulin curve",
-          boolean: true,
-          default: false
-        })
+        .usage("$0 <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>")
         .demand(3)
         .strict(true)
         .help('help');
@@ -53,8 +47,10 @@ if (!module.parent) {
         return console.error("Could not parse input data: ", e);
     }
 
-    // if not tuning the insulinEndTime and insulinPeakTime, then use data from pump profile
-    if (!params["tune-insulin-curve"]) {
+    // Pump profile has an up to date copy of useCustomPeakTime from preferences
+    // If the preferences file has useCustomPeakTime use the previous autotune dia and PeakTime.
+    // Otherwise, use data from pump profile.
+    if (!pumpprofile_data.useCustomPeakTime) {
       previous_autotune_data.dia = pumpprofile_data.dia;
       previous_autotune_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
     }
