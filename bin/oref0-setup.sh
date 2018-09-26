@@ -703,8 +703,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         )
     fi
 
+    cp preferences.json old_preferences.json
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
-        cp preferences.json old_preferences.json
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
         preferences_from_args=()
@@ -724,8 +724,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             preferences_from_args+="\"min_5m_carbimpact\":$min_5m_carbimpact "
         fi
         function join_by { local IFS="$1"; shift; echo "$*"; }
-        echo "{ $(join_by , ${preferences_from_args[@]}) }" > preferences_from_args.json
-        oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
+        # merge existing prefrences with preferences from arguments. (preferences from arguments take precedence)
+        echo "{ $(join_by , ${preferences_from_args[@]}) }" | jq --slurpfile existing_prefs preferences.json '$existing_prefs[0] + .' > updated_preferences.json
+        oref0-get-profile --updatePreferences updated_preferences.json > preferences.json && rm updated_preferences.json || die "Could not run oref0-get-profile"
     fi
 
     # Save information to preferences.json
