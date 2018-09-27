@@ -1,6 +1,6 @@
 ---
 name: "\U0001F198Individual troubleshooting help"
-about: Getting help with your own individual setup
+about: Getting help with your own individual setup - let's hop into Gitter at https://gitter.im/nightscout/intend-to-bolus
 
 ---
 
