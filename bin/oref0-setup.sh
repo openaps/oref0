@@ -1119,8 +1119,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/pancreabble.json
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
-    echo Running: openaps report add enact/suggested.json text shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
-    openaps report add enact/suggested.json text shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
 
     if is_edison; then
         sudo apt-get -y -t jessie-backports install jq
