@@ -84,6 +84,17 @@ if (!module.parent) {
         }
     }
 
+    // get insulin curve from pump profile that is maintained
+    profile_data.curve = pumpprofile_data.curve;
+
+    // Pump profile has an up to date copy of useCustomPeakTime from preferences
+    // If the preferences file has useCustomPeakTime use the previous autotune dia and PeakTime.
+    // Otherwise, use data from pump profile.
+    if (!pumpprofile_data.useCustomPeakTime) {
+      profile_data.dia = pumpprofile_data.dia;
+      profile_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
+    }
+
     try {
         var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
     } catch (e) {

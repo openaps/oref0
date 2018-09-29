@@ -47,6 +47,14 @@ if (!module.parent) {
         return console.error("Could not parse input data: ", e);
     }
 
+    // Pump profile has an up to date copy of useCustomPeakTime from preferences
+    // If the preferences file has useCustomPeakTime use the previous autotune dia and PeakTime.
+    // Otherwise, use data from pump profile.
+    if (!pumpprofile_data.useCustomPeakTime) {
+      previous_autotune_data.dia = pumpprofile_data.dia;
+      previous_autotune_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
+    }
+
     var inputs = {
         preppedGlucose: prepped_glucose_data
       , previousAutotune: previous_autotune_data
