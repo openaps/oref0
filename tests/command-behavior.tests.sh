@@ -220,7 +220,7 @@ test-detect-sensitivity () {
     cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
 
     # Make sure output has ratio
-    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-determine-sensitivity did not report correct sensitivity"
+    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-detect-sensitivity did not report correct sensitivity"
 
     # Run detect-sensitivity with carbhistory and capture output
     ../bin/oref0-detect-sensitivity.js glucose.json pumphistory_zoned.json insulin_sensitivities.json basal_profile.json profile.json carbhistory.json 2>stderr_output 1>stdout_output
@@ -230,7 +230,7 @@ test-detect-sensitivity () {
     cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
 
     # Make sure output has ratio
-    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-determine-sensitivity did not report correct sensitivity"
+    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-detect-sensitivity did not report correct sensitivity"
 
     # Run oref0-detect-sensitivity with carbhistory and temptargets and capture output
     ../bin/oref0-detect-sensitivity.js glucose.json pumphistory_zoned.json insulin_sensitivities.json basal_profile.json profile.json carbhistory.json temptargets.json 2>stderr_output 1>stdout_output
@@ -240,7 +240,7 @@ test-detect-sensitivity () {
     cat stderr_output | grep -q "ISF adjusted from 100 to 100" || fail_test "oref0-detect-sensitivity error: \n$ERROR_LINES"
 
     # Make sure output has ratio
-    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-determine-sensitivity did not report correct sensitivity"
+    cat stdout_output | jq ".ratio" | grep -q "1" || fail_test "oref0-detect-sensitivity did not report correct sensitivity"
 
     # If we made it here, the test passed
     echo "oref0-detect-sensitivites test passed"
@@ -258,7 +258,7 @@ test-determine-basal () {
     cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-determine-basal did not report correct reason"
 
     # Run determine-basal with options
-    ../bin/oref0-determine-basal.js --reservoir reservoir.json iob.json --currentTime "2018-09-05T09:44:11-05:00" temp_basal.json glucose.json --auto-sens autosens.json profile.json meal.json 2>stderr_output 1>stdout_output
+    ../bin/oref0-determine-basal.js --reservoir reservoir.json iob.json --currentTime "2018-09-05T09:44:11-05:00" temp_basal.json glucose.json --auto-sens autosens.json profile.json --meal meal.json 2>stderr_output 1>stdout_output
 
     # Make sure stderr output contains expected time
     ERROR_LINES=$( cat stderr_output )
@@ -266,16 +266,6 @@ test-determine-basal () {
 
     # Make sure output has reason
     cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-determine-basal with options did not report correct reason"
-
-    # Run determine-basal with alternate methods of arguments
-    ../bin/oref0-determine-basal.js iob.json temp_basal.json glucose.json profile.json autosens.json meal.json 2>stderr_output 1>stdout_output
-
-    # Make sure stderr output contains expected time
-    ERROR_LINES=$( cat stderr_output )
-    cat stderr_output | jq .time | grep -q "2018-09-05T14:44:11.000Z" || fail_test "oref0-determine-basal with alternate options error: \n$ERROR_LINES"
-
-    # Make sure output has reason
-    cat stdout_output | jq ".reason" | grep -q "BG data is too old" || fail_test "oref0-determine-basal with alternate options did not report correct reason"
 
     # If we made it here, the test passed
     echo "oref0-determine-basal test passed"
