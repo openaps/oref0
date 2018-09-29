@@ -97,7 +97,10 @@ main() {
 
 function update_display {
     # TODO: install this globally
-    if [ -e /root/src/openaps-menu/scripts/status.js ]; then
+    if [ -e /root/src/openaps-menu/scripts/status.sh ]; then
+        /root/src/openaps-menu/scripts/status.sh
+    elif [ -e /root/src/openaps-menu/scripts/status.js ]; then
+        echo "Updating HAT Display..."
         node /root/src/openaps-menu/scripts/status.js
     fi
 }
@@ -210,7 +213,6 @@ function smb_reservoir_before {
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
         oref0-set-device-clocks
-        read_full_pumphistory
        fi
     (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
     && (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
@@ -412,13 +414,7 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-        if glucose-fresh; then
-            refresh_pumphistory_and_meal || return 1
-        else
-            # if we don't have a new BG waiting for us yet, do a full pumphistory refresh
-            # to fix any race conditions introduced by incremental refreshes
-            retry_return read_full_pumphistory || return 1
-        fi
+	refresh_pumphistory_and_meal || return 1
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
@@ -646,7 +642,7 @@ function refresh_old_pumphistory {
 function refresh_old_profile {
     file_is_recent_and_min_size settings/profile.json 60 && echo -n "Profile less than 60m old; " \
         || { echo -n "Old settings: " && get_settings; }
-    if [ -s settings/profile.json ] && jq -e .current_basal settings/profile.json >&3; then
+    if valid_pump_settings; then
         echo -n "Profile valid. "
     else
         echo -n "Profile invalid: "
@@ -662,7 +658,7 @@ function get_settings {
     then
         # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
         # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
-        retry_return check_model 2>&3 >&4 || SUCCESS=0
+        [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
         [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
         [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
         [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
@@ -870,30 +866,70 @@ function pumphistory_daily_refresh() {
 
 function read_pumphistory() {
   set -o pipefail
-  topRecordTimestamp=$(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json 2>&3)
-  echo "Quering pump for history since: $topRecordTimestamp" >&3
-  if [[ -z "$topRecordTimestamp" || "$topRecordTimestamp" == *"null"* ]]; then
+  topRecordId=$(jq -r '.[0].id' monitor/pumphistory-24h-zoned.json 2>&3)
+  echo "Quering pump for history since: $topRecordId" >&3
+  if [[ -z "$topRecordId" || "$topRecordId" == *"null"* ]]; then
     read_full_pumphistory
   else
-    # FIXME: the following logic queries the pump for all records since the
-    # timestamp of the top record in the existing history file.
-    # This might miss some records if the pump clock has been moved forward.
-    # A better approach might to get all reconds until that top record
-    # has been found and matched exactly by it's base64 data or some other identifier
-    # other than the timestamp.
-    # The logic could be improved once the pumphistory command support this feature.
     echo -n "Pump history update"
     try_fail mv monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json
-    if ((pumphistory -s $topRecordTimestamp  2>&3 | jq -f openaps.jq 2>&3 ) && cat monitor/pumphistory-24h-zoned-old.json) | jq -s '.[0] + .[1]'  > monitor/pumphistory-24h-zoned.json; then
-        try_fail rm monitor/pumphistory-24h-zoned-old.json
-        echo -n "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json); "
+    if ((pumphistory -f $topRecordId  2>&3 | jq -f openaps.jq 2>&3 ) && cat monitor/pumphistory-24h-zoned-old.json) | jq -s '.[0] + .[1]'  > monitor/pumphistory-24h-zoned.json; then
+      newRecords=$(jq -s '(.[0] | length) - (.[1] | length)' monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json)
+      try_fail rm monitor/pumphistory-24h-zoned-old.json
+      echo -n "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json) with ${newRecords} new records; "
+      #compare_with_fullhistory;
     else
+      # exit status 2 means we didn't find the topRecordId in the pump, we should request a full history refresh.
+      exit_status=$?
+      if [ $exit_status -eq 2 ]; then
+        read_full_pumphistory
+      else
         try_fail mv monitor/pumphistory-24h-zoned-old.json monitor/pumphistory-24h-zoned.json
         echo " failed. Last record $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
         return 1
+      fi
     fi
   fi
 }
+
+function compare_with_fullhistory() {
+  set -o pipefail
+  rm monitor/full-pumphistory-24h-zoned.json
+  echo -n "Full history for testing refresh" \
+  && ((( pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee monitor/full-pumphistory-24h-zoned.json 2>&3 >&4 ) \
+      && echo -n ed) \
+     || (echo " failed. "; return 1)) \
+  && echo " through $(jq -r '.[0].timestamp' monitor/full-pumphistory-24h-zoned.json)"
+  match=$(jq --slurpfile full monitor/full-pumphistory-24h-zoned.json --slurpfile inc monitor/pumphistory-24h-zoned.json -n '([($inc[] | length), ($full[] | length)] | min) as $len | $len <= 0 or $inc[][0:$len] == $full[][0:$len]')
+  if [ "$match" = "true" ] ; then
+    echo "Incremental pump history matches full history"
+  else
+    timestamp=`date +%Y-%m-%d.%H:%M:%S`
+    echo "ERROR! Incremental pump history does NOT matches full history, saving monitor/full-pumphistory-24h-zoned.json.$timestamp and monitor/pumphistory-24h-zoned.json.$timestamp"
+    cp monitor/full-pumphistory-24h-zoned.json monitor/full-pumphistory-24h-zoned.json.$timestamp
+    cp monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned.json.$timestamp
+  fi
+}
+
+function valid_pump_settings() {
+  SUCCESS=1
+
+  [[ $SUCCESS -eq 1 ]] && valid_insulin_sensitivities >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid insulin_sensitivites.json"; SUCCESS=0; }
+  [[ $SUCCESS -eq 1 ]] && valid_carb_ratios >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid carb_ratios.json"; SUCCESS=0; }
+
+  if ! grep -q 12 settings/model.json; then
+    [[ $SUCCESS -eq 1 ]] && valid_bg_targets >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid bg_targets.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_basal_profile >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid basal_profile.json"; SUCCESS=0; }
+    [[ $SUCCESS -eq 1 ]] && valid_settings >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid settings.json"; SUCCESS=0; }
+  fi
+
+  if [[ $SUCCESS -eq 0 ]]; then
+    return 1
+  else
+    return 0
+  fi
+}
+
 function read_full_pumphistory() {
   set -o pipefail
   rm monitor/pumphistory-24h-zoned.json
@@ -905,24 +941,48 @@ function read_full_pumphistory() {
 }
 function read_bg_targets() {
   set -o pipefail
-  mdt targets 2>&3 | tee settings/bg_targets_raw.json && cat settings/bg_targets_raw.json | jq .units | grep -e "mg/dL" -e "mmol"
+  mdt targets 2>&3 | tee settings/bg_targets_raw.json && valid_bg_targets
+}
+function valid_bg_targets() {
+  set -o pipefail
+  local FILE="${1:-settings/bg_targets_raw.json}"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e "mg/dL" -e "mmol"
 }
 function read_insulin_sensitivities() {
   set -o pipefail
-  mdt sensitivities 2>&3 | tee settings/insulin_sensitivities_raw.json \
-    && cat settings/insulin_sensitivities_raw.json | jq .units | grep -e "mg/dL" -e "mmol"
+  mdt sensitivities 2>&3 | tee settings/insulin_sensitivities_raw.json && valid_insulin_sensitivities
+}
+function valid_insulin_sensitivities() {
+  set -o pipefail
+  local FILE="${1:-settings/insulin_sensitivities_raw.json}"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e "mg/dL" -e "mmol"
 }
 function read_basal_profile() {
   set -o pipefail
-  mdt basal 2>&3 | tee settings/basal_profile.json && cat settings/basal_profile.json | jq .[0].start | grep "00:00:00"
+  mdt basal 2>&3 | tee settings/basal_profile.json && valid_basal_profile
+}
+function valid_basal_profile() {
+  set -o pipefail
+  local FILE="${1:-settings/basal_profile.json}"
+  [ -s $FILE ] && cat $FILE | jq .[0].start | grep "00:00:00"
 }
 function read_settings() {
   set -o pipefail
-  mdt settings 2>&3 | tee settings/settings.json && cat settings/settings.json | jq .maxBolus | grep -e "[0-9]\+"
+  mdt settings 2>&3 | tee settings/settings.json && valid_settings
+}
+function valid_settings() {
+  set -o pipefail
+  local FILE="${1:-settings/settings.json}"
+  [ -s $FILE ] && cat $FILE | jq .maxBolus | grep -e "[0-9]\+"
 }
 function read_carb_ratios() {
   set -o pipefail
-  mdt carbratios 2>&3 | tee settings/carb_ratios.json && cat settings/carb_ratios.json | jq .units | grep -e grams -e exchanges
+  mdt carbratios 2>&3 | tee settings/carb_ratios.json && valid_carb_ratios
+}
+function valid_carb_ratios() {
+  set -o pipefail
+  local FILE="${1:-settings/carb_ratios.json}"
+  [ -s $FILE ] && cat $FILE | jq .units | grep -e grams -e exchanges
 }
 
 retry_fail() {

@@ -164,7 +164,7 @@ function upload_ns_status {
     grep -q iob monitor/iob.json || die "IOB not found"
     # set the timestamp on enact/suggested.json to match the deliverAt time
     touch -d $(cat enact/suggested.json | jq .deliverAt | sed 's/"//g') enact/suggested.json
-    if ! file_is_recent_and_min_size enact/suggested.json; then
+    if ! file_is_recent_and_min_size enact/suggested.json 10; then
         echo -n "No recent suggested.json found; last updated "
         ls -la enact/suggested.json | awk '{print $6,$7,$8}'
         return 1

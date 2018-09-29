@@ -19,25 +19,27 @@
 
 */
 
-var generate = require('oref0/lib/meal');
-function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [carbhistory.json]');
-}
+var generate = require('../lib/meal');
 
 if (!module.parent) {
-    var pumphistory_input = process.argv[2];
-    if ([null, '--help', '-h', 'help'].indexOf(pumphistory_input) > 0) {
-      usage( );
-      process.exit(0)
-    }
-    var profile_input = process.argv[3];
-    var clock_input = process.argv[4];
-    var glucose_input = process.argv[5];
-    var basalprofile_input = process.argv[6];
-    var carb_input = process.argv[7]
+    var argv = require('yargs')
+      .usage('$0 <pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [<carbhistory.json>]')
+      // error and show help if some other args given
+      .strict(true)
+      .help('help');
 
-    if (!pumphistory_input || !profile_input || !clock_input || !glucose_input || !basalprofile_input) {
-        usage( );
+    var params = argv.argv;
+    var inputs = params._;
+
+    var pumphistory_input = inputs[0];
+    var profile_input = inputs[1];
+    var clock_input = inputs[2];
+    var glucose_input = inputs[3];
+    var basalprofile_input = inputs[4];
+    var carb_input = inputs[5];
+
+    if (inputs.length < 5 || inputs.length > 6) {
+        argv.showHelp();
         console.log('{ "carbs": 0, "reason": "Insufficient arguments" }');
         process.exit(1);
     }
