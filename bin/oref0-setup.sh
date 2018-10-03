@@ -258,8 +258,7 @@ function add_to_crontab () {
 function request_stop_local_binary () {
     if [[ -x /usr/local/bin/$1 ]]; then
         if pgrep -x $1 > /dev/null; then
-            read -p "Need to stop $1 to complete installation. OK? [Y]N" -r
-            if [[ $REPLY =~ ^[^Nn]*$ ]]; then
+            if prompt_yn "Need to stop $1 to complete installation. OK?" y; then
                 pgrep -x $1 | xargs kill
             fi
         fi
