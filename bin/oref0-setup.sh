@@ -1333,7 +1333,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         #    (crontab -l; crontab -l | grep -q "DEXCOM_CGM_TX_ID=" || echo DEXCOM_CGM_TX_ID=$DEXCOM_CGM_TX_ID) | crontab -
         #fi
         # deduplicate to avoid multiple instances of $GOPATH in $PATH
-        echo $PATH
+        #echo $PATH
         dedupe_path;
         echo $PATH
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
