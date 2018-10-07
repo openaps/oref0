@@ -1341,7 +1341,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             '@reboot' \
             "cd $directory && oref0-cron-post-reboot"
         add_to_crontab \
-            "oref0-nightly" \
+            "oref0-cron-nightly" \
             "5 4 * * *" \
             "cd $directory && oref0-cron-nightly"
         add_to_crontab \
