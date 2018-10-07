@@ -703,8 +703,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         )
     fi
 
+    cp preferences.json old_preferences.json
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
-        cp preferences.json old_preferences.json
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
         preferences_from_args=()
@@ -724,23 +724,36 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             preferences_from_args+="\"min_5m_carbimpact\":$min_5m_carbimpact "
         fi
         function join_by { local IFS="$1"; shift; echo "$*"; }
-        echo "{ $(join_by , ${preferences_from_args[@]}) }" > preferences_from_args.json
-        oref0-get-profile --updatePreferences preferences_from_args.json > preferences.json && rm preferences_from_args.json || die "Could not run oref0-get-profile"
+        # merge existing prefrences with preferences from arguments. (preferences from arguments take precedence)
+        echo "{ $(join_by , ${preferences_from_args[@]}) }" | jq --slurpfile existing_prefs preferences.json '$existing_prefs[0] + .' > updated_preferences.json
+        oref0-get-profile --updatePreferences updated_preferences.json > preferences.json && rm updated_preferences.json || die "Could not run oref0-get-profile"
     fi
 
     # Save information to preferences.json
     set_pref_string .nightscout_host "$NIGHTSCOUT_HOST"
     set_pref_string .nightscout_api_secret "$API_SECRET"
     set_pref_string .cgm "${CGM,,}"
-    set_pref_string .bt_peb "$BT_PEB"
-    set_pref_string .bt_mac "$BT_MAC"
     set_pref_string .enable "$ENABLE"
     set_pref_string .ttyport "$ttyport"
-    set_pref_string .pushover_token "$PUSHOVER_TOKEN"
-    set_pref_string .pushover_user "$PUSHOVER_USER"
     set_pref_string .myopenaps_path "$directory"
-    set_pref_string .cgm_loop_path "$directory-cgm-loop"
-    set_pref_string .xdrip_path "$HOME/.xDripAPS"
+    if [[ ! -z "$BT_PEB" ]]; then
+        set_pref_string .bt_peb "$BT_PEB"
+    fi
+    if [[ ! -z "$BT_MAC" ]]; then
+        set_pref_string .bt_mac "$BT_MAC"
+    fi
+    if [[ ! -z "$PUSHOVER_TOKEN" ]]; then
+        set_pref_string .pushover_token "$PUSHOVER_TOKEN"
+    fi
+    if [[ ! -z "$PUSHOVER_USER" ]]; then
+        set_pref_string .pushover_user "$PUSHOVER_USER"
+    fi
+    if [[ ${CGM,,} =~ "g4-upload" ]]; then
+        set_pref_string .cgm_loop_path "$directory-cgm-loop"
+    fi
+    if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
+        set_pref_string .xdrip_path "$HOME/.xDripAPS"
+    fi
     #if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
         #set_pref_string .dexcom_cgm_tx_id "$DEXCOM_CGM_TX_ID"
     #fi
@@ -1340,7 +1353,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             '@reboot' \
             "cd $directory && oref0-cron-post-reboot"
         add_to_crontab \
-            "oref0-nightly" \
+            "oref0-cron-nightly" \
             "5 4 * * *" \
             "cd $directory && oref0-cron-nightly"
         add_to_crontab \
