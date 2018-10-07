@@ -1124,7 +1124,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd $directory || die "Can't cd $directory"
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/autotune.json
         sudo locale-gen en_US.UTF-8
-        sudo update-locale 
+        sudo update-locale
     fi
 
     #Setup files for editing on the x12, and replace get-settings alias
@@ -1142,17 +1142,17 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     oref0-log-shortcuts --add-to-profile="$HOME/.bash_profile"
 
     # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
-    echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile
-    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.bash_profile
-    (cat $HOME/.bash_profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile)
+    #echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile
+    #sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.bash_profile
+    #(cat $HOME/.bash_profile | grep -q "NIGHTSCOUT_HOST" || echo export NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile)
     if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
       API_HASHED_SECRET=${API_SECRET}
     else
       API_HASHED_SECRET=$(nightscout hash-api-secret $API_SECRET)
     fi
     # Check if API_SECRET exists, if so remove all lines containing API_SECRET and add the new API_SECRET to the end of the file
-    sed --in-place '/.*API_SECRET.*/d' $HOME/.bash_profile
-    (cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="$API_HASHED_SECRET" >> $HOME/.profile)
+    #sed --in-place '/.*API_SECRET.*/d' $HOME/.bash_profile
+    #(cat $HOME/.profile | grep -q "API_SECRET" || echo export API_SECRET="$API_HASHED_SECRET" >> $HOME/.profile)
 
     # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile for API_SECRET and NIGHTSCOUT_HOST, because a shell will look
     # for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from
@@ -1161,6 +1161,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
       sed --in-place '/.*API_SECRET.*/d' $HOME/.profile
       sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.profile
     fi
+
+    # Delete old copies of variables before replacing them
+    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.bash_profile
+    sed --in-place '/.*API_SECRET.*/d' $HOME/.bash_profile
+    sed --in-place '/.*DEXCOM_CGM_RECV_ID*/d' $HOME/.bash_profile
+    #sed --in-place '/.*DEXCOM_CGM_TX_ID*/d' $HOME/.bash_profile
 
     # Then append the variables
     echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
@@ -1171,7 +1177,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export DEXCOM_CGM_RECV_ID" >> $HOME/.bash_profile
     #echo DEXCOM_CGM_TX_ID="$DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     #echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
-    echo 
+    echo
 
     #Check to see if Explorer HAT is present, and install all necessary stuff
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &> /dev/null || [[ "$ttyport" =~ "spidev0.0" ]]; then
@@ -1212,16 +1218,19 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             fi
         fi
         if ! grep GOROOT $HOME/.bash_profile; then
+            sed --in-place '/.*GOROOT*/d' $HOME/.bash_profile
             echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
             echo 'export GOROOT' >> $HOME/.bash_profile
         fi
         if ! grep GOPATH $HOME/.bash_profile; then
+            sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
             echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
             echo 'export GOPATH' >> $HOME/.bash_profile
             echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
             echo 'export PATH' >> $HOME/.bash_profile
         fi
       else
+            sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
             echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
             echo 'export PATH' >> $HOME/.bash_profile
       fi
