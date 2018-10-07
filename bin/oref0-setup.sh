@@ -733,15 +733,27 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     set_pref_string .nightscout_host "$NIGHTSCOUT_HOST"
     set_pref_string .nightscout_api_secret "$API_SECRET"
     set_pref_string .cgm "${CGM,,}"
-    set_pref_string .bt_peb "$BT_PEB"
-    set_pref_string .bt_mac "$BT_MAC"
     set_pref_string .enable "$ENABLE"
     set_pref_string .ttyport "$ttyport"
-    set_pref_string .pushover_token "$PUSHOVER_TOKEN"
-    set_pref_string .pushover_user "$PUSHOVER_USER"
     set_pref_string .myopenaps_path "$directory"
-    set_pref_string .cgm_loop_path "$directory-cgm-loop"
-    set_pref_string .xdrip_path "$HOME/.xDripAPS"
+    if [[ ! -z "$BT_PEB" ]]; then
+        set_pref_string .bt_peb "$BT_PEB"
+    fi
+    if [[ ! -z "$BT_MAC" ]]; then
+        set_pref_string .bt_mac "$BT_MAC"
+    fi
+    if [[ ! -z "$PUSHOVER_TOKEN" ]]; then
+        set_pref_string .pushover_token "$PUSHOVER_TOKEN"
+    fi
+    if [[ ! -z "$PUSHOVER_USER" ]]; then
+        set_pref_string .pushover_user "$PUSHOVER_USER"
+    fi
+    if [[ ${CGM,,} =~ "g4-upload" ]]; then
+        set_pref_string .cgm_loop_path "$directory-cgm-loop"
+    fi
+    if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
+        set_pref_string .xdrip_path "$HOME/.xDripAPS"
+    fi
     #if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
         #set_pref_string .dexcom_cgm_tx_id "$DEXCOM_CGM_TX_ID"
     #fi
