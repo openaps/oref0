@@ -20,81 +20,70 @@ var determine_basal = require('../lib/determine-basal/determine-basal');
 /* istanbul ignore next */
 if (!module.parent) {
     var argv = require('yargs')
-      .usage("$0 iob.json currenttemp.json glucose.json profile.json [[--auto-sens] autosens.json] [meal.json] [--reservoir reservoir.json] --currentTime [currentTime]")
+      .usage("$0 <iob.json> <currenttemp.json> <glucose.json> <profile.json> [--auto-sens <autosens.json>] [--meal <meal.json>] [--reservoir <reservoir.json>] [--currentTime <currentTime>]")
       .option('auto-sens', {
         alias: 'a',
+        nargs: 1,
         describe: "Auto-sensitivity configuration",
-        default: true
-
+        default: false
       })
       .option('currentTime', {
         alias: 'c',
+        nargs: 1,
         describe: "Override current time (for R&D only - disables safety checks)",
         default: false
-
       })
       .option('reservoir', {
         alias: 'r',
+        nargs: 1,
         describe: "Reservoir status file for SuperMicroBolus mode (oref1)",
         default: false
-
       })
       .option('meal', {
+        alias: 'm',
+        nargs: 1,
         describe: "json doc describing meals",
-        default: true
-
+        default: false
       })
       .option('missing-auto-sens-ok', {
         describe: "If auto-sens data is missing, try anyway.",
+        boolean: true,
         default: true
-
       })
       .option('missing-meal-ok', {
         describe: "If meal data is missing, try anyway.",
+        boolean: true,
         default: true
-
       })
       .option('microbolus', {
         describe: "Enable SuperMicroBolus mode (oref1)",
+        boolean: true,
         default: false
-
       })
       // error and show help if some other args given
+      .demand(4)
       .strict(true)
       .help('help')
     ;
-    function usage ( ) {
-      argv.showHelp( );
-    }
 
     var params = argv.argv;
+    var inputs = params._;
     var errors = [ ];
     var warnings = [ ];
 
-    var iob_input = params._[0];
-    if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
+    if (inputs.length > 4) {
+      argv.showHelp( );
+      console.error('Too many arguments');
+      process.exit(1);
+    }
 
-      usage( );
-      process.exit(0)
-    }
-    var currenttemp_input = params._[1];
-    var glucose_input = params._[2];
-    var profile_input = params._[3];
-    var meal_input = params._[4];
-    var autosens_input = params.autoSens;
-    if (params._.length > 5) {
-      autosens_input = params.autoSens ? params._[4] : false;
-      meal_input = params._[5];
-    }
-    if (params.meal && params.meal !== true && !meal_input) {
-      meal_input = params.meal;
-    }
+    var iob_input = inputs[0];
+    var currenttemp_input = inputs[1];
+    var glucose_input = inputs[2];
+    var profile_input = inputs[3];
+    var meal_input = params.meal;
+    var autosens_input = params['auto-sens'];
     var reservoir_input = params.reservoir;
-
-    if (!iob_input || !currenttemp_input || !glucose_input || !profile_input) {
-        usage( );
-        process.exit(1);
-    }
 
     var fs = require('fs');
     try {
@@ -116,12 +105,12 @@ if (!module.parent) {
     //printing microbolus before attempting check
     //console.error("Microbolus var is currently set to: ",params['microbolus']);
 
-    if (params['microbolus']) {
+    if (params.microbolus) {
         if (fs.existsSync("autotune")) {
             console.error("Autotune exists! Hoorah! You can use microbolus-related features.")
         } else {
             console.error("Warning: Autotune has not been run. All microboluses will be disabled until you manually run autotune or add it to run nightly in your loop.");
-            params['microbolus'] = false;
+            params.microbolus = false;
             //console.error("Microbolus var is currently set to: ",params['microbolus']);
         }
     }
