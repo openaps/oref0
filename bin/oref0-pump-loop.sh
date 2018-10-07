@@ -532,39 +532,6 @@ function maybe_mmtune {
     fi
 }
 
-
-# listen for $1 seconds of silence (no other rigs talking to pump) before continuing
-function wait_for_silence {
-    if grep "carelink" pump.ini 2>&1 >/dev/null; then
-    echo "using carelink; not waiting for silence"
-        return
-    fi
-    if [ -z $1 ]; then
-        waitfor=$upto45s
-    else
-        waitfor=$1
-    fi
-    # check radio multiple times, and mmtune if all checks fail
-    #disabling radio check because I can't figure this part out yet
-#    ( ( out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-#      ( echo -n .; sleep 1; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-#      ( echo -n .; sleep 2; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-#      ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-#      ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) )
-#    ) 2>&1 | tail -2 \
-#        && echo -n "Radio ok. " || { echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune; }
-    echo -n "Listening: "
-    for i in $(seq 1 800); do
-        echo -n .
-        # returns true if it hears pump comms, false otherwise
-        if ! listen -t $waitfor's' 2>&4 ; then
-            echo "No interfering pump comms detected from other rigs (this is a good thing!)"
-            echo -n "Continuing oref0-pump-loop at "; date
-            break
-        fi
-    done
-}
-
 # Refresh pumphistory etc.
 function refresh_pumphistory_and_meal {
     retry_return check_status 2>&3 >&4 || return 1
