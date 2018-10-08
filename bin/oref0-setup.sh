@@ -641,9 +641,8 @@ fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
-echocolor -n "Continue? y/[N] "
-read -r
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+echocolor -n "Continue?"
+if prompt_yn "" N; then
 
     # Having the loop run in the background during setup slows things way down and lengthens the time before first loop
     service cron stop
