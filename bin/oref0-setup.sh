@@ -695,6 +695,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -n "Cloning oref0: "
         (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
     fi
+    # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
+    if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
+        echo Upgrading to node 8
+        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
+        sudo apt-get install -y nodejs || die "Couldn't install nodejs"
+    fi
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
