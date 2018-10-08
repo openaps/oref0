@@ -106,9 +106,9 @@
     "yargs": "^12.0.1"
   },
   "devDependencies": {
-    "coveralls": "^2.11.12",
+    "coveralls": "^3.0.2",
     "istanbul": "^0.4.4",
-    "mocha": "^2.3.3",
+    "mocha": "^5.2.0",
     "mocha-lcov-reporter": "^1.2.0",
     "should": "^7.1.0"
   },
