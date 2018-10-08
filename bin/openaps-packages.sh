@@ -18,8 +18,8 @@ sudo apt-get install -y git python python-dev software-properties-common python-
 
 # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
 if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
-        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8" 
-        sudo apt-get install -y nodejs || die "Couldn't install nodejs" 
+        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
+        sudo apt-get install -y nodejs || die "Couldn't install nodejs"
         ## You may also need development tools to build native addons:
         ##sudo apt-get install gcc g++ make
 fi
