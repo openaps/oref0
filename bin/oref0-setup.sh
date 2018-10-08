@@ -263,6 +263,31 @@ function add_to_crontab () {
     (crontab -l; crontab -l |grep -q "$1" || echo "$2" "$3") | crontab -
 }
 
+function request_stop_local_binary () {
+    if [[ -x /usr/local/bin/$1 ]]; then
+        if pgrep -x $1 > /dev/null; then
+            if prompt_yn "Need to stop $1 to complete installation. OK?" y; then
+                pgrep -x $1 | xargs kill
+            fi
+        fi
+    fi
+}
+
+function copy_go_binaries () {
+    for gobinary in $HOME/go/bin/*; do
+        request_stop_local_binary `basename $gobinary`
+    done
+    request_stop_local_binary Go-mmtune
+
+    cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
+}
+
+function move_mmtune () {
+    request_stop_local_binary Go-mmtune
+    mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || echo "Couldn't move mmtune to Go-mmtune"
+}
+
+
 if ! validate_cgm "${CGM}"; then
     DIR="" # to force a Usage prompt
 fi
@@ -355,7 +380,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       if [[ $REPLY =~ ^[Ss]$ ]]; then
         buildgofromsource=true
         echo "Building Go pump binaries from source"
-        read -p "What type of radio do you use? [1] for CC1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r
+        read -p "What type of radio do you use? [1] for cc1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r
         if [[ $REPLY =~ ^[1]$ ]]; then
           radiotags="cc1101"
         elif [[ $REPLY =~ ^[2]$ ]]; then
@@ -1111,8 +1136,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/pancreabble.json
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
-    echo Running: openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
-    openaps report add enact/suggested.json text determine-basal shell monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json
 
     if is_edison; then
         sudo apt-get -y -t jessie-backports install jq
@@ -1260,8 +1283,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
           #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
           #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
-          cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
-          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || echo "Couldn't move mmtune to Go-mmtune"
           ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
         else
           arch=arm-spi
@@ -1275,9 +1296,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
           wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
           echo "Installing Go pump binaries ..."
           ln -sf $HOME/go/bin/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
-          cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
-          mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || echo "Couldn't move mmtune to Go-mmtune"
         fi
+
+        copy_go_binaries
+        move_mmtune
     fi
     if [[ ${CGM,,} =~ "g4-go" ]]; then
         if [ ! -d $HOME/go/bin ]; then mkdir -p $HOME/go/bin; fi
@@ -1298,8 +1320,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo "Downloading Go dexcom binaries from:" $downloadUrl
             wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go dexcom binaries"
         fi
-        cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
-        mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || echo "Couldn't move mmtune to Go-mmtune"
+
+        copy_go_binaries
+        move_mmtune
     fi
 
     #if [[ "$ttyport" =~ "spi" ]]; then

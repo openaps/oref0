@@ -205,7 +205,7 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     retry_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
-    echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
+    wait_for_silence $upto10s
     retry_fail check_clock
     echo -n "Checking that pump clock: "
     (cat monitor/clock-zoned.json; echo) | nonl
@@ -234,7 +234,7 @@ function smb_check_everything {
     if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # wait_for_silence and retry if first attempt fails
         ( smb_verify_suggested || smb_suggest ) \
-        && echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s \
+        && wait_for_silence $upto10s \
         && smb_verify_reservoir \
         && smb_verify_status \
         || ( echo Retrying SMB checks
@@ -268,9 +268,9 @@ function smb_suggest {
 function determine_basal {
     cat monitor/meal.json
     if ( grep -q 12 settings/model.json ); then
-      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
+      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json --auto-sens settings/autosens.json --meal monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
-      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
+      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json --auto-sens settings/autosens.json --meal monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
     fi
     cp -up enact/smb-suggested.json enact/suggested.json
 }
@@ -530,39 +530,6 @@ function maybe_mmtune {
         wait_for_silence $upto45s
         mmtune
     fi
-}
-
-
-# listen for $1 seconds of silence (no other rigs talking to pump) before continuing
-function wait_for_silence {
-    if grep "carelink" pump.ini 2>&1 >/dev/null; then
-    echo "using carelink; not waiting for silence"
-        return
-    fi
-    if [ -z $1 ]; then
-        waitfor=$upto45s
-    else
-        waitfor=$1
-    fi
-    # check radio multiple times, and mmtune if all checks fail
-    #disabling radio check because I can't figure this part out yet
-#    ( ( out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-#      ( echo -n .; sleep 1; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-#      ( echo -n .; sleep 2; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-#      ( echo -n .; sleep 4; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) ) || \
-#      ( echo -n .; sleep 8; out=$(any_pump_comms 1) ; echo $out | grep -qi comms || (echo $out; false) )
-#    ) 2>&1 | tail -2 \
-#        && echo -n "Radio ok. " || { echo -n "Radio check failed. "; any_pump_comms 1 2>&1 | tail -1; mmtune; }
-    echo -n "Listening: "
-    for i in $(seq 1 800); do
-        echo -n .
-        # returns true if it hears pump comms, false otherwise
-        if ! listen -t $waitfor's' 2>&4 ; then
-            echo "No interfering pump comms detected from other rigs (this is a good thing!)"
-            echo -n "Continuing oref0-pump-loop at "; date
-            break
-        fi
-    done
 }
 
 # Refresh pumphistory etc.
