@@ -21,7 +21,6 @@ Valid commands:
   oref0 get-profile
   oref0 calculate-iob
   oref0 meal
-  oref0 determine-basal
   oref0 export-loop [backup-loop.json] - Print a backup json representation of
                                          entire configuration. Optionally, if a
                                          filename is specified, listing is

@@ -205,7 +205,7 @@ function smb_reservoir_before {
     # Refresh reservoir.json and pumphistory.json
     retry_fail refresh_pumphistory_and_meal
     try_fail cp monitor/reservoir.json monitor/lastreservoir.json
-    echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s
+    wait_for_silence $upto10s
     retry_fail check_clock
     echo -n "Checking that pump clock: "
     (cat monitor/clock-zoned.json; echo) | nonl
@@ -234,7 +234,7 @@ function smb_check_everything {
     if (grep -q '"units":' enact/smb-suggested.json 2>&3); then
         # wait_for_silence and retry if first attempt fails
         ( smb_verify_suggested || smb_suggest ) \
-        && echo -n "Listening for $upto10s s silence: " && wait_for_silence $upto10s \
+        && wait_for_silence $upto10s \
         && smb_verify_reservoir \
         && smb_verify_status \
         || ( echo Retrying SMB checks
@@ -268,9 +268,9 @@ function smb_suggest {
 function determine_basal {
     cat monitor/meal.json
     if ( grep -q 12 settings/model.json ); then
-      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
+      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json --auto-sens settings/autosens.json --meal monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
-      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
+      oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json --auto-sens settings/autosens.json --meal monitor/meal.json --microbolus --reservoir monitor/reservoir.json > enact/smb-suggested.json
     fi
     cp -up enact/smb-suggested.json enact/suggested.json
 }
@@ -903,7 +903,11 @@ function read_full_pumphistory() {
   echo -n "Full history refresh" \
   && ((( pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee monitor/pumphistory-24h-zoned.json 2>&3 >&4 ) \
       && echo -n ed) \
-     || (echo " failed. "; return 1)) \
+     || (
+        echo " failed. "
+        rm monitor/pumphistory-24h-zoned.json
+        return 1
+        )) \
   && echo " through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
 }
 function read_bg_targets() {
