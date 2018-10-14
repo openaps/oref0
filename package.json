@@ -96,19 +96,19 @@
   "homepage": "https://github.com/openaps/oref0",
   "dependencies": {
     "crypto": "0.0.3",
-    "lodash": "^4.15.0",
-    "moment": "^2.14.1",
-    "request": "^2.79.0",
-    "share2nightscout-bridge": "^0.1.5",
+    "json": "^9.0.6",
+    "json-stable-stringify": "^1.0.1",
+    "lodash": "^4.17.11",
+    "moment": "^2.22.2",
     "moment-timezone": "0.5.11",
-    "yargs": "~4.3.2",
-    "json": "~9.0.4",
-    "json-stable-stringify": "^1.0.1"
+    "request": "^2.88.0",
+    "share2nightscout-bridge": "git://github.com/nightscout/share2nightscout-bridge.git#wip/generalize",
+    "yargs": "^12.0.1"
   },
   "devDependencies": {
-    "coveralls": "^2.11.12",
+    "coveralls": "^3.0.2",
     "istanbul": "^0.4.4",
-    "mocha": "^2.3.3",
+    "mocha": "^5.2.0",
     "mocha-lcov-reporter": "^1.2.0",
     "should": "^7.1.0"
   },
