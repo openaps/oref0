@@ -28,7 +28,7 @@ var fs = require('fs');
 if (!module.parent) {
 
     var argv = require('yargs')
-        .usage("$0 ns-glucose.json NSURL API-SECRET")
+        .usage("$0 ns-glucose.json NSURL API-SECRET <hours>")
         .strict(true)
         .help('help');
 
@@ -49,6 +49,12 @@ if (!module.parent) {
 
     var nsurl = params._.slice(1, 2).pop();
     var apisecret = params._.slice(2, 3).pop();
+    var hours = Number(params._.slice(3, 4).pop());
+    var records = 1000;
+
+    if (hours > 0) {
+        records = 12 * hours;
+    }
 
     if (!glucose_input || !nsurl || !apisecret) {
         usage();
@@ -66,8 +72,7 @@ if (!module.parent) {
     var cwd = process.cwd();
     var outputPath = cwd + '/' + glucose_input;
     
-    
-    
+    /*
     function loadFromSpike () {
     
     // try xDrip
@@ -90,15 +95,18 @@ if (!module.parent) {
     });
     
     }
-    
+    */
+
     function loadFromxDrip () {
     
     // try xDrip
     
     var headers = {'api-secret': apisecret};
+
+    var uri = 'http://192.168.43.1:17580/sgv.json?count=' + records;
     
     var options = {
-        uri: 'http://192.168.43.1:17580/sgv.json?count=1000'
+        uri: uri
         , json: true
         , timeout: 10000
         , headers: headers
@@ -150,8 +158,9 @@ if (!module.parent) {
 	    headers["If-Modified-Since"] = lastDate.toISOString();
 	}
 
+    var uri =  nsurl + '/api/v1/entries/sgv.json?count=' + records;
     var options = {
-        uri: nsurl + '/api/v1/entries/sgv.json?count=1000'
+        uri: uri
         , json: true
         , headers: headers
     };

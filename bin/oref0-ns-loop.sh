@@ -49,9 +49,12 @@ function get_ns_bg {
     # update 24h glucose file if it's 55m old or too small to calculate COB
     if ! find cgm/ -mmin -54 | egrep -q cgm/ns-glucose-24h.json \
         || ! grep -c glucose cgm/ns-glucose-24h.json | jq -e '. > 36' >/dev/null; then
-        nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -24hours > cgm/ns-glucose-24h.json
+        #nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -24hours > cgm/ns-glucose-24h.json
+        oref0-get-ns-entries cgm/ns-glucose-24h.json $NIGHTSCOUT_HOST $API_SECRET 24 > cgm/ns-glucose-24h.json
     fi
-    nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -1hour > cgm/ns-glucose-1h.json
+    #nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -1hour > cgm/ns-glucose-1h.json
+    oref0-get-ns-entries cgm/ns-glucose-1h.json $NIGHTSCOUT_HOST $API_SECRET 1 > cgm/ns-glucose-1h.json
+    
     jq -s '.[0] + .[1]|unique|sort_by(.date)|reverse' cgm/ns-glucose-24h.json cgm/ns-glucose-1h.json > cgm/ns-glucose.json
     # if ns-glucose.json data is <10m old, no more than 5m in the future, and valid (>38),
     # copy cgm/ns-glucose.json over to cgm/glucose.json if it's newer
