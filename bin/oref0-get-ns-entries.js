@@ -107,7 +107,7 @@ if (!module.parent) {
     request(options, function(error, res, data) {
     	if (data) {
 //			console.error("CGM results loaded from xDrip");
-			console.log(JSON.stringify(data));
+            processAndOutput(data);
 //	        var fs = require('fs');
 //			fs.writeFileSync(outputPath, JSON.stringify(data));
 		} else {
@@ -164,8 +164,8 @@ if (!module.parent) {
         if (res && (res.statusCode == 200 || res.statusCode == 304)) {
         
 		if (data) {
-			//console.error("fetched CGM results from Nightscout");
-			console.log(JSON.stringify(data));
+            //console.error("fetched CGM results from Nightscout");
+            processAndOutput(data);
 //	        var fs = require('fs');
 //			fs.writeFileSync(outputPath, JSON.stringify(data));
 		} else {
@@ -183,6 +183,16 @@ if (!module.parent) {
 		//process.exit(1);
     });
     
+    }
+
+    function processAndOutput(glucosedata) {
+
+        _.forEach(glucosedata,function findLatest(sgvrecord) {
+            sgvrecord.glucose = sgvrecord.sgv;
+        });
+
+        console.log(JSON.stringify(glucosedata));
+
     }
     
      loadFromNightscout();
