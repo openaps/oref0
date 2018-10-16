@@ -212,10 +212,9 @@ function smb_reservoir_before {
     echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
-	        # Check for bolus in progress
-                smb_verify_status && \
-                # press ESC three times on the pump to exit Bolus Wizard before changing time on pump
-                try_return timerun openaps use pump press_keys esc esc esc | jq .completed | grep true && \
+	# Check for bolus in progress and issue 3xESC to back out of pump bolus menu
+        smb_verify_status && \
+        try_return timerun openaps use pump press_keys esc esc esc | jq .completed | grep true && \
         oref0-set-device-clocks
        fi
     (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
