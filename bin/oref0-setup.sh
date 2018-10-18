@@ -742,8 +742,13 @@ if prompt_yn "" N; then
         fi
         function join_by { local IFS="$1"; shift; echo "$*"; }
         # merge existing prefrences with preferences from arguments. (preferences from arguments take precedence)
-        echo "{ $(join_by , ${preferences_from_args[@]}) }" | jq --slurpfile existing_prefs preferences.json '$existing_prefs[0] + .' > updated_preferences.json
-        oref0-get-profile --updatePreferences updated_preferences.json > preferences.json && rm updated_preferences.json || die "Could not run oref0-get-profile"
+        echo "{ $(join_by , ${preferences_from_args[@]}) }" > arg_prefs.json
+        if [[ -s preferences.json ]]; then
+            cat arg_prefs.json | jq --slurpfile existing_prefs preferences.json '$existing_prefs[0] + .' > updated_prefs.json && rm arg_prefs.json
+        else
+            mv arg_prefs.json updated_prefs.json
+        fi
+        oref0-get-profile --updatePreferences updated_prefs.json > preferences.json && rm updated_prefs.json || die "Could not run oref0-get-profile"
     fi
 
     # Save information to preferences.json
