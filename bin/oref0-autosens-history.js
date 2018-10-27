@@ -162,15 +162,10 @@ if (!module.parent) {
 
 function init() {
 
-    var detectsensitivity = {
+    return /* detectsensitivity */ {
         name: 'detect-sensitivity'
         , label: "OpenAPS Detect Sensitivity"
     };
-
-    //detectsensitivity.getLastGlucose = require('../lib/glucose-get-last');
-    //detectsensitivity.detect_sensitivity = require('../lib/determine-basal/determine-basal');
-    return detectsensitivity;
-
 }
 module.exports = init;
 
@@ -178,13 +173,12 @@ module.exports = init;
 function convertBasal(item)
 {
     var start = item.time.split(":")
-    var convertedBasal = {
+    return {
       "start": item.time + ":00",
       "minutes": parseInt(start[0])*60 + parseInt(start[1]),
       //"minutes": Math.round(item.timeAsSeconds / 60),
       "rate": item.value
   };
-  return convertedBasal;
 }
 
 // From https://gist.github.com/IceCreamYou/6ffa1b18c4c8f6aeaad2
