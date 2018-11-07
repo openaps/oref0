@@ -467,7 +467,7 @@ function wait_for_silence {
         waitfor=$1
     fi
     echo -n "Listening for ${waitfor}s: "
-    for i in $(seq 1 800); do
+    for i in $(seq 1 800||gseq 1 800); do
         echo -n .
         # returns true if it hears pump comms, false otherwise
         if ! listen -t $waitfor's' 2>&4 ; then

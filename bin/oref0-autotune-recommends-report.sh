@@ -90,7 +90,7 @@ minutes_list=()
 end_time=23:30
 time=00:00
 minutes=0
-for h in $(seq -w 0 23); do
+for h in $(seq -w 0 23|gseq -w 0 23); do
     for m in 00 30; do
         time="$h:$m"
         minutes=$(echo "60 * $h + $m" | bc)
