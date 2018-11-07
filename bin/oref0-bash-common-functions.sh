@@ -120,7 +120,7 @@ file_is_recent_and_min_size () {
 }
 
 function mydate {
-    if [[ `uname` == 'Darwin' ]] ; then
+    if [[ `uname` == 'Darwin' -o `uname` == 'FreeBSD' -o `uname` == 'OpenBSD' ]] ; then
         gdate "$@"
     else
         date "$@"

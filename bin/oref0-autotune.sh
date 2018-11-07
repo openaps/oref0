@@ -57,7 +57,7 @@ if [ -n "${API_SECRET_READ}" ]; then
    echo "WARNING: API_SECRET_READ is deprecated starting with oref 0.6.x. The Nightscout authentication information is now used from the API_SECRET environment variable"
 fi
 
-# If we are running OS X, we need to use a different version
+# If we are running OS X or BSD, we need to use a different version
 # of the 'date' command; the built-in 'date' is BSD, which
 # has fewer options than the linux version.  So the user
 # needs to install coreutils, which gives the GNU 'date'
@@ -65,7 +65,7 @@ fi
 
 shopt -s expand_aliases
 
-if [[ `uname` == 'Darwin' ]] ; then
+if [[ `uname` == 'Darwin' -o `uname` == 'FreeBSD' -o `uname` == 'OpenBSD' ]] ; then
     alias date='gdate'
 fi
 
@@ -159,7 +159,7 @@ fi
 cd $directory && mkdir -p autotune
 cp settings/pumpprofile.json autotune/profile.pump.json || die "Cannot copy settings/pumpprofile.json"
 # This allows manual users to be able to run autotune by simply creating a settings/pumpprofile.json file.
-if [[ `uname` == 'Darwin' ]] ; then
+if [[ `uname` == 'Darwin' -o `uname` == 'FreeBSD' -o `uname` == 'OpenBSD' ]] ; then
     cp settings/pumpprofile.json settings/profile.json || die "Cannot copy settings/pumpprofile.json"
 else
     cp -up settings/pumpprofile.json settings/profile.json || die "Cannot copy settings/pumpprofile.json"
