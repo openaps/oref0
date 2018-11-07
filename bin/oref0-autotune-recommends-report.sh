@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script creates a Summary Report of Autotune Recommendations. The report itself is
 # structured in such a way intended to give the end user a quick look at what needs to change

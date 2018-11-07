@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script sets up an easy test environment for autotune, allowing the user to vary parameters 
 # like start/end date.

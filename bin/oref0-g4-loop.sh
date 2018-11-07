@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # main g4-loop
 main() {
     echo

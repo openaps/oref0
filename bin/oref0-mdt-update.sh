@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # updated cgm values from enlite sensors
 # sould be called within pump-loop (and not in a separate loop) to avoid radio blocking issues.
 
