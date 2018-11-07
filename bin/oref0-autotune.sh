@@ -65,7 +65,7 @@ fi
 
 shopt -s expand_aliases
 
-if [[ `uname` == 'Darwin' -o `uname` == 'FreeBSD' -o `uname` == 'OpenBSD' ]] ; then
+if [[ `uname` == 'Darwin' || `uname` == 'FreeBSD' || `uname` == 'OpenBSD' ]] ; then
     alias date='gdate'
 fi
 
@@ -159,7 +159,7 @@ fi
 cd $directory && mkdir -p autotune
 cp settings/pumpprofile.json autotune/profile.pump.json || die "Cannot copy settings/pumpprofile.json"
 # This allows manual users to be able to run autotune by simply creating a settings/pumpprofile.json file.
-if [[ `uname` == 'Darwin' -o `uname` == 'FreeBSD' -o `uname` == 'OpenBSD' ]] ; then
+if [[ `uname` == 'Darwin' || `uname` == 'FreeBSD' || `uname` == 'OpenBSD' ]] ; then
     cp settings/pumpprofile.json settings/profile.json || die "Cannot copy settings/pumpprofile.json"
 else
     cp -up settings/pumpprofile.json settings/profile.json || die "Cannot copy settings/pumpprofile.json"

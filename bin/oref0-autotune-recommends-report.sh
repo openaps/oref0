@@ -27,7 +27,7 @@ LC_NUMERIC=en_US.UTF-8
 # Use alternate date command if on OS X:
 shopt -s expand_aliases
 
-if [[ `uname` == 'Darwin' -o `uname` == 'FreeBSD' -o `uname` == 'OpenBSD' ]] ; then
+if [[ `uname` == 'Darwin' || `uname` == 'FreeBSD' || `uname` == 'OpenBSD' ]] ; then
     alias date='gdate'
 fi
 
