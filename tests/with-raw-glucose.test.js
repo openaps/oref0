@@ -16,6 +16,7 @@ describe('IOB', function ( ) {
 
     entry.glucose.should.equal(110);
     entry.raw.should.equal(113);
+    entry.noise.should.equal(1);
   });
 
   it('should add raw glucose and not mess with sgv from NS', function ( ) {
@@ -25,6 +26,7 @@ describe('IOB', function ( ) {
     should.not.exist(entry.glucose);
     entry.sgv.should.equal(110);
     entry.raw.should.equal(113);
+    entry.noise.should.equal(1);
   });
 
   it('should add raw glucose and set missing glucose', function ( ) {
@@ -33,14 +35,16 @@ describe('IOB', function ( ) {
 
     entry.glucose.should.equal(115);
     entry.raw.should.equal(115);
+    entry.noise.should.equal(2);
   });
 
-  it('should add raw glucose, but not set missing glucose above maxRaw', function ( ) {
+  it('should add raw glucose, but set set noise to 3 when glucose above maxRaw', function ( ) {
     var entry = {unfiltered: 143680, filtered: 141232, noise: 1};
     withRawGlucose(entry, cals, 150);
 
-    should.not.exist(entry.glucose);
+    //should.not.exist(entry.glucose);
     entry.raw.should.equal(154);
+    entry.noise.should.equal(3);
   });
 
   it('should add raw glucose, and set missing glucose when maxRaw is higher', function ( ) {
@@ -49,6 +53,7 @@ describe('IOB', function ( ) {
 
     entry.glucose.should.equal(154);
     entry.raw.should.equal(154);
+    entry.noise.should.equal(2);
   });
 
 });
