@@ -140,7 +140,8 @@ if (!module.parent) {
     var glucosedata;
         
     try {
-        glucosedata = JSON.parse(fs.readFileSync(outputPath,'UTF8'));
+        var fileContent = fs.readFileSync(outputPath,'UTF8');
+        glucosedata = JSON.parse(fileContent);
 
         //var glucosedata = require(outputPath);
         
