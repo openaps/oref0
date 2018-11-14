@@ -97,7 +97,7 @@ if (!module.parent) {
     }
     */
 
-    function loadFromxDrip () {
+    function loadFromxDrip (callback) {
     
     // try xDrip
     
@@ -112,22 +112,27 @@ if (!module.parent) {
         , headers: headers
     };
 
+    console.error("Trying to load CGM data from local xDrip");
+
     request(options, function(error, res, data) {
     	if (data) {
-//			console.error("CGM results loaded from xDrip");
+			console.error("CGM results loaded from xDrip");
             processAndOutput(data);
+            return true;
 //	        var fs = require('fs');
 //			fs.writeFileSync(outputPath, JSON.stringify(data));
 		} else {
-//			console.error("Load from xDrip failed"); //", trying Spike");
+            console.error("Load from xDrip failed", error); //", trying Spike");
+            if (callback) callback();
 //			loadFromSpike();
 		}
-		process.exit(1);
+		//process.exit(1);
     });
     
+    return false;
     }
     
-    function loadFromNightscout() {
+    var nsCallback = function loadFromNightscout() {
     
     // try Nightscout
 
@@ -149,7 +154,7 @@ if (!module.parent) {
         }
         
     } catch (e) {
-        //console.error('Error parsing input', e);
+        console.error('Error parsing glucose input', e);
     }
 
 	var headers = {'api-secret': apisecret};
@@ -173,20 +178,20 @@ if (!module.parent) {
         if (res && (res.statusCode == 200 || res.statusCode == 304)) {
         
 		if (data) {
-            //console.error("fetched CGM results from Nightscout");
+            console.error("Got CGM results from Nightscout");
             processAndOutput(data);
 //	        var fs = require('fs');
 //			fs.writeFileSync(outputPath, JSON.stringify(data));
 		} else {
-//            console.error("Got Not Changed response from Nightscout, assuming no new data is available");
+            console.error("Got Not Changed response from Nightscout, assuming no new data is available");
             // output old file
 
             if (!_.isNil(glucosedata)) { console.log(glucosedata); }
 
 		}
 		} else {
-			//console.error("Load from Nightscout failed, trying local xDrip");
-			loadFromxDrip ();
+			console.error("Load from Nightscout failed", error);
+			//loadFromxDrip ();
 		}
 		
 		//process.exit(1);
@@ -204,6 +209,7 @@ if (!module.parent) {
 
     }
     
-     loadFromNightscout();
+    loadFromxDrip(nsCallback);
+    // loadFromNightscout();
     
 }
