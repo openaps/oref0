@@ -154,7 +154,7 @@ if (!module.parent) {
         }
         
     } catch (e) {
-        console.error('Error parsing glucose input', e);
+        console.error('Error parsing glucose input at ' + outputPath, e);
     }
 
 	var headers = {'api-secret': apisecret};
