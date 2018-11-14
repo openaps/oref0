@@ -50,11 +50,11 @@ function get_ns_bg {
     if ! find cgm/ -mmin -54 | egrep -q cgm/ns-glucose-24h.json \
         || ! grep -c glucose cgm/ns-glucose-24h.json | jq -e '. > 36' >/dev/null; then
         #nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -24hours > cgm/ns-glucose-24h.json
-        cp cgm/ns-glucose-24h.json cgm/cgm/ns-glucose-24h-temp.json
+        cp cgm/ns-glucose-24h.json cgm/ns-glucose-24h-temp.json
         oref0-get-ns-entries cgm/ns-glucose-24h-temp.json $NIGHTSCOUT_HOST $API_SECRET 24 2>&1 >cgm/ns-glucose-24h.json
     fi
     #nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -1hour > cgm/ns-glucose-1h.json
-    cp cgm/ns-glucose-1h.json cgm/cgm/ns-glucose-1h-temp.json
+    cp cgm/ns-glucose-1h.json cgm/ns-glucose-1h-temp.json
     oref0-get-ns-entries cgm/ns-glucose-1h-temp.json $NIGHTSCOUT_HOST $API_SECRET 1 2>&1 >cgm/ns-glucose-1h.json
     
     jq -s '.[0] + .[1]|unique|sort_by(.date)|reverse' cgm/ns-glucose-24h.json cgm/ns-glucose-1h.json > cgm/ns-glucose.json
