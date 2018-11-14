@@ -71,7 +71,7 @@ if (!module.parent) {
 
     var cwd = process.cwd();
     var outputPath = cwd + '/' + glucose_input;
-    
+
     /*
     function loadFromSpike () {
     
@@ -97,120 +97,133 @@ if (!module.parent) {
     }
     */
 
-    function loadFromxDrip (callback) {
-    
-    // try xDrip
-    
-    var headers = {'api-secret': apisecret};
+    function loadFromxDrip(callback) {
 
-    var uri = 'http://192.168.43.1:17580/sgv.json?count=' + records;
-    
-    var options = {
-        uri: uri
-        , json: true
-        , timeout: 10000
-        , headers: headers
-    };
+        // try xDrip
 
-    console.error("Trying to load CGM data from local xDrip");
+        var headers = {
+            'api-secret': apisecret
+        };
 
-    request(options, function(error, res, data) {
-    	if (data) {
-			console.error("CGM results loaded from xDrip");
-            processAndOutput(data);
-            return true;
-//	        var fs = require('fs');
-//			fs.writeFileSync(outputPath, JSON.stringify(data));
-		} else {
-            console.error("Load from xDrip failed", error); //", trying Spike");
-            if (callback) callback();
-//			loadFromSpike();
-		}
-		//process.exit(1);
-    });
-    
-    return false;
+        var uri = 'http://192.168.43.1:17580/sgv.json?count=' + records;
+
+        var options = {
+            uri: uri,
+            json: true,
+            timeout: 10000,
+            headers: headers
+        };
+
+        console.error("Trying to load CGM data from local xDrip");
+
+        request(options, function(error, res, data) {
+            if (data) {
+                console.error("CGM results loaded from xDrip");
+                processAndOutput(data);
+                return true;
+                //	        var fs = require('fs');
+                //			fs.writeFileSync(outputPath, JSON.stringify(data));
+            } else {
+                console.error("Load from xDrip failed", error); //", trying Spike");
+                if (callback) callback();
+                //			loadFromSpike();
+            }
+            //process.exit(1);
+        });
+
+        return false;
     }
-    
+
     var nsCallback = function loadFromNightscout() {
-    
-    // try Nightscout
 
-    var lastDate;
-    var glucosedata;
-        
-    try {
-        var fileContent = fs.readFileSync(outputPath,'UTF8');
-        glucosedata = JSON.parse(fileContent);
+        // try Nightscout
 
-        //var glucosedata = require(outputPath);
-        
-        if (glucosedata.constructor == Array) { //{ throw "Glucose data file doesn't seem to be valid"; }
-            _.forEach(glucosedata,function findLatest(sgvrecord) {
-                var d = new Date(sgvrecord.dateString);
-                if (!lastDate || lastDate < d) {
-                    lastDate = d;
+        var lastDate;
+        var glucosedata;
+
+        fs.readFile(outputPath, 'utf8', function(err, fileContent) {
+
+            if (err) {
+                console.error(err);
+            } else {
+                try {
+                    glucosedata = JSON.parse(fileContent);
+
+                    if (glucosedata.constructor == Array) { //{ throw "Glucose data file doesn't seem to be valid"; }
+                        _.forEach(glucosedata, function findLatest(sgvrecord) {
+                            var d = new Date(sgvrecord.dateString);
+                            if (!lastDate ||  lastDate < d) {
+                                lastDate = d;
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error(e);
                 }
-            });
-        }
-        
-    } catch (e) {
-        console.error('Error parsing glucose input at ' + outputPath, e);
+            }
+            loadFromNightscoutWithDate(lastDate);
+        });
     }
 
-	var headers = {'api-secret': apisecret};
-	
-	if (!_.isNil(lastDate)) {
-	    headers["If-Modified-Since"] = lastDate.toISOString();
-	}
+    function loadFromNightscoutWithDate(lastDate) {
 
-    var uri =  nsurl + '/api/v1/entries/sgv.json?count=' + records;
-    var options = {
-        uri: uri
-        , json: true
-        , headers: headers
-    };
-    
-   // console.error(headers);
+        var headers = {
+            'api-secret': apisecret
+        };
 
-    request(options, function(error, res, data) {
-        //console.error(res);
-        
-        if (res && (res.statusCode == 200 || res.statusCode == 304)) {
-        
-		if (data) {
-            console.error("Got CGM results from Nightscout");
-            processAndOutput(data);
-//	        var fs = require('fs');
-//			fs.writeFileSync(outputPath, JSON.stringify(data));
-		} else {
-            console.error("Got Not Changed response from Nightscout, assuming no new data is available");
-            // output old file
+        if (!_.isNil(lastDate)) {
+            headers["If-Modified-Since"] = lastDate.toISOString();
+        }
 
-            if (!_.isNil(glucosedata)) { console.log(glucosedata); }
+        var uri = nsurl + '/api/v1/entries/sgv.json?count=' + records;
+        var options = {
+            uri: uri,
+            json: true,
+            headers: headers
+        };
 
-		}
-		} else {
-			console.error("Load from Nightscout failed", error);
-			//loadFromxDrip ();
-		}
-		
-		//process.exit(1);
-    });
-    
+        // console.error(headers);
+
+        request(options, function(error, res, data) {
+            //console.error(res);
+
+            if (res && (res.statusCode == 200 ||  res.statusCode == 304)) {
+
+                if (data) {
+                    console.error("Got CGM results from Nightscout");
+                    processAndOutput(data);
+                    //	        var fs = require('fs');
+                    //			fs.writeFileSync(outputPath, JSON.stringify(data));
+                } else {
+                    console.error("Got Not Changed response from Nightscout, assuming no new data is available");
+                    // output old file
+
+                    if (!_.isNil(glucosedata)) {
+                        console.log(glucosedata);
+                    }
+
+                }
+            } else {
+                console.error("Load from Nightscout failed", error);
+                //loadFromxDrip ();
+            }
+
+            //process.exit(1);
+        });
+
     }
 
     function processAndOutput(glucosedata) {
 
-        _.forEach(glucosedata,function findLatest(sgvrecord) {
+        _.forEach(glucosedata, function findLatest(sgvrecord) {
             sgvrecord.glucose = sgvrecord.sgv;
         });
 
         console.log(JSON.stringify(glucosedata));
 
     }
-    
+
     loadFromxDrip(nsCallback);
     // loadFromNightscout();
-    
+
 }
