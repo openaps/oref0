@@ -24,6 +24,7 @@ var crypto = require('crypto');
 var request = require('request');
 var _ = require('lodash');
 var fs = require('fs');
+var network = require('network');
 
 if (!module.parent) {
 
@@ -97,7 +98,7 @@ if (!module.parent) {
     }
     */
 
-    function loadFromxDrip(callback) {
+    function loadFromxDrip(callback,ip) {
 
         // try xDrip
 
@@ -105,7 +106,7 @@ if (!module.parent) {
             'api-secret': apisecret
         };
 
-        var uri = 'http://192.168.43.1:17580/sgv.json?count=' + records;
+        var uri = 'http://' + ip + ':17580/sgv.json?count=' + records; _// 192.168.43.1
 
         var options = {
             uri: uri,
@@ -124,11 +125,15 @@ if (!module.parent) {
                 //	        var fs = require('fs');
                 //			fs.writeFileSync(outputPath, JSON.stringify(data));
             } else {
-                console.error("Load from xDrip failed", error); //", trying Spike");
+                if (error.code == 'ETIMEDOUT') {
+                    console.error('Load from xDrip timed out');
+                }
+                else
+                {
+                    console.error("Load from xDrip failed", error);
+                }
                 if (callback) callback();
-                //			loadFromSpike();
             }
-            //process.exit(1);
         });
 
         return false;
@@ -223,7 +228,12 @@ if (!module.parent) {
 
     }
 
-    loadFromxDrip(nsCallback);
+    network.get_gateway_ip(function(err, ip) {
+        console.error("My router IP is " + ip); // err may be 'No active network interface found.'
+        loadFromxDrip(nsCallback, ip);
+      });
+
+    //loadFromxDrip(nsCallback);
     // loadFromNightscout();
 
 }

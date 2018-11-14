@@ -94,6 +94,7 @@
     "lodash": "^4.17.11",
     "moment": "^2.14.1",
     "moment-timezone": "0.5.11",
+    "network": "^0.4.1",
     "request": "^2.88.0",
     "share2nightscout-bridge": "^0.1.5",
     "yargs": "^4.3.2"
