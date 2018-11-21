@@ -161,16 +161,18 @@ if (!module.parent) {
                                 lastDate = d;
                             }
                         });
+                    } else {
+                        glucosedata = null;
                     }
                 } catch (e) {
                     console.error(e);
                 }
             }
-            loadFromNightscoutWithDate(lastDate);
+            loadFromNightscoutWithDate(lastDate, glucosedata);
         });
     }
 
-    function loadFromNightscoutWithDate(lastDate) {
+    function loadFromNightscoutWithDate(lastDate, glucosedata) {
 
         var headers = {
             'api-secret': apisecret
