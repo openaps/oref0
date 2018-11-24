@@ -720,7 +720,7 @@ if prompt_yn "" N; then
         )
     fi
 
-    cp preferences.json old_preferences.json
+    test -f preferences.json && cp preferences.json old_preferences.json || echo "No old preferences.json to save off"
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
@@ -780,8 +780,9 @@ if prompt_yn "" N; then
         set_pref_string .cgm_loop_path "$directory-cgm-loop"
     fi
 
-    if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
+    if [[ ${CGM,,} =~ "xdrip" ]]; then # Evaluates true for both xdrip and xdrip-js 
         set_pref_string .xdrip_path "$HOME/.xDripAPS"
+        set_pref_string .bt_offline "true"
     fi
     #if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
         #set_pref_string .dexcom_cgm_tx_id "$DEXCOM_CGM_TX_ID"
@@ -851,6 +852,11 @@ if prompt_yn "" N; then
 
     echo Checking for BT Mac, BT Peb, Shareble, or xdrip-js
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL || ! -z $DEXCOM_CGM_TX_ID ]]; then
+        if [ ! -z "$BT_MAC" ]; then
+          printf 'Checking for the bnep0 interface in the interfaces files and adding if missing...'
+          # Make sure the bnep0 interface is in the /etc/networking/interface
+          (grep -qa bnep0 /etc/network/interfaces && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces && printf 'added.\n') 
+        fi
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
