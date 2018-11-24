@@ -853,7 +853,7 @@ if prompt_yn "" N; then
     echo Checking for BT Mac, BT Peb, Shareble, or xdrip-js
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL || ! -z $DEXCOM_CGM_TX_ID ]]; then
         if [ ! -z "$BT_MAC" ]; then
-          printf 'Checking for the bnep0 interface in the interfaces files and adding if missing...'
+          printf 'Checking for the bnep0 interface in the interfaces file and adding if missing...'
           # Make sure the bnep0 interface is in the /etc/networking/interface
           (grep -qa bnep0 /etc/network/interfaces && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces && printf 'added.\n') 
         fi
