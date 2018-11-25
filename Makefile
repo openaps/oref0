@@ -21,3 +21,5 @@ report:
 	(npm install codacy-coverage && cat ${ANALYZED} | \
 	YOURPACKAGE_COVERAGE=1 ./node_modules/codacy-coverage/bin/codacy-coverage.js) || echo "NO COVERAGE"
 
+lint:
+	npm run lint
