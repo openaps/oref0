@@ -206,7 +206,7 @@ if (!module.parent) {
                     // output old file
 
                     if (!_.isNil(glucosedata)) {
-                        console.log(glucosedata);
+                        console.log(JSON.stringify(glucosedata));
                     }
 
                 }
