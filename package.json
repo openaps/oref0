@@ -4,8 +4,7 @@
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
-    "global-install": "npm install && sudo npm install -g && sudo npm link && sudo npm link oref0",
-    "lint": "eslint ."
+    "global-install": "npm install && sudo npm install -g && sudo npm link && sudo npm link oref0"
   },
   "repository": {
     "type": "git",
@@ -108,7 +107,6 @@
   },
   "devDependencies": {
     "coveralls": "^3.0.2",
-    "eslint": "^5.9.0",
     "istanbul": "^0.4.4",
     "mocha": "^5.2.0",
     "mocha-lcov-reporter": "^1.2.0",
