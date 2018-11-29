@@ -991,8 +991,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # With 0.5.0 release we switched from ~/.profile to ~/.bash_profile for API_SECRET and NIGHTSCOUT_HOST, because a shell will look
     # for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from
     # the first one that exists and is readable. Remove API_SECRET and NIGHTSCOUT_HOST lines from ~/.profile if they exist
-    sed --in-place '/.*API_SECRET.*/d' .profile
-    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' .profile
+    sed --in-place '/.*API_SECRET.*/d' $HOME/.profile
+    sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.profile
 
     # Then append the variables
     echo NIGHTSCOUT_HOST="$NIGHTSCOUT_HOST" >> $HOME/.bash_profile
