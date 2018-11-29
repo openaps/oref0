@@ -200,7 +200,7 @@ if (!module.parent) {
       process.exit(1);
     }
 
-    if (typeof(iob_data.length) && iob_data.length > 1) {
+    if (typeof iob_data.length !== 'undefined' && iob_data.length > 1) {
         console.error(JSON.stringify(iob_data[0]));
     } else {
         console.error(JSON.stringify(iob_data));

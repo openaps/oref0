@@ -59,7 +59,7 @@ if (!module.parent) {
         var profile = require(cwd + '/' + profile_input);
 
 
-        if (typeof(profile.isfProfile == "undefined")) {
+        if (typeof profile.isfProfile === "undefined") {
             for (prop in profile[0].store) {
                 profilename = prop;
             }
@@ -95,7 +95,7 @@ if (!module.parent) {
           //console.error(profile);
         }
         var isf_data = profile.isfProfile;
-        if (typeof(isf_data) != "undefined" && typeof(isf_data.units == "string")) {
+        if (typeof isf_data !== "undefined" && typeof isf_data.units === "string") {
             if (isf_data.units !== 'mg/dL') {
                 if (isf_data.units == 'mg/dl') {
                     isf_data.units = 'mg/dL';
