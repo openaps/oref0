@@ -62,7 +62,7 @@ if (!module.parent) {
         var shasum = crypto.createHash('sha1');
         shasum.update(String(apisecret));
         apisecret = shasum.digest('hex');
-    };
+    }
 
     try {
         var cwd = process.cwd();
