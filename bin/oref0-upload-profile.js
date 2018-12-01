@@ -71,9 +71,9 @@ if (!module.parent) {
         // Rudimentary check that the profile is valid
         
         if (!profiledata.dia
-          || profiledata.basalprofile.length < 1
-          || profiledata.bg_targets.length < 1
-          || profiledata.isfProfile.length < 1 )
+          || profiledata.basalprofile.length < 1
+          || profiledata.bg_targets.length < 1
+          || profiledata.isfProfile.length < 1 )
           { throw "Profile JSON missing data"; }
           
     } catch (e) {
