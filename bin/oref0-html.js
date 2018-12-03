@@ -124,7 +124,7 @@ if (!module.parent) {
     //} else { 
         //enactedstring = enactedtemp.duration + "m@" + enactedtemp.rate.toFixed(1) + "U";
     //}
-    tz = new Date().toString().match(/([-\+][0-9]+)\s/)[1]
+    tz = new Date().toString().match(/([-+][0-9]+)\s/)[1]
     //enactedDate = new Date(enactedtemp.timestamp.concat(tz));
     //enactedHMS = enactedDate.toLocaleTimeString().split(":")
     //enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
