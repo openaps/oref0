@@ -140,7 +140,7 @@ if (!module.parent) {
     if (params.model) {
       try {
         model_string = fs.readFileSync(model_input, 'utf8');
-        model_data = model_string.replace(/\"/gi, '');
+        model_data = model_string.replace(/"/gi, '');
       } catch (e) {
         var msg = { error: e, msg: "Could not parse model_data", file: model_input};
         console.error(msg.msg);
