@@ -118,7 +118,7 @@ if (!module.parent) {
     //console.log(carbratio_data);
     var meal_data = { };
     //console.error("meal_input",meal_input);
-    if (meal_input && typeof meal_input != 'undefined') {
+    if (meal_input && typeof meal_input !== 'undefined') {
         try {
             meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
             //console.error(JSON.stringify(meal_data));
@@ -163,7 +163,7 @@ if (!module.parent) {
       }
     }
     var reservoir_data = null;
-    if (reservoir_input && typeof reservoir_input != 'undefined') {
+    if (reservoir_input && typeof reservoir_input !== 'undefined') {
         try {
             reservoir_data = fs.readFileSync(reservoir_input, 'utf8');
             //console.error(reservoir_data);
@@ -178,7 +178,7 @@ if (!module.parent) {
     }
     var currentTime_input = params.currentTime;
     var currentTime = null;
-    if (currentTime_input && typeof currentTime_input != 'undefined') {
+    if (currentTime_input && typeof currentTime_input !== 'undefined') {
         try {
             currentTime = new Date(currentTime_input);
             console.error(currentTime);

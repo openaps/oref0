@@ -66,7 +66,7 @@ if (!module.parent) {
     }
 
     var pumpprofile_data = { };
-    if (typeof pumpprofile_input != 'undefined') {
+    if (typeof pumpprofile_input !== 'undefined') {
         try {
             pumpprofile_data = JSON.parse(fs.readFileSync(pumpprofile_input, 'utf8'));
         } catch (e) {
@@ -75,8 +75,8 @@ if (!module.parent) {
     }
 
     // disallow impossibly low carbRatios due to bad decoding
-    if ( typeof(profile_data.carb_ratio) == 'undefined' || profile_data.carb_ratio < 2 ) {
-        if ( typeof(pumpprofile_data.carb_ratio) == 'undefined' || pumpprofile_data.carb_ratio < 2 ) {
+    if ( typeof(profile_data.carb_ratio) === 'undefined' || profile_data.carb_ratio < 2 ) {
+        if ( typeof(pumpprofile_data.carb_ratio) === 'undefined' || pumpprofile_data.carb_ratio < 2 ) {
             console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratios ' + profile_data.carb_ratio + ' and ' + pumpprofile_data.carb_ratio + ' out of bounds" }');
             return console.error("Error: carb_ratios " + profile_data.carb_ratio + ' and ' + pumpprofile_data.carb_ratio + " out of bounds");
         } else {
@@ -102,7 +102,7 @@ if (!module.parent) {
     }
 
     var carb_data = { };
-    if (typeof carb_input != 'undefined') {
+    if (typeof carb_input !== 'undefined') {
         try {
             carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
         } catch (e) {

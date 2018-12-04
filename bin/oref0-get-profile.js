@@ -102,7 +102,7 @@ if (!module.parent) {
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
     if (bgtargets_data.units !== 'mg/dL') {
-        if (bgtargets_data.units == 'mmol/L') {
+        if (bgtargets_data.units === 'mmol/L') {
             for (var i = 0, len = bgtargets_data.targets.length; i < len; i++) {
                 bgtargets_data.targets[i].high = bgtargets_data.targets[i].high * 18;
                 bgtargets_data.targets[i].low = bgtargets_data.targets[i].low * 18;
@@ -117,7 +117,7 @@ if (!module.parent) {
     
     var isf_data = require(cwd + '/' + isf_input);
     if (isf_data.units !== 'mg/dL') {
-        if (isf_data.units == 'mmol/L') {
+        if (isf_data.units === 'mmol/L') {
             for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                 isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
             }
@@ -131,7 +131,7 @@ if (!module.parent) {
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
 
     var preferences = {};
-    if (typeof preferences_input != 'undefined') {
+    if (typeof preferences_input !== 'undefined') {
         preferences = require(cwd + '/' + preferences_input);
     }
     var fs = require('fs');
@@ -164,7 +164,7 @@ if (!module.parent) {
 
     var carbratio_data = { };
     //console.log("carbratio_input",carbratio_input);
-    if (typeof carbratio_input != 'undefined') {
+    if (typeof carbratio_input !== 'undefined') {
         try {
             carbratio_data = JSON.parse(fs.readFileSync(carbratio_input, 'utf8'));
 
@@ -180,7 +180,7 @@ if (!module.parent) {
           errors.push({msg: "Carb ratio data should have an array called schedule with a start and ratio fields.", file: carbratio_input, data: carbratio_data});
         } else {
         }
-        if (carbratio_data.units != 'grams' && carbratio_data.units != 'exchanges')  {
+        if (carbratio_data.units !== 'grams' && carbratio_data.units !== 'exchanges')  {
           errors.push({msg: "Carb ratio should have units field set to 'grams' or 'exchanges'.", file: carbratio_input, data: carbratio_data});
         }
         if (errors.length) {
@@ -193,7 +193,7 @@ if (!module.parent) {
         }
     }
     var temptargets_data = { };
-    if (typeof temptargets_input != 'undefined') {
+    if (typeof temptargets_input !== 'undefined') {
         try {
             temptargets_data = JSON.parse(fs.readFileSync(temptargets_input, 'utf8'));
         } catch (e) {

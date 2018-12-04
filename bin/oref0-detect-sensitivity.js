@@ -58,7 +58,7 @@ if (!module.parent) {
 
         var isf_data = require(cwd + '/' + isf_input);
         if (isf_data.units !== 'mg/dL') {
-            if (isf_data.units == 'mmol/L') {
+            if (isf_data.units === 'mmol/L') {
                 for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                     isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
                 }
@@ -72,7 +72,7 @@ if (!module.parent) {
         var basalprofile = require(cwd + '/' + basalprofile_input);
 
         var carb_data = { };
-        if (typeof carb_input != 'undefined') {
+        if (typeof carb_input !== 'undefined') {
             try {
                 carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
             } catch (e) {
@@ -81,7 +81,7 @@ if (!module.parent) {
         }
 
         var temptarget_data = { };
-        if (typeof temptarget_input != 'undefined') {
+        if (typeof temptarget_input !== 'undefined') {
             try {
                 temptarget_data = JSON.parse(fs.readFileSync(temptarget_input, 'utf8'));
             } catch (e) {
