@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 oref0_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 interval=${1:-96}

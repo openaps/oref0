@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script sets up an openaps environment by defining the required devices,
 # reports, and aliases, and optionally enabling it in cron,
@@ -585,7 +585,7 @@ echo
 
 # create temporary file for oref0-runagain.sh
 OREF0_RUNAGAIN=`mktemp /tmp/oref0-runagain.XXXXXXXXXX`
-echo "#!/bin/bash" > $OREF0_RUNAGAIN
+echo "#!/usr/bin/env bash" > $OREF0_RUNAGAIN
 echo "# To run again with these same options, use: " | tee $OREF0_RUNAGAIN
 echo -n "$HOME/src/oref0/bin/oref0-setup.sh --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
 if [[ ! -z $BLE_SERIAL ]]; then

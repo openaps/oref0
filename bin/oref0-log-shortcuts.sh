@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Because this script is meant to be "source"d, not just run normally, it
 # doesn't include oref0-bash-common-functions.sh like most others do.
