@@ -100,7 +100,7 @@ function remove_obsolete_aliases () {
 END
 )
     echo "$OBSOLETE_ALIASES" |(while read OBSOLETE_ALIAS; do
-        cat "$PROFILE_PATH" |grep -v "$OBSOLETE_ALIAS" >"$PROFILE_PATH".new$$
+        test -f "$PROFILE_PATH" && cat "$PROFILE_PATH" |grep -v "$OBSOLETE_ALIAS" >"$PROFILE_PATH".new$$ &&
         mv -f "$PROFILE_PATH".new$$ "$PROFILE_PATH"
     done)
 }
@@ -125,10 +125,10 @@ else
     for i in "$@"; do
     case "$i" in
         --add-to-profile)
-            add_aliases_to_profile "$HOME/.bash_profile"
+            test -f "$HOME/.bash_profile" && add_aliases_to_profile "$HOME/.bash_profile"
             ;;
         --add-to-profile=*)
-            add_aliases_to_profile "${i#*=}"
+            test -f "${i#*=}" && add_aliases_to_profile "${i#*=}"
             ;;
         *)
            echo "Unrecognized argument: $i"
