@@ -56,7 +56,7 @@ if (!module.parent) {
     }
 
     // disallow impossibly low carbRatios due to bad decoding
-    if ( typeof(profile_data.carb_ratio) == 'undefined' || profile_data.carb_ratio < 3 ) {
+    if ( typeof(profile_data.carb_ratio) === 'undefined' || profile_data.carb_ratio < 3 ) {
         console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratio ' + profile_data.carb_ratio + ' out of bounds" }');
         return console.error("Error: carb_ratio " + profile_data.carb_ratio + " out of bounds");
     }
@@ -68,7 +68,7 @@ if (!module.parent) {
     }
 
     var carb_data = { };
-    if (typeof carb_input != 'undefined') {
+    if (typeof carb_input !== 'undefined') {
         try {
             carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
         } catch (e) {
@@ -76,10 +76,10 @@ if (!module.parent) {
         }
     }
 
-    if (typeof basalprofile_data[0] == 'undefined') {
+    if (typeof basalprofile_data[0] === 'undefined') {
         return console.error("Error: bad basalprofile_data:" + basalprofile_data);
     }
-    if (typeof basalprofile_data[0].glucose != 'undefined') {
+    if (typeof basalprofile_data[0].glucose !== 'undefined') {
       console.error("Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
       var temp = carb_data;
       carb_data = glucose_data;

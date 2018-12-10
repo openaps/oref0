@@ -58,7 +58,7 @@ if (!module.parent) {
         process.exit(1);
     }
 
-    if (apisecret.indexOf('token=') !== 0 && apisecret.length != 40) {
+    if (apisecret.indexOf('token=') !== 0 && apisecret.length !== 40) {
         var shasum = crypto.createHash('sha1');
         shasum.update(String(apisecret));
         apisecret = shasum.digest('hex');
@@ -90,7 +90,7 @@ if (!module.parent) {
     };
 
     request(options, function(error, res, data) {
-        if (error || res.statusCode != 200) {
+        if (error || res.statusCode !== 200) {
             console.log('Loading current profile from Nightscout failed');
             process.exit(1);
         }
@@ -138,7 +138,7 @@ if (!module.parent) {
             var low_value = Math.round(target_entry.low);
             var high_value = Math.round(target_entry.high);
 
-            if (new_profile.units == 'mmol' && profiledata.bg_targets.units == 'mg/dL') {
+            if (new_profile.units === 'mmol' && profiledata.bg_targets.units === 'mg/dL') {
                 low_value = +(Math.round(target_entry.low / 18 + 'e+1') + 'e-1');
                 high_value = +(Math.round(target_entry.high / 18 + 'e+1') + 'e-1');
             }
@@ -171,7 +171,7 @@ if (!module.parent) {
 
             var value = Math.round(isf_entry.sensitivity);
 
-            if (new_profile.units == 'mmol' && profiledata.isfProfile.units == 'mg/dL') {
+            if (new_profile.units === 'mmol' && profiledata.isfProfile.units === 'mg/dL') {
                 value = +(Math.round(isf_entry.sensitivity / 18 + 'e+1') + 'e-1');
             }
 
@@ -209,7 +209,7 @@ if (!module.parent) {
 
         var upload_profile;
 
-        if (profile_id != 'OpenAPS Autosync') {
+        if (profile_id !== 'OpenAPS Autosync') {
             upload_profile = _.cloneDeep(data);
         } else {
             upload_profile = new_profile;
@@ -222,7 +222,7 @@ if (!module.parent) {
             var d = new Date();
             profile_store.startDate = d.toISOString();
 
-            if (profile_id != 'OpenAPS Autosync') {
+            if (profile_id !== 'OpenAPS Autosync') {
                 upload_profile.defaultProfile = 'OpenAPS Autosync';
                 upload_profile.store['OpenAPS Autosync'] = profile_store;
             }
@@ -275,7 +275,7 @@ if (!module.parent) {
             };
 
             request(options, function(error, res, data) {
-                if (error || res.statusCode != 200) {
+                if (error || res.statusCode !== 200) {
                     console.log(error);
                     console.log(res.body);
                 } else {

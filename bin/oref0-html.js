@@ -130,11 +130,11 @@ if (!module.parent) {
     //enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
 
     var mealCOB = "???";
-    if (typeof meal_input != 'undefined') {
+    if (typeof meal_input !== 'undefined') {
         try {
             meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
             //console.error(JSON.stringify(meal_data));
-            if (typeof meal_data.mealCOB != 'undefined') {
+            if (typeof meal_data.mealCOB !== 'undefined') {
                 mealCOB = meal_data.mealCOB;
             }
         } catch (e) {
