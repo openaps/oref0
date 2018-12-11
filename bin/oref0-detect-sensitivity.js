@@ -14,9 +14,6 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-
-var basal = require('../lib/profile/basal');
-var get_iob = require('../lib/iob');
 var detect = require('../lib/determine-basal/autosens');
 
 if (!module.parent) {

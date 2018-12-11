@@ -16,7 +16,6 @@
 */
 
 var basal = require('../lib/profile/basal');
-var get_iob = require('../lib/iob');
 var detect = require('../lib/determine-basal/autosens');
 
 if (!module.parent) {
