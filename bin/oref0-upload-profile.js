@@ -52,6 +52,9 @@ if (!module.parent) {
 
     var nsurl = params._[1];
     var apisecret = params._[2];
+    var headers = {
+      'content-type': 'application/json'
+    };
 
     if (!profile_input || !nsurl || !apisecret) {
         usage();
@@ -62,6 +65,10 @@ if (!module.parent) {
         var shasum = crypto.createHash('sha1');
         shasum.update(String(apisecret));
         apisecret = shasum.digest('hex');
+        geturl = nsurl + '/api/v1/profile/current';
+        headers['api-secret'] = apisecret;
+    } else {
+        geturl = nsurl + '/api/v1/profile/current?' + apisecret;
     }
 
     try {
@@ -82,16 +89,14 @@ if (!module.parent) {
 
 
     var options = {
-        uri: nsurl + '/api/v1/profile/current'
+        uri: geturl
         , json: true
-        , headers: {
-            'api-secret': apisecret
-        }
+        , headers 
     };
 
     request(options, function(error, res, data) {
         if (error || res.statusCode !== 200) {
-            console.log('Loading current profile from Nightscout failed');
+            console.log('Loading current profile from Nightscout failed: ' + res.statusCode);
             process.exit(1);
         }
 
@@ -258,7 +263,7 @@ if (!module.parent) {
 
             console.log('Profile changed, uploading to Nightscout');
 
-            nsurl = nsurl + '/api/v1/profile';
+            nsurl += '/api/v1/profile';
 
             if (apisecret.indexOf('token=') === 0) {
                 nsurl = nsurl + '?' + apisecret;
