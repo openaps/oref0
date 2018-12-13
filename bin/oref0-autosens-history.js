@@ -136,7 +136,7 @@ if (!module.parent) {
     do {
         detection_inputs.deviations = 96;
         detect(detection_inputs);
-        for(var i=0; i<readings_per_run; i++) {
+        for(i=0; i<readings_per_run; i++) {
             detection_inputs.glucose_data.shift();
         }
         console.error(ratio, newisf, detection_inputs.glucose_data[0].dateString);

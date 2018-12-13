@@ -118,7 +118,7 @@ if (!module.parent) {
     var isf_data = require(cwd + '/' + isf_input);
     if (isf_data.units !== 'mg/dL') {
         if (isf_data.units === 'mmol/L') {
-            for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
+            for (i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                 isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
             }
             isf_data.units = 'mg/dL';
