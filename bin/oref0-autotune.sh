@@ -252,7 +252,12 @@ do
         fi
     else
         # Copy tuned profile produced by autotune to profile.json for use with next day of data
-        cp newprofile.$i.json profile.json
+        if cat newprofile.$i.json | jq . | grep -q start; then
+            cp newprofile.$i.json profile.json
+        else
+            jq -c newprofile.$i.json
+            die "newprofile.$i.json invalid"
+        fi
     fi
 
 
