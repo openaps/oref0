@@ -106,13 +106,13 @@ if (!module.parent) {
     console.error("Calculating sensitivity using 8h of non-exluded data");
     detection_inputs.deviations = 96;
     detect(detection_inputs);
-    ratio8h = ratio;
-    newisf8h = newisf;
+    var ratio8h = ratio;
+    var newisf8h = newisf;
     console.error("Calculating sensitivity using all non-exluded data (up to 24h)");
     detection_inputs.deviations = 288;
     detect(detection_inputs);
-    ratio24h = ratio;
-    newisf24h = newisf;
+    var ratio24h = ratio;
+    var newisf24h = newisf;
     if ( ratio8h < ratio24h ) {
         console.error("Using 8h autosens ratio of",ratio8h,"(ISF",newisf8h+")");
     } else {

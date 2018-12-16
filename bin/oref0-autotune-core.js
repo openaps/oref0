@@ -55,7 +55,7 @@ if (!module.parent) {
       previous_autotune_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
     }
 
-    var inputs = {
+    inputs = {
         preppedGlucose: prepped_glucose_data
       , previousAutotune: previous_autotune_data
       , pumpProfile: pumpprofile_data

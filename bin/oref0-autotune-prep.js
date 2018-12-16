@@ -110,7 +110,7 @@ if (!module.parent) {
         }
     }
 
-    var inputs = {
+    inputs = {
       history: pumphistory_data
     , profile: profile_data
     , pumpprofile: pumpprofile_data
