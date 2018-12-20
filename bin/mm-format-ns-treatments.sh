@@ -19,12 +19,13 @@ EOT
 model=$(json -f $MODEL)
 
 oref0-normalize-temps $HISTORY  \
-  | json -e "this.medtronic = 'mm://openaps/$self/' + (this._type || this.eventType);" \
-    -e "this.created_at = this.created_at ? this.created_at : this.timestamp" \
-    -e "this.enteredBy = 'openaps://medtronic/$model'" \
-    -e "if (this.glucose && !this.glucoseType && this.glucose > 0) { this.glucoseType = this.enteredBy }" \
-    -e "this.eventType = (this.eventType ?  this.eventType : 'Note')" \
-    -e "if (this._type == 'AlarmSensor' && this.alarm_description) {this.notes = this.alarm_description}" \
-    -e "if (this.eventType == 'Note' && !this.alarm_description) { this.notes = this._type + ' $model ' + (this.notes ? this.notes : '')}" \
-     > $OUTPUT
+  | jq  '[ .[]
+    | .medtronic = if ._type then "mm://openaps/'$self'/" + ._type else "mm://openaps/mm-format-ns-treatments/" + .eventType end 
+    | .created_at = if .created_at then .created_at else .timestamp end
+    | .enteredBy = "openaps://medtronic/'$model'"
+    | if .glucose > 0 then .glucoseType = "openaps://medtronic/'$model'" else .enteredBy = "openaps://medtronic/'$model'" end
+    | .eventType = if .eventType then .eventType else "Note" end
+    | if .eventType == "Note" then .notes = ._type + " '$model' " + if .notes then .notes else "" end else .enteredBy = "openaps://medtronic/'$model'" end
+    | if ._type == "AlarmSensor" and .alarm_description then .notes = .alarm_description else .enteredBy = "openaps://medtronic/'$model'" end
+    ]' > $OUTPUT
 
