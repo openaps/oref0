@@ -210,7 +210,9 @@ function format_latest_nightscout_treatments {
         jq .[0:9] monitor/pumphistory-24h-zoned.json > upload/recent-pumphistory.json
         historyfile=upload/recent-pumphistory.json
     fi
-        nightscout cull-latest-openaps-treatments $historyfile settings/model.json $latest_ns_treatment_time > upload/latest-treatments.json
+
+    echo "Latest NS treatment: $latest_ns_treatment_time"
+    nightscout cull-latest-openaps-treatments $historyfile settings/model.json $latest_ns_treatment_time > upload/latest-treatments.json
 }
 
 function check_mdt_upload {
