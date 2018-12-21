@@ -95,6 +95,9 @@ if (!module.parent) {
       profile_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
     }
 
+    // Always keep the curve value up to date with what's in the user preferences
+    profile_data.curve = pumpprofile_data.curve;
+
     try {
         var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
     } catch (e) {
