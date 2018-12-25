@@ -516,12 +516,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     echo
 
-else
-   if [[ $ww_ti_usb_reset =~ ^[Yy] ]]; then
-      ww_ti_usb_reset="yes"
-   else
-      ww_ti_usb_reset="no"
-   fi
 fi
 
 echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
@@ -599,9 +593,6 @@ if [[ ! -z "$ENABLE" ]]; then
 fi
 if [[ ! -z "$radio_locale" ]]; then
     echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN
-fi
-if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
-    echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$BLE_MAC" ]]; then
     echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN
