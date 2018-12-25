@@ -376,7 +376,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
     if [[ $REPLY =~ ^[Uu]$ ]]; then
-      read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2018.08.08' [S]/<version> " -r
+      read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2018.12.05' [S]/<version> " -r
       if [[ $REPLY =~ ^[Ss]$ ]]; then
         buildgofromsource=true
         echo "Building Go pump binaries from source"
@@ -395,7 +395,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         ecc1medtronicversion="tags/$REPLY"
         echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
 
-        read -p "Also enter the ecc1/dexcom version, example 'v2018.07.26' <version> " -r
+        read -p "Also enter the ecc1/dexcom version, example 'v2018.12.05' <version> " -r
         ecc1dexcomversion="tags/$REPLY"
         echo "Will use https://github.com/ecc1/dexcom/$REPLY if Go-dexcom is needed."
       fi
