@@ -1238,7 +1238,6 @@ if prompt_yn "" N; then
     mkdir -p $HOME/go
     source $HOME/.bash_profile
 
-
     #Necessary to "bootstrap" Go commands...
     if [[ ${radio_locale,,} =~ "ww" ]]; then
       echo 868.4 > $directory/monitor/medtronic_frequency.ini
