@@ -814,6 +814,11 @@ if prompt_yn "" N; then
     echo Running apt-get autoclean
     sudo apt-get autoclean
 
+    # create pump.ini
+    echo '[device "pump"]' > pump.ini
+    echo "serial = $serial" >> pump.ini
+    echo "radio_locale = $radio_locale" >> pump.ini
+
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
@@ -1009,11 +1014,6 @@ if prompt_yn "" N; then
         #echo Installing latest openaps dev && sudo pip install  --default-timeout=1000  git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
     #fi
     
-    # create pump.ini
-    echo '[device "pump"]' > pump.ini
-    echo "serial = $serial" >> pump.ini
-    echo "radio_locale = $radio_locale" >> pump.ini
-
     # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
     if [[ ${CGM,,} =~ "mdt" ]]; then
         cd $directory || die "Can't cd $directory"
