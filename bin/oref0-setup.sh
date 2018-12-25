@@ -732,6 +732,8 @@ if prompt_yn "" N; then
     set_pref_string .enable "$ENABLE"
     set_pref_string .ttyport "$ttyport"
     set_pref_string .myopenaps_path "$directory"
+    set_pref_string .pump_serial "$serial"
+    set_pref_string .radio_locale "$radio_locale"
     if [[ ! -z "$BT_PEB" ]]; then
         set_pref_string .bt_peb "$BT_PEB"
     fi
@@ -1030,10 +1032,6 @@ if prompt_yn "" N; then
                     (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
                 fi
             fi
-
-            # Hack to check if radio_locale has been set in pump.ini.
-            # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-            grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
         fi
     fi
 

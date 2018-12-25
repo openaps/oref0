@@ -10,7 +10,7 @@ EOF
 
 assert_cwd_contains_ini
 
-export MEDTRONIC_PUMP_ID=`grep serial pump.ini | tr -cd 0-9`
+export MEDTRONIC_PUMP_ID=`get_pref_string .pump_serial | tr -cd 0-9`
 export MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
 
 OREF0_DEBUG=${OREF0_DEBUG:-0}
@@ -28,7 +28,7 @@ fi
 
 function mmtune_Go() {
   set -o pipefail
-  if ( grep "WW" pump.ini ); then
+  if ( get_pref_string .radio_locale =~ ww ); then
     Go-mmtune -ww | tee monitor/mmtune.json
   else
     Go-mmtune | tee monitor/mmtune.json
