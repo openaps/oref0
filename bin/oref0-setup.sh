@@ -1008,6 +1008,11 @@ if prompt_yn "" N; then
         # TODO: switch this back to master once https://github.com/openaps/openaps/pull/116 is merged/released
         #echo Installing latest openaps dev && sudo pip install  --default-timeout=1000  git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
     #fi
+    
+    # create pump.ini
+    echo '[device "pump"]' > pump.ini
+    echo "serial = $serial" >> pump.ini
+    echo "radio_locale = $radio_locale" >> pump.ini
 
     # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
     if [[ ${CGM,,} =~ "mdt" ]]; then
@@ -1025,8 +1030,6 @@ if prompt_yn "" N; then
         else
             # radio_locale requires openaps 0.2.0-dev or later
             openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
-            #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
-            #openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
             if [[ ${radio_locale,,} =~ "ww" ]]; then
                 if [ -d "$HOME/src/subg_rfspy/" ]; then
                     echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
@@ -1041,10 +1044,6 @@ if prompt_yn "" N; then
             # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
             grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
         fi
-    else
-        echo '[device "pump"]' > pump.ini
-        echo "serial = $serial" >> pump.ini
-        echo "radio_locale = $radio_locale" >> pump.ini
     fi
 
     # Medtronic CGM
@@ -1252,9 +1251,6 @@ if prompt_yn "" N; then
     #Necessary to "bootstrap" Go commands...
     if [[ ${radio_locale,,} =~ "ww" ]]; then
       echo 868.4 > $directory/monitor/medtronic_frequency.ini
-      #Store radio_locale for later use
-      # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-      grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
     else
       echo 916.55 > $directory/monitor/medtronic_frequency.ini
     fi
