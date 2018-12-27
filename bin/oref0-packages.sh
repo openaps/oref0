@@ -5,7 +5,7 @@ source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to r
 usage "$@" <<EOT
 Usage: $self
 
-Downloads Packages required for oref0 and dependencies using apt-get and npm.
+Downloads Packages required for oref0 and dependencies using apt-get
 This is normally invoked from oref0-install.sh.
 EOT
 
@@ -16,8 +16,12 @@ apt-get install -y sudo
 sudo apt-get update && sudo apt-get -y upgrade
 sudo apt-get install -y git watchdog strace tcpdump screen acpid vim locate lm-sensors || die "Couldn't install packages"
 
-# we require jq >= 1.5 for --slurpfile for merging preferences
-sudo apt-get install -t jessie-backports jq
+# We require jq >= 1.5 for --slurpfile for merging preferences. Debian Jessie ships with 1.4
+if is_debian_jessie; then
+   sudo apt-get -y -t jessie-backports install jq || die "Couldn't install jq from jessie-backports"
+else
+   sudo apt-get -y install jq || die "Couldn't install jq"
+fi
 
 # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
 if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then

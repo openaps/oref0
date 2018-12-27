@@ -686,14 +686,6 @@ if prompt_yn "" N; then
 
     cd $directory || die "Can't cd $directory"
 
-    #echo Checking mmeowlink installation
-    if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-        pip show mmeowlink | egrep "Version: 0.11.1" || (
-            echo Installing latest mmeowlink
-            sudo pip install --default-timeout=1000 -U mmeowlink || die "Couldn't install mmeowlink"
-        )
-    fi
-
     test -f preferences.json && cp preferences.json old_preferences.json || echo "No old preferences.json to save off"
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
@@ -715,7 +707,7 @@ if prompt_yn "" N; then
             preferences_from_args+="\"min_5m_carbimpact\":$min_5m_carbimpact "
         fi
         function join_by { local IFS="$1"; shift; echo "$*"; }
-        # merge existing prefrences with preferences from arguments. (preferences from arguments take precedence)
+        # merge existing preferences with preferences from arguments. (preferences from arguments take precedence)
         echo "{ $(join_by , ${preferences_from_args[@]}) }" > arg_prefs.json
         if [[ -s preferences.json ]]; then
             cat arg_prefs.json | jq --slurpfile existing_prefs preferences.json '$existing_prefs[0] + .' > updated_prefs.json && rm arg_prefs.json
@@ -1026,11 +1018,6 @@ if prompt_yn "" N; then
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
 
-    if is_edison; then
-        sudo apt-get -y -t jessie-backports install jq
-    else
-        sudo apt-get -y install jq
-    fi
     # configure autotune if enabled
     if [[ $ENABLE =~ autotune ]]; then
         cd $directory || die "Can't cd $directory"
