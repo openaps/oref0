@@ -29,5 +29,13 @@ if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
         sudo apt-get install -y nodejs || die "Couldn't install nodejs"
 fi
 
+# TODO: remove all openaps references and don't install openaps anymore
+sudo pip install -U openaps || die "Couldn't install openaps toolkit"
+sudo pip install -U openaps-contrib || die "Couldn't install openaps-contrib"
+sudo openaps-install-udev-rules || die "Couldn't run openaps-install-udev-rules"
+sudo activate-global-python-argcomplete || die "Couldn't run activate-global-python-argcomplete"
+echo openaps installed
+openaps --version
+
 echo oref0 packages installed. Version branch=`git rev-parse --abbrev-ref HEAD` short=`git rev-parse --short HEAD` long=`git rev-parse HEAD`
 
