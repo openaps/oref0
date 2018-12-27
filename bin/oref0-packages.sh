@@ -14,7 +14,10 @@ echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
 
 apt-get install -y sudo
 sudo apt-get update && sudo apt-get -y upgrade
-sudo apt-get install -y git watchdog strace tcpdump screen acpid vim locate jq lm-sensors || die "Couldn't install packages"
+sudo apt-get install -y git watchdog strace tcpdump screen acpid vim locate lm-sensors || die "Couldn't install packages"
+
+# we require jq >= 1.5 for --slurpfile for merging preferences
+sudo apt-get install -t jessie-backports jq
 
 # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
 if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
