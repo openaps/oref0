@@ -799,11 +799,6 @@ if prompt_yn "" N; then
     echo Running apt-get autoclean
     sudo apt-get autoclean
 
-    # create pump.ini
-    echo '[device "pump"]' > pump.ini
-    echo "serial = $serial" >> pump.ini
-    echo "radio_locale = $radio_locale" >> pump.ini
-
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
