@@ -137,8 +137,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, G5-upload, MDT or xdrip."
+if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload"  || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, G5-upload, G6, G6-upload, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -179,7 +179,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
     echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
-    echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
+    echo "G5-upload: will use and upload BGs from a plugged in non-touchscreen G5 receiver to Nightscout"
+    echo "G6: will use BGs from a plugged in G5/G6 touchscreen receiver, but will *not* upload them (the G6 app usually does that)"
+    echo "G6-upload: will use and upload BGs from a plugged in G5/G6 touchscreen receiver to Nightscout"
     echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
     echo "xdrip: will work with an xDrip receiver app on your Android phone"
     echo "Note: no matter which option you choose, CGM data will also be downloaded from NS when available."
@@ -682,6 +684,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
+    elif [[ ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
+        openaps use cgm config --G6
+        openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
     elif [[ ${CGM,,} =~ "shareble" ]]; then
         echo Checking Adafruit_BluefruitLE installation
         if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
@@ -1052,7 +1057,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
         (crontab -l; crontab -l | grep -q "killall -g --older-than 5m oref0" || echo '* * * * * find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && ( killall -g --older-than 5m openaps; killall -g --older-than 5m oref0-pump-loop; killall -g --older-than 5m openaps-report )') | crontab -
-        if [[ ${CGM,,} =~ "g5-upload" ]]; then
+        if [[ ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "g6-upload"  ]]; then
             (crontab -l; crontab -l | grep -q "oref0-upload-entries" || echo "* * * * * cd $directory && oref0-upload-entries" ) | crontab -
         fi
         if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
