@@ -49,6 +49,8 @@ if (!module.parent) {
     }
 
     var nsurl = params._.slice(1, 2).pop();
+    if (nsurl.charAt(nsurl.length - 1) == "/") nsurl = nsurl.substr(0, nsurl.length - 1); // remove trailing slash if it exists
+    
     var apisecret = params._.slice(2, 3).pop();
     var hours = Number(params._.slice(3, 4).pop());
     var records = 1000;
@@ -106,7 +108,7 @@ if (!module.parent) {
             'api-secret': apisecret
         };
 
-        var uri = 'http://' + ip + ':17580/sgv.json?count=' + records; _// 192.168.43.1
+        var uri = 'http://' + ip + ':17580/sgv.json?count=' + records; // 192.168.43.1
 
         var options = {
             uri: uri,
@@ -118,22 +120,33 @@ if (!module.parent) {
         console.error("Trying to load CGM data from local xDrip");
 
         request(options, function(error, res, data) {
-            if (data) {
+            var failed = false;
+            if (res && res.statusCode == 403) {
+                 console.error("Load from xDrip failed: API_SECRET didn't match");
+                 failed = true;
+            }
+            
+            if (error) {
+              if (error.code == 'ETIMEDOUT')
+                {
+                    console.error('Load from xDrip timed out');
+                } else {
+                    console.error("Load from xDrip failed", error);
+                    failed = true;
+                }
+                   
+                failed = true;
+            }
+        
+            if (!failed && data) {
                 console.error("CGM results loaded from xDrip");
                 processAndOutput(data);
                 return true;
                 //	        var fs = require('fs');
                 //			fs.writeFileSync(outputPath, JSON.stringify(data));
-            } else {
-                if (error.code == 'ETIMEDOUT') {
-                    console.error('Load from xDrip timed out');
-                }
-                else
-                {
-                    console.error("Load from xDrip failed", error);
-                }
-                if (callback) callback();
             }
+                            
+            if (failed && callback) callback();
         });
 
         return false;
