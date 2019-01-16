@@ -28,54 +28,54 @@ var network = require('network');
 
 if (!module.parent) {
 
-    var argv = require('yargs')
-        .usage("$0 ns-glucose.json NSURL API-SECRET <hours>")
-        .strict(true)
-        .help('help');
+  var argv = require('yargs')
+    .usage("$0 ns-glucose.json NSURL API-SECRET <hours>")
+    .strict(true)
+    .help('help');
 
-    function usage() {
-        argv.showHelp();
-    }
+  function usage() {
+    argv.showHelp();
+  }
 
-    var params = argv.argv;
-    var errors = [];
-    var warnings = [];
+  var params = argv.argv;
+  var errors = [];
+  var warnings = [];
 
-    var glucose_input = params._.slice(0, 1).pop();
+  var glucose_input = params._.slice(0, 1).pop();
 
-    if ([null, '--help', '-h', 'help'].indexOf(glucose_input) > 0) {
-        usage();
-        process.exit(0);
-    }
+  if ([null, '--help', '-h', 'help'].indexOf(glucose_input) > 0) {
+    usage();
+    process.exit(0);
+  }
 
-    var nsurl = params._.slice(1, 2).pop();
-    if (nsurl.charAt(nsurl.length - 1) == "/") nsurl = nsurl.substr(0, nsurl.length - 1); // remove trailing slash if it exists
-    
-    var apisecret = params._.slice(2, 3).pop();
-    var hours = Number(params._.slice(3, 4).pop());
-    var records = 1000;
+  var nsurl = params._.slice(1, 2).pop();
+  if (nsurl && nsurl.charAt(nsurl.length - 1) == "/") nsurl = nsurl.substr(0, nsurl.length - 1); // remove trailing slash if it exists
 
-    if (hours > 0) {
-        records = 12 * hours;
-    }
+  var apisecret = params._.slice(2, 3).pop();
+  var hours = Number(params._.slice(3, 4).pop());
+  var records = 1000;
 
-    if (!glucose_input || !nsurl || !apisecret) {
-        usage();
-        process.exit(1);
-    }
+  if (hours > 0) {
+    records = 12 * hours;
+  }
 
-    if (apisecret.length != 40) {
-        var shasum = crypto.createHash('sha1');
-        shasum.update(apisecret);
-        apisecret = shasum.digest('hex');
-    }
+  if (!glucose_input || !nsurl || !apisecret) {
+    usage();
+    process.exit(1);
+  }
 
-    var lastDate = null;
+  if (apisecret.length != 40) {
+    var shasum = crypto.createHash('sha1');
+    shasum.update(apisecret);
+    apisecret = shasum.digest('hex');
+  }
 
-    var cwd = process.cwd();
-    var outputPath = cwd + '/' + glucose_input;
+  var lastDate = null;
 
-    /*
+  var cwd = process.cwd();
+  var outputPath = cwd + '/' + glucose_input;
+
+  /*
     function loadFromSpike () {
     
     // try xDrip
@@ -100,155 +100,133 @@ if (!module.parent) {
     }
     */
 
-    function loadFromxDrip(callback,ip) {
+  function loadFromxDrip(callback, ip) {
+    var headers = {
+      'api-secret': apisecret
+    };
 
-        // try xDrip
+    var uri = 'http://' + ip + ':17580/sgv.json?count=' + records; // 192.168.43.1
 
-        var headers = {
-            'api-secret': apisecret
-        };
+    var options = {
+      uri: uri
+      , json: true
+      , timeout: 10000
+      , headers: headers
+    };
 
-        var uri = 'http://' + ip + ':17580/sgv.json?count=' + records; // 192.168.43.1
+    console.error("Trying to load CGM data from local xDrip");
 
-        var options = {
-            uri: uri,
-            json: true,
-            timeout: 10000,
-            headers: headers
-        };
+    request(options, function(error, res, data) {
+      var failed = false;
+      if (res && res.statusCode == 403) {
+        console.error("Load from xDrip failed: API_SECRET didn't match");
+        failed = true;
+      }
 
-        console.error("Trying to load CGM data from local xDrip");
-
-        request(options, function(error, res, data) {
-            var failed = false;
-            if (res && res.statusCode == 403) {
-                 console.error("Load from xDrip failed: API_SECRET didn't match");
-                 failed = true;
-            }
-            
-            if (error) {
-              if (error.code == 'ETIMEDOUT')
-                {
-                    console.error('Load from xDrip timed out');
-                } else {
-                    console.error("Load from xDrip failed", error);
-                    failed = true;
-                }
-                   
-                failed = true;
-            }
-        
-            if (!failed && data) {
-                console.error("CGM results loaded from xDrip");
-                processAndOutput(data);
-                return true;
-                //	        var fs = require('fs');
-                //			fs.writeFileSync(outputPath, JSON.stringify(data));
-            }
-                            
-            if (failed && callback) callback();
-        });
-
-        return false;
-    }
-
-    var nsCallback = function loadFromNightscout() {
-
-        // try Nightscout
-
-        var lastDate;
-        var glucosedata;
-
-        fs.readFile(outputPath, 'utf8', function(err, fileContent) {
-
-            if (err) {
-                console.error(err);
-            } else {
-                try {
-                    glucosedata = JSON.parse(fileContent);
-
-                    if (glucosedata.constructor == Array) { //{ throw "Glucose data file doesn't seem to be valid"; }
-                        _.forEach(glucosedata, function findLatest(sgvrecord) {
-                            var d = new Date(sgvrecord.dateString);
-                            if (!lastDate ||  lastDate < d) {
-                                lastDate = d;
-                            }
-                        });
-                    } else {
-                        glucosedata = null;
-                    }
-                } catch (e) {
-                    console.error(e);
-                }
-            }
-            loadFromNightscoutWithDate(lastDate, glucosedata);
-        });
-    }
-
-    function loadFromNightscoutWithDate(lastDate, glucosedata) {
-
-        var headers = {
-            'api-secret': apisecret
-        };
-
-        if (!_.isNil(lastDate)) {
-            headers["If-Modified-Since"] = lastDate.toISOString();
+      if (error) {
+        if (error.code == 'ETIMEDOUT') {
+          console.error('Load from xDrip timed out');
+        } else {
+          console.error("Load from xDrip failed", error);
+          failed = true;
         }
 
-        var uri = nsurl + '/api/v1/entries/sgv.json?count=' + records;
-        var options = {
-            uri: uri,
-            json: true,
-            headers: headers
-        };
+        failed = true;
+      }
 
-        // console.error(headers);
+      if (!failed && data) {
+        console.error("CGM results loaded from xDrip");
+        processAndOutput(data);
+        return true;
+      }
 
-        request(options, function(error, res, data) {
-            //console.error(res);
+      if (failed && callback) callback();
+    });
 
-            if (res && (res.statusCode == 200 ||  res.statusCode == 304)) {
+    return false;
+  }
 
-                if (data) {
-                    console.error("Got CGM results from Nightscout");
-                    processAndOutput(data);
-                    //	        var fs = require('fs');
-                    //			fs.writeFileSync(outputPath, JSON.stringify(data));
-                } else {
-                    console.error("Got Not Changed response from Nightscout, assuming no new data is available");
-                    // output old file
+  var nsCallback = function loadFromNightscout() {
+    // try Nightscout
 
-                    if (!_.isNil(glucosedata)) {
-                        console.log(JSON.stringify(glucosedata));
-                    }
+    var lastDate;
+    var glucosedata;
 
-                }
-            } else {
-                console.error("Load from Nightscout failed", error);
-                //loadFromxDrip ();
-            }
+    fs.readFile(outputPath, 'utf8', function(err, fileContent) {
 
-            //process.exit(1);
-        });
+      if (err) {
+        console.error(err);
+      } else {
+        try {
+          glucosedata = JSON.parse(fileContent);
 
+          if (glucosedata.constructor == Array) { //{ throw "Glucose data file doesn't seem to be valid"; }
+            _.forEach(glucosedata, function findLatest(sgvrecord) {
+              var d = new Date(sgvrecord.dateString);
+              if (!lastDate || lastDate < d) {
+                lastDate = d;
+              }
+            });
+          } else {
+            glucosedata = null;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      loadFromNightscoutWithDate(lastDate, glucosedata);
+    });
+  }
+
+  function loadFromNightscoutWithDate(lastDate, glucosedata) {
+
+    var headers = {
+      'api-secret': apisecret
+    };
+
+    if (!_.isNil(lastDate)) {
+      headers["If-Modified-Since"] = lastDate.toISOString();
     }
 
-    function processAndOutput(glucosedata) {
+    var uri = nsurl + '/api/v1/entries/sgv.json?count=' + records;
+    var options = {
+      uri: uri
+      , json: true
+      , headers: headers
+    };
 
-        _.forEach(glucosedata, function findLatest(sgvrecord) {
-            sgvrecord.glucose = sgvrecord.sgv;
-        });
+    request(options, function(error, res, data) {
+      if (res && (res.statusCode == 200 || res.statusCode == 304)) {
 
-        console.log(JSON.stringify(glucosedata));
+        if (data) {
+          console.error("Got CGM results from Nightscout");
+          processAndOutput(data);
+        } else {
+          console.error("Got Not Changed response from Nightscout, assuming no new data is available");
+          // output old file
+          if (!_.isNil(glucosedata)) {
+            console.log(JSON.stringify(glucosedata));
+          }
+        }
+      } else {
+        console.error("Loading CGM data from Nightscout failed", error);
+      }
+    });
 
-    }
+  }
 
-    network.get_gateway_ip(function(err, ip) {
-        console.error("My router IP is " + ip); // err may be 'No active network interface found.'
-        loadFromxDrip(nsCallback, ip);
-      });
+  function processAndOutput(glucosedata) {
 
-    //loadFromxDrip(nsCallback);
-    // loadFromNightscout();
+    _.forEach(glucosedata, function findLatest(sgvrecord) {
+      sgvrecord.glucose = sgvrecord.sgv;
+    });
+
+    console.log(JSON.stringify(glucosedata));
+  }
+
+  network.get_gateway_ip(function(err, ip) {
+    console.error("My router IP is " + ip); // err may be 'No active network interface found.'
+    loadFromxDrip(nsCallback, ip);
+  });
 
 }
