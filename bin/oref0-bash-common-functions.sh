@@ -140,6 +140,28 @@ to_epochtime () {
     mydate -d "$(echo "$@" |tr -d '"\n')" +%s
 }
 
+
+# recieves a line of text and logger name and creates a line in the following format:
+# timestamp logger-name message
+# This function is needed in order to create a log file that will look like:
+# 2019-01-27 02:13:15 openaps.pumploop Merging local temptargets: (NOT VALID JSON: empty) 
+# This files can be read with programs like chainsaw.
+adddate() {
+    while IFS= read -r line; do
+        echo "$(date  +"%Y-%m-%d %T") $1 $line"
+    done
+}
+
+# Remove the color Escape sequences from the logs, since some programs can not read them, and have their own coloring rules.
+uncolor () {
+     while IFS= read -r line; do
+        sed --expression="s/\o33\[[01]m//g" | 
+        sed --expression="s/\o33\[[01];39m//g" |
+        sed --expression="s/\o33\[[01];32m//g" |
+        sed --expression="s/\o33\[34;1m//g" |
+     done
+}
+
 # Filter input to output, removing any embedded newlines.
 # Example:
 #     FOO="$(some_complex_thing |nonl)"
