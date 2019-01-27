@@ -852,11 +852,6 @@ if prompt_yn "" N; then
 
     echo Checking for BT Mac, BT Peb, Shareble, or xdrip-js
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL || ! -z $DEXCOM_CGM_TX_ID ]]; then
-        if [ ! -z "$BT_MAC" ]; then
-          printf 'Checking for the bnep0 interface in the interfaces file and adding if missing...'
-          # Make sure the bnep0 interface is in the /etc/networking/interface
-          (grep -qa bnep0 /etc/network/interfaces && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces && printf 'added.\n') 
-        fi
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
@@ -900,6 +895,11 @@ if prompt_yn "" N; then
         sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
         cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
         cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
+        if [ ! -z "$BT_MAC" ]; then
+          printf 'Checking for the bnep0 interface in the interfaces.client file and adding if missing...'
+          # Make sure the bnep0 interface is in the /etc/networking/interface
+          (grep -qa bnep0 /etc/network/interfaces.client && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces.client && printf 'added.\n') 
+        fi
         #Stop automatic startup of hostapd & dnsmasq
         update-rc.d -f hostapd remove
         update-rc.d -f dnsmasq remove
