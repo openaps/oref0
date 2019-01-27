@@ -158,7 +158,7 @@ uncolor () {
         sed --expression="s/\o33\[[01]m//g" | 
         sed --expression="s/\o33\[[01];39m//g" |
         sed --expression="s/\o33\[[01];32m//g" |
-        sed --expression="s/\o33\[34;1m//g" |
+        sed --expression="s/\o33\[34;1m//g" 
      done
 }
 
