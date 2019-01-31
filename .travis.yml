@@ -18,7 +18,7 @@ matrix:
       <<: *node_js-steps
     - node_js: "0.12"
       <<: *node_js-steps
-    - node_js: "node"
+    - node_js: "node"  # current version of Node.js on Travis CI
       <<: *node_js-steps
     - python: "2.7"
       <<: *python-steps
@@ -26,5 +26,4 @@ matrix:
       dist: xenial  # required for Python >= 3.7 (travis-ci/travis-ci#9069)
       <<: *python-steps
   allow_failures:
-    - node_js: "node"
     - python: "3.7"
