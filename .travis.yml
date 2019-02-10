@@ -16,8 +16,6 @@ matrix:
   include:
     - node_js: "8.11.1"
       <<: *node_js-steps
-    - node_js: "node"
-      <<: *node_js-steps
     - node_js: "node"  # current version of Node.js on Travis CI
       <<: *node_js-steps
     - python: "2.7"
