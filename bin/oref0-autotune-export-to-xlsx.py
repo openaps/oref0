@@ -50,7 +50,7 @@ def expandProfile(l, valueField, offsetField):
         minutes1=calc_minutes(start1)
         offset1=l[i][offsetField]
         if minutes1!=offset1:
-            print("Error in JSON offSetField %s contains %s does not match start time %s (%d minutes). Please report this as a bug" % (offsetField, offset1, start1, minutes1)) 
+            print("Error in JSON offSetField %s contains %s does not match start time %s (%d minutes). Please report this as a bug" % (offsetField, offset1, start1, minutes1))
             sys.exit(1)
         while (minutes<minutes1):
             r.append(value)

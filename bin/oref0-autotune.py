@@ -215,7 +215,7 @@ def export_to_excel(output_directory, output_excel_filename):
     call(autotune_export_to_xlsx, shell=True)
 
 def create_summary_report_and_display_results(output_directory):
-    print() 
+    print()
     print("Autotune pump profile recommendations:")
     print("---------------------------------------------------------")
     
