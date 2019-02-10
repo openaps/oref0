@@ -111,7 +111,7 @@ def assign_args_to_variables(args):
 def get_nightscout_profile(nightscout_host):
     #TODO: Add ability to use API secret for Nightscout.
     res = requests.get(nightscout_host + '/api/v1/profile.json')
-    with open(os.path.join(autotune_directory, 'nightscout.profile.json'), 'w') as f:
+    with open(os.path.join(autotune_directory, 'nightscout.profile.json'), 'w') as f:  # noqa: F821
         f.write(res.text)
 
 def get_openaps_profile(directory):
