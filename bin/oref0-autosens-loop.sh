@@ -13,7 +13,7 @@ main() {
 
     autosens 2>&1
     touch /tmp/autosens-completed
-    echo Completed oref0-autons-loop at $(date)
+    echo Completed oref0-autosens-loop at $(date)
 }
 
 usage "$@" <<EOT
