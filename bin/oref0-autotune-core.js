@@ -58,7 +58,7 @@ if (!module.parent) {
     // Always keep the curve value up to date with what's in the user preferences
     previous_autotune_data.curve = pumpprofile_data.curve;
 
-    var inputs = {
+    inputs = {
         preppedGlucose: prepped_glucose_data
       , previousAutotune: previous_autotune_data
       , pumpProfile: pumpprofile_data
