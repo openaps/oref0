@@ -652,9 +652,9 @@ if prompt_yn "" N; then
     rm -rf $directory/.git
     echo Removed any existing git
 
-    # TODO: delete this after openaps 0.2.1 release
-    echo Checking openaps 0.2.1 installation with --nogit support
-    if ! openaps --version 2>&1 | egrep "0.[2-9].[1-9]"; then
+    # TODO: delete this after openaps 0.2.2 release
+    echo Checking openaps 0.2.2 installation with --nogit support
+    if ! openaps --version 2>&1 | egrep "0.[2-9].[2-9]"; then
         echo Installing latest openaps w/ nogit && sudo pip install --default-timeout=1000 git+https://github.com/openaps/openaps.git@nogit || die "Couldn't install openaps w/ nogit"
     fi
 
