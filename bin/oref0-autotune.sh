@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script sets up an easy test environment for autotune, allowing the user to vary parameters 
 # like start/end date.
@@ -26,6 +26,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
 die() {
     if [[ -z "$API_SECRET" ]]; then
         echo "Warning: API_SECRET is not set when calling oref0-autotune.sh"
@@ -47,6 +49,7 @@ END_DAYS_AGO=1  # Default to yesterday if not otherwise specified
 EXPORT_EXCEL="" # Default is to not export to Microsoft Excel
 TERMINAL_LOGGING=true
 CATEGORIZE_UAM_AS_BASAL=false
+TUNE_INSULIN_CURVE=false
 RECOMMENDS_REPORT=true
 UNKNOWN_OPTION=""
 
@@ -54,7 +57,7 @@ if [ -n "${API_SECRET_READ}" ]; then
    echo "WARNING: API_SECRET_READ is deprecated starting with oref 0.6.x. The Nightscout authentication information is now used from the API_SECRET environment variable"
 fi
 
-# If we are running OS X, we need to use a different version
+# If we are running OS X or BSD, we need to use a different version
 # of the 'date' command; the built-in 'date' is BSD, which
 # has fewer options than the linux version.  So the user
 # needs to install coreutils, which gives the GNU 'date'
@@ -62,7 +65,7 @@ fi
 
 shopt -s expand_aliases
 
-if [[ `uname` == 'Darwin' ]] ; then
+if [[ `uname` == 'Darwin' || `uname` == 'FreeBSD' || `uname` == 'OpenBSD' ]] ; then
     alias date='gdate'
 fi
 
@@ -116,6 +119,10 @@ case $i in
     CATEGORIZE_UAM_AS_BASAL="${i#*=}"
     shift
     ;;
+    -i=*|--tune-insulin-curve=*)
+    TUNE_INSULIN_CURVE="${i#*=}"
+    shift
+    ;;
     *)
     # unknown option
     echo "Option ${i#*=} unknown"
@@ -128,7 +135,7 @@ done
 NIGHTSCOUT_HOST=$(echo $NIGHTSCOUT_HOST | sed 's/\/$//g')
 
 if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" ]]; then
-    echo "Usage: oref0-autotune <--dir=myopenaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--xlsx=autotune.xlsx] [--log=(true)|false] [--categorize-uam-as-basal=true|(false)]"
+    echo "Usage: oref0-autotune <--dir=myopenaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--xlsx=autotune.xlsx] [--log=(true)|false] [--categorize-uam-as-basal=true|(false)] [--tune-insulin-curve=true|(false) ]"
 exit 1
 fi
 if [[ -z "$START_DATE" ]]; then
@@ -152,7 +159,7 @@ fi
 cd $directory && mkdir -p autotune
 cp settings/pumpprofile.json autotune/profile.pump.json || die "Cannot copy settings/pumpprofile.json"
 # This allows manual users to be able to run autotune by simply creating a settings/pumpprofile.json file.
-if [[ `uname` == 'Darwin' ]] ; then
+if [[ `uname` == 'Darwin' || `uname` == 'FreeBSD' || `uname` == 'OpenBSD' ]] ; then
     cp settings/pumpprofile.json settings/profile.json || die "Cannot copy settings/pumpprofile.json"
 else
     cp -up settings/pumpprofile.json settings/profile.json || die "Cannot copy settings/pumpprofile.json"
@@ -196,18 +203,18 @@ echo "Grabbing NIGHTSCOUT treatments.json and entries/sgv.json for date range...
 for i in "${date_list[@]}"
 do 
     # pull CGM data from 4am-4am
-    query="find%5Bdate%5D%5B%24gte%5D=`(date -d "$i +4 hours " +%s | tr -d '\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +28 hours" +%s | tr -d '\n'; echo 000)`&count=1000"
-    echo Query: $NIGHTSCOUT_HOST $query
+    query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime "$i +4 hours" |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$i +28 hours" |nonl; echo 000)&count=1000"
+    echo Query: $NIGHTSCOUT_HOST entries/sgv.json $query
     ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
     ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
 
     # Get Nightscout carb and insulin Treatments
     # echo $i $START_DATE;
-    #query="find%5Bdate%5D%5B%24gte%5D=`(date -d $i +%s | tr -d'\n'; echo 000)`&find%5Bdate%5D%5B%24lte%5D=`(date --date="$i +1 days" +%s | tr -d '\n'; echo 000)`&count=1000"
+    #query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime $i |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$i +1 days" |nonl; echo 000)&count=1000"
     # to capture UTC-dated treatments, we need to capture an extra 12h on either side, plus the DIA lookback
     # 18h = 12h for timezones + 6h for DIA; 40h = 28h for 4am + 12h for timezones
     query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$i -18 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$i +42 hours" -Iminutes`"
-    echo Query: $NIGHTSCOUT_HOST/$query
+    echo Query: $NIGHTSCOUT_HOST treatments.json $query
     ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.$i.json || die "Couldn't download ns-treatments.$i.json"
     ls -la ns-treatments.$i.json || die "No ns-treatments.$i.json downloaded"
 
@@ -221,8 +228,15 @@ do
     else
         CATEGORIZE_UAM_AS_BASAL_OPT=
     fi
-    echo "oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json $CATEGORIZE_UAM_AS_BASAL_OPT > autotune.$i.json"
-    oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json $CATEGORIZE_UAM_AS_BASAL_OPT > autotune.$i.json \
+
+    if [[ $TUNE_INSULIN_CURVE = "true" ]]; then
+        TUNE_INSULIN_CURVE_OPT="--tune-insulin-curve"
+    else
+        TUNE_INSULIN_CURVE_OPT=
+    fi
+
+    echo "oref0-autotune-prep $CATEGORIZE_UAM_AS_BASAL_OPT $TUNE_INSULIN_CURVE_OPT ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json > autotune.$i.json"
+    oref0-autotune-prep $CATEGORIZE_UAM_AS_BASAL_OPT $TUNE_INSULIN_CURVE_OPT ns-treatments.$i.json profile.json ns-entries.$i.json profile.pump.json > autotune.$i.json \
         || die "Could not run oref0-autotune-prep ns-treatments.$i.json profile.json ns-entries.$i.json"
     
     # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>), 

@@ -87,19 +87,6 @@
     }
   },
   {
-    "determine-basal": {
-      "vendor": "openaps.vendors.process",
-      "extra": "determine-basal.ini"
-    },
-    "type": "device",
-    "name": "determine-basal",
-    "extra": {
-      "fields": "iob temp_basal glucose profile",
-      "cmd": "oref0",
-      "args": "determine-basal"
-    }
-  },
-  {
     "pebble": {
       "vendor": "openaps.vendors.process",
       "extra": "pebble.ini"

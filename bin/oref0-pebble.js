@@ -120,17 +120,17 @@ if (!module.parent) {
     } else { 
         enactedstring = enactedtemp.duration + "m@" + enactedtemp.rate.toFixed(1) + "U";
     }
-    tz = new Date().toString().match(/([-\+][0-9]+)\s/)[1]
+    tz = new Date().toString().match(/([-+][0-9]+)\s/)[1]
     enactedDate = new Date(enactedtemp.timestamp.concat(tz));
     enactedHMS = enactedDate.toLocaleTimeString().split(":")
     enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
 
     var mealCOB = "???";
-    if (typeof meal_input != 'undefined') {
+    if (typeof meal_input !== 'undefined') {
         try {
             meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
             //console.error(JSON.stringify(meal_data));
-            if (typeof meal_data.mealCOB != 'undefined') {
+            if (typeof meal_data.mealCOB !== 'undefined') {
                 mealCOB = meal_data.mealCOB;
             }
         } catch (e) {

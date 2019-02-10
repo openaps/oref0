@@ -14,22 +14,24 @@
 
 */
 
-var find_insulin = require('oref0/lib/temps');
-var find_bolus = require('oref0/lib/bolus');
-var describe_pump = require('oref0/lib/pump');
-function usage ( ) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json>');
-}
+var find_insulin = require('../lib/temps');
+var find_bolus = require('../lib/bolus');
+var describe_pump = require('../lib/pump');
 
 if (!module.parent) {
-  var iob_input = process.argv[2];
+  var argv = require('yargs')
+    .usage('$0 <pumphistory.json>')
+    .demand(1)
+    // error and show help if some other args given
+    .strict(true)
+    .help('help');
 
-  if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
-    usage( );
-    process.exit(0)
-  }
-  if (!iob_input) {
-    usage( )
+  var params = argv.argv;
+  var iob_input = params._[0];
+
+  if (params._.length > 1) {
+    argv.showHelp();
+    console.error('Too many arguments');
     process.exit(1);
   }
 

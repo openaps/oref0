@@ -1,14 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
 
-self=$(basename $0)
-NAME=${1-help}
-shift
-PROGRAM="oref0-${NAME}"
-COMMAND=$(which $PROGRAM | head -n 1)
-
-function help_message ( ) {
-  cat <<EOF
+usage "$@" <<EOF
   Usage:
 $self <cmd>
 
@@ -26,14 +21,17 @@ Valid commands:
   oref0 get-profile
   oref0 calculate-iob
   oref0 meal
-  oref0 determine-basal
   oref0 export-loop [backup-loop.json] - Print a backup json representation of
                                          entire configuration. Optionally, if a
                                          filename is specified, listing is
                                          saved in the file instead.
   oref0 help - this message
 EOF
-}
+
+NAME=${1-help}
+shift
+PROGRAM="oref0-${NAME}"
+COMMAND=$(which $PROGRAM | head -n 1)
 
 case $NAME in
 device-helper)
@@ -61,9 +59,6 @@ export-loop)
   openaps import -l | while read type ; do openaps $type show --json ; done | json -g > $out
 
   exit
-  ;;
-help|--help|-h)
-  help_message
   ;;
 *)
   test -n "$COMMAND" && exec $COMMAND $*

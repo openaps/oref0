@@ -318,23 +318,6 @@
   },
   {
     "type": "report",
-    "name": "enact/suggested.json",
-    "enact/suggested.json": {
-      "profile": "settings/profile.json",
-      "use": "shell",
-      "temp_basal": "monitor/temp_basal.json",
-      "reporter": "text",
-      "json_default": "True",
-      "meal": "monitor/meal.json",
-      "autosens": "settings/autosens.json",
-      "device": "determine-basal",
-      "remainder": "",
-      "iob": "monitor/iob.json",
-      "glucose": "monitor/glucose.json"
-    }
-  },
-  {
-    "type": "report",
     "enact/enacted.json": {
       "device": "pump",
       "input": "enact/suggested.json",

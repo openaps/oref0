@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-var fs = require('fs');
-var os = require("os");
-
 var safeRequire = require('../lib/require-utils').safeRequire;
-var getLastGlucose = require('../lib/glucose-get-last');
 var withRawGlucose = require('../lib/with-raw-glucose');
 
 /*
@@ -24,24 +20,27 @@ var withRawGlucose = require('../lib/with-raw-glucose');
 
  */
 
-function usage ( ) {
-    console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <cal.json> [max_raw]');
-}
 if (!module.parent) {
-  var glucose_input = process.argv[2];
-  if ([null, '--help', '-h', 'help'].indexOf(glucose_input) > 0) {
-    usage( );
-    process.exit(0)
-  }
-  var cal_input = process.argv[3];
+  var argv = require('yargs')
+    .usage('$0 <glucose.json> <cal.json> [<max_raw>]')
+    // error and show help if some other args given
+    .strict(true)
+    .help('help');
 
-  //limit to prevent high temping
-  var max_raw = process.argv[4];
+  var params = argv.argv;
+  var inputs = params._;
 
-  if (!glucose_input || !cal_input) {
-    usage( );
+  if (inputs.length < 2 || inputs.length > 3) {
+    argv.showHelp();
+    console.error('Incorrect number of arguments');
     process.exit(1);
   }
+
+  var glucose_input = inputs[0];
+  var cal_input = inputs[1];
+
+  //limit to prevent high temping
+  var max_raw = inputs[2];
 
   try {
     var cwd = process.cwd();
