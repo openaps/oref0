@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
@@ -164,7 +164,7 @@ function upload_ns_status {
     grep -q iob monitor/iob.json || die "IOB not found"
     # set the timestamp on enact/suggested.json to match the deliverAt time
     touch -d $(cat enact/suggested.json | jq .deliverAt | sed 's/"//g') enact/suggested.json
-    if ! file_is_recent_and_min_size enact/suggested.json; then
+    if ! file_is_recent_and_min_size enact/suggested.json 10; then
         echo -n "No recent suggested.json found; last updated "
         ls -la enact/suggested.json | awk '{print $6,$7,$8}'
         return 1
@@ -195,7 +195,7 @@ function upload_recent_treatments {
 }
 
 function latest_ns_treatment_time {
-    nightscout latest-openaps-treatment $NIGHTSCOUT_HOST | json created_at
+    nightscout latest-openaps-treatment $NIGHTSCOUT_HOST $API_SECRET | json created_at
 }
 
 #nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json

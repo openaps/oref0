@@ -120,7 +120,7 @@ file_is_recent_and_min_size () {
 }
 
 function mydate {
-    if [[ `uname` == 'Darwin' ]] ; then
+    if [[ `uname` == 'Darwin' || `uname` == 'FreeBSD' || `uname` == 'OpenBSD' ]] ; then
         gdate "$@"
     else
         date "$@"
@@ -138,6 +138,28 @@ epochtime_now () {
 # you don't need to quote the parameters to avoid word-splitting).
 to_epochtime () {
     mydate -d "$(echo "$@" |tr -d '"\n')" +%s
+}
+
+
+# recieves a line of text and logger name and creates a line in the following format:
+# timestamp logger-name message
+# This function is needed in order to create a log file that will look like:
+# 2019-01-27 02:13:15 openaps.pumploop Merging local temptargets: (NOT VALID JSON: empty) 
+# This files can be read with programs like chainsaw.
+adddate() {
+    while IFS= read -r line; do
+        echo "$(date  +"%Y-%m-%d %T") $1 $line"
+    done
+}
+
+# Remove the color Escape sequences from the logs, since some programs can not read them, and have their own coloring rules.
+uncolor () {
+     while IFS= read -r line; do
+        sed --expression="s/\o33\[[01]m//g" | 
+        sed --expression="s/\o33\[[01];39m//g" |
+        sed --expression="s/\o33\[[01];32m//g" |
+        sed --expression="s/\o33\[34;1m//g" 
+     done
 }
 
 # Filter input to output, removing any embedded newlines.
@@ -161,13 +183,13 @@ noquotes () {
 # "(NOT VALID JSON: <reason>)" at the end. Return success in any case.
 colorize_json () {
     local INPUT="$(cat)"
-    
+
     if [[ "$INPUT" == "" ]]; then
         echo "(NOT VALID JSON: empty)"
     else
         local COLORIZED_OUTPUT
         COLORIZED_OUTPUT="$(echo "$INPUT" |jq -C -c "${@-.}" 2>&1)"
-        
+
         if [[ $? != 0 ]]; then
             # If jq returned failure, it also wrote an error message.
             echo "$INPUT (NOT VALID JSON: $(echo $COLORIZED_OUTPUT))"
@@ -200,7 +222,7 @@ script_is_sourced () {
 # something other than yes or no, ask the question again.
 prompt_yn () {
     while true; do
-        if [[ "$2" == "y" ]]; then
+        if [[ "$2" =~ ^[Yy]$ ]]; then
             read -p "$1 [Y]/n " -r
         else
             read -p "$1 y/[N] " -r
@@ -242,16 +264,16 @@ prompt_and_validate () {
     local QUESTION="$2"
     local VALIDATOR="${3-true}"
     local DEFAULT="$4"
-    
+
     local LAST_VALUE=""
-    
+
     while true; do
         if [[ $# -ge 4 ]]; then
             read -p "$QUESTION [$DEFAULT] " -r "$VARNAME"
         else
             read -p "$QUESTION " -r "$VARNAME"
         fi
-        
+
         if [[ "${!VARNAME}" == "" ]]; then
             # User entered the empty string? Use the default value, if there is one.
             if [[ $# -ge 4 ]]; then
@@ -400,7 +422,7 @@ get_pref_float () {
 get_pref_string () {
     RESULT="$(get_prefs_json |jq --exit-status --raw-output "$1")"
     RETURN_CODE=$?
-    
+
     if [[ $RETURN_CODE == 0 ]]; then
         echo "$RESULT"
         return 0
@@ -425,7 +447,7 @@ set_pref_json () {
     else
         local NEW_PREFS="$(echo '{}' |jq "$1 |= $2")"
     fi
-    
+
     # Write the whole file and move into place, so that the change is atomic
     echo "$NEW_PREFS" >"${PREFERENCES_FILE}.new"
     mv -f "${PREFERENCES_FILE}.new" "$PREFERENCES_FILE"
@@ -467,13 +489,13 @@ function wait_for_silence {
         waitfor=$1
     fi
     echo -n "Listening for ${waitfor}s: "
-    for i in $(seq 1 800); do
+    for i in $(seq 1 800||gseq 1 800); do
         echo -n .
         # returns true if it hears pump comms, false otherwise
-        if ! listen -t $waitfor's' ; then
+        if ! listen -t $waitfor's' 2>&4 ; then
             echo "No interfering pump comms detected from other rigs (this is a good thing!)"
             echo -n "Continuing oref0-pump-loop at "; date
-            return 0 
+            return 0
         else
             sleep 1
         fi

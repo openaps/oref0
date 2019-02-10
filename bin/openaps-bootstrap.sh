@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 (
 BRANCH=master
 dmesg -D
