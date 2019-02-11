@@ -365,6 +365,10 @@ function smb_verify_status {
     rm -rf monitor/status.json
     echo -n "Checking pump status (suspended/bolusing): "
     ( check_status || check_status ) 2>&3 >&4 \
+    && if grep -q 12 monitor/status.json; then
+    echo -n "x12 model detected. "
+        return 0
+    fi \
     && cat monitor/status.json | colorize_json \
     && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
@@ -373,10 +377,6 @@ function smb_verify_status {
         unsuspend_if_no_temp
         refresh_pumphistory_and_meal
         false
-    fi \
-    && if grep -q 12 monitor/status.json; then
-    echo -n "x12 model detected."
-        true
     fi
 }
 
@@ -804,8 +804,8 @@ function check_model() {
 }
 function check_status() {
   set -o pipefail
-  if ( grep 12 settings/model.json ); then
-    touch monitor/status.json
+  if ( grep -q 12 settings/model.json ); then
+    echo '{ "status":"status on x12 not supported" }' > monitor/status.json
   else
     mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | colorize_json .status
   fi
