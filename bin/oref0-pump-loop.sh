@@ -366,7 +366,7 @@ function smb_verify_status {
     echo -n "Checking pump status (suspended/bolusing): "
     ( check_status || check_status ) 2>&3 >&4 \
     && if grep -q 12 monitor/status.json; then
-    echo -n "x12 model detected."
+    echo -n "x12 model detected. "
         return 0
     fi \
     && cat monitor/status.json | colorize_json \
