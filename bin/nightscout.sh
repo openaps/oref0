@@ -214,7 +214,7 @@ ns)
       cat $HISTORY | \
         jq '[ .[]
           | .sgv = if .sgv then .sgv else .glucose end
-          | .medtronic = ._type
+          | if has("_type") then .medtronic = ._type else . end
           | .dateString = if .dateString then .dateString else .display_time end
           | .dateString = if .dateString then .dateString else ( [ .date, "'$(date +%z)'" ] | join("") ) end
           | ( .dateString | sub("Z"; "") | split(".") )[0] as $time
