@@ -162,7 +162,7 @@ extra_ns_help
 }
 case $NAME in
 latest-openaps-treatment)
-  ns-get treatments.json'?find[enteredBy]=/openaps:\/\//&count=1' $* | json 0
+  ns-get treatments.json'?find[enteredBy]=/openaps:\/\//&count=1' $* | jq .[0]
   ;;
 ns)
   NIGHTSCOUT_HOST=$1
@@ -182,17 +182,17 @@ ns)
     exit 0
     ;;
     preflight)
-      STATUS=$(ns-get host $NIGHTSCOUT_HOST status.json | json status)
+      STATUS=$(ns-get host $NIGHTSCOUT_HOST status.json | jq -r .status)
       if [[ $STATUS = "ok" ]] ; then
-        echo "true" | json -j
+        echo true
         exit 0
       else
-        echo "false" | json -j
+        echo false
         exit 1
       fi
     ;;
     get-status)
-      ns-get host $NIGHTSCOUT_HOST status.json | json
+      ns-get host $NIGHTSCOUT_HOST status.json | jq .
     ;;
     status)
       ns-status $*
@@ -212,15 +212,16 @@ ns)
       #Format Medtronic glucose data into something acceptable to Nightscout.
       HISTORY=$1
       cat $HISTORY | \
-        json -E "this.sgv = this.sgv ? this.sgv : this.glucose" | \
-        json -E "this.medtronic = this._type;" | \
-        json -E "this.dateString = this.dateString ? this.dateString : this.display_time" | \
-        json -E "this.dateString = this.dateString ? this.dateString : (this.date + '$(date +%z)')" | \
-        json -E "this.date = new Date(this.dateString).getTime();" | \
-        json -E "this.type = (this.name && this.name.indexOf('GlucoseSensorData') > -1) ? 'sgv' : 'pumpdata'" | \
-        json -E "this.device = 'openaps://medtronic/pump/cgm'" | (
-          json -E "$NSONLY"
-        )
+        jq '[ .[]
+          | .sgv = if .sgv then .sgv else .glucose end
+          | .medtronic = ._type
+          | .dateString = if .dateString then .dateString else .display_time end
+          | .dateString = if .dateString then .dateString else ( [ .date, "'$(date +%z)'" ] | join("") ) end
+          | ( .dateString | sub("Z"; "") | split(".") )[0] as $time
+          | ( ( .dateString | sub("Z"; "") | split(".") )[1] | tonumber ) as $msec
+          | .date = ( ( [ $time, "Z" ] | join("") ) | fromdateiso8601 ) * 1000 + $msec
+          | .type = if .name and (.name | test("GlucoseSensorData")) then "sgv" else "pumpdata" end
+          | .device = "openaps://medtronic/pump/cgm" ]'
     ;;
     format-recent-type)
       ZONE=${1-'tz'}
@@ -273,21 +274,21 @@ ns)
     params=$*
     params=${params-'count=10'}
     exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
-      | json -e "this.glucose = this.sgv" \
+      | jq '[ .[] | .glucose = .sgv ]' \
       | openaps use $zone rezone --astimezone --date dateString -
     ;;
     oref0_glucose_without_zone)
     params=$*
     params=${params-'count=10'}
     exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
-      | json -e "this.glucose = this.sgv"
+      | jq '[ .[] | .glucose = .sgv ]' \
     ;;
     oref0_glucose_since)
     expr=$1
     zone=${2-'tz'}
     count=${3-1000}
     exec ns-get host $NIGHTSCOUT_HOST entries.json "find[date][\$gte]=$(date -d $expr +"%s%3N")&count=$count" \
-      | json -e "this.glucose = this.sgv" \
+      | jq '[ .[] | .glucose = .sgv ]' \
       | openaps use $zone rezone --astimezone --date dateString -
     ;;
     temp_targets)
@@ -334,16 +335,16 @@ autoconfigure-device-crud)
   test -z "$NIGHTSCOUT_HOST" && setup_help && exit 1;
   test -z "$API_SECRET" && setup_help && exit 1;
   openaps device add ns process --require "oper" nightscout ns "NIGHTSCOUT_HOST" "API_SECRET"
-  openaps device show ns --json | json \
-    -e "this.extra.args = this.extra.args.replace(' NIGHTSCOUT_HOST ', ' $NIGHTSCOUT_HOST ')" \
-    -e "this.extra.args = this.extra.args.replace(' API_SECRET', ' $API_SECRET')" \
+  openaps device show ns --json | \
+    jq '.extra.args |= sub(" NIGHTSCOUT_HOST " ; " '$NIGHTSCOUT_HOST' ")' \
+    jq '.extra.args |= sub(" API_SECRET " ; " '$API_SECRET' ")' \
     | openaps import
   ;;
 cull-latest-openaps-treatments)
   INPUT=$1
   MODEL=$2
   LAST_TIME=$3
-  mm-format-ns-treatments $INPUT $MODEL |  json -c "this.created_at > '$LAST_TIME'"
+  mm-format-ns-treatments $INPUT $MODEL | jq ". | select(.created_at > '$LAST_TIME')"
   ;;
 help|--help|-h)
   help_message
