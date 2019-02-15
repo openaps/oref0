@@ -34,17 +34,17 @@ function dia ( ) {
 }
 
 function fix-time-field ( ) {
-  jq '.time = .time | split(":") | .[0:2] | join(":")'
+  jq '[ .[] | .time = ( .time | split(":") | .[0:2] | join(":") ) ]'
 }
 
 function fix-schedule ( ) {
   field=$1
-  jq '.time = .start | .value = ( .'$field' | tostring )' \
+  jq '[ .[] | .time = .start | .value = ( .'$field' | tostring ) ]' \
     | fix-time-field
 }
 
 function carb-ratios ( ) {
-  units=$(cat $1 | jq .units)
+  units=$(cat $1 | jq -r .units)
   if [[ $units = "grams" ]] ; then
     cat $1 | jq .schedule \
       | fix-schedule ratio
@@ -56,34 +56,35 @@ function carb-ratios ( ) {
 }
 
 function add-carbs ( ) {
-  jq '.carbratio = '$(carb-ratio $1)
+  jq '.carbratio = '"$(carb-ratios $1)"
 }
 
 function basal-rates ( ) {
   (
    test -n "$1" && cat $1 || echo "[ ]"
   ) | fix-schedule rate \
-    | jq '.[] | if length > 0 then . else [] end'
+    | jq '[ .[] | if length > 0 then . else [] end ]'
     # | json -e "this.seconds = this.minutes * 60;"
 }
 
 function add-basals ( ) {
-  jq '.basal = '$(basal-rates $1)
+  jq '.basal = '"$(basal-rates $1)"
 }
 
 function sensitivities ( ) {
   (
    test -n "$1" && cat $1 || echo "{ }" | json
   )   \
-    | jq 'if .sensitivities and ((.sensitivities | length) > 0) then .sens = .sensitivities else .sense = [] end'
-    | jq .sens  \
+    | jq '.
+      | .sens = if .sensitivities and ((.sensitivities | length) > 0) then .sensitivities else [] end
+      | .sens'  \
     | fix-schedule sensitivity
 }
 
 function add-isf ( ) {
   #json -e "this.sens =
   # sensitivities $1
-  jq '.sens = '$(sensitivities $1)
+  jq '.sens = '"$(sensitivities $1)"
 }
 
 function targets ( ) {
@@ -99,15 +100,14 @@ function targets ( ) {
 function target-category ( ) {
   category="$1"
   name="target_$category"
-  jq '.'$name' = if .targets and ((.targets | length) > 0) then .targets else []
-    | .'$name' = .'$name' | map ({ value: ( .'$category' | tostring ), time: .start })
-  '
+  jq 'if .targets | length > 0 then .targets else [] end' | \
+  jq '{ "'$name'": [ .[] | { "value": ( .'$category' | tostring ), "time": .start } ] }' | \
   jq .$name | fix-time-field
 }
 
 function add-targets ( ) {
-  jq '.target_low = '$(targets $1 low)'
-    | .target_high = '$(targets $1 high)'
+  jq '.target_low = '"$(targets $1 low)"'
+    | .target_high = '"$(targets $1 high)"'
     | .units = '$(bgunits $1)
 }
 
@@ -119,8 +119,8 @@ function fix-dates ( ) {
   # really want to know last changed date
   startDate=$(date --date "1 minute ago" --iso-8601=minutes)
   created_at=$(date --iso-8601=minutes)
-  jq '.created_at = '$created_at'
-    | .startDate = '$startDate
+  jq '.created_at = "'$created_at'"
+    | .startDate = "'$startDate'"'
 }
 
 function stub ( ) {
@@ -145,7 +145,7 @@ function stub ( ) {
 EOF
 }
 
-stub $SETTINGS | fix-dates \
+stub $SETTINGS | fix-dates  \
   | add-carbs $CARBS \
   | add-basals $BASALRATES \
   | add-isf $SENSITIVITIES \
