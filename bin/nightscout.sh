@@ -215,8 +215,9 @@ ns)
         jq '[ .[]
           | .sgv = if .sgv then .sgv else .glucose end
           | if has("_type") then .medtronic = ._type else . end
-          | .dateString = if .dateString then .dateString else .display_time end
-          | .dateString = if .dateString then .dateString else ( [ .date, "'$(date +%z)'" ] | join("") ) end
+          | if .dateString | not then .dateString = .display_time else . end
+          | if ( ( .dateString | not ) and ( .date | tostring | test(":") ) ) then
+            .dateString = ( [ ( .date | tostring), "'$(date +%z)'" ] | join("") ) else . end
           | ( .dateString | sub("Z"; "") | split(".") )[0] as $time
           | ( ( .dateString | sub("Z"; "") | split(".") )[1] | tonumber ) as $msec
           | .date = ( ( [ $time, "Z" ] | join("") ) | fromdateiso8601 ) * 1000 + $msec
@@ -233,23 +234,23 @@ ns)
       test ! -e ${FILE} && echo "Third argument, contents to upload, FILE, does not exist" && exit 1
       test ! -r ${FILE} && echo "Third argument, contents to upload, FILE, not readable." && exit 1
       openaps use ns shell lsgaps ${ZONE} ${TYPE} \
-        |  openaps use ${ZONE} select --date dateString --current now --gaps - ${FILE}  | json
+        |  openaps use ${ZONE} select --date dateString --current now --gaps - ${FILE}  | jq .
     ;;
     latest-entries-time)
-      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST entries.json 'find[type]=sgv'  | json 0)
-      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | json -j dateString
+      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST entries.json 'find[type]=sgv'  | jq .[0])
+      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | jq .dateString
       exit 0
     ;;
     latest-treatment-time)
       PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST treatments.json'?find[enteredBy]=/openaps:\/\//&count=1'  | json 0)
-      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | json -j created_at
+      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | jq .created_at
       exit 0
     # exec ns-get host $NIGHTSCOUT_HOST $*
     ;;
     format-recent-history-treatments)
       HISTORY=$1
       MODEL=$2
-      LAST_TIME=$(nightscout ns $NIGHTSCOUT_HOST $API_SECRET latest-treatment-time | json)
+      LAST_TIME=$(nightscout ns $NIGHTSCOUT_HOST $API_SECRET latest-treatment-time)
       exec nightscout cull-latest-openaps-treatments $HISTORY $MODEL ${LAST_TIME}
       exit 0
 
@@ -257,11 +258,11 @@ ns)
     upload-non-empty-type)
       TYPE=${1-entries.json}
       FILE=$2
-      test $(cat $FILE | json -a | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $FILE && exit 0
+      test $(cat $FILE | jq .[] | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $FILE && exit 0
       exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $TYPE $FILE
     ;;
     upload-non-empty-treatments)
-      test $(cat $1 | json -a | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $1 && exit 0
+      test $(cat $1 | jq .[] | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $1 && exit 0
     exec ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json $1
 
     ;;
