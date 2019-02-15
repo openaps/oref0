@@ -16,16 +16,18 @@ EOT
 
 
 # | json -e "this.type = 'mm://openaps/$self'" \
-model=$(json -f $MODEL)
+model=$(jq -r . $MODEL)
 
-oref0-normalize-temps $HISTORY  \
-  | jq  '[ .[]
-    | .medtronic = if ._type then "mm://openaps/'$self'/" + ._type else "mm://openaps/mm-format-ns-treatments/" + .eventType end 
+oref0-normalize-temps $HISTORY \
+  | jq '[ .[]
+    | .medtronic = ( [ "mm://openaps/'$self'/", ( . | if ._type then ._type else .eventType end ) ] | join("") )
     | .created_at = if .created_at then .created_at else .timestamp end
     | .enteredBy = "openaps://medtronic/'$model'"
-    | if .glucose > 0 then .glucoseType = "openaps://medtronic/'$model'" else .enteredBy = "openaps://medtronic/'$model'" end
+    | if .glucose and (.glucoseType | not) and .glucose > 0 then .glucoseType = .enteredBy else . end
     | .eventType = if .eventType then .eventType else "Note" end
-    | if .eventType == "Note" then .notes = ._type + " '$model' " + if .notes then .notes else "" end else .enteredBy = "openaps://medtronic/'$model'" end
-    | if ._type == "AlarmSensor" and .alarm_description then .notes = .alarm_description else .enteredBy = "openaps://medtronic/'$model'" end
-    ]' > $OUTPUT
+    | if ._type == "AlarmSensor" and .alarm_description then .notes = .alarm_description else . end
+    | ( if .notes then .notes else "" end ) as $note
+    | if ( .eventType == "Note" ) and ( .alarm_description | not ) then .notes = ( [ ._type, "'" $model "'", $note ] | join("") ) else . end
+  ]' \
+  > $OUTPUT
 
