@@ -217,7 +217,7 @@ ns)
           | if has("_type") then .medtronic = ._type else . end
           | if .dateString | not then .dateString = .display_time else . end
           | if ( ( .dateString | not ) and ( .date | tostring | test(":") ) ) then
-            .dateString = ( [ ( .date | tostring), "'$(date +%z)'" ] | join("") ) else . end
+            .dateString = ( [ .date, "'$(date +%z)'" ] | join("") ) else . end
           | ( .dateString | sub("Z"; "") | split(".") )[0] as $time
           | ( ( .dateString | sub("Z"; "") | split(".") )[1] | tonumber ) as $msec
           | .date = ( ( [ $time, "Z" ] | join("") ) | fromdateiso8601 ) * 1000 + $msec
