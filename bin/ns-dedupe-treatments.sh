@@ -45,7 +45,8 @@ fetch | flatten | while read count date; do
     | jq '[ .[]
       | .count = '$count'
       | .date = '$date'
-      | .created_at = '$date done | jq '.[]' | jq -s
+      | .created_at = '$date' ]'
+done | jq '.[]' | jq -s
 }
 
 function main ( ) {
