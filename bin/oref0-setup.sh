@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script sets up an openaps environment by defining the required devices,
 # reports, and aliases, and optionally enabling it in cron,
@@ -585,7 +585,7 @@ echo
 
 # create temporary file for oref0-runagain.sh
 OREF0_RUNAGAIN=`mktemp /tmp/oref0-runagain.XXXXXXXXXX`
-echo "#!/bin/bash" > $OREF0_RUNAGAIN
+echo "#!/usr/bin/env bash" > $OREF0_RUNAGAIN
 echo "# To run again with these same options, use: " | tee $OREF0_RUNAGAIN
 echo -n "$HOME/src/oref0/bin/oref0-setup.sh --dir=$directory --serial=$serial --cgm=$CGM" | tee -a $OREF0_RUNAGAIN
 if [[ ! -z $BLE_SERIAL ]]; then
@@ -652,9 +652,9 @@ if prompt_yn "" N; then
     rm -rf $directory/.git
     echo Removed any existing git
 
-    # TODO: delete this after openaps 0.2.1 release
-    echo Checking openaps 0.2.1 installation with --nogit support
-    if ! openaps --version 2>&1 | egrep "0.[2-9].[1-9]"; then
+    # TODO: delete this after openaps 0.2.2 release
+    echo Checking openaps 0.2.2 installation with --nogit support
+    if ! openaps --version 2>&1 | egrep "0.[2-9].[2-9]"; then
         echo Installing latest openaps w/ nogit && sudo pip install --default-timeout=1000 git+https://github.com/openaps/openaps.git@nogit || die "Couldn't install openaps w/ nogit"
     fi
 
@@ -720,7 +720,7 @@ if prompt_yn "" N; then
         )
     fi
 
-    cp preferences.json old_preferences.json
+    test -f preferences.json && cp preferences.json old_preferences.json || echo "No old preferences.json to save off"
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
@@ -742,8 +742,13 @@ if prompt_yn "" N; then
         fi
         function join_by { local IFS="$1"; shift; echo "$*"; }
         # merge existing prefrences with preferences from arguments. (preferences from arguments take precedence)
-        echo "{ $(join_by , ${preferences_from_args[@]}) }" | jq --slurpfile existing_prefs preferences.json '$existing_prefs[0] + .' > updated_preferences.json
-        oref0-get-profile --updatePreferences updated_preferences.json > preferences.json && rm updated_preferences.json || die "Could not run oref0-get-profile"
+        echo "{ $(join_by , ${preferences_from_args[@]}) }" > arg_prefs.json
+        if [[ -s preferences.json ]]; then
+            cat arg_prefs.json | jq --slurpfile existing_prefs preferences.json '$existing_prefs[0] + .' > updated_prefs.json && rm arg_prefs.json
+        else
+            mv arg_prefs.json updated_prefs.json
+        fi
+        oref0-get-profile --updatePreferences updated_prefs.json > preferences.json && rm updated_prefs.json || die "Could not run oref0-get-profile"
     fi
 
     # Save information to preferences.json
@@ -775,8 +780,9 @@ if prompt_yn "" N; then
         set_pref_string .cgm_loop_path "$directory-cgm-loop"
     fi
 
-    if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
+    if [[ ${CGM,,} =~ "xdrip" ]]; then # Evaluates true for both xdrip and xdrip-js 
         set_pref_string .xdrip_path "$HOME/.xDripAPS"
+        set_pref_string .bt_offline "true"
     fi
     #if [[ ! -z "$DEXCOM_CGM_TX_ID" ]]; then
         #set_pref_string .dexcom_cgm_tx_id "$DEXCOM_CGM_TX_ID"
@@ -889,6 +895,11 @@ if prompt_yn "" N; then
         sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
         cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
         cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
+        if [ ! -z "$BT_MAC" ]; then
+          printf 'Checking for the bnep0 interface in the interfaces.client file and adding if missing...'
+          # Make sure the bnep0 interface is in the /etc/networking/interface
+          (grep -qa bnep0 /etc/network/interfaces.client && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces.client && printf 'added.\n') 
+        fi
         #Stop automatic startup of hostapd & dnsmasq
         update-rc.d -f hostapd remove
         update-rc.d -f dnsmasq remove
@@ -1222,9 +1233,15 @@ if prompt_yn "" N; then
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
         echo "Installing socat and ntp..."
         apt-get install -y socat ntp
+        echo "Installing pi-buttons..."
+        systemctl stop pi-buttons
+        cd $HOME/src && git clone git://github.com/bnielsen1965/pi-buttons.git || (cd $HOME/src/pi-buttons && git checkout master && git pull)
+        echo "Make and install pi-buttons..."
+        ( cd $HOME/src/pi-buttons/src && make && sudo make install && sudo make install_service ) || die "Couldn't install pi-buttons"
+        systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
-        cd $HOME/src/openaps-menu && sudo npm install
+        cd $HOME/src/openaps-menu && sudo npm install || die "Couldn't install openaps-menu"
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     fi
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Author: Ben West @bewest
 # Maintainer: Chris Oattes @cjo20

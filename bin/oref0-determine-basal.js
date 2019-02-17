@@ -118,7 +118,7 @@ if (!module.parent) {
     //console.log(carbratio_data);
     var meal_data = { };
     //console.error("meal_input",meal_input);
-    if (meal_input && typeof meal_input != 'undefined') {
+    if (meal_input && typeof meal_input !== 'undefined') {
         try {
             meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
             //console.error(JSON.stringify(meal_data));
@@ -148,7 +148,7 @@ if (!module.parent) {
             autosens_data = JSON.parse(fs.readFileSync(autosens_input, 'utf8'));
             //console.error(JSON.stringify(autosens_data));
         } catch (e) {
-            var msg = {
+            msg = {
               msg: "Optional feature Auto Sensitivity enabled.  Could not find specified auto-sens: " + autosens_input
             , error: e
             };
@@ -163,12 +163,12 @@ if (!module.parent) {
       }
     }
     var reservoir_data = null;
-    if (reservoir_input && typeof reservoir_input != 'undefined') {
+    if (reservoir_input && typeof reservoir_input !== 'undefined') {
         try {
             reservoir_data = fs.readFileSync(reservoir_input, 'utf8');
             //console.error(reservoir_data);
         } catch (e) {
-            var msg = {
+            msg = {
               msg: "Warning: Could not read required reservoir data from "+reservoir_input+"."
             , file: reservoir_input
             , error: e
@@ -178,12 +178,12 @@ if (!module.parent) {
     }
     var currentTime_input = params.currentTime;
     var currentTime = null;
-    if (currentTime_input && typeof currentTime_input != 'undefined') {
+    if (currentTime_input && typeof currentTime_input !== 'undefined') {
         try {
             currentTime = new Date(currentTime_input);
             console.error(currentTime);
         } catch (e) {
-            var msg = {
+            msg = {
               msg: "Warning: Could not parse current time: "+currentTime_input+"."
             , error: e
             };
@@ -200,7 +200,7 @@ if (!module.parent) {
       process.exit(1);
     }
 
-    if (typeof(iob_data.length) && iob_data.length > 1) {
+    if (typeof iob_data.length !== 'undefined' && iob_data.length > 1) {
         console.error(JSON.stringify(iob_data[0]));
     } else {
         console.error(JSON.stringify(iob_data));
@@ -212,7 +212,7 @@ if (!module.parent) {
 
     var tempBasalFunctions = require('../lib/basal-set-temp');
 
-    rT = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus'], reservoir_data, currentTime);
+    var rT = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens_data, meal_data, tempBasalFunctions, params['microbolus'], reservoir_data, currentTime);
 
     if(typeof rT.error === 'undefined') {
         console.log(JSON.stringify(rT));

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # The Raspberry Pi doesn't contain a real hardware clock, so the time is lost on
 # reboots. This updates the Raspberry Pi fake Hardware Clock so that it matches

@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/usr/bin/env bash 
  
 # Since the Edison does not have an internal clock 
 # after a reboot if you do not have the correct time your date will be older than  

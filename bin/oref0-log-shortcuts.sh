@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Because this script is meant to be "source"d, not just run normally, it
 # doesn't include oref0-bash-common-functions.sh like most others do.
@@ -100,7 +100,7 @@ function remove_obsolete_aliases () {
 END
 )
     echo "$OBSOLETE_ALIASES" |(while read OBSOLETE_ALIAS; do
-        cat "$PROFILE_PATH" |grep -v "$OBSOLETE_ALIAS" >"$PROFILE_PATH".new$$
+        test -f "$PROFILE_PATH" && cat "$PROFILE_PATH" |grep -v "$OBSOLETE_ALIAS" >"$PROFILE_PATH".new$$ &&
         mv -f "$PROFILE_PATH".new$$ "$PROFILE_PATH"
     done)
 }
@@ -125,10 +125,10 @@ else
     for i in "$@"; do
     case "$i" in
         --add-to-profile)
-            add_aliases_to_profile "$HOME/.bash_profile"
+            test -f "$HOME/.bash_profile" && add_aliases_to_profile "$HOME/.bash_profile"
             ;;
         --add-to-profile=*)
-            add_aliases_to_profile "${i#*=}"
+            test -f "${i#*=}" && add_aliases_to_profile "${i#*=}"
             ;;
         *)
            echo "Unrecognized argument: $i"
