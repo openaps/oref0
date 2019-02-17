@@ -1041,7 +1041,7 @@ if prompt_yn "" N; then
 
             # Hack to check if radio_locale has been set in pump.ini.
             # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-            grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+            grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale = $radio_locale" >> pump.ini
         fi
     else
         echo '[device "pump"]' > pump.ini
@@ -1261,7 +1261,7 @@ if prompt_yn "" N; then
       echo 868.4 > $directory/monitor/medtronic_frequency.ini
       # Store radio_locale for later use
       # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-      grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+      grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale = $radio_locale" >> pump.ini
     else
       echo 916.55 > $directory/monitor/medtronic_frequency.ini
     fi
@@ -1316,16 +1316,6 @@ if prompt_yn "" N; then
         copy_go_binaries
         move_mmtune
     fi
-
-    #if [[ "$ttyport" =~ "spi" ]]; then
-        #echo Resetting spi_serial
-        #reset_spi_serial.py
-    #fi
-# Commenting out the mmtune as attempt to stop the radio reboot errors that happen when re-setting up.
-#    echo Attempting to communicate with pump:
-#    ( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
-#    openaps mmtune
-#    echo
 
     # clear any extraneous input before prompting
     while(read -r -t 0.1); do true; done
