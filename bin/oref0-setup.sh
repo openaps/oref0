@@ -282,7 +282,9 @@ function copy_go_binaries () {
 function move_mmtune () {
     request_stop_local_binary Go-mmtune
     if [ -f /usr/local/bin/mmtune ]; then
-      mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || echo "Couldn't move mmtune to Go-mmtune"
+      mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't move mmtune to Go-mmtune"
+    else 
+      die "Couldn't move_mmtune() because /usr/local/bin/mmtune exists"
     fi
 }
 
@@ -375,7 +377,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
     if [[ $REPLY =~ ^[Uu]$ ]]; then
-      read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2018.12.05' [S]/<version> " -r
+      read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2019.01.21' [S]/<version> " -r
       if [[ $REPLY =~ ^[Ss]$ ]]; then
         buildgofromsource=true
         echo "Building Go pump binaries from source"
@@ -688,6 +690,14 @@ if prompt_yn "" N; then
 
     cd $directory || die "Can't cd $directory"
 
+    #echo Checking mmeowlink installation
+    if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
+        pip show mmeowlink | egrep "Version: 0.11.1" || (
+            echo Installing latest mmeowlink
+            sudo pip install --default-timeout=1000 -U mmeowlink || die "Couldn't install mmeowlink"
+        )
+    fi
+
     test -f preferences.json && cp preferences.json old_preferences.json || echo "No old preferences.json to save off"
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
@@ -956,6 +966,101 @@ if prompt_yn "" N; then
         cd $directory || die "Can't cd $directory"
     fi
 
+    # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
+    if [[ "$ttyport" =~ "spi" ]] && [[ ${CGM,,} =~ "mdt" ]]; then
+        echo Checking kernel for spi_serial installation
+        if ! python -c "import spi_serial" 2>/dev/null; then
+            if [[ "$ttyport" =~ "spidev0.0" ]]; then
+                echo Installing spi_serial && sudo pip install --default-timeout=1000 --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
+                sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+            else
+                echo Installing spi_serial && sudo pip install --default-timeout=1000 --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+            fi
+        fi
+
+        echo Checking kernel for mraa installation
+        #if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
+        #    echo "Skipping mraa install for kernel 4.10+"
+        #else # check if mraa is installed
+            if ! ldconfig -p | grep -q mraa; then # if not installed, install it
+                echo Installing swig etc.
+                sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
+                # TODO: Due to mraa bug https://github.com/intel-iot-devkit/mraa/issues/771 we were not using the master branch of mraa on dev.
+                # TODO: After each oref0 release, check whether there is a new stable MRAA release that is of interest for the OpenAPS community
+                MRAA_RELEASE="v1.7.0" # GitHub hash 8ddbcde84e2d146bc0f9e38504d6c89c14291480
+                if [ -d "$HOME/src/mraa/" ]; then
+                    echo -n "$HOME/src/mraa/ already exists; "
+                    #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
+                    (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE} release" # used for oref0 master
+                else
+                    echo -n "Cloning mraa "
+                    #(echo -n "master branch. " && cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master" # used for oref0 dev
+                    (echo -n "stable release ${MRAA_RELEASE}. " && cd $HOME/src && git clone -b ${MRAA_RELEASE} https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa release ${MRAA_RELEASE}" # used for oref0 master
+                fi
+                # build mraa from source
+                ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
+                make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
+                sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
+            fi
+        #fi
+    fi
+
+    #echo Checking openaps dev installation
+    #if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
+        # TODO: switch this back to master once https://github.com/openaps/openaps/pull/116 is merged/released
+        #echo Installing latest openaps dev && sudo pip install  --default-timeout=1000  git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
+    #fi
+
+    # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
+    if [[ ${CGM,,} =~ "mdt" ]]; then
+        cd $directory || die "Can't cd $directory"
+        echo "Removing any existing pump device:"
+        ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
+        if [[ -z "$ttyport" ]]; then
+            openaps device add pump medtronic $serial || die "Can't add pump"
+            # add carelink to pump.ini
+            grep -q radio_type pump.ini || echo "radio_type=carelink" >> pump.ini
+            # carelinks can't listen for silence or mmtune, so just do a preflight check instead
+            openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
+            openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
+            openaps alias add mmtune 'report invoke monitor/temp_basal.json'
+        else
+            # radio_locale requires openaps 0.2.0-dev or later
+            openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
+            #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
+            #openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
+            if [[ ${radio_locale,,} =~ "ww" ]]; then
+                if [ -d "$HOME/src/subg_rfspy/" ]; then
+                    echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
+                    (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
+                else
+                    echo -n "Cloning subg_rfspy: "
+                    (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
+                fi
+            fi
+
+            # Hack to check if radio_locale has been set in pump.ini.
+            # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+            grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+        fi
+    else
+        echo '[device "pump"]' > pump.ini
+        echo "serial = $serial" >> pump.ini
+        echo "radio_locale = $radio_locale" >> pump.ini
+    fi
+
+    # Medtronic CGM
+    if [[ ${CGM,,} =~ "mdt" ]]; then
+        sudo pip install --default-timeout=1000 -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
+        openaps device remove cgm 2>/dev/null
+        if [[ -z "$ttyport" ]]; then
+            openaps device add cgm medtronic $serial || die "Can't add cgm"
+        else
+            openaps device add cgm mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add cgm"
+        fi
+        do_openaps_import $HOME/src/oref0/lib/oref0-setup/mdt-cgm.json
+    fi
+
     sudo pip install --default-timeout=1000 flask flask-restful  || die "Can't add xdrip cgm - error installing flask packages"
 
     # xdrip CGM (xDripAPS), also gets installed when using xdrip-js
@@ -1003,11 +1108,10 @@ if prompt_yn "" N; then
         # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
         grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
     fi
-#DEPRECATED?
-#    if [[ ${CGM,,} =~ "mdt" ]]; then # still need this for the old ns-loop for now
-#        cd $directory || die "Can't cd $directory"
-#        do_openaps_import $HOME/src/oref0/lib/oref0-setup/edisonbattery.json
-#    fi
+    if [[ ${CGM,,} =~ "mdt" ]]; then # still need this for the old ns-loop for now
+        cd $directory || die "Can't cd $directory"
+        do_openaps_import $HOME/src/oref0/lib/oref0-setup/edisonbattery.json
+    fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
@@ -1020,6 +1124,11 @@ if prompt_yn "" N; then
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
 
+    if is_edison; then
+        sudo apt-get -y -t jessie-backports install jq
+    else
+        sudo apt-get -y install jq
+    fi
     # configure autotune if enabled
     if [[ $ENABLE =~ autotune ]]; then
         cd $directory || die "Can't cd $directory"
@@ -1150,6 +1259,9 @@ if prompt_yn "" N; then
     #Necessary to "bootstrap" Go commands...
     if [[ ${radio_locale,,} =~ "ww" ]]; then
       echo 868.4 > $directory/monitor/medtronic_frequency.ini
+      # Store radio_locale for later use
+      # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
+      grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
     else
       echo 916.55 > $directory/monitor/medtronic_frequency.ini
     fi
