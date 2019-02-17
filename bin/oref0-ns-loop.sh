@@ -152,9 +152,9 @@ function battery_status {
     elif [ -e monitor/low-battery.json ]; then
         low=$(cat monitor/low-battery.json)
         if [ "$low" = True ]; then
-          echo '{"batteryVoltage":3000, "battery":9}'
+          echo '{"batteryVoltage":3000, "battery":9}' | tee monitor/edison-battery.json
         else
-          echo '{"batteryVoltage":3680, "battery":50}'
+          echo '{"batteryVoltage":3680, "battery":50}' | tee monitor/edison-battery.json
         fi
     fi
 }
