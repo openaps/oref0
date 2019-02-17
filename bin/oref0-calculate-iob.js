@@ -53,20 +53,20 @@ if (!module.parent) {
   var autosens_data = null;
   if (autosens_input) {
     try {
-        var autosens_data = require(cwd + '/' + autosens_input);
+        autosens_data = require(cwd + '/' + autosens_input);
     } catch (e) {}
     //console.error(autosens_input, JSON.stringify(autosens_data));
   }
   var pumphistory_24_data = null;
   if (pumphistory_24_input) {
     try {
-        var pumphistory_24_data = require(cwd + '/' + pumphistory_24_input);
+        pumphistory_24_data = require(cwd + '/' + pumphistory_24_input);
     } catch (e) {}
   }
 
   // pumphistory_data.sort(function (a, b) { return a.date > b.date });
 
-  var inputs = {
+  inputs = {
     history: pumphistory_data
   , history24: pumphistory_24_data
   , profile: profile_data

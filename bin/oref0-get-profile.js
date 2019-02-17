@@ -98,11 +98,11 @@ if (!module.parent) {
     var model_input = params.model;
     var autotune_input = params.autotune;
 
-    var cwd = process.cwd()
+    cwd = process.cwd()
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
     if (bgtargets_data.units !== 'mg/dL') {
-        if (bgtargets_data.units == 'mmol/L') {
+        if (bgtargets_data.units === 'mmol/L') {
             for (var i = 0, len = bgtargets_data.targets.length; i < len; i++) {
                 bgtargets_data.targets[i].high = bgtargets_data.targets[i].high * 18;
                 bgtargets_data.targets[i].low = bgtargets_data.targets[i].low * 18;
@@ -117,8 +117,8 @@ if (!module.parent) {
     
     var isf_data = require(cwd + '/' + isf_input);
     if (isf_data.units !== 'mg/dL') {
-        if (isf_data.units == 'mmol/L') {
-            for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
+        if (isf_data.units === 'mmol/L') {
+            for (i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                 isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
             }
             isf_data.units = 'mg/dL';
@@ -130,8 +130,8 @@ if (!module.parent) {
     }
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
 
-    var preferences = {};
-    if (typeof preferences_input != 'undefined') {
+    preferences = {};
+    if (typeof preferences_input !== 'undefined') {
         preferences = require(cwd + '/' + preferences_input);
     }
     var fs = require('fs');
@@ -139,8 +139,8 @@ if (!module.parent) {
     var model_data = { }
     if (params.model) {
       try {
-        model_string = fs.readFileSync(model_input, 'utf8');
-        model_data = model_string.replace(/\"/gi, '');
+        var model_string = fs.readFileSync(model_input, 'utf8');
+        model_data = model_string.replace(/"/gi, '');
       } catch (e) {
         var msg = { error: e, msg: "Could not parse model_data", file: model_input};
         console.error(msg.msg);
@@ -154,7 +154,7 @@ if (!module.parent) {
         autotune_data = JSON.parse(fs.readFileSync(autotune_input, 'utf8'));
 
       } catch (e) {
-        var msg = { error: e, msg: "Could not parse autotune_data", file: autotune_input};
+        msg = { error: e, msg: "Could not parse autotune_data", file: autotune_input};
         console.error(msg.msg);
         // Continue and output a non-autotuned profile if we don't have autotune_data
         //console.log(JSON.stringify(msg));
@@ -164,12 +164,12 @@ if (!module.parent) {
 
     var carbratio_data = { };
     //console.log("carbratio_input",carbratio_input);
-    if (typeof carbratio_input != 'undefined') {
+    if (typeof carbratio_input !== 'undefined') {
         try {
             carbratio_data = JSON.parse(fs.readFileSync(carbratio_input, 'utf8'));
 
         } catch (e) {
-            var msg = { error: e, msg: "Could not parse carbratio_data. Feature Meal Assist enabled but cannot find required carb_ratios.", file: carbratio_input };
+            msg = { error: e, msg: "Could not parse carbratio_data. Feature Meal Assist enabled but cannot find required carb_ratios.", file: carbratio_input };
             console.error(msg.msg);
             console.log(JSON.stringify(msg));
             process.exit(1);
@@ -180,7 +180,7 @@ if (!module.parent) {
           errors.push({msg: "Carb ratio data should have an array called schedule with a start and ratio fields.", file: carbratio_input, data: carbratio_data});
         } else {
         }
-        if (carbratio_data.units != 'grams' && carbratio_data.units != 'exchanges')  {
+        if (carbratio_data.units !== 'grams' && carbratio_data.units !== 'exchanges')  {
           errors.push({msg: "Carb ratio should have units field set to 'grams' or 'exchanges'.", file: carbratio_input, data: carbratio_data});
         }
         if (errors.length) {
@@ -193,7 +193,7 @@ if (!module.parent) {
         }
     }
     var temptargets_data = { };
-    if (typeof temptargets_input != 'undefined') {
+    if (typeof temptargets_input !== 'undefined') {
         try {
             temptargets_data = JSON.parse(fs.readFileSync(temptargets_input, 'utf8'));
         } catch (e) {

@@ -16,7 +16,6 @@
 */
 
 var basal = require('../lib/profile/basal');
-var get_iob = require('../lib/iob');
 var detect = require('../lib/determine-basal/autosens');
 
 if (!module.parent) {
@@ -40,7 +39,7 @@ if (!module.parent) {
     var profile_input = inputs[2];
     var readings_per_run = inputs[3];
     var output_file;
-    if (inputs.length == 5) {
+    if (inputs.length === 5) {
         output_file = inputs[4];
     }
 
@@ -59,9 +58,9 @@ if (!module.parent) {
         var profile = require(cwd + '/' + profile_input);
 
 
-        if (typeof(profile.isfProfile == "undefined")) {
-            for (prop in profile[0].store) {
-                profilename = prop;
+        if (typeof profile.isfProfile === "undefined") {
+            for (var prop in profile[0].store) {
+                var profilename = prop;
             }
             //console.error(profilename);
             //console.error(profile[0].store[profilename].basal);
@@ -90,17 +89,17 @@ if (!module.parent) {
                 "autosens_max": 2.0,
                 "autosens_min": 0.5
             };
-            var inputs = { "basals": profile.basalprofile };
+            inputs = { "basals": profile.basalprofile };
             profile.max_daily_basal = basal.maxDailyBasal(inputs);
           //console.error(profile);
         }
         var isf_data = profile.isfProfile;
-        if (typeof(isf_data) != "undefined" && typeof(isf_data.units == "string")) {
+        if (typeof isf_data !== "undefined" && typeof isf_data.units === "string") {
             if (isf_data.units !== 'mg/dL') {
-                if (isf_data.units == 'mg/dl') {
+                if (isf_data.units === 'mg/dl') {
                     isf_data.units = 'mg/dL';
                     profile.isfProfile.units = 'mg/dL';
-                } else if (isf_data.units == 'mmol' || isf_data.units == 'mmol/L') {
+                } else if (isf_data.units === 'mmol' || isf_data.units === 'mmol/L') {
                     for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                         isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
                         profile.sens = profile.sens * 18;
@@ -137,7 +136,7 @@ if (!module.parent) {
     do {
         detection_inputs.deviations = 96;
         detect(detection_inputs);
-        for(var i=0; i<readings_per_run; i++) {
+        for(i=0; i<readings_per_run; i++) {
             detection_inputs.glucose_data.shift();
         }
         console.error(ratio, newisf, detection_inputs.glucose_data[0].dateString);
@@ -162,15 +161,10 @@ if (!module.parent) {
 
 function init() {
 
-    var detectsensitivity = {
+    return /* detectsensitivity */ {
         name: 'detect-sensitivity'
         , label: "OpenAPS Detect Sensitivity"
     };
-
-    //detectsensitivity.getLastGlucose = require('../lib/glucose-get-last');
-    //detectsensitivity.detect_sensitivity = require('../lib/determine-basal/determine-basal');
-    return detectsensitivity;
-
 }
 module.exports = init;
 
@@ -178,46 +172,10 @@ module.exports = init;
 function convertBasal(item)
 {
     var start = item.time.split(":")
-    var convertedBasal = {
+    return {
       "start": item.time + ":00",
       "minutes": parseInt(start[0])*60 + parseInt(start[1]),
       //"minutes": Math.round(item.timeAsSeconds / 60),
       "rate": item.value
   };
-  return convertedBasal;
 }
-
-// From https://gist.github.com/IceCreamYou/6ffa1b18c4c8f6aeaad2
-// Returns the value at a given percentile in a sorted numeric array.
-// "Linear interpolation between closest ranks" method
-function percentile(arr, p) {
-    if (arr.length === 0) return 0;
-    if (typeof p !== 'number') throw new TypeError('p must be a number');
-    if (p <= 0) return arr[0];
-    if (p >= 1) return arr[arr.length - 1];
-
-    var index = arr.length * p,
-        lower = Math.floor(index),
-        upper = lower + 1,
-        weight = index % 1;
-
-    if (upper >= arr.length) return arr[lower];
-    return arr[lower] * (1 - weight) + arr[upper] * weight;
-}
-
-// Returns the percentile of the given value in a sorted numeric array.
-function percentRank(arr, v) {
-    if (typeof v !== 'number') throw new TypeError('v must be a number');
-    for (var i = 0, l = arr.length; i < l; i++) {
-        if (v <= arr[i]) {
-            while (i < l && v === arr[i]) i++;
-            if (i === 0) return 0;
-            if (v !== arr[i-1]) {
-                i += (v - arr[i-1]) / (arr[i] - arr[i-1]);
-            }
-            return i / l;
-        }
-    }
-    return 1;
-}
-

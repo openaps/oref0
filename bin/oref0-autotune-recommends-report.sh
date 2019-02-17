@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script creates a Summary Report of Autotune Recommendations. The report itself is
 # structured in such a way intended to give the end user a quick look at what needs to change
@@ -27,7 +27,7 @@ LC_NUMERIC=en_US.UTF-8
 # Use alternate date command if on OS X:
 shopt -s expand_aliases
 
-if [[ `uname` == 'Darwin' ]] ; then
+if [[ `uname` == 'Darwin' || `uname` == 'FreeBSD' || `uname` == 'OpenBSD' ]] ; then
     alias date='gdate'
 fi
 
@@ -90,7 +90,7 @@ minutes_list=()
 end_time=23:30
 time=00:00
 minutes=0
-for h in $(seq -w 0 23); do
+for h in $(seq -w 0 23||gseq -w 0 23); do
     for m in 00 30; do
         time="$h:$m"
         minutes=$(echo "60 * $h + $m" | bc)

@@ -14,9 +14,6 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-
-var basal = require('../lib/profile/basal');
-var get_iob = require('../lib/iob');
 var detect = require('../lib/determine-basal/autosens');
 
 if (!module.parent) {
@@ -58,7 +55,7 @@ if (!module.parent) {
 
         var isf_data = require(cwd + '/' + isf_input);
         if (isf_data.units !== 'mg/dL') {
-            if (isf_data.units == 'mmol/L') {
+            if (isf_data.units === 'mmol/L') {
                 for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                     isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
                 }
@@ -72,7 +69,7 @@ if (!module.parent) {
         var basalprofile = require(cwd + '/' + basalprofile_input);
 
         var carb_data = { };
-        if (typeof carb_input != 'undefined') {
+        if (typeof carb_input !== 'undefined') {
             try {
                 carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
             } catch (e) {
@@ -81,7 +78,7 @@ if (!module.parent) {
         }
 
         var temptarget_data = { };
-        if (typeof temptarget_input != 'undefined') {
+        if (typeof temptarget_input !== 'undefined') {
             try {
                 temptarget_data = JSON.parse(fs.readFileSync(temptarget_input, 'utf8'));
             } catch (e) {
@@ -109,13 +106,13 @@ if (!module.parent) {
     console.error("Calculating sensitivity using 8h of non-exluded data");
     detection_inputs.deviations = 96;
     detect(detection_inputs);
-    ratio8h = ratio;
-    newisf8h = newisf;
+    var ratio8h = ratio;
+    var newisf8h = newisf;
     console.error("Calculating sensitivity using all non-exluded data (up to 24h)");
     detection_inputs.deviations = 288;
     detect(detection_inputs);
-    ratio24h = ratio;
-    newisf24h = newisf;
+    var ratio24h = ratio;
+    var newisf24h = newisf;
     if ( ratio8h < ratio24h ) {
         console.error("Using 8h autosens ratio of",ratio8h,"(ISF",newisf8h+")");
     } else {

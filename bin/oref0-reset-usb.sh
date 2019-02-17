@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Power-cycle the Raspberry Pi USB bus to reset attached USB devices
 #

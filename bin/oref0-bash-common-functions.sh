@@ -120,7 +120,7 @@ file_is_recent_and_min_size () {
 }
 
 function mydate {
-    if [[ `uname` == 'Darwin' ]] ; then
+    if [[ `uname` == 'Darwin' || `uname` == 'FreeBSD' || `uname` == 'OpenBSD' ]] ; then
         gdate "$@"
     else
         date "$@"
@@ -138,6 +138,28 @@ epochtime_now () {
 # you don't need to quote the parameters to avoid word-splitting).
 to_epochtime () {
     mydate -d "$(echo "$@" |tr -d '"\n')" +%s
+}
+
+
+# recieves a line of text and logger name and creates a line in the following format:
+# timestamp logger-name message
+# This function is needed in order to create a log file that will look like:
+# 2019-01-27 02:13:15 openaps.pumploop Merging local temptargets: (NOT VALID JSON: empty) 
+# This files can be read with programs like chainsaw.
+adddate() {
+    while IFS= read -r line; do
+        echo "$(date  +"%Y-%m-%d %T") $1 $line"
+    done
+}
+
+# Remove the color Escape sequences from the logs, since some programs can not read them, and have their own coloring rules.
+uncolor () {
+     while IFS= read -r line; do
+        sed --expression="s/\o33\[[01]m//g" | 
+        sed --expression="s/\o33\[[01];39m//g" |
+        sed --expression="s/\o33\[[01];32m//g" |
+        sed --expression="s/\o33\[34;1m//g" 
+     done
 }
 
 # Filter input to output, removing any embedded newlines.
@@ -467,7 +489,7 @@ function wait_for_silence {
         waitfor=$1
     fi
     echo -n "Listening for ${waitfor}s: "
-    for i in $(seq 1 800); do
+    for i in $(seq 1 800||gseq 1 800); do
         echo -n .
         # returns true if it hears pump comms, false otherwise
         if ! listen -t $waitfor's' 2>&4 ; then

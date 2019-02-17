@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-var fs = require('fs');
-var os = require("os");
-
 var safeRequire = require('../lib/require-utils').safeRequire;
-var getLastGlucose = require('../lib/glucose-get-last');
 var withRawGlucose = require('../lib/with-raw-glucose');
 
 /*

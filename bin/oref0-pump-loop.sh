@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
@@ -212,7 +212,10 @@ function smb_reservoir_before {
     echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
-        oref0-set-device-clocks
+	# Check for bolus in progress and issue 3xESC to back out of pump bolus menu
+        smb_verify_status \
+        && try_return mdt -f internal button esc esc esc 2>&3 \
+        && oref0-set-device-clocks
        fi
     (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
     && (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
@@ -362,6 +365,10 @@ function smb_verify_status {
     rm -rf monitor/status.json
     echo -n "Checking pump status (suspended/bolusing): "
     ( check_status || check_status ) 2>&3 >&4 \
+    && if grep -q 12 monitor/status.json; then
+    echo -n "x12 model detected. "
+        return 0
+    fi \
     && cat monitor/status.json | colorize_json \
     && grep -q '"status": "normal"' monitor/status.json \
     && grep -q '"bolusing": false' monitor/status.json \
@@ -370,10 +377,6 @@ function smb_verify_status {
         unsuspend_if_no_temp
         refresh_pumphistory_and_meal
         false
-    fi \
-    && if grep -q 12 monitor/status.json; then
-    echo -n "x12 model detected."
-        true
     fi
 }
 
@@ -801,8 +804,8 @@ function check_model() {
 }
 function check_status() {
   set -o pipefail
-  if ( grep 12 settings/model.json ); then
-    touch monitor/status.json
+  if ( grep -q 12 settings/model.json ); then
+    echo '{ "status":"status on x12 not supported" }' > monitor/status.json
   else
     mdt status 2>&3 | tee monitor/status.json 2>&3 >&4 && cat monitor/status.json | colorize_json .status
   fi
