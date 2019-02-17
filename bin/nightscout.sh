@@ -345,7 +345,7 @@ cull-latest-openaps-treatments)
   INPUT=$1
   MODEL=$2
   LAST_TIME=$3
-  mm-format-ns-treatments $INPUT $MODEL | jq ". | select(.created_at > '$LAST_TIME')"
+  mm-format-ns-treatments $INPUT $MODEL | jq '[ .[] | select(.created_at > "'$LAST_TIME'") ]'
   ;;
 help|--help|-h)
   help_message
