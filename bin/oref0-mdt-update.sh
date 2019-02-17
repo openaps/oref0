@@ -62,6 +62,9 @@ function prep {
             export NIGHTSCOUT_API_SECRET=$API_SECRET
         fi
     fi
+    
+    # delete empty source file
+    if [ ! -s $FILE_MDT ]; then rm -f $FILE_MDT; fi
 }
 
 # Shows minimal version of first record in file.
@@ -75,10 +78,7 @@ function show_last_record {
 # returns 0 if ture, 1 if false
 function glucose_fresh {
     if [ ! -f $FILE_MDT ]; then return 1; fi
-    # Enlite CGM are synced to the pump with a certain delay (not constant).
-    # Thus we shouldn't wait the whole 5m cycle but sync more often to get most recent values.
-    # I don't know what a good schedule is but I thing the Nyquist theorem is good starting point...
-    jq --exit-status "sort_by(.date) | reverse | .[0] | ($(date +%s) - .date / 1000) < 150" $FILE_MDT > /dev/null 
+    jq --exit-status "sort_by(.date) | reverse | .[0] | ($(date +%s) - .date / 1000) < 300" $FILE_MDT > /dev/null 
 }
 
 # Checks whether 60m has passed since newst cgm value

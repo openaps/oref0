@@ -628,9 +628,9 @@ if prompt_yn "" N; then
     rm -rf $directory/.git
     echo Removed any existing git
 
-    # TODO: delete this after openaps 0.2.1 release
-    echo Checking openaps 0.2.1 installation with --nogit support
-    if ! openaps --version 2>&1 | egrep "0.[2-9].[1-9]"; then
+    # TODO: delete this after openaps 0.2.2 release
+    echo Checking openaps 0.2.2 installation with --nogit support
+    if ! openaps --version 2>&1 | egrep "0.[2-9].[2-9]"; then
         echo Installing latest openaps w/ nogit && sudo pip install --default-timeout=1000 git+https://github.com/openaps/openaps.git@nogit || die "Couldn't install openaps w/ nogit"
     fi
 
@@ -1095,9 +1095,15 @@ if prompt_yn "" N; then
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
         echo "Installing socat and ntp..."
         apt-get install -y socat ntp
+        echo "Installing pi-buttons..."
+        systemctl stop pi-buttons
+        cd $HOME/src && git clone git://github.com/bnielsen1965/pi-buttons.git || (cd $HOME/src/pi-buttons && git checkout master && git pull)
+        echo "Make and install pi-buttons..."
+        ( cd $HOME/src/pi-buttons/src && make && sudo make install && sudo make install_service ) || die "Couldn't install pi-buttons"
+        systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
-        cd $HOME/src/openaps-menu && sudo npm install
+        cd $HOME/src/openaps-menu && sudo npm install || die "Couldn't install openaps-menu"
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     fi
 
