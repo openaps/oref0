@@ -33,7 +33,6 @@ matrix:
     - language: shell
       install:
         - shellcheck --version  # Travis defaults to v0.4.6
-        - sudo apt-get update
-        - sudo apt-get install shellcheck
-        - shellcheck --version  # Current is v0.6.0
-      script: bash -c 'shopt -s globstar ; shellcheck **/*.{sh,ksh,bash}'
+        - wget -qO- "https://storage.googleapis.com/shellcheck/shellcheck-stable.linux.x86_64.tar.xz" | tar -xJv
+        - shellcheck-stable/shellcheck --version  # Current is v0.6.0
+      script: bash -c 'shopt -s globstar ; shellcheck-stable/shellcheck **/*.{sh,ksh,bash}'
