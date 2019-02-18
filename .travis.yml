@@ -1,3 +1,5 @@
+group: travis_latest
+
 node_js-steps: &node_js-steps
   language: node_js
   script: make travis
@@ -13,6 +15,9 @@ python-steps: &python-steps
     - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
 matrix:
+  allow_failures:
+    - node_js: "node"
+    - language: shell
   include:
     - node_js: "8"
       <<: *node_js-steps
@@ -25,3 +30,10 @@ matrix:
     - python: "3.7"
       dist: xenial  # required for Python >= 3.7 (travis-ci/travis-ci#9069)
       <<: *python-steps
+    - language: shell
+      install:
+        - shellcheck --version  # Travis defaults to v0.4.6
+        - apt-get update
+        - apt-get install shellcheck
+        - shellcheck --version  # Current is v0.6.0
+      script: bash -c 'shopt -s globstar ; shellcheck **/*.{sh,ksh,bash}'
