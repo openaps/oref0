@@ -98,7 +98,7 @@ if (!module.parent) {
     var model_input = params.model;
     var autotune_input = params.autotune;
 
-    var cwd = process.cwd()
+    cwd = process.cwd()
     var pumpsettings_data = require(cwd + '/' + pumpsettings_input);
     var bgtargets_data = require(cwd + '/' + bgtargets_input);
     if (bgtargets_data.units !== 'mg/dL') {
@@ -130,7 +130,7 @@ if (!module.parent) {
     }
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
 
-    var preferences = {};
+    preferences = {};
     if (typeof preferences_input !== 'undefined') {
         preferences = require(cwd + '/' + preferences_input);
     }
@@ -139,7 +139,7 @@ if (!module.parent) {
     var model_data = { }
     if (params.model) {
       try {
-        model_string = fs.readFileSync(model_input, 'utf8');
+        var model_string = fs.readFileSync(model_input, 'utf8');
         model_data = model_string.replace(/"/gi, '');
       } catch (e) {
         var msg = { error: e, msg: "Could not parse model_data", file: model_input};
@@ -154,7 +154,7 @@ if (!module.parent) {
         autotune_data = JSON.parse(fs.readFileSync(autotune_input, 'utf8'));
 
       } catch (e) {
-        var msg = { error: e, msg: "Could not parse autotune_data", file: autotune_input};
+        msg = { error: e, msg: "Could not parse autotune_data", file: autotune_input};
         console.error(msg.msg);
         // Continue and output a non-autotuned profile if we don't have autotune_data
         //console.log(JSON.stringify(msg));
@@ -169,7 +169,7 @@ if (!module.parent) {
             carbratio_data = JSON.parse(fs.readFileSync(carbratio_input, 'utf8'));
 
         } catch (e) {
-            var msg = { error: e, msg: "Could not parse carbratio_data. Feature Meal Assist enabled but cannot find required carb_ratios.", file: carbratio_input };
+            msg = { error: e, msg: "Could not parse carbratio_data. Feature Meal Assist enabled but cannot find required carb_ratios.", file: carbratio_input };
             console.error(msg.msg);
             console.log(JSON.stringify(msg));
             process.exit(1);

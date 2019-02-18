@@ -91,7 +91,7 @@ if (!module.parent) {
     var tick = delta;
     if (delta >= 0) { tick = "+" + delta; } 
     var iob_data = require(cwd + '/' + iob_input);
-    iob = iob_data[0].iob.toFixed(1);
+    var iob = iob_data[0].iob.toFixed(1);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
     var basalRate;
     basalLookup();
@@ -124,7 +124,7 @@ if (!module.parent) {
     //} else { 
         //enactedstring = enactedtemp.duration + "m@" + enactedtemp.rate.toFixed(1) + "U";
     //}
-    tz = new Date().toString().match(/([-+][0-9]+)\s/)[1]
+    var tz = new Date().toString().match(/([-+][0-9]+)\s/)[1]
     //enactedDate = new Date(enactedtemp.timestamp.concat(tz));
     //enactedHMS = enactedDate.toLocaleTimeString().split(":")
     //enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
@@ -132,7 +132,7 @@ if (!module.parent) {
     var mealCOB = "???";
     if (typeof meal_input !== 'undefined') {
         try {
-            meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
+            var meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
             //console.error(JSON.stringify(meal_data));
             if (typeof meal_data.mealCOB !== 'undefined') {
                 mealCOB = meal_data.mealCOB;

@@ -13,6 +13,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import print_function
 import json
 import glob, os, sys
 
@@ -81,7 +82,7 @@ def write_profile(worksheet, row, json, excel_number_format):
     col=3
     value=""
     for i in PROFILE_FIELDS:
-        if json.has_key(i):
+        if i in json:
            worksheet.write_number(row, col, json[i], excel_number_format)
         col=col+1
     
@@ -182,7 +183,7 @@ if __name__ == '__main__':
             write_profile(worksheetProfile, row, j, excel_integer_format)	
             row=row+1
         except Exception as e:
-            if j.has_key('error'):
+            if 'error' in j:
                print("Skipping file. Error: %s " % j['error'])
             else:
                print("Skipping file. Exception: %s" % e)
