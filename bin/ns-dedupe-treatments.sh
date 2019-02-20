@@ -13,7 +13,7 @@ function fetch ( ) {
 }
 
 function flatten ( ) {
-  jq -r '.[] | .created_at' | uniq -c
+  jq -r '.created_at' | uniq -c
 }
 
 

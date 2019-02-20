@@ -243,7 +243,7 @@ ns)
     ;;
     latest-treatment-time)
       PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST treatments.json '?find[enteredBy]=/openaps:\/\//&count=1'  | jq .[0])
-      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | jq .created_at
+      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | jq -r .created_at
       exit 0
     # exec ns-get host $NIGHTSCOUT_HOST $*
     ;;
@@ -263,50 +263,50 @@ ns)
     ;;
     upload-non-empty-treatments)
       test $(cat $1 | jq .[] | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $1 && exit 0
-    exec ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json $1
+      exec ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json $1
 
     ;;
     upload)
-    exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $*
+      exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $*
     ;;
     oref0_glucose)
-    zone=${1-'tz'}
-    shift
-    params=$*
-    params=${params-'count=10'}
-    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
-      | jq '[ .[] | .glucose = .sgv ]' \
-      | openaps use $zone rezone --astimezone --date dateString -
+      zone=${1-'tz'}
+      shift
+      params=$*
+      params=${params-'count=10'}
+      exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
+        | jq '[ .[] | .glucose = .sgv ]' \
+        | openaps use $zone rezone --astimezone --date dateString -
     ;;
     oref0_glucose_without_zone)
-    params=$*
-    params=${params-'count=10'}
-    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
-      | jq '[ .[] | .glucose = .sgv ]' \
+      params=$*
+      params=${params-'count=10'}
+      exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
+        | jq '[ .[] | .glucose = .sgv ]' \
     ;;
     oref0_glucose_since)
-    expr=$1
-    zone=${2-'tz'}
-    count=${3-1000}
-    exec ns-get host $NIGHTSCOUT_HOST entries.json "find[date][\$gte]=$(date -d $expr +"%s%3N")&count=$count" \
-      | jq '[ .[] | .glucose = .sgv ]' \
-      | openaps use $zone rezone --astimezone --date dateString -
+      expr=$1
+      zone=${2-'tz'}
+      count=${3-1000}
+      exec ns-get host $NIGHTSCOUT_HOST entries.json "find[date][\$gte]=$(date -d $expr +"%s%3N")&count=$count" \
+        | jq '[ .[] | .glucose = .sgv ]' \
+        | openaps use $zone rezone --astimezone --date dateString -
     ;;
     temp_targets)
-    expr=${1--24hours}
-    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes -u)&find[eventType]=Temporary+Target"
+      expr=${1--24hours}
+      exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes -u)&find[eventType]=Temporary+Target"
     ;;
     carb_history)
-    expr=${1--24hours}
-    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes -u)&find[carbs][\$exists]=true"
+      expr=${1--24hours}
+      exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes -u)&find[carbs][\$exists]=true"
     ;;
     *)
-    echo "Unknown request:" $OP
-    ns_help
-    exit 1;
+      echo "Unknown request:" $OP
+      ns_help
+      exit 1;
     ;;
   esac
-    exit 0
+  exit 0
 
   ;;
 hash-api-secret)
