@@ -30,5 +30,5 @@ cat $HISTORY | \
     | .date = ( ( [ $time, "Z" ] | join("") ) | fromdateiso8601 ) * 1000 + $msec
     | .type = if .name and (.name | test("GlucoseSensorData")) then "sgv" else "pumpdata" end
     | .device = "openaps://medtronic/pump/cgm"
-    '$NSONLY' ]' > $OUTPUT
+    '"$NSONLY"' ]' > $OUTPUT
 
