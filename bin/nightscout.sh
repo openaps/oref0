@@ -162,7 +162,7 @@ extra_ns_help
 }
 case $NAME in
 latest-openaps-treatment)
-  ns-get treatments.json'?find[enteredBy]=/openaps:\/\//&count=1' $* | jq .[0]
+  ns-get treatments.json'?find[enteredBy]=/openaps:\/\//&count=1' $* | jq .
   ;;
 ns)
   NIGHTSCOUT_HOST=$1
@@ -242,7 +242,7 @@ ns)
       exit 0
     ;;
     latest-treatment-time)
-      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST treatments.json'?find[enteredBy]=/openaps:\/\//&count=1'  | json 0)
+      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST treatments.json '?find[enteredBy]=/openaps:\/\//&count=1'  | jq .[0])
       test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | jq .created_at
       exit 0
     # exec ns-get host $NIGHTSCOUT_HOST $*
