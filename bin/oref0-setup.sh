@@ -1026,7 +1026,7 @@ if prompt_yn "" N; then
             openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
             openaps alias add mmtune 'report invoke monitor/temp_basal.json'
         fi
-    elif [[ "$ttyport" =~ "mmeowlink" ]] # e.g. for TI USB
+    elif [[ "$ttyport" =~ "mmeowlink" ]]; then # e.g. for TI USB
         # radio_locale requires openaps 0.2.0-dev or later
         openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
         #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
