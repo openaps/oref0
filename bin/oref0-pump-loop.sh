@@ -96,8 +96,34 @@ main() {
     fi
 }
 
+function run_script() {
+  file=$1
+
+  if [[ -x "$file" ]]
+  then
+    echo "Running script file ($file)"
+    timeout 60 $file
+    if [[ "$2" == "-d" ]]
+    then
+      echo "Removing script file ($file)"
+      rm $file
+    else
+      echo "Not Removing script file ($file)"
+    fi
+  fi
+}
+
+
 function run_plugins {
-    :
+        once=plugins/once
+        every=plugins/every
+        mkdir -p $once
+        mkdir -p $every
+        echo "scripts placed in this directory will run once after curent loop and be removed" > $once/readme.txt
+        echo "scripts placed in this directory will run after every loop" > $every/readme.txt
+        find $once/* | while read file; do run_script "$file" -d ; done
+        find $every/* | while read file; do run_script "$file" ; done
+
 }
 
 function update_display {
