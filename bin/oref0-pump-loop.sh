@@ -101,14 +101,16 @@ function run_script() {
 
   if [[ -x "$file" ]]
   then
-    echo "Running script file ($file)"
+    echo "Running plugin script ($file)... "
     timeout 60 $file
+
+    thedate=$(date)
+    echo "Plugins Completed - $thedate"
+
     if [[ "$2" == "-d" ]]
     then
-      echo "Removing script file ($file)"
+      #echo "Removing script file ($file)"
       rm $file
-    else
-      echo "Not Removing script file ($file)"
     fi
   fi
 }
