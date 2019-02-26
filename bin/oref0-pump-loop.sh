@@ -99,6 +99,7 @@ main() {
 function run_script() {
   file=$1
 
+  # only run plugin script files if they have the executable bit set
   if [[ -x "$file" ]]
   then
     echo "Running plugin script ($file)... "
