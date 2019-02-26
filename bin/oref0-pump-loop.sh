@@ -87,12 +87,17 @@ main() {
             touch /tmp/pump_loop_success
             echo Completed oref0-pump-loop at $(date)
             update_display
+            run_plugins
             echo
         else
             # pump-loop errored out for some reason
             fail "$@"
         fi
     fi
+}
+
+function run_plugins {
+    :
 }
 
 function update_display {
