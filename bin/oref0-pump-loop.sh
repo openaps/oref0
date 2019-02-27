@@ -90,7 +90,6 @@ main() {
             run_plugins
             echo
         else
-            run_plugins
             # pump-loop errored out for some reason
             fail "$@"
         fi
@@ -158,6 +157,7 @@ function fail {
         echo Error: syntax error in preferences.json: please go correct your typo.
     fi
     update_display
+    run_plugins
     echo
     exit 1
 }
