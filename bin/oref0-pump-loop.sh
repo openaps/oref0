@@ -99,19 +99,15 @@ main() {
 function run_script() {
   file=$1
 
-  # only run plugin script files if they have the executable bit set
-  if [[ -x "$file" ]]
-  then
-    echo "Running plugin script ($file)... "
-    timeout 60 $file
-    echo "Completed plugin script ($file). "
+  echo "Running plugin script ($file)... "
+  timeout 60 $file
+  echo "Completed plugin script ($file). "
 
-    # -d means to only run the script once, so remove it once run
-    if [[ "$2" == "-d" ]]
-    then
-      #echo "Removing script file ($file)"
-      rm $file
-    fi
+  # -d means to only run the script once, so remove it once run
+  if [[ "$2" == "-d" ]]
+  then
+    #echo "Removing script file ($file)"
+    rm $file
   fi
 }
 
@@ -123,8 +119,8 @@ function run_plugins {
         mkdir -p $every
         echo "scripts placed in this directory will run once after curent loop and be removed" > $once/readme.txt
         echo "scripts placed in this directory will run after every loop" > $every/readme.txt
-        find $once/* | while read file; do run_script "$file" -d ; done
-        find $every/* | while read file; do run_script "$file" ; done
+        find $once/* -executable | while read file; do run_script "$file" -d ; done
+        find $every/* -executable | while read file; do run_script "$file" ; done
 
 }
 
