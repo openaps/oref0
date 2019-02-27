@@ -87,12 +87,12 @@ main() {
             touch /tmp/pump_loop_success
             echo Completed oref0-pump-loop at $(date)
             update_display
-            run_plugins
             echo
         else
             # pump-loop errored out for some reason
             fail "$@"
         fi
+        run_plugins
     fi
 }
 
@@ -104,10 +104,9 @@ function run_script() {
   then
     echo "Running plugin script ($file)... "
     timeout 60 $file
+    echo "Completed plugin script ($file). "
 
-    thedate=$(date)
-    echo "Plugins Completed - $thedate"
-
+    # -d means to only run the script once, so remove it once run
     if [[ "$2" == "-d" ]]
     then
       #echo "Removing script file ($file)"
