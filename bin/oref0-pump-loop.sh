@@ -429,7 +429,7 @@ function refresh_after_bolus_or_enact {
 
 function unsuspend_if_no_temp {
     # If temp basal duration is zero, unsuspend pump
-    if (cat monitor/temp_basal.json | json -c "this.duration == 0" | grep -q duration); then
+    if (cat monitor/temp_basal.json | jq '. | select(.duration == 0)' | grep -q duration); then
         if check_pref_bool .unsuspend_if_no_temp false; then
             echo Temp basal has ended: unsuspending pump
             mdt resume 2>&3
@@ -509,7 +509,7 @@ function mmtune {
     MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
 
     #Determine how long to wait, based on the RSSI value of the best frequency
-    rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | tail -1 | awk '($1 < -60) {print -($1+60)*2}')
+    rssi_wait=$(grep -v setFreq monitor/mmtune.json | grep -A2 $(jq .setFreq monitor/mmtune.json) | tail -1 | awk '($1 < -60) {print -($1+60)*2}')
     if [[ $rssi_wait -gt 1 ]]; then
         if [[ $rssi_wait -gt 90 ]]; then
             rssi_wait=90
@@ -539,8 +539,8 @@ function maybe_mmtune {
 function refresh_pumphistory_and_meal {
     retry_return check_status 2>&3 >&4 || return 1
     ( grep -q 12 settings/model.json || \
-         test $(cat monitor/status.json | json suspended) == true || \
-         test $(cat monitor/status.json | json bolusing) == false ) \
+         test $(jq .suspended monitor/status.json) == true || \
+         test $(jq .bolusing monitor/status.json) == false ) \
          || { echo; cat monitor/status.json | colorize_json; return 1; }
     try_return invoke_pumphistory_etc || return 1
     try_return invoke_reservoir_etc || return 1
@@ -678,7 +678,7 @@ function refresh_smb_temp_and_enact {
     setglucosetimestamp
     # only smb_enact_temp if we haven't successfully completed a pump_loop recently
     # (no point in enacting a temp that's going to get changed after we see our last SMB)
-    if (cat monitor/temp_basal.json | json -c "this.duration > 20" | grep -q duration); then
+    if (jq '. | select(.duration > 20)' monitor/temp_basal.json | grep -q duration); then
         echo -n "Temp duration >20m. "
     elif ( find /tmp/ -mmin +10 | grep -q /tmp/pump_loop_completed ); then
         echo "pump_loop_completed more than 10m ago: setting temp before refreshing pumphistory. "
@@ -698,7 +698,7 @@ function refresh_temp_and_enact {
             retry_fail invoke_temp_etc
             echo ed
             oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
-            if (cat monitor/temp_basal.json | json -c "this.duration < 27" | grep -q duration); then
+            if (jq '. | select(.duration < 27)' monitor/temp_basal.json | grep -q duration); then
                 enact; else echo Temp duration 27m or more
             fi
     else
