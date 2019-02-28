@@ -162,7 +162,7 @@ extra_ns_help
 }
 case $NAME in
 latest-openaps-treatment)
-  ns-get treatments.json'?find[enteredBy]=/openaps:\/\//&count=1' $* | jq .
+  ns-get treatments.json'?find[enteredBy]=/openaps:\/\//&count=1' $* | jq .[0]
   ;;
 ns)
   NIGHTSCOUT_HOST=$1
