@@ -4,7 +4,8 @@
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
-    "global-install": "npm install && sudo npm link && sudo npm link oref0 && sudo npm install -g"
+    "global-install": "npm install && sudo npm link && sudo npm link oref0 && sudo npm install -g",
+    "webpack": "webpack"
   },
   "repository": {
     "type": "git",
@@ -107,6 +108,8 @@
     "mocha": "^5.2.0",
     "mocha-lcov-reporter": "^1.3.0",
     "should": "^13.2.3"
+    "webpack": "^4.28.3",
+    "webpack-cli": "^3.2.0"
   },
   "config": {
     "blanket": {
