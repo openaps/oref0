@@ -7,21 +7,33 @@ Usage: $self
 Attempt to establish a Bluetooth tethering connection.
 EOT
 
+DAEMON_PATHS=(/usr/local/bin/bluetoothd /usr/sbin/bluetoothd /usr/libexec/bluetooth/bluetoothd)
+
+for EXEC_PATH in ${DAEMON_PATHS[@]}; do
+  if [ -x $EXEC_PATH ]; then
+    EXECUTABLE=$EXEC_PATH
+  fi
+done
+
 # start bluetoothd if bluetoothd is not running
 if ! ( ps -fC bluetoothd >/dev/null ) ; then
-   sudo /usr/local/bin/bluetoothd &
+   echo bluetoothd not running! Starting bluetoothd...
+   sudo $EXECUTABLE &
 fi
 
 if is_edison && ! ( hciconfig -a | grep -q "PSCAN" ) ; then
+   echo Bluetooth PSCAN not enabled! Restarting bluetoothd...
    sudo killall bluetoothd
-   sudo /usr/local/bin/bluetoothd &
+   sudo $EXECUTABLE &
 fi
 
 if ( hciconfig -a | grep -q "DOWN" ) ; then
+   echo Bluetooth hci DOWN! Bringing it to UP.
    sudo hciconfig hci0 up
-   sudo /usr/local/bin/bluetoothd &
+   sudo $EXECUTABLE &
 fi
 
 if !( hciconfig -a | grep -q $HOSTNAME ) ; then
+   echo Bluetooth hci name does not match hostname: $HOSTNAME. Setting bluetooth hci name.
    sudo hciconfig hci0 name $HOSTNAME
 fi
