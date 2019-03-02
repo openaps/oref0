@@ -119,7 +119,12 @@ def ns_to_oaps(ns_profile):
     # Create a list of dicts with basal profile
     oaps_profile["basalprofile"] = []
     for basal_item in ns_profile["basal"]:
-        if basal_item["timeAsSeconds"] is None:
+        try:
+            if not basal_item["timeAsSeconds"]:
+                basal_time = datetime.strptime(basal_item["time"], "%H:%M")
+                basal_item[
+                    "timeAsSeconds"] = 3600 * basal_time.hour + 60 * basal_time.minute
+        except KeyError:
             basal_time = datetime.strptime(basal_item["time"], "%H:%M")
             basal_item[
                 "timeAsSeconds"] = 3600 * basal_time.hour + 60 * basal_time.minute
@@ -212,7 +217,7 @@ def ns_to_oaps(ns_profile):
         cr_p.setdefault(cr["time"], {})
         try:
             if not cr["timeAsSeconds"]:
-                cr_time = datetime.strptime(sens["time"], "%H:%M")
+                cr_time = datetime.strptime(cr["time"], "%H:%M")
                 cr["timeAsSeconds"] = 3600 * cr_time.hour + 60 * cr_time.minute
         except KeyError:
             cr_time = datetime.strptime(cr["time"], "%H:%M")
