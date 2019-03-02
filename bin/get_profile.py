@@ -210,6 +210,13 @@ def ns_to_oaps(ns_profile):
     cr_p = {}
     for cr in ns_profile["carbratio"]:
         cr_p.setdefault(cr["time"], {})
+        try:
+            if not cr["timeAsSeconds"]:
+                cr_time = datetime.strptime(sens["time"], "%H:%M")
+                cr["timeAsSeconds"] = 3600 * cr_time.hour + 60 * cr_time.minute
+        except KeyError:
+            cr_time = datetime.strptime(cr["time"], "%H:%M")
+            cr["timeAsSeconds"] = 3600 * cr_time.hour + 60 * cr_time.minute
         cr_p[cr["time"]] = {
             "start": cr["time"] + ":00",
             "offset": int(cr["timeAsSeconds"]) / 60,
