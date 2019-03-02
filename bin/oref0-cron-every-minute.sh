@@ -57,33 +57,33 @@ find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && (
     killall -g --older-than 5m openaps
     killall -g --older-than 5m oref0-pump-loop
     killall -g --older-than 5m openaps-report
-) | tee -a /var/log/openaps/pump-loop.log | adddate openaps.pump-loop | uncolor |tee -a /var/log/openaps/openaps-date.log &
+) | tee -a /var/log/openaps/pump-loop.log &
 
 # if the rig doesn't recover after that, reboot:
 oref0-radio-reboot &
 
-if [[ ${CGM,,} =~ "g5-upload" ]]; then
-    oref0-upload-entries &
-fi
-
 if [[ ${CGM,,} =~ "g4-go" ]]; then
         cd $CGM_LOOPDIR
         if ! is_bash_process_running_named oref0-g4-loop; then
-            oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log | adddate openaps.cgm-loop | uncolor |tee -a /var/log/openaps/openaps-date.log &
+            oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log &
         fi
         cd -
 # TODO: deprecate g4-upload and g4-local-only
 elif [[ ${CGM,,} =~ "g4-upload" ]]; then
     (
         if ! is_process_running_named "oref0-monitor-cgm"; then
-            (date; oref0-monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log | adddate openaps.cgm-loop | uncolor |tee -a /var/log/openaps/openaps-date.log
+            (date; oref0-monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log
         fi
         cp -up $CGM_LOOPDIR/monitor/glucose-raw-merge.json $directory/cgm/glucose.json
         cp -up $CGM_LOOPDIR/$directory/cgm/glucose.json $directory/monitor/glucose.json
     ) &
+elif [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
+    if ! is_process_running_named "oref0-monitor-cgm"; then
+        (date; oref0-monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log
+    fi
 elif [[ ${CGM,,} =~ "xdrip" ]]; then
     if ! is_process_running_named "monitor-xdrip"; then
-        monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log | adddate openaps.xdrip-loop | uncolor |tee -a /var/log/openaps/openaps-date.log &
+        monitor-xdrip | tee -a /var/log/openaps/xdrip-loop.log &
     fi
 elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
     if ! is_process_running_named "oref0-get-bg"; then
@@ -91,25 +91,29 @@ elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
             date
             oref0-get-bg
             cat cgm/glucose.json | jq -r  '.[] | \"\\(.sgv) \\(.dateString)\"' | head -1
-        ) | tee -a /var/log/openaps/cgm-loop.log | adddate openaps.cgm-loop | uncolor |tee -a /var/log/openaps/openaps-date.log &
+        ) | tee -a /var/log/openaps/cgm-loop.log &
     fi
 fi
 
+if [[ ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "g6-upload" ]]; then
+    oref0-upload-entries &
+fi
+
 if ! is_bash_process_running_named oref0-ns-loop; then
-    oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log | adddate openaps.ns-loop | uncolor |tee -a /var/log/openaps/openaps-date.log &
+    oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log &
 fi
 
 if ! is_bash_process_running_named oref0-autosens-loop; then
-    oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log | adddate openaps.autosens-loop | uncolor |tee -a /var/log/openaps/openaps-date.log&
+    oref0-autosens-loop 2>&1 | tee -a /var/log/openaps/autosens-loop.log &
 fi
 
 if ! is_bash_process_running_named oref0-pump-loop; then
-    oref0-pump-loop 2>&1 | tee -a /var/log/openaps/pump-loop.log | adddate openaps.pump-loop | uncolor |tee -a /var/log/openaps/openaps-date.log&
+    oref0-pump-loop 2>&1 | tee -a /var/log/openaps/pump-loop.log &
 fi
 
 if [[ ! -z "$BT_PEB" ]]; then
     if ! is_process_running_named "peb-urchin-status $BT_PEB"; then
-        peb-urchin-status $BT_PEB 2>&1 | tee -a /var/log/openaps/urchin-loop.log | adddate openaps.urchin-loop | uncolor |tee -a /var/log/openaps/openaps-date.log&
+        peb-urchin-status $BT_PEB 2>&1 | tee -a /var/log/openaps/urchin-loop.log &
     fi
 fi
 
