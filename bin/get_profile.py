@@ -174,6 +174,16 @@ def ns_to_oaps(ns_profile):
     oaps_profile["isfProfile"] = {"first": 1, "sensitivities": []}
     isf_p = {}
     for sens in ns_profile["sens"]:
+        logging.debug("sens: %s", sens)
+        try:
+            if not sens["timeAsSeconds"]:
+                sens_time = datetime.strptime(sens["time"], "%H:%M")
+                sens[
+                    "timeAsSeconds"] = 3600 * sens_time.hour + 60 * sens_time.minute
+        except KeyError:
+            sens_time = datetime.strptime(sens["time"], "%H:%M")
+            sens[
+                "timeAsSeconds"] = 3600 * sens_time.hour + 60 * sens_time.minute
         isf_p.setdefault(sens["time"], {})
         isf_p[sens["time"]] = {
             "sensitivity": float(sens["value"]),
