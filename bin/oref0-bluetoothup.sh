@@ -7,11 +7,12 @@ Usage: $self
 Attempt to establish a Bluetooth tethering connection.
 EOT
 
-DAEMON_PATHS=(/usr/local/bin/bluetoothd /usr/sbin/bluetoothd /usr/libexec/bluetooth/bluetoothd)
+DAEMON_PATHS=(/usr/local/bin/bluetoothd /usr/libexec/bluetooth/bluetoothd /usr/sbin/bluetoothd)
 
 for EXEC_PATH in ${DAEMON_PATHS[@]}; do
   if [ -x $EXEC_PATH ]; then
     EXECUTABLE=$EXEC_PATH
+    break;
   fi
 done
 
