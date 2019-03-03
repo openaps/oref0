@@ -16,9 +16,6 @@ for EXEC_PATH in ${DAEMON_PATHS[@]}; do
   fi
 done
 
-# Send stderr and stdout to log file
-exec 2>&1
-
 if [ "$DEBUG" != "" ]; then
   EXECUTABLE="$EXECUTABLE -d -n"
 fi
@@ -26,19 +23,19 @@ fi
 # start bluetoothd if bluetoothd is not running
 if ! ( ps -fC bluetoothd >/dev/null ) ; then
    echo bluetoothd not running! Starting bluetoothd...
-   sudo $EXECUTABLE | tee -a /var/log/openaps/bluetoothd.log &
+   sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
 fi
 
 if is_edison && ! ( hciconfig -a | grep -q "PSCAN" ) ; then
    echo Bluetooth PSCAN not enabled! Restarting bluetoothd...
    sudo killall bluetoothd
-   sudo $EXECUTABLE | tee -a /var/log/openaps/bluetoothd.log &
+   sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
 fi
 
 if ( hciconfig -a | grep -q "DOWN" ) ; then
    echo Bluetooth hci DOWN! Bringing it to UP.
    sudo hciconfig hci0 up
-   sudo $EXECUTABLE | tee -a /var/log/openaps/bluetoothd.log &
+   sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
 fi
 
 if !( hciconfig -a | grep -q $HOSTNAME ) ; then
