@@ -19,19 +19,19 @@ done
 # start bluetoothd if bluetoothd is not running
 if ! ( ps -fC bluetoothd >/dev/null ) ; then
    echo bluetoothd not running! Starting bluetoothd...
-   sudo $EXECUTABLE &
+   sudo $EXECUTABLE | tee -a /var/log/openaps/bluetoothd.log &
 fi
 
 if is_edison && ! ( hciconfig -a | grep -q "PSCAN" ) ; then
    echo Bluetooth PSCAN not enabled! Restarting bluetoothd...
    sudo killall bluetoothd
-   sudo $EXECUTABLE &
+   sudo $EXECUTABLE | tee -a /var/log/openaps/bluetoothd.log &
 fi
 
 if ( hciconfig -a | grep -q "DOWN" ) ; then
    echo Bluetooth hci DOWN! Bringing it to UP.
    sudo hciconfig hci0 up
-   sudo $EXECUTABLE &
+   sudo $EXECUTABLE | tee -a /var/log/openaps/bluetoothd.log &
 fi
 
 if !( hciconfig -a | grep -q $HOSTNAME ) ; then
