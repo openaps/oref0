@@ -16,6 +16,9 @@ for EXEC_PATH in ${DAEMON_PATHS[@]}; do
   fi
 done
 
+# Send stderr and stdout to log file
+exec 2>&1
+
 if [ "$DEBUG" != "" ]; then
   EXECUTABLE="$EXECUTABLE -d -n"
 fi
