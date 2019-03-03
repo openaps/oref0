@@ -107,6 +107,22 @@ def display(nightscout, token, profile_name, profile_format):
         print(json.dumps(ns_to_oaps(profile), indent=4))
 
 
+def normalize_entry(entry):
+    """
+    Clean up an entry before further processing
+    """
+    try:
+        if not entry["timeAsSeconds"]:
+            entry_time = datetime.strptime(entry["time"], "%H:%M")
+            entry[
+                "timeAsSeconds"] = 3600 * entry_time.hour + 60 * entry_time.minute
+    except KeyError:
+        entry_time = datetime.strptime(entry["time"], "%H:%M")
+        entry[
+            "timeAsSeconds"] = 3600 * entry_time.hour + 60 * entry_time.minute
+    return entry
+
+
 def ns_to_oaps(ns_profile):
     """
     Convert nightscout profile to OpenAPS format
@@ -119,15 +135,7 @@ def ns_to_oaps(ns_profile):
     # Create a list of dicts with basal profile
     oaps_profile["basalprofile"] = []
     for basal_item in ns_profile["basal"]:
-        try:
-            if not basal_item["timeAsSeconds"]:
-                basal_time = datetime.strptime(basal_item["time"], "%H:%M")
-                basal_item[
-                    "timeAsSeconds"] = 3600 * basal_time.hour + 60 * basal_time.minute
-        except KeyError:
-            basal_time = datetime.strptime(basal_item["time"], "%H:%M")
-            basal_item[
-                "timeAsSeconds"] = 3600 * basal_time.hour + 60 * basal_time.minute
+        basal_item = normalize_entry(basal_item)
         oaps_profile["basalprofile"].append({
             "i":
             len(oaps_profile["basalprofile"]),
@@ -147,6 +155,7 @@ def ns_to_oaps(ns_profile):
     }
     targets = {}
     for low in ns_profile["target_low"]:
+        low = normalize_entry(low)
         targets.setdefault(low["time"], {})
         targets[low["time"]]["low"] = {
             "i": len(targets),
@@ -155,6 +164,7 @@ def ns_to_oaps(ns_profile):
             "low": float(low["value"]),
         }
     for high in ns_profile["target_high"]:
+        high = normalize_entry(high)
         targets.setdefault(high["time"], {})
         targets[high["time"]]["high"] = {"high": float(high["value"])}
     for time in sorted(targets.keys()):
@@ -179,15 +189,7 @@ def ns_to_oaps(ns_profile):
     oaps_profile["isfProfile"] = {"first": 1, "sensitivities": []}
     isf_p = {}
     for sens in ns_profile["sens"]:
-        try:
-            if not sens["timeAsSeconds"]:
-                sens_time = datetime.strptime(sens["time"], "%H:%M")
-                sens[
-                    "timeAsSeconds"] = 3600 * sens_time.hour + 60 * sens_time.minute
-        except KeyError:
-            sens_time = datetime.strptime(sens["time"], "%H:%M")
-            sens[
-                "timeAsSeconds"] = 3600 * sens_time.hour + 60 * sens_time.minute
+        sens = normalize_entry(sens)
         isf_p.setdefault(sens["time"], {})
         isf_p[sens["time"]] = {
             "sensitivity": float(sens["value"]),
@@ -214,14 +216,8 @@ def ns_to_oaps(ns_profile):
     }
     cr_p = {}
     for cr in ns_profile["carbratio"]:
+        cr = normalize_entry(cr)
         cr_p.setdefault(cr["time"], {})
-        try:
-            if not cr["timeAsSeconds"]:
-                cr_time = datetime.strptime(cr["time"], "%H:%M")
-                cr["timeAsSeconds"] = 3600 * cr_time.hour + 60 * cr_time.minute
-        except KeyError:
-            cr_time = datetime.strptime(cr["time"], "%H:%M")
-            cr["timeAsSeconds"] = 3600 * cr_time.hour + 60 * cr_time.minute
         cr_p[cr["time"]] = {
             "start": cr["time"] + ":00",
             "offset": int(cr["timeAsSeconds"]) / 60,
