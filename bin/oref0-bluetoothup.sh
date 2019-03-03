@@ -17,7 +17,7 @@ for EXEC_PATH in ${DAEMON_PATHS[@]}; do
 done
 
 if [ "$DEBUG" != "" ]; then
-  EXECUTABLE=$EXECUTABLE -d -n
+  EXECUTABLE="$EXECUTABLE -d -n"
 fi
 
 # start bluetoothd if bluetoothd is not running
