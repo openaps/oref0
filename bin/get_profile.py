@@ -49,8 +49,8 @@ def get_current_profile(nightscout, token, profile_name):
     default_profile = p_list[0]["defaultProfile"]
     if profile_name is None:
         p_url = (
-            nightscout +
-            "/api/v1/treatments.json?find[eventType][$eq]=Profile%20Switch&count=1"
+            nightscout
+            + "/api/v1/treatments.json?find[eventType][$eq]=Profile%20Switch&count=1"
         )
         if token is not None:
             p_url = p_url + "?" + token
@@ -65,8 +65,7 @@ def get_current_profile(nightscout, token, profile_name):
         p_list[0]["store"][default_profile]["name"] = default_profile
         try:
             if not p_list[0]["store"][default_profile]["units"]:
-                p_list[0]["store"][default_profile]["units"] = p_list[0][
-                    "units"]
+                p_list[0]["store"][default_profile]["units"] = p_list[0]["units"]
         except KeyError:
             p_list[0]["store"][profile_name]["units"] = p_list[0]["units"]
         return p_list[0]["store"][default_profile]
@@ -114,12 +113,10 @@ def normalize_entry(entry):
     try:
         if not entry["timeAsSeconds"]:
             entry_time = datetime.strptime(entry["time"], "%H:%M")
-            entry[
-                "timeAsSeconds"] = 3600 * entry_time.hour + 60 * entry_time.minute
+            entry["timeAsSeconds"] = 3600 * entry_time.hour + 60 * entry_time.minute
     except KeyError:
         entry_time = datetime.strptime(entry["time"], "%H:%M")
-        entry[
-            "timeAsSeconds"] = 3600 * entry_time.hour + 60 * entry_time.minute
+        entry["timeAsSeconds"] = 3600 * entry_time.hour + 60 * entry_time.minute
     entry["start"] = entry["time"] + ":00"
     entry["minutes"] = int(entry["timeAsSeconds"]) / 60
     return entry
@@ -138,16 +135,14 @@ def ns_to_oaps(ns_profile):
     oaps_profile["basalprofile"] = []
     for basal_item in ns_profile["basal"]:
         basal_item = normalize_entry(basal_item)
-        oaps_profile["basalprofile"].append({
-            "i":
-            len(oaps_profile["basalprofile"]),
-            "minutes":
-            basal_item["minutes"],
-            "start":
-            basal_item["start"],
-            "rate":
-            float(basal_item["value"]),
-        })
+        oaps_profile["basalprofile"].append(
+            {
+                "i": len(oaps_profile["basalprofile"]),
+                "minutes": basal_item["minutes"],
+                "start": basal_item["start"],
+                "rate": float(basal_item["value"]),
+            }
+        )
 
     # Create a dict of dicts with target levels
     oaps_profile["bg_targets"] = {
@@ -170,22 +165,17 @@ def ns_to_oaps(ns_profile):
         targets.setdefault(high["time"], {})
         targets[high["time"]]["high"] = {"high": float(high["value"])}
     for time in sorted(targets.keys()):
-        oaps_profile["bg_targets"]["targets"].append({
-            "i":
-            len(oaps_profile["bg_targets"]["targets"]),
-            "start":
-            targets[time]["low"]["start"],
-            "offset":
-            targets[time]["low"]["offset"],
-            "low":
-            targets[time]["low"]["low"],
-            "min_bg":
-            targets[time]["low"]["low"],
-            "high":
-            targets[time]["high"]["high"],
-            "max_bg":
-            targets[time]["high"]["high"],
-        })
+        oaps_profile["bg_targets"]["targets"].append(
+            {
+                "i": len(oaps_profile["bg_targets"]["targets"]),
+                "start": targets[time]["low"]["start"],
+                "offset": targets[time]["low"]["offset"],
+                "low": targets[time]["low"]["low"],
+                "min_bg": targets[time]["low"]["low"],
+                "high": targets[time]["high"]["high"],
+                "max_bg": targets[time]["high"]["high"],
+            }
+        )
 
     # Create a dics of dicts with insulin sensitivity profile
     oaps_profile["isfProfile"] = {"first": 1, "sensitivities": []}
@@ -199,23 +189,17 @@ def ns_to_oaps(ns_profile):
             "offset": sens["minutes"],
         }
     for time in sorted(isf_p.keys()):
-        oaps_profile["isfProfile"]["sensitivities"].append({
-            "i":
-            len(oaps_profile["isfProfile"]["sensitivities"]),
-            "sensitivity":
-            isf_p[time]["sensitivity"],
-            "offset":
-            isf_p[time]["offset"],
-            "start":
-            isf_p[time]["start"],
-        })
+        oaps_profile["isfProfile"]["sensitivities"].append(
+            {
+                "i": len(oaps_profile["isfProfile"]["sensitivities"]),
+                "sensitivity": isf_p[time]["sensitivity"],
+                "offset": isf_p[time]["offset"],
+                "start": isf_p[time]["start"],
+            }
+        )
 
     # Create a dict of dicts for carb ratio
-    oaps_profile["carb_ratios"] = {
-        "first": 1,
-        "units": "grams",
-        "schedule": []
-    }
+    oaps_profile["carb_ratios"] = {"first": 1, "units": "grams", "schedule": []}
     cr_p = {}
     for cr in ns_profile["carbratio"]:
         cr = normalize_entry(cr)
@@ -226,18 +210,15 @@ def ns_to_oaps(ns_profile):
             "ratio": float(cr["value"]),
         }
     for time in sorted(cr_p.keys()):
-        oaps_profile["carb_ratios"]["schedule"].append({
-            "i":
-            len(oaps_profile["carb_ratios"]["schedule"]),
-            "start":
-            cr_p[time]["start"],
-            "offset":
-            cr_p[time]["offset"],
-            "ratio":
-            cr_p[time]["ratio"],
-        })
-    oaps_profile["carb_ratio"] = oaps_profile["carb_ratios"]["schedule"][0][
-        "ratio"]
+        oaps_profile["carb_ratios"]["schedule"].append(
+            {
+                "i": len(oaps_profile["carb_ratios"]["schedule"]),
+                "start": cr_p[time]["start"],
+                "offset": cr_p[time]["offset"],
+                "ratio": cr_p[time]["ratio"],
+            }
+        )
+    oaps_profile["carb_ratio"] = oaps_profile["carb_ratios"]["schedule"][0]["ratio"]
 
     return oaps_profile
 
@@ -261,17 +242,19 @@ def display_text(p_data):
     singletons = Texttable()
     singletons.set_deco(Texttable.HEADER)
     singletons.set_cols_align(["c", "c", "c", "c", "c", "c"])
-    singletons.add_rows([
-        ["Profile name", "Timezone", "Units", "DIA", "Delay", "Start date"],
+    singletons.add_rows(
         [
-            p_data["name"],
-            p_data["timezone"],
-            p_data["units"],
-            p_data["dia"],
-            p_data["delay"],
-            p_data["startDate"],
-        ],
-    ])
+            ["Profile name", "Timezone", "Units", "DIA", "Delay", "Start date"],
+            [
+                p_data["name"],
+                p_data["timezone"],
+                p_data["units"],
+                p_data["dia"],
+                p_data["delay"],
+                p_data["startDate"],
+            ],
+        ]
+    )
     print(singletons.draw() + "\n")
 
     times = {}
@@ -300,14 +283,16 @@ def display_text(p_data):
 
     times_list = [["Time", "Basal", "ISF", "CR", "Target Low", "Target High"]]
     for time in sorted(times.keys()):
-        times_list.append([
-            time,
-            times[time].get("basal", ""),
-            times[time].get("sens", ""),
-            times[time].get("carbratio", ""),
-            times[time].get("tgt_low", ""),
-            times[time].get("tgt_high", ""),
-        ])
+        times_list.append(
+            [
+                time,
+                times[time].get("basal", ""),
+                times[time].get("sens", ""),
+                times[time].get("carbratio", ""),
+                times[time].get("tgt_low", ""),
+                times[time].get("tgt_high", ""),
+            ]
+        )
     times_table = Texttable()
     times_table.set_cols_align(["c", "c", "c", "c", "c", "c"])
     times_table.add_rows(times_list)
@@ -326,18 +311,14 @@ if __name__ == "__main__":
     )
     parser.add_argument("--token", help="Authenticaton token")
 
-    subparsers = parser.add_subparsers(
-        help="Sub-command to run", dest="subparser")
+    subparsers = parser.add_subparsers(help="Sub-command to run", dest="subparser")
 
-    parser_profiles = subparsers.add_parser(
-        "profiles", help="List all profile names")
+    parser_profiles = subparsers.add_parser("profiles", help="List all profile names")
 
     parser_display = subparsers.add_parser("display", help="Display a profile")
     parser_display.add_argument(
-        "--name",
-        help="Which profile to display",
-        nargs="?",
-        dest="profile_name")
+        "--name", help="Which profile to display", nargs="?", dest="profile_name"
+    )
     parser_display.add_argument(
         "--format",
         default="nightscout",
