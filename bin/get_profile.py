@@ -120,6 +120,8 @@ def normalize_entry(entry):
         entry_time = datetime.strptime(entry["time"], "%H:%M")
         entry[
             "timeAsSeconds"] = 3600 * entry_time.hour + 60 * entry_time.minute
+    entry["start"] = entry["time"] + ":00"
+    entry["minutes"] = int(entry["timeAsSeconds"]) / 60
     return entry
 
 
@@ -140,9 +142,9 @@ def ns_to_oaps(ns_profile):
             "i":
             len(oaps_profile["basalprofile"]),
             "minutes":
-            int(basal_item["timeAsSeconds"]) / 60,
+            basal_item["minutes"],
             "start":
-            basal_item["time"] + ":00",
+            basal_item["start"],
             "rate":
             float(basal_item["value"]),
         })
@@ -159,7 +161,7 @@ def ns_to_oaps(ns_profile):
         targets.setdefault(low["time"], {})
         targets[low["time"]]["low"] = {
             "i": len(targets),
-            "start": low["time"] + ":00",
+            "start": low["start"],
             "offset": float(low["timeAsSeconds"]),
             "low": float(low["value"]),
         }
@@ -193,8 +195,8 @@ def ns_to_oaps(ns_profile):
         isf_p.setdefault(sens["time"], {})
         isf_p[sens["time"]] = {
             "sensitivity": float(sens["value"]),
-            "start": sens["time"] + ":00",
-            "offset": int(sens["timeAsSeconds"]) / 60,
+            "start": sens["start"],
+            "offset": sens["minutes"],
         }
     for time in sorted(isf_p.keys()):
         oaps_profile["isfProfile"]["sensitivities"].append({
@@ -219,8 +221,8 @@ def ns_to_oaps(ns_profile):
         cr = normalize_entry(cr)
         cr_p.setdefault(cr["time"], {})
         cr_p[cr["time"]] = {
-            "start": cr["time"] + ":00",
-            "offset": int(cr["timeAsSeconds"]) / 60,
+            "start": cr["start"],
+            "offset": cr["minutes"],
             "ratio": float(cr["value"]),
         }
     for time in sorted(cr_p.keys()):
