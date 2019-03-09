@@ -56,10 +56,7 @@ case $i in
     -rl=*|--radio_locale=*)
     radio_locale="${i#*=}"
     ;;
-    -pm=*|--pumpmodel=*)
-    pumpmodel="${i#*=}"
-    ;;
-    -t=*|--tty=*)
+   -t=*|--tty=*)
     ttyport="${i#*=}"
     ;;
     -m=*|--max_iob=*)
@@ -307,14 +304,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echocolor "Ok, $serial it is."
     echo
 
-    if prompt_yn "Do you have a 512 or 712 model pump?" N; then
-        pumpmodel=x12
-        echocolor "Ok, you'll be using a 512 or 712 pump. Got it. "
-        echo
-    else
-        echocolor "You're using a different model pump. Got it."
-    fi
-
     echo "What kind of CGM would you like to configure for offline use? Options are:"
     echo "G4-Go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
     # TODO: deprecate g4-upload and G4-local-only
@@ -550,9 +539,6 @@ if [[ ! -z $DEXCOM_CGM_TX_ID ]]; then
 fi
 echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
-if [[ ${pumpmodel,,} =~ "x12" ]]; then
-    echo -n "x12 pump, "
-fi
 
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
@@ -594,9 +580,6 @@ fi
 echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_RUNAGAIN
 if [[ ! -z "$ttyport" ]]; then
     echo -n " --tty=$ttyport" | tee -a $OREF0_RUNAGAIN
-fi
-if [[ ! -z "$pumpmodel" ]]; then
-    echo -n " --pumpmodel=$pumpmodel" | tee -a $OREF0_RUNAGAIN;
 fi
 echo -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN;
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
@@ -1166,13 +1149,6 @@ if prompt_yn "" N; then
         sudo update-locale
     fi
 
-    #Setup files for editing on the x12, and replace get-settings alias
-    if [[ ${pumpmodel,,} =~ "x12" ]]; then
-        echo "copying settings files for x12 pumps"
-        cp $HOME/src/oref0/lib/oref0-setup/bg_targets_raw.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/basal_profile.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/settings.json $directory/settings/ || die "Could not copy settings files for x12 pumps"
-    fi
-
-    #Moved this out of the conditional, so that x12 models will work with smb loops
     sudo apt-get -y install bc jq ntpdate bash-completion || die "Couldn't install bc etc."
     cd $directory || die "Can't cd $directory"
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
@@ -1411,21 +1387,6 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "g4-go" ]]; then
         echo
         echo "To pair your G4 Share receiver, open its Settings, select Share, Forget Device (if previously paired), then turn sharing On"
-    fi
-
-    if [[ ${pumpmodel,,} =~ "x12" ]]; then
-        echo
-        echo To complete your x12 pump setup, you must edit your basal_profile.json,
-        echo and may want to edit your settings.json and bg_targets_raw.json as well.
-        read -p "Press enter to begin editing basal_profile.json, and then press Ctrl-X when done."
-        nano $directory/settings/basal_profile.json
-        read -p "Press enter to begin editing settings.json, and then press Ctrl-X when done."
-        nano $directory/settings/settings.json
-        read -p "Press enter to begin editing bg_targets_raw.json, and then press Ctrl-X when done."
-        nano $directory/settings/bg_targets_raw.json
-        echo To edit your basal_profile.json again in the future, run: nano $directory/settings/basal_profile.json
-        echo To edit your settings.json to set maxBasal or DIA, run: nano $directory/settings/settings.json
-        echo To edit your bg_targets_raw.json to set targets, run: nano $directory/settings/bg_targets_raw.json
     fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
