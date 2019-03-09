@@ -56,7 +56,7 @@ case $i in
     -rl=*|--radio_locale=*)
     radio_locale="${i#*=}"
     ;;
-   -t=*|--tty=*)
+    -t=*|--tty=*)
     ttyport="${i#*=}"
     ;;
     -m=*|--max_iob=*)
