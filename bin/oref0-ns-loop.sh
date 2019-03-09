@@ -195,7 +195,7 @@ function upload_recent_treatments {
 }
 
 function latest_ns_treatment_time {
-    nightscout latest-openaps-treatment $NIGHTSCOUT_HOST $API_SECRET | json created_at
+    nightscout latest-openaps-treatment $NIGHTSCOUT_HOST $API_SECRET | jq -r .created_at
 }
 
 #nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
@@ -210,7 +210,9 @@ function format_latest_nightscout_treatments {
         jq .[0:9] monitor/pumphistory-24h-zoned.json > upload/recent-pumphistory.json
         historyfile=upload/recent-pumphistory.json
     fi
-        nightscout cull-latest-openaps-treatments $historyfile settings/model.json $latest_ns_treatment_time > upload/latest-treatments.json
+
+    echo "Latest NS treatment: $latest_ns_treatment_time"
+    nightscout cull-latest-openaps-treatments $historyfile settings/model.json $latest_ns_treatment_time > upload/latest-treatments.json
 }
 
 function check_mdt_upload {
