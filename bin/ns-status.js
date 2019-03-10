@@ -54,6 +54,7 @@ if (!module.parent) {
         .usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json]")
         .option('uploader', {
             alias: 'u',
+            nargs: 1,
             describe: "Uploader battery status",
             default: false
         })
@@ -72,13 +73,8 @@ if (!module.parent) {
     var mmtune_input = inputs[7];
     var uploader_input = params.uploader;
 
-    if (inputs.length > 8) {
-        uploader_input = params.uploader ? inputs[7] : false;
-        mmtune_input = inputs[8];
-    }
-
-    if (!clock_input || !iob_input || !suggested_input || !enacted_input || !battery_input || !reservoir_input || !status_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json]');
+    if (inputs.length < 7 || inputs.length > 8) {
+        argv.showHelp();
         process.exit(1);
     }
 

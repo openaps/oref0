@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
@@ -162,7 +162,7 @@ extra_ns_help
 }
 case $NAME in
 latest-openaps-treatment)
-  ns-get treatments.json'?find[enteredBy]=/openaps:\/\//&count=1' $* | json 0
+  ns-get treatments.json'?find[enteredBy]=/openaps:\/\//&count=1' $* | jq .[0]
   ;;
 ns)
   NIGHTSCOUT_HOST=$1
@@ -182,17 +182,17 @@ ns)
     exit 0
     ;;
     preflight)
-      STATUS=$(ns-get host $NIGHTSCOUT_HOST status.json | json status)
+      STATUS=$(ns-get host $NIGHTSCOUT_HOST status.json | jq -r .status)
       if [[ $STATUS = "ok" ]] ; then
-        echo "true" | json -j
+        echo true
         exit 0
       else
-        echo "false" | json -j
+        echo false
         exit 1
       fi
     ;;
     get-status)
-      ns-get host $NIGHTSCOUT_HOST status.json | json
+      ns-get host $NIGHTSCOUT_HOST status.json | jq .
     ;;
     status)
       ns-status $*
@@ -212,15 +212,17 @@ ns)
       #Format Medtronic glucose data into something acceptable to Nightscout.
       HISTORY=$1
       cat $HISTORY | \
-        json -E "this.sgv = this.sgv ? this.sgv : this.glucose" | \
-        json -E "this.medtronic = this._type;" | \
-        json -E "this.dateString = this.dateString ? this.dateString : this.display_time" | \
-        json -E "this.dateString = this.dateString ? this.dateString : (this.date + '$(date +%z)')" | \
-        json -E "this.date = new Date(this.dateString).getTime();" | \
-        json -E "this.type = (this.name && this.name.indexOf('GlucoseSensorData') > -1) ? 'sgv' : 'pumpdata'" | \
-        json -E "this.device = 'openaps://medtronic/pump/cgm'" | (
-          json -E "$NSONLY"
-        )
+        jq '[ .[]
+          | .sgv = if .sgv then .sgv else .glucose end
+          | if has("_type") then .medtronic = ._type else . end
+          | if .dateString | not then .dateString = .display_time else . end
+          | if ( ( .dateString | not ) and ( .date | tostring | test(":") ) ) then
+            .dateString = ( [ .date, "'$(date +%z)'" ] | join("") ) else . end
+          | ( .dateString | sub("Z"; "") | split(".") )[0] as $time
+          | ( ( .dateString | sub("Z"; "") | split(".") )[1] | tonumber ) as $msec
+          | .date = ( ( [ $time, "Z" ] | join("") ) | fromdateiso8601 ) * 1000 + $msec
+          | .type = if .name and (.name | test("GlucoseSensorData")) then "sgv" else "pumpdata" end
+          | .device = "openaps://medtronic/pump/cgm" ]'
     ;;
     format-recent-type)
       ZONE=${1-'tz'}
@@ -232,23 +234,23 @@ ns)
       test ! -e ${FILE} && echo "Third argument, contents to upload, FILE, does not exist" && exit 1
       test ! -r ${FILE} && echo "Third argument, contents to upload, FILE, not readable." && exit 1
       openaps use ns shell lsgaps ${ZONE} ${TYPE} \
-        |  openaps use ${ZONE} select --date dateString --current now --gaps - ${FILE}  | json
+        |  openaps use ${ZONE} select --date dateString --current now --gaps - ${FILE}  | jq .
     ;;
     latest-entries-time)
-      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST entries.json 'find[type]=sgv'  | json 0)
-      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | json -j dateString
+      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST entries.json 'find[type]=sgv'  | jq .[0])
+      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | jq .dateString
       exit 0
     ;;
     latest-treatment-time)
-      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST treatments.json'?find[enteredBy]=/openaps:\/\//&count=1'  | json 0)
-      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | json -j created_at
+      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST treatments.json '?find[enteredBy]=/openaps:\/\//&count=1'  | jq .[0])
+      test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | jq -r .created_at
       exit 0
     # exec ns-get host $NIGHTSCOUT_HOST $*
     ;;
     format-recent-history-treatments)
       HISTORY=$1
       MODEL=$2
-      LAST_TIME=$(nightscout ns $NIGHTSCOUT_HOST $API_SECRET latest-treatment-time | json)
+      LAST_TIME=$(nightscout ns $NIGHTSCOUT_HOST $API_SECRET latest-treatment-time)
       exec nightscout cull-latest-openaps-treatments $HISTORY $MODEL ${LAST_TIME}
       exit 0
 
@@ -256,55 +258,55 @@ ns)
     upload-non-empty-type)
       TYPE=${1-entries.json}
       FILE=$2
-      test $(cat $FILE | json -a | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $FILE && exit 0
+      test $(cat $FILE | jq .[] | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $FILE && exit 0
       exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $TYPE $FILE
     ;;
     upload-non-empty-treatments)
-      test $(cat $1 | json -a | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $1 && exit 0
-    exec ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json $1
+      test $(cat $1 | jq .[] | wc -l) -lt 1 && echo "Nothing to upload." >&2 && cat $1 && exit 0
+      exec ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json $1
 
     ;;
     upload)
-    exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $*
+      exec ns-upload $NIGHTSCOUT_HOST $API_SECRET $*
     ;;
     oref0_glucose)
-    zone=${1-'tz'}
-    shift
-    params=$*
-    params=${params-'count=10'}
-    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
-      | json -e "this.glucose = this.sgv" \
-      | openaps use $zone rezone --astimezone --date dateString -
+      zone=${1-'tz'}
+      shift
+      params=$*
+      params=${params-'count=10'}
+      exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
+        | jq '[ .[] | .glucose = .sgv ]' \
+        | openaps use $zone rezone --astimezone --date dateString -
     ;;
     oref0_glucose_without_zone)
-    params=$*
-    params=${params-'count=10'}
-    exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
-      | json -e "this.glucose = this.sgv"
+      params=$*
+      params=${params-'count=10'}
+      exec ns-get host $NIGHTSCOUT_HOST entries/sgv.json $params \
+        | jq '[ .[] | .glucose = .sgv ]' \
     ;;
     oref0_glucose_since)
-    expr=$1
-    zone=${2-'tz'}
-    count=${3-1000}
-    exec ns-get host $NIGHTSCOUT_HOST entries.json "find[date][\$gte]=$(date -d $expr +"%s%3N")&count=$count" \
-      | json -e "this.glucose = this.sgv" \
-      | openaps use $zone rezone --astimezone --date dateString -
+      expr=$1
+      zone=${2-'tz'}
+      count=${3-1000}
+      exec ns-get host $NIGHTSCOUT_HOST entries.json "find[date][\$gte]=$(date -d $expr +"%s%3N")&count=$count" \
+        | jq '[ .[] | .glucose = .sgv ]' \
+        | openaps use $zone rezone --astimezone --date dateString -
     ;;
     temp_targets)
-    expr=${1--24hours}
-    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes -u)&find[eventType]=Temporary+Target"
+      expr=${1--24hours}
+      exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes -u)&find[eventType]=Temporary+Target"
     ;;
     carb_history)
-    expr=${1--24hours}
-    exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes -u)&find[carbs][\$exists]=true"
+      expr=${1--24hours}
+      exec ns-get host $NIGHTSCOUT_HOST treatments.json "find[created_at][\$gte]=$(date -d $expr -Iminutes -u)&find[carbs][\$exists]=true"
     ;;
     *)
-    echo "Unknown request:" $OP
-    ns_help
-    exit 1;
+      echo "Unknown request:" $OP
+      ns_help
+      exit 1;
     ;;
   esac
-    exit 0
+  exit 0
 
   ;;
 hash-api-secret)
@@ -334,16 +336,16 @@ autoconfigure-device-crud)
   test -z "$NIGHTSCOUT_HOST" && setup_help && exit 1;
   test -z "$API_SECRET" && setup_help && exit 1;
   openaps device add ns process --require "oper" nightscout ns "NIGHTSCOUT_HOST" "API_SECRET"
-  openaps device show ns --json | json \
-    -e "this.extra.args = this.extra.args.replace(' NIGHTSCOUT_HOST ', ' $NIGHTSCOUT_HOST ')" \
-    -e "this.extra.args = this.extra.args.replace(' API_SECRET', ' $API_SECRET')" \
+  openaps device show ns --json | \
+    jq '.extra.args |= sub("NIGHTSCOUT_HOST" ; "'$NIGHTSCOUT_HOST'")' \
+    | jq '.extra.args |= sub("API_SECRET" ; "'$API_SECRET'")' \
     | openaps import
   ;;
 cull-latest-openaps-treatments)
   INPUT=$1
   MODEL=$2
   LAST_TIME=$3
-  mm-format-ns-treatments $INPUT $MODEL |  json -c "this.created_at > '$LAST_TIME'"
+  mm-format-ns-treatments $INPUT $MODEL | jq '[ .[] | select(.created_at > "'$LAST_TIME'") ]'
   ;;
 help|--help|-h)
   help_message

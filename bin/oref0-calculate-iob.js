@@ -18,27 +18,32 @@
 
 */
 
-var generate = require('oref0/lib/iob');
+var generate = require('../lib/iob');
 function usage ( ) {
     console.log('usage: ', process.argv.slice(0, 2), '<pumphistory-zoned.json> <profile.json> <clock-zoned.json> [autosens.json] [pumphistory-24h-zoned.json]');
 
 }
 
 if (!module.parent) {
-  var pumphistory_input = process.argv[2];
-  if ([null, '--help', '-h', 'help'].indexOf(pumphistory_input) > 0) {
-    usage( );
-    process.exit(0)
-  }
-  var profile_input = process.argv[3];
-  var clock_input = process.argv[4];
-  var autosens_input = process.argv[5];
-  var pumphistory_24_input = process.argv[6];
+  var argv = require('yargs')
+    .usage("$0 <pumphistory-zoned.json> <profile.json> <clock-zoned.json> [<autosens.json>] [<pumphistory-24h-zoned.json>]")
+    .strict(true)
+    .help('help');
 
-  if (!pumphistory_input || !profile_input) {
-    usage( );
+  var params = argv.argv;
+  var inputs = params._
+
+  if (inputs.length < 3 || inputs.length > 5) {
+    argv.showHelp()
+    console.error('Incorrect number of arguments');
     process.exit(1);
   }
+
+  var pumphistory_input = inputs[0];
+  var profile_input = inputs[1];
+  var clock_input = inputs[2];
+  var autosens_input = inputs[3];
+  var pumphistory_24_input = inputs[4];
 
   var cwd = process.cwd();
   var pumphistory_data = require(cwd + '/' + pumphistory_input);
@@ -48,20 +53,20 @@ if (!module.parent) {
   var autosens_data = null;
   if (autosens_input) {
     try {
-        var autosens_data = require(cwd + '/' + autosens_input);
+        autosens_data = require(cwd + '/' + autosens_input);
     } catch (e) {}
     //console.error(autosens_input, JSON.stringify(autosens_data));
   }
   var pumphistory_24_data = null;
   if (pumphistory_24_input) {
     try {
-        var pumphistory_24_data = require(cwd + '/' + pumphistory_24_input);
+        pumphistory_24_data = require(cwd + '/' + pumphistory_24_input);
     } catch (e) {}
   }
 
   // pumphistory_data.sort(function (a, b) { return a.date > b.date });
 
-  var inputs = {
+  inputs = {
     history: pumphistory_data
   , history24: pumphistory_24_data
   , profile: profile_data

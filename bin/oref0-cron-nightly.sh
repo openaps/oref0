@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
@@ -17,5 +17,6 @@ directory="$PWD"
 
 if [[ $ENABLE =~ autotune ]]; then
     # autotune nightly at 4:05am using data from NS
+    echo "=== Running Autotune at `date` === " | tee -a /var/log/openaps/autotune.log
     (oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && cat $directory/autotune/profile.json | jq . | grep -q start && cp $directory/autotune/profile.json $directory/settings/autotune.json) 2>&1 | tee -a /var/log/openaps/autotune.log &
 fi

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Author: Ben West @bewest
 # Maintainer: @tghoward
@@ -16,10 +16,13 @@ Format medtronic glucose data into oref0 format.
 EOT
 
 cat $HISTORY | \
-  json -e "this.medtronic = this._type;" | \
-  json -e "this.dateString = this.date + '$(date +%z)'" | \
-  json -e "this.date = new Date(this.dateString).getTime();" | \
-  json -E "this.type = (this.name && this.name.indexOf('GlucoseSensorData') > -1) ? 'sgv' : 'pumpdata'" | \
-  json -e "this.device = 'openaps://medtronic/pump/cgm'" \
-  > $OUTPUT
+  jq '[ .[]
+    | .medtronic = ._type
+    | if ( ( .dateString | not ) and ( .date | tostring | test(":") ) ) then
+      .dateString = ( [ .date, "'$(date +%z)'" ] | join("") ) else . end
+    | if ( ( .dateString | not ) and ( .date | test(".") | not ) ) then .dateString = ( .date | todate ) else . end
+    | if .date | tostring | test(":") then .date = ( .dateString | strptime("%Y-%m-%dT%H:%M:%S%z") | mktime * 1000 ) else . end
+    | .type = if .name and (.name | test("GlucoseSensorData")) then "sgv" else "pumpdata" end
+    | .device = "openaps://medtronic/pump/cgm" ]' \
+   > $OUTPUT
 

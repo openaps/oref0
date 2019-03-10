@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
+BRANCH=${1:-master}
 read -p "Enter your rig's new hostname (this will be your rig's "name" in the future, so make sure to write it down): " -r
 myrighostname=$REPLY
 echo $myrighostname > /etc/hostname
@@ -20,8 +21,6 @@ if [ -e /run/sshwarn ] ; then
     passwd pi
 fi
 
-grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" > /etc/ssh/sshd_config
-
 # set timezone
 dpkg-reconfigure tzdata
 
@@ -30,6 +29,8 @@ dpkg-reconfigure tzdata
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim python-pip locate ntpdate ntp
 #check if edison user exists before trying to add it to groups
+
+grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" > /etc/ssh/sshd_config
 
 if  getent passwd edison > /dev/null; then
   echo "Adding edison to sudo users"
@@ -43,8 +44,8 @@ fi
 sed -i "s/daily/hourly/g" /etc/logrotate.conf
 sed -i "s/#compress/compress/g" /etc/logrotate.conf
 
-curl -s https://raw.githubusercontent.com/openaps/oref0/master/bin/openaps-packages.sh | bash -
-mkdir -p ~/src; cd ~/src && git clone git://github.com/openaps/oref0.git || (cd oref0 && git checkout master && git pull)
-echo "Press Enter to run oref0-setup with the current release (master branch) of oref0,"
+curl -s https://raw.githubusercontent.com/openaps/oref0/$BRANCH/bin/openaps-packages.sh | bash -
+mkdir -p ~/src; cd ~/src && git clone git://github.com/openaps/oref0.git ; (cd oref0 && git checkout $BRANCH && git pull)
+echo "Press Enter to run oref0-setup with the current release ($BRANCH branch) of oref0,"
 read -p "or press ctrl-c to cancel. " -r
 cd && ~/src/oref0/bin/oref0-setup.sh

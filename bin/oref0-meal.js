@@ -19,42 +19,67 @@
 
 */
 
-var generate = require('oref0/lib/meal');
-function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [carbhistory.json]');
-}
+var generate = require('../lib/meal');
 
 if (!module.parent) {
-    var pumphistory_input = process.argv[2];
-    if ([null, '--help', '-h', 'help'].indexOf(pumphistory_input) > 0) {
-      usage( );
-      process.exit(0)
-    }
-    var profile_input = process.argv[3];
-    var clock_input = process.argv[4];
-    var glucose_input = process.argv[5];
-    var basalprofile_input = process.argv[6];
-    var carb_input = process.argv[7]
+    var argv = require('yargs')
+      .usage('$0 <pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [<carbhistory.json>]')
+      // error and show help if some other args given
+      .strict(true)
+      .help('help');
 
-    if (!pumphistory_input || !profile_input || !clock_input || !glucose_input || !basalprofile_input) {
-        usage( );
+    var params = argv.argv;
+    var inputs = params._;
+
+    var pumphistory_input = inputs[0];
+    var profile_input = inputs[1];
+    var clock_input = inputs[2];
+    var glucose_input = inputs[3];
+    var basalprofile_input = inputs[4];
+    var carb_input = inputs[5];
+
+    if (inputs.length < 5 || inputs.length > 6) {
+        argv.showHelp();
         console.log('{ "carbs": 0, "reason": "Insufficient arguments" }');
         process.exit(1);
     }
 
     var fs = require('fs');
+    var pumphistory_data;
+    var profile_data;
+    var clock_data;
+    var basalprofile_data;
+  
     try {
-        var pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
-        var profile_data = JSON.parse(fs.readFileSync(profile_input, 'utf8'));
-        var clock_data = JSON.parse(fs.readFileSync(clock_input, 'utf8'));
-        var basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
+        pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
     } catch (e) {
-        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse input data" }');
-        return console.error("Could not parse input data: ", e);
+        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse pumphistory data" }');
+        return console.error("Could not parse pumphistory data: ", e);
+    }
+
+    try {
+        profile_data = JSON.parse(fs.readFileSync(profile_input, 'utf8'));
+    } catch (e) {
+        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse profile data" }');
+        return console.error("Could not parse profile data: ", e);
+    }
+
+    try {
+        clock_data = JSON.parse(fs.readFileSync(clock_input, 'utf8'));
+    } catch (e) {
+        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse clock data" }');
+        return console.error("Could not parse clock data: ", e);
+    }
+
+    try {
+        basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
+    } catch (e) {
+        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse basalprofile data" }');
+        return console.error("Could not parse basalprofile data: ", e);
     }
 
     // disallow impossibly low carbRatios due to bad decoding
-    if ( typeof(profile_data.carb_ratio) == 'undefined' || profile_data.carb_ratio < 3 ) {
+    if ( typeof(profile_data.carb_ratio) === 'undefined' || profile_data.carb_ratio < 3 ) {
         console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratio ' + profile_data.carb_ratio + ' out of bounds" }');
         return console.error("Error: carb_ratio " + profile_data.carb_ratio + " out of bounds");
     }
@@ -66,7 +91,7 @@ if (!module.parent) {
     }
 
     var carb_data = { };
-    if (typeof carb_input != 'undefined') {
+    if (typeof carb_input !== 'undefined') {
         try {
             carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
         } catch (e) {
@@ -74,10 +99,10 @@ if (!module.parent) {
         }
     }
 
-    if (typeof basalprofile_data[0] == 'undefined') {
+    if (typeof basalprofile_data[0] === 'undefined') {
         return console.error("Error: bad basalprofile_data:" + basalprofile_data);
     }
-    if (typeof basalprofile_data[0].glucose != 'undefined') {
+    if (typeof basalprofile_data[0].glucose !== 'undefined') {
       console.error("Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
       var temp = carb_data;
       carb_data = glucose_data;
@@ -85,7 +110,7 @@ if (!module.parent) {
       basalprofile_data = temp;
     }
 
-    var inputs = {
+    inputs = {
         history: pumphistory_data
     , profile: profile_data
     , basalprofile: basalprofile_data

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Author: Ben West
 
@@ -30,68 +30,68 @@ bewest@bewest-MacBookPro:~/Documents/openaps$ mm-format-ns-profile monitor/setti
 EOT
 
 function dia ( ) {
-  cat $1 | json insulin_action_curve
+  cat $1 | jq .insulin_action_curve
 }
 
 function fix-time-field ( ) {
-  json -e "this.time = this.time.split(':').slice(0, 2).join(':')"
+  jq '[ .[] | .time = ( .time | split(":") | .[0:2] | join(":") ) ]'
 }
 
 function fix-schedule ( ) {
   field=$1
-  json -e "this.time = this.start; this.value = this.$field.toString( );" \
+  jq '[ .[] | .time = .start | .value = ( .'$field' | tostring ) ]' \
     | fix-time-field
 }
 
 function carb-ratios ( ) {
-  units=$(cat $1 | json units)
+  units=$(cat $1 | jq -r .units)
   if [[ $units = "grams" ]] ; then
-    cat $1 | json schedule \
+    cat $1 | jq .schedule \
       | fix-schedule ratio
       # | json -e "this.time = this.start; this.value = this.ratio;"
   else
-    echo "[ ]" | json
+    echo "[]"
   fi
 
 }
 
 function add-carbs ( ) {
-  json -e "this.carbratio = $(carb-ratios $1 )"
+  jq '.carbratio = '"$(carb-ratios $1)"
 }
 
 function basal-rates ( ) {
   (
    test -n "$1" && cat $1 || echo "[ ]"
-  ) | json  \
-    | fix-schedule rate \
-    | json -A -e "this.length > 0 ? this : [ ];"
+  ) | fix-schedule rate \
+    | jq '[ .[] | if length > 0 then . else [] end ]'
     # | json -e "this.seconds = this.minutes * 60;"
 }
 
 function add-basals ( ) {
-  json -e "this.basal = $(basal-rates $1 )"
+  jq '.basal = '"$(basal-rates $1)"
 }
 
 function sensitivities ( ) {
   (
    test -n "$1" && cat $1 || echo "{ }" | json
   )   \
-    | json -e "this.sens = (this.sensitivities && this.sensitivities.length > 0) ? this.sensitivities : [ ];" \
-    | json  sens  \
+    | jq '.
+      | .sens = if .sensitivities and ((.sensitivities | length) > 0) then .sensitivities else [] end
+      | .sens'  \
     | fix-schedule sensitivity
 }
 
 function add-isf ( ) {
   #json -e "this.sens =
   # sensitivities $1
-  json -e "this.sens = $(sensitivities $1 )"
+  jq '.sens = '"$(sensitivities $1)"
 }
 
 function targets ( ) {
   category="$2"
   test -z "$category" && category=$1 && shift 
   (
-   test -n "${1}${2}" && cat $1 || echo "{ }" | json
+   test -n "${1}${2}" && cat $1 || echo "{ }"
   )   \
     | target-category $category
 
@@ -100,34 +100,34 @@ function targets ( ) {
 function target-category ( ) {
   category="$1"
   name="target_$category"
-  json -e "this.$name = (this.targets && this.targets.length > 0) ? this.targets : [ ];" \
-   | json -e "this.$name = this.$name.map(function (elem) { if (elem.$category) { return {value: elem.$category.toString( ), time: elem.start }; } })" \
-   json $name | fix-time-field
+  jq 'if .targets | length > 0 then .targets else [] end' | \
+  jq '{ "'$name'": [ .[] | { "value": ( .'$category' | tostring ), "time": .start } ] }' | \
+  jq .$name | fix-time-field
 }
 
 function add-targets ( ) {
-  json -e "this.target_low = $(targets $1 low)" \
-    | json -e "this.target_high = $(targets $1 high)" \
-    | json -e "this.units = '$(bgunits $1)'"
-
+  jq '.target_low = '"$(targets $1 low)"'
+    | .target_high = '"$(targets $1 high)"'
+    | .units = '$(bgunits $1)
 }
 
 function bgunits ( ) {
-  cat $1 | json units
+  cat $1 | jq .units
 }
 
 function fix-dates ( ) {
   # really want to know last changed date
   startDate=$(date --date "1 minute ago" --iso-8601=minutes)
   created_at=$(date --iso-8601=minutes)
-  json -e "this.created_at = '$created_at'; this.startDate = '$startDate';"
+  jq '.created_at = "'$created_at'"
+    | .startDate = "'$startDate'"'
 }
 
 function stub ( ) {
   zone=$(cat /etc/timezone | nonl)
   dt=$(date --rfc-3339=ns | tr ' ' 'T')
   DIA=$(dia $SETTINGS)
-  cat <<EOF | json
+  cat <<EOF | jq .
   {
     "dia" : "$DIA"
   , "carbratio": [ ]
@@ -145,11 +145,11 @@ function stub ( ) {
 EOF
 }
 
-stub $SETTINGS | fix-dates \
+stub $SETTINGS | fix-dates  \
   | add-carbs $CARBS \
   | add-basals $BASALRATES \
   | add-isf $SENSITIVITIES \
   | add-targets $TARGETS \
-  | json > $OUTPUT
+  | jq . > $OUTPUT
 
 

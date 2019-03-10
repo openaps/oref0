@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Author: Ben West
 # Maintainer: Scott Leibrand
@@ -16,10 +16,12 @@ OUTPUT=${2-/dev/fd/1}
 #TZ=${3-$(date +%z)}
 
 cat $HISTORY | \
-  json -e "this.medtronic = this._type;"  \
-    -e "this.dateString = this.timestamp + '$(date +%z)'"  \
-    -e "this.type = 'medtronic'"  \
-    -e "this.date = this.date ? this.date : new Date(Date.parse(this.dateString)).getTime( )" \
+  jq '[ .[]
+    | .medtronic = ._type
+    | .dateString = .timestamp
+    | .type = "medtronic"
+    | ( .dateString | split(":") | .[0:3] | join(":") ) as $first
+    | ( .dateString | split(":") | .[4] ) as $last
+    | .date = if .date then .date else [$first, $last] | join("") | strptime("%Y-%m-%dT%H:%M:%S%z") | mktime end ]' \
   > $OUTPUT
-
 
