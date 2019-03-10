@@ -8,7 +8,7 @@ Attempt to get a working internet connection via wifi or bluetooth. Typically
 run from crontab.
 EOT
 
-hci_adapter=$(get_pref_string bt_hci) || hci_adapter=0
+hci_adapter=$(get_pref_string .bt_hci) || hci_adapter=0
 
 hci_address=$(hciconfig hci${hci_adapter} | grep Address | cut -d' ' -f 3)
 

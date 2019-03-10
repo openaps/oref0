@@ -7,7 +7,7 @@ Usage: $self
 Attempt to establish a Bluetooth tethering connection.
 EOT
 
-adapter=$(get_pref_string bt_hci) || adapter=0
+adapter=$(get_pref_string .bt_hci) || adapter=0
 
 # start bluetoothd if bluetoothd is not running
 if ! ( ps -fC bluetoothd >/dev/null ) ; then
