@@ -14,16 +14,16 @@ if ! ( ps -fC bluetoothd >/dev/null ) ; then
    sudo /usr/local/bin/bluetoothd &
 fi
 
-if is_edison && ! ( hciconfig -a | grep -q "PSCAN" ) ; then
+if is_edison && ! ( hciconfig -a hci${adapter} | grep -q "PSCAN" ) ; then
    sudo killall bluetoothd
    sudo /usr/local/bin/bluetoothd &
 fi
 
-if ( hciconfig -a | grep -q "DOWN" ) ; then
+if ( hciconfig -a hci${adapter} | grep -q "DOWN" ) ; then
    sudo hciconfig hci${adapter} up
    sudo /usr/local/bin/bluetoothd &
 fi
 
-if !( hciconfig -a | grep -q $HOSTNAME ) ; then
+if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
    sudo hciconfig hci${adapter} name $HOSTNAME
 fi
