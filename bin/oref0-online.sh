@@ -8,6 +8,9 @@ Attempt to get a working internet connection via wifi or bluetooth. Typically
 run from crontab.
 EOT
 
+hci_adapter=$(get_pref_string bt_hci) || hci_adapter=0
+
+hci_address=$(hciconfig hci${hci_adapter} | grep Address | cut -d' ' -f 3)
 
 main() {
     MACs=$@
@@ -157,10 +160,10 @@ function bt_connect {
                 || ! jq -e .bt_offline < preferences.json > /dev/null \
                 || ! ifconfig | egrep -q "bnep0" >/dev/null; then
                 echo "Attempting to connect to bt $MAC..."
-                sudo bt-pan client $MAC -d
+                sudo bt-pan -i $hci_address client $MAC -d
               for i in {1..3}
               do
-                sudo bt-pan client $MAC
+                sudo bt-pan -i $hci_address client $MAC
                 sudo dhclient bnep0
               done
                 if ! has_ip bnep0; then
@@ -198,7 +201,7 @@ function bt_disconnect {
     ifdown bnep0
     # loop over as many MACs as are provided as arguments
     for MAC; do
-        sudo bt-pan client $MAC -d
+        sudo bt-pan -i $hci_address client $MAC -d
     done
 }
 

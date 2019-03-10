@@ -7,6 +7,8 @@ Usage: $self
 Attempt to establish a Bluetooth tethering connection.
 EOT
 
+adapter=$(get_pref_string bt_hci) || adapter=0
+
 # start bluetoothd if bluetoothd is not running
 if ! ( ps -fC bluetoothd >/dev/null ) ; then
    sudo /usr/local/bin/bluetoothd &
@@ -18,10 +20,10 @@ if is_edison && ! ( hciconfig -a | grep -q "PSCAN" ) ; then
 fi
 
 if ( hciconfig -a | grep -q "DOWN" ) ; then
-   sudo hciconfig hci0 up
+   sudo hciconfig hci${adapter} up
    sudo /usr/local/bin/bluetoothd &
 fi
 
 if !( hciconfig -a | grep -q $HOSTNAME ) ; then
-   sudo hciconfig hci0 name $HOSTNAME
+   sudo hciconfig hci${adapter} name $HOSTNAME
 fi
