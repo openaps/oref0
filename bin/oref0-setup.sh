@@ -922,9 +922,11 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
+        set_pref_string .cgm_loop_path "$directory"
     elif [[ ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
         openaps use cgm config --G6
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
+        set_pref_string .cgm_loop_path "$directory"
     ## TODO: figure out if any of this is still needed
     #elif [[ ${CGM,,} =~ "g4-go" ]]; then
         #echo Checking Adafruit_BluefruitLE installation
