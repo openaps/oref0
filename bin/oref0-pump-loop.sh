@@ -16,7 +16,7 @@ source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to r
 # -  when subcommand outputs are not needed in the main log file:
 #    - redirect the output to either fd >&3 or fd >&4 based on
 #    - when you want the output visible.
-export MEDTRONIC_PUMP_ID=`grep serial pump.ini | tr -cd 0-9`
+export MEDTRONIC_PUMP_ID=`get_pref_string .pump_serial | tr -cd 0-9`
 export MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
 OREF0_DEBUG=${OREF0_DEBUG:-0}
 if [[ "$OREF0_DEBUG" -ge 1 ]] ; then
@@ -87,12 +87,41 @@ main() {
             touch /tmp/pump_loop_success
             echo Completed oref0-pump-loop at $(date)
             update_display
+            run_plugins
             echo
         else
             # pump-loop errored out for some reason
             fail "$@"
         fi
     fi
+}
+
+function run_script() {
+  file=$1
+
+  echo "Running plugin script ($file)... "
+  timeout 60 $file
+  echo "Completed plugin script ($file). "
+
+  # -d means to only run the script once, so remove it once run
+  if [[ "$2" == "-d" ]]
+  then
+    #echo "Removing script file ($file)"
+    rm $file
+  fi
+}
+
+
+function run_plugins {
+        once=plugins/once
+        every=plugins/every
+        mkdir -p $once
+        mkdir -p $every
+        echo "scripts placed in this directory will run once after curent loop and be removed" > $once/readme.txt
+        echo "scripts placed in this directory will run after every loop" > $every/readme.txt
+        find $once/* -executable | while read file; do run_script "$file" -d ; done
+        find $every/* -executable | while read file; do run_script "$file" ; done
+
 }
 
 function update_display {
@@ -128,6 +157,7 @@ function fail {
         echo Error: syntax error in preferences.json: please go correct your typo.
     fi
     update_display
+    run_plugins
     echo
     exit 1
 }
@@ -454,8 +484,8 @@ function prep {
         upto30s=$(head -1 /tmp/wait_for_silence)
         upto45s=$(head -1 /tmp/wait_for_silence)
     fi
-    # read tty port from pump.ini
-    eval $(grep port pump.ini | sed "s/ //g")
+    # read tty port from preferences
+    eval $(get_pref_string .ttyport | sed "s/ //g")
     # if that fails, try the Explorer board default port
     if [ -z $port ]; then
         port=/dev/spidev5.1
@@ -496,10 +526,11 @@ function preflight {
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
-    if grep "carelink" pump.ini 2>&1 >/dev/null; then
-    echo "using carelink; skipping mmtune"
-        return
-    fi
+    #carelink is deprecated in 0.7.0
+    #if grep "carelink" pump.ini 2>&1 >/dev/null; then
+    #echo "using carelink; skipping mmtune"
+    #    return
+    #fi
 
     echo -n "Listening for $upto45s s silence before mmtuning: "
     wait_for_silence $upto45s
