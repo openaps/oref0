@@ -65,7 +65,7 @@ oref0-radio-reboot &
 if [[ ${CGM,,} =~ "g4-go" ]]; then
         cd $CGM_LOOPDIR
         if ! is_bash_process_running_named oref0-g4-loop; then
-            oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log &
+            oref0-g4-loop | tee -a /var/log/openaps/cgm-loop.log | adddate openaps.cgm-loop | uncolor |tee -a /var/log/openaps/openaps-date.log &
         fi
         cd -
 # TODO: deprecate g4-upload and g4-local-only
