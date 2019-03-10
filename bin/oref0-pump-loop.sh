@@ -87,12 +87,41 @@ main() {
             touch /tmp/pump_loop_success
             echo Completed oref0-pump-loop at $(date)
             update_display
+            run_plugins
             echo
         else
             # pump-loop errored out for some reason
             fail "$@"
         fi
     fi
+}
+
+function run_script() {
+  file=$1
+
+  echo "Running plugin script ($file)... "
+  timeout 60 $file
+  echo "Completed plugin script ($file). "
+
+  # -d means to only run the script once, so remove it once run
+  if [[ "$2" == "-d" ]]
+  then
+    #echo "Removing script file ($file)"
+    rm $file
+  fi
+}
+
+
+function run_plugins {
+        once=plugins/once
+        every=plugins/every
+        mkdir -p $once
+        mkdir -p $every
+        echo "scripts placed in this directory will run once after curent loop and be removed" > $once/readme.txt
+        echo "scripts placed in this directory will run after every loop" > $every/readme.txt
+        find $once/* -executable | while read file; do run_script "$file" -d ; done
+        find $every/* -executable | while read file; do run_script "$file" ; done
+
 }
 
 function update_display {
@@ -128,6 +157,7 @@ function fail {
         echo Error: syntax error in preferences.json: please go correct your typo.
     fi
     update_display
+    run_plugins
     echo
     exit 1
 }
