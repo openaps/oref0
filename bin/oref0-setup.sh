@@ -133,10 +133,10 @@ function validate_cgm ()
     fi
 
     # TODO: Compare against list of supported CGMs
-    # list of CGM supported by oref0 0.6.x: "g4-upload", "g5", "g5-upload", "mdt", "shareble", "xdrip", "g4-local"
+    # list of CGM supported by oref0 0.7.x: "g4-upload", "g5", "g5-upload", "G6", "G6-upload", "mdt", "shareble", "xdrip", "g4-local"
 
-    if ! [[ $selection =~ "g4-go" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
-        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-local-only, G5, G5-upload, MDT, xdrip, or xdrip-js."
+    if ! [[ $selection =~ "g4-go" || $selection =~ "g5" || $selection =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" || $selection =~ "mdt" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
+        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-local-only, G5, G5-upload, G6, G6-upload, MDT, xdrip, or xdrip-js."
         echo
         return 1
     fi
@@ -323,6 +323,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
     echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
+    echo "G6: will use BGs from a plugged in G5/G6 touchscreen receiver, but will *not* upload them (the G6 app usually does that)"
+    echo "G6-upload: will use and upload BGs from a plugged in G5/G6 touchscreen receiver to Nightscout"
     echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
     echo "xdrip: will work with an xDrip receiver app on your Android phone"
     echo "xdrip-js: will work directly with a Dexcom G5 transmitter and will upload to Nightscout"
@@ -754,7 +756,7 @@ if prompt_yn "" N; then
     # The Nightscout API_SECRET (admin password) should not be written in plain text, but in a hashed form
     # set_pref_string .nightscout_api_secret "$API_SECRET"
 
-    if [[ ${CGM,,} =~ "g4-go" ]]; then
+    if [[ ${CGM,,} =~ "g4-go" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
         set_pref_string .cgm_loop_path "$directory"
     elif [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g4-local-only" ]]; then # TODO: deprecate g4-upload and g4-local-only
         set_pref_string .cgm_loop_path "$directory-cgm-loop"
@@ -899,6 +901,10 @@ if prompt_yn "" N; then
     # add/configure devices
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
+        openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
+        set_pref_string .cgm_loop_path "$directory"
+    elif [[ ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
+        openaps use cgm config --G6
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
         set_pref_string .cgm_loop_path "$directory"
     ## TODO: figure out if any of this is still needed
