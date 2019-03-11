@@ -10,7 +10,7 @@ EOF
 
 assert_cwd_contains_ini
 
-export MEDTRONIC_PUMP_ID=`grep serial pump.ini | tr -cd 0-9`
+export MEDTRONIC_PUMP_ID=`get_pref_string .pump_serial | tr -cd 0-9`
 export MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
 
 OREF0_DEBUG=${OREF0_DEBUG:-0}
@@ -28,7 +28,7 @@ fi
 
 function mmtune_Go() {
   set -o pipefail
-  if ( grep "WW" pump.ini ); then
+  if ( get_pref_string .radio_locale =~ ww ); then
     Go-mmtune -ww | tee monitor/mmtune.json
   else
     Go-mmtune | tee monitor/mmtune.json
@@ -43,7 +43,8 @@ if ! [ -s monitor/mmtune.json ]; then
 fi
 #Read and zero pad best frequency from mmtune, and store/set it so Go commands can use it,
 #but only if it's not the default frequency
-if ! $([ -s monitor/mmtune.json ] && jq -e .usedDefault monitor/mmtune.json); then
+if [ -s monitor/mmtune.json ]; then 
+  if $(jq -e .usedDefault monitor/mmtune.json); then
     freq=`jq -e .setFreq monitor/mmtune.json | tr -d "."`
     while [ ${#freq} -ne 9 ];
       do
@@ -57,6 +58,9 @@ if ! $([ -s monitor/mmtune.json ] && jq -e .usedDefault monitor/mmtune.json); th
     grep -v setFreq monitor/mmtune.json | grep -A2 $(json -a setFreq -f monitor/mmtune.json) | while read line
         do echo -n "$line "
     done
+  fi
+else
+  die "monitor/mmtune.json is empty or does not exist"
 fi
 
 echo
