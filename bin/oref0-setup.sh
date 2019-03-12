@@ -273,7 +273,7 @@ function copy_go_binaries () {
     done
     request_stop_local_binary Go-mmtune
 
-    cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
+    cp -prv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
 }
 
 function move_mmtune () {
@@ -336,34 +336,53 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &>/dev/null ; then
         echocolor "Explorer Board HAT detected. "
+        echocolor "Configuring for Explorer Board HAT. "
         ttyport=/dev/spidev0.0
+        hardwaretype=explorer-hat
     else
-        if ! prompt_yn "Are you using an Explorer Board?" Y; then
-            if ! prompt_yn "Are you using an Explorer HAT?" Y; then
-                echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
-                prompt_and_validate ttyport "What is your TTY port?" validate_ttyport
-                echocolor -n "Ok, "
-                if [[ -z "$ttyport" ]]; then
-                    echo -n Carelink
-                else
-                    echo -n TTY $ttyport
-                fi
-                echocolor " it is. "
-                echo
-            else
-                echocolor "Configuring Explorer Board HAT. "
-                ttyport=/dev/spidev0.0
-            fi
-        else
+	echo "What kind of hardware setup do you have? Options are:"
+	echo "[1]: Pi with Explorer HAT"
+	echo " 2 : Edison with Explorer Board"
+	echo " 3 : Pi with Radiofruit RFM69HCW Bonnet"
+        echo " 4 : Pi with RFM69HCW"
+        echo " 5 : TI Stick (SPI/UART)"
+	echo " 6 : Other radio (rfm69, cc11xx)"
+	read -p "Please enter the number for your hardware configuration: " -r
+	if [[ $REPLY =~ ^[2]$ ]]; then
+          if is_edison; then
+              echocolor "Yay! Configuring for Edison with Explorer Board. "
+              ttyport=/dev/spidev5.1
+              hardware-type=edison-explorer
+	  else
+              echo "Hmm, you don't seem to be using an Edison. "
+              prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
+              echocolor "Ok, we'll try TTY $ttyport then. "
+              echocolor "You will need to build Go binaries from source. "
+	  fi
+	elif [[ $REPLY =~ ^[3]$ ]]; then
+	    echocolor "Configuring Radiofruit RFM69HCW Bonnet. "
+            ttyport=/dev/spidev0.1
+            hardwaretype=radiofruit
+        elif [[ $REPLY =~ ^[4]$ ]]; then
+            echocolor "Configuring RFM69HCW. "
+            ttyport=/dev/spidev0.1
+            hardwaretype=rfm69hcw
+        elif [[ $REPLY =~ ^[5]$ ]]; then
+            #WIP, defaults to SPI for now
+            echocolor "Configuring for SPI-connected TI stick. "
             if is_edison; then
-                echocolor "Yay! Configuring for Edison with Explorer Board. "
-                ttyport=/dev/spidev5.1
+              hardwaretype=386-spi
             else
-                echo "Hmm, you don't seem to be using an Edison."
-                prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
-                echocolor "Ok, we'll try TTY $ttyport then."
+              hardwaretype=arm-spi
             fi
-            echo
+        elif [[ $REPLY =~ ^[6]$ ]]; then
+            prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
+            echocolor "Ok, we'll try TTY $ttyport then. "
+            echocolor "You will need to build Go binaries from source. "
+        else
+          echocolor "Configuring Explorer Board HAT. "
+          ttyport=/dev/spidev0.0
+          hardwaretype=explorer-hat
         fi
     fi
     read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
@@ -372,11 +391,14 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       if [[ $REPLY =~ ^[Ss]$ ]]; then
         buildgofromsource=true
         echo "Building Go pump binaries from source"
-        read -p "What type of radio do you use? [1] for cc1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r
-        if [[ $REPLY =~ ^[1]$ ]]; then
+        echo "What type of radio do you use? Options are:"
+        echo "[1]: cc1110 or cc1111"
+        echo " 2 : cc1101"
+        echo " 3 : RFM69HCW on /dev/spidev0.0 (walrus)"
+        echo " 4 : RFM69HCW on /dev/spidev0.1 (radiofruit bonnet)"
+        read -p "Please enter the number for your radio configuration: " -r
+        if [[ $REPLY =~ ^[2]$ ]]; then
           radiotags="cc1101"
-        elif [[ $REPLY =~ ^[2]$ ]]; then
-          radiotags="cc111x"
         elif [[ $REPLY =~ ^[3]$ ]]; then
           radiotags="rfm69"
         else
@@ -1125,6 +1147,7 @@ if prompt_yn "" N; then
         sudo update-locale
     fi
 
+    #Moved this out of the conditional, so that x12 models will work with smb loops
     sudo apt-get -y install bc jq ntpdate bash-completion || die "Couldn't install bc etc."
     cd $directory || die "Can't cd $directory"
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
@@ -1171,29 +1194,35 @@ if prompt_yn "" N; then
     echo
 
     #Check to see if Explorer HAT is present, and install all necessary stuff
-    if grep -qa "Explorer HAT" /proc/device-tree/hat/product &> /dev/null || [[ "$ttyport" =~ "spidev0.0" ]]; then
-        echo "Looks like you're using an Explorer HAT!"
-        echo "Making sure SPI is enabled..."
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product &> /dev/null || [[ "$hardwaretype" =~ "explorer-hat" ]] || [[ "$hardwaretype" =~ "radiofruit" ]]; then
+        echo "Looks like you have buttons and a screen!"
+        echo "Enabling i2c device nodes..."
         if ! ( grep -q i2c-dev /etc/modules-load.d/i2c.conf && egrep "^dtparam=i2c1=on" /boot/config.txt ); then
             echo Enabling i2c for the first time: this will require a reboot after oref0-setup.
             touch /tmp/reboot-required
         fi
-        sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
-        echo "Enabling i2c device nodes..."
         sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
         egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
         echo "Installing socat and ntp..."
         apt-get install -y socat ntp
-        echo "Installing pi-buttons..."
-        systemctl stop pi-buttons
-        cd $HOME/src && git clone git://github.com/bnielsen1965/pi-buttons.git || (cd $HOME/src/pi-buttons && git checkout master && git pull)
-        echo "Make and install pi-buttons..."
-        ( cd $HOME/src/pi-buttons/src && make && sudo make install && sudo make install_service ) || die "Couldn't install pi-buttons"
-        systemctl enable pi-buttons && systemctl restart pi-buttons
+	echo "Installing pi-buttons..."
+	systemctl stop pi-buttons
+	cd $HOME/src &&	git clone git://github.com/cluckj/pi-buttons.git
+	echo "Make and install pi-buttons..."
+	cd pi-buttons
+	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
+	    git checkout radiofruit
+	fi
+	cd src && make && sudo make install && sudo make install_service
+	systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
-        cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
-        cd $HOME/src/openaps-menu && sudo npm install || die "Couldn't install openaps-menu"
+	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
+            cd $HOME/src && git clone git://github.com/cluckj/openaps-menu.git && git checkout radiofruit || (cd openaps-menu && git checkout radiofruit && git pull)
+	else
+            cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git pull)
+	fi
+        cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     fi
 
@@ -1245,6 +1274,19 @@ if prompt_yn "" N; then
     fi
 
     if [[ "$ttyport" =~ "spidev" ]]; then
+        echo "Making sure SPI is enabled..."
+        sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+
+        #Translate various hardware types into their arch
+        if [[ "$hardwaretype" =~ "explorer-board" ]]; then arch=386-spi
+        elif [[ "$hardwaretype" =~ "radiofruit" ]]; then arch=arm-rfm69
+        elif [[ "$hardwaretype" =~ "rfm69hcw" ]]; then arch=arm-rfm69
+        elif [[ "$hardwaretype" =~ "386-spi" ]]; then arch=386-spi
+        elif [[ "$hardwaretype" =~ "386-uart" ]]; then arch=386-uart
+        elif [[ "@hardwaretype" =~ "arm-uart" ]]; then arch=arm-uart
+        else arch=arm-spi
+        fi
+
         if $buildgofromsource; then
           #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
           go get -u -v -tags $radiotags github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
@@ -1255,10 +1297,6 @@ if prompt_yn "" N; then
           #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
           ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
         else
-          arch=arm-spi
-          if is_edison; then
-            arch=386-spi
-          fi
           mkdir -p $HOME/go/bin && \
           downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/$ecc1medtronicversion | \
             jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
