@@ -28,7 +28,7 @@ fi
 
 function mmtune_Go() {
   set -o pipefail
-  if ( get_pref_string .radio_locale =~ ww ); then
+  if [ "$(get_pref_string .radio_locale '')" == "WW" ]; then
     Go-mmtune -ww | tee monitor/mmtune.json
   else
     Go-mmtune | tee monitor/mmtune.json
