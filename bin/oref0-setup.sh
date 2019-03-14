@@ -360,6 +360,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
               if is_edison; then
                 hardwaretype=386-spi
               else
+                ttyport=/dev/spidev0.0
                 hardwaretype=arm-spi
               fi
               ;;
@@ -422,7 +423,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       echo "USA pumps have a serial number / model number that has 'NA' in it."
       echo "Non-USA pumps have a serial number / model number that 'WW' in it."
       echo
-      echo "When using MMeowlink, we need to know which frequency we should use:"
       echo -e "\e[1mAre you using a USA/North American pump? If so, just hit enter. Otherwise enter WW: \e[0m"
       read -r
       radio_locale=$REPLY
@@ -696,13 +696,14 @@ if prompt_yn "" N; then
 
     cd $directory || die "Can't cd $directory"
 
+    #TODO: finish deprecating mmeowlink, as all its functions are done in Go now...
     #echo Checking mmeowlink installation
-    if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-        pip show mmeowlink | egrep "Version: 0.11.1" || (
-            echo Installing latest mmeowlink
-            sudo pip install --default-timeout=1000 -U mmeowlink || die "Couldn't install mmeowlink"
-        )
-    fi
+    #if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
+    #    pip show mmeowlink | egrep "Version: 0.11.1" || (
+    #        echo Installing latest mmeowlink
+    #        sudo pip install --default-timeout=1000 -U mmeowlink || die "Couldn't install mmeowlink"
+    #    )
+    #fi
 
     test -f preferences.json && cp preferences.json old_preferences.json || echo "No old preferences.json to save off"
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
@@ -1281,23 +1282,16 @@ if prompt_yn "" N; then
         echo "Making sure SPI is enabled..."
         sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
 
-        if [[ "$hardwaretype" =~ "explorer-hat" ]]; then arch=arm-spi
-        elif [[ "$hardwaretype" =~ "radiofruit" ]]; then arch=arm-rfm69
-        elif [[ "$hardwaretype" =~ "rfm69hcw" ]]; then arch=arm-rfm69
-        elif [[ "$hardwaretype" =~ "386-spi" ]]; then arch=386-spi
+        if [[ "$hardwaretype" =~ "explorer-hat" || "$hardwaretype" =~ "arm-spi" ]]; then arch=arm-spi
+        elif [[ "$hardwaretype" =~ "radiofruit" || "$hardwaretype" =~ "rfm69hcw" ]]; then arch=arm-rfm69
+        elif [[ "$hardwaretype" =~ "edison-explorer" || "$hardwaretype" =~ "386-spi" ]]; then arch=386-spi
         elif [[ "$hardwaretype" =~ "386-uart" ]]; then arch=386-uart
         elif [[ "$hardwaretype" =~ "arm-uart" ]]; then arch=arm-uart
         else arch=386-spi
         fi
 
         if $buildgofromsource; then
-          #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
           go get -u -v -tags $radiotags github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
-          #cd $HOME/go/src/github.com/ecc1/medtronic/cmd
-          #cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
-          #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
-          #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
-          #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
           ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
         else
           mkdir -p $HOME/go/bin && \
