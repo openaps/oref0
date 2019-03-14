@@ -353,7 +353,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           3)
              prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
              echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true; hardwaretype=diy;;
-          *) echocolor "Yay! Configuring for Edison with Explorer Board. "; ttyport=/dev/spidev5.1; hardware-type=edison-explorer;;
+          *) echocolor "Yay! Configuring for Edison with Explorer Board. "; ttyport=/dev/spidev5.1; hardwaretype=edison-explorer;;
         esac
     elif is_pi; then
 	echo "What kind of hardware setup do you have? Options are:"
