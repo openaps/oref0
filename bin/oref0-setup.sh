@@ -128,7 +128,7 @@ function validate_cgm ()
     local selection="${1,,}"
 
     if [[ $selection =~ "g4-upload" || $selection =~ "g4-local-only" ]]; then
-        echo "Unsupported CGM.  CGM=G4-upload has been replaced by CGM=G4-go (default). Please change your CGM in oref0-runagain.sh"
+        echo "Unsupported CGM.  CGM=G4-upload has been replaced by CGM=G4-go (default). Please change your CGM in oref0-runagain.sh, or run interactive setup."
         echo
         return 1
     fi
@@ -233,7 +233,6 @@ function validate_ble_mac ()
 {
     true #TODO
 }
-
 
 # Usage: do_openaps_import <file.json>
 # Import aliases, devices, and reports from a JSON file into OpenAPS. What this
@@ -343,43 +342,43 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "Configuring for Explorer Board HAT. "
         ttyport=/dev/spidev0.0
         hardwaretype=explorer-hat
-    else
+    elif is_edison; then
+        echo "What kind of hardware setup do you have? Options are:"
+        echo "1) Explorer Board"
+        echo "2) TI stick (DIY: SPI)"
+        echo "3) Other Radio (DIY: rfm69, cc11xx)"
+        read -p "Please enter the number for your hardware configuration: [1] " -r
+        case $REPLY in
+          2) echocolor "Configuring for SPI-connected TI stick. "; ttyport=/dev/spidev0.0; hardwaretype=386-spi;;
+          3)
+             prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
+             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. ";;
+          *) echocolor "Yay! Configuring for Edison with Explorer Board. "; ttyport=/dev/spidev5.1; hardware-type=edison-explorer;;
+        esac
+    elif is_pi; then
 	echo "What kind of hardware setup do you have? Options are:"
-	echo "1) Edison with Explorer Board"
-	echo "2) Pi with Explorer HAT"
-	echo "3) Pi with Radiofruit RFM69HCW Bonnet"
-        echo "4) Pi with RFM69HCW"
-        echo "5) TI Stick (SPI/UART)"
-	echo "6) Other radio (rfm69, cc11xx)"
+	echo "1) Explorer HAT"
+	echo "2) Radiofruit RFM69HCW Bonnet"
+        echo "3) RFM69HCW (DIY: SPI)"
+        echo "4) TI Stick (DIY: SPI)"
+	echo "5) Other radio (DIY: rfm69, cc11xx)"
 	read -p "Please enter the number for your hardware configuration: [1] " -r
         case $REPLY in
-          2) echocolor "Configuring Explorer Board HAT. "; ttyport=/dev/spidev0.0; hardwaretype=explorer-hat;;
-          3) echocolor "Configuring Radiofruit RFM69HCW Bonnet. "; ttyport=/dev/spidev0.1; hardwaretype=radiofruit;;
-          4) echocolor "Configuring RFM69HCW. "; ttyport=/dev/spidev0.1; hardwaretype=rfm69hcw;;
-          5) echocolor "Configuring for SPI-connected TI stick. "
-              if is_edison; then
-                hardwaretype=386-spi
-              else
-                ttyport=/dev/spidev0.0
-                hardwaretype=arm-spi
-              fi
-              ;;
-          6)
-              prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
-              echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "
-              ;;
-          *)
-              if is_edison; then
-                echocolor "Yay! Configuring for Edison with Explorer Board. "; ttyport=/dev/spidev5.1; hardware-type=edison-explorer
-	      else
-                echo "Hmm, you don't seem to be using an Edison. "
-                prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
-                echocolor "Ok, we'll try TTY $ttyport then. "
-                echocolor "You will need to build Go binaries from source. "
-	      fi
-              ;;
+          2) echocolor "Configuring Radiofruit RFM69HCW Bonnet. "; ttyport=/dev/spidev0.1; hardwaretype=radiofruit;;
+          3) echocolor "Configuring RFM69HCW. "; ttyport=/dev/spidev0.1; hardwaretype=rfm69hcw;;
+          4) echocolor "Configuring for SPI-connected TI stick. "; ttyport=/dev/spidev0.0; hardwaretype=arm-spi;;
+          5)
+             prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
+             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. ";;
+          *) echocolor "Configuring Explorer Board HAT. "; ttyport=/dev/spidev0.0; hardwaretype=explorer-hat;;
         esac
+    else
+        echo "Cannot auto-detect a supported platform (Edison or Raspberry Pi). Please make sure user 'edison' or 'pi' exists, or continue setup with manual configuration. "
+        prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
+        echocolor "Ok, we'll try TTY $ttyport then. "
+        echocolor "You may need to build Go binaries from source."
     fi
+
     read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
     if [[ $REPLY =~ ^[Uu]$ ]]; then
       read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2019.01.21' [S]/<version> " -r
@@ -487,7 +486,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     echo -e "\e[4mIf you are unsure of what you would like max_IOB to be, we recommend starting with either 0 or one hour worth of basals.\e[0m"
     echo
-    echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
+    echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can edit this in ~/myopenaps/preferences.json later).\e[0m"
     echo
     prompt_and_validate REPLY "Type a whole number (without a decimal) [i.e. 0] and hit enter:" validate_max_iob
       if [[ $REPLY =~ [0-9] ]]; then
@@ -1277,7 +1276,6 @@ if prompt_yn "" N; then
       echo 916.55 > $directory/monitor/medtronic_frequency.ini
     fi
 
-    #Download Go radio binaries, or build from source
     if [[ "$ttyport" =~ "spidev" ]]; then
         echo "Making sure SPI is enabled..."
         sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
@@ -1285,27 +1283,28 @@ if prompt_yn "" N; then
         if [[ "$hardwaretype" =~ "explorer-hat" || "$hardwaretype" =~ "arm-spi" ]]; then arch=arm-spi
         elif [[ "$hardwaretype" =~ "radiofruit" || "$hardwaretype" =~ "rfm69hcw" ]]; then arch=arm-rfm69
         elif [[ "$hardwaretype" =~ "edison-explorer" || "$hardwaretype" =~ "386-spi" ]]; then arch=386-spi
-        elif [[ "$hardwaretype" =~ "386-uart" ]]; then arch=386-uart
-        elif [[ "$hardwaretype" =~ "arm-uart" ]]; then arch=arm-uart
         else arch=386-spi
         fi
-
-        if $buildgofromsource; then
-          go get -u -v -tags $radiotags github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
-          ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
-        else
-          mkdir -p $HOME/go/bin && \
-          downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/$ecc1medtronicversion | \
-            jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
-          echo "Downloading Go pump binaries from:" $downloadUrl
-          wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
-          echo "Installing Go pump binaries ..."
-          ln -sf $HOME/go/bin/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
-        fi
-
-        copy_go_binaries
-        move_mmtune
     fi
+
+    #TODO: support for UART-connected cc111x radios
+    #    if [[ "$hardwaretype" =~ "386-uart" ]]; then arch=386-uart
+    #    if [[ "$hardwaretype" =~ "arm-uart" ]]; then arch=arm-uart
+
+    #Download Go radio binaries, or build from source
+    if $buildgofromsource; then
+      go get -u -v -tags $radiotags github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+      ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
+    else
+      mkdir -p $HOME/go/bin && \
+      downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/$ecc1medtronicversion | \
+        jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
+      echo "Downloading Go pump binaries from:" $downloadUrl
+      wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
+      echo "Installing Go pump binaries ..."
+      ln -sf $HOME/go/bin/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
+    fi
+
     if [[ ${CGM,,} =~ "g4-go" ]]; then
         if [ ! -d $HOME/go/bin ]; then mkdir -p $HOME/go/bin; fi
         echo "Installing or Compiling Go dexcom binaries ..."
@@ -1325,10 +1324,10 @@ if prompt_yn "" N; then
             echo "Downloading Go dexcom binaries from:" $downloadUrl
             wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go dexcom binaries"
         fi
-
-        copy_go_binaries
-        move_mmtune
     fi
+
+    copy_go_binaries
+    move_mmtune
 
     # clear any extraneous input before prompting
     while(read -r -t 0.1); do true; done
