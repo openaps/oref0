@@ -18,7 +18,7 @@ source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to r
 
 # TODO: deprecate g4-upload and g4-local-only
 usage "$@" <<EOT
-Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|G4-go|G5|MDT|xdrip|xdrip-js)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--dexcom_tx_sn=12A34B] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)]
+Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-go|G5|MDT|xdrip|xdrip-js)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--dexcom_tx_sn=12A34B] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)]
 EOT
 
 # defaults
@@ -127,17 +127,17 @@ function validate_cgm ()
     # Conver to lowercase
     local selection="${1,,}"
 
-    if [[ $selection =~ "g4-upload"  ]]; then
+    if [[ $selection =~ "g4-upload" || $selection =~ "g4-local-only" ]]; then
         echo "Unsupported CGM.  CGM=G4-upload has been replaced by CGM=G4-go (default). Please change your CGM in oref0-runagain.sh"
         echo
         return 1
     fi
 
     # TODO: Compare against list of supported CGMs
-    # list of CGM supported by oref0 0.7.x: "g4-upload", "g5", "g5-upload", "G6", "G6-upload", "mdt", "shareble", "xdrip", "g4-local"
+    # list of CGM supported by oref0 0.7.x: "g4-go", "g5", "g5-upload", "G6", "G6-upload", "mdt", "shareble", "xdrip", "xdrip-js"
 
-    if ! [[ $selection =~ "g4-go" || $selection =~ "g5" || $selection =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" || $selection =~ "mdt" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
-        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-local-only, G5, G5-upload, G6, G6-upload, MDT, xdrip, or xdrip-js."
+    if ! [[ $selection =~ "g4-go" || $selection =~ "g5" || $selection =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" || $selection =~ "mdt" || $selection =~ "xdrip" || $selection =~ "xdrip-js" ]]; then
+        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G5, G5-upload, G6, G6-upload, MDT, xdrip, or xdrip-js."
         echo
         return 1
     fi
@@ -311,9 +311,9 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
     echo "What kind of CGM would you like to configure for offline use? Options are:"
     echo "G4-Go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
-    # TODO: deprecate g4-upload and G4-local-only
-    echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
-    echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
+    # TODO: finish deprecating g4-upload and G4-local-only
+    #echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
+    #echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
     echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
     echo "G6: will use BGs from a plugged in G5/G6 touchscreen receiver, but will *not* upload them (the G6 app usually does that)"
@@ -345,13 +345,13 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         hardwaretype=explorer-hat
     else
 	echo "What kind of hardware setup do you have? Options are:"
-	echo " 1 : Edison with Explorer Board"
-	echo " 2 : Pi with Explorer HAT"
-	echo " 3 : Pi with Radiofruit RFM69HCW Bonnet"
-        echo " 4 : Pi with RFM69HCW"
-        echo " 5 : TI Stick (SPI/UART)"
-	echo " 6 : Other radio (rfm69, cc11xx)"
-	read -p "Please enter the number for your hardware configuration: [1]" -r
+	echo "1) Edison with Explorer Board"
+	echo "2) Pi with Explorer HAT"
+	echo "3) Pi with Radiofruit RFM69HCW Bonnet"
+        echo "4) Pi with RFM69HCW"
+        echo "5) TI Stick (SPI/UART)"
+	echo "6) Other radio (rfm69, cc11xx)"
+	read -p "Please enter the number for your hardware configuration: [1] " -r
         case $REPLY in
           2) echocolor "Configuring Explorer Board HAT. "; ttyport=/dev/spidev0.0; hardwaretype=explorer-hat;;
           3) echocolor "Configuring Radiofruit RFM69HCW Bonnet. "; ttyport=/dev/spidev0.1; hardwaretype=radiofruit;;
@@ -386,19 +386,21 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         buildgofromsource=true
         echo "Building Go pump binaries from source"
         echo "What type of radio do you use? Options are:"
-        echo " 1 : cc1110 or cc1111"
-        echo " 2 : cc1101"
-        echo " 3 : RFM69HCW on /dev/spidev0.0 (walrus)"
-        echo " 4 : RFM69HCW on /dev/spidev0.1 (radiofruit bonnet)"
-        read -p "Please enter the number for your radio configuration: [1]" -r
+        echo "1) cc1110 or cc1111"
+        echo "2) cc1101"
+        echo "3) RFM69HCW on /dev/spidev0.0 (walrus)"
+        echo "4) RFM69HCW on /dev/spidev0.1 (radiofruit bonnet)"
+        read -p "Please enter the number for your radio configuration: [1] " -r
         if [[ $REPLY =~ ^[2]$ ]]; then
           radiotags="cc1101"
         elif [[ $REPLY =~ ^[3]$ ]]; then
+          radiotags="rfm69 walrus"
+        elif [[ $REPLY =~ ^[4]$ ]]; then
           radiotags="rfm69"
         else
           radiotags="cc111x"
         fi
-        echo "Building Go pump binaries from source with " + radiotags + " tags."
+        echo "Building Go pump binaries from source with " + "$radiotags" + " tags."
       else
         ecc1medtronicversion="tags/$REPLY"
         echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
@@ -760,8 +762,8 @@ if prompt_yn "" N; then
 
     if [[ ${CGM,,} =~ "g4-go" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
         set_pref_string .cgm_loop_path "$directory"
-    elif [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g4-local-only" ]]; then # TODO: deprecate g4-upload and g4-local-only
-        set_pref_string .cgm_loop_path "$directory-cgm-loop"
+    #elif [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g4-local-only" ]]; then # TODO: deprecate g4-upload and g4-local-only
+    #    set_pref_string .cgm_loop_path "$directory-cgm-loop"
     fi
 
     if [[ ${CGM,,} =~ "xdrip" ]]; then # Evaluates true for both xdrip and xdrip-js 
@@ -941,39 +943,39 @@ if prompt_yn "" N; then
         #sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     fi
 
-    # TODO: deprecate g4-upload and g4-local-only
-    if [[ ${CGM,,} =~ "g4-upload" ]]; then
-        mkdir -p $directory-cgm-loop
-        if ( cd $directory-cgm-loop && test -f openaps.ini && openaps use -h >/dev/null ); then
-            echo $directory-cgm-loop already exists
-        elif openaps init $directory-cgm-loop --nogit; then
-            echo $directory-cgm-loop initialized
-        else
-            die "Can't init $directory-cgm-loop"
-        fi
-        cd $directory-cgm-loop || die "Can't cd $directory-cgm-loop"
-        mkdir -p monitor || die "Can't mkdir monitor"
-        mkdir -p nightscout || die "Can't mkdir nightscout"
+    # TODO: finish deprecating g4-upload and g4-local-only
+    #if [[ ${CGM,,} =~ "g4-upload" ]]; then
+    #    mkdir -p $directory-cgm-loop
+    #    if ( cd $directory-cgm-loop && test -f openaps.ini && openaps use -h >/dev/null ); then
+    #        echo $directory-cgm-loop already exists
+    #    elif openaps init $directory-cgm-loop --nogit; then
+    #        echo $directory-cgm-loop initialized
+    #    else
+    #        die "Can't init $directory-cgm-loop"
+    #    fi
+    #    cd $directory-cgm-loop || die "Can't cd $directory-cgm-loop"
+    #    mkdir -p monitor || die "Can't mkdir monitor"
+    #    mkdir -p nightscout || die "Can't mkdir nightscout"
 
-        openaps device remove cgm 2>/dev/null
+    #    openaps device remove cgm 2>/dev/null
 
         # configure ns
-        if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
-            echo "Removing any existing ns device: "
-            ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
-            echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
-            nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
-        fi
+    #    if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
+    #        echo "Removing any existing ns device: "
+    #        ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
+    #        echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
+    #        nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
+    #    fi
 
-        # TODO: deprecate g4-upload and g4-local-only
-        if [[ ${CGM,,} =~ "g4-upload" ]]; then
-            sudo apt-get -y install bc
-            openaps device add cgm dexcom || die "Can't add CGM"
-            do_openaps_import $HOME/src/oref0/lib/oref0-setup/cgm-loop.json
-        fi
+    #    # TODO: deprecate g4-upload and g4-local-only
+    #    if [[ ${CGM,,} =~ "g4-upload" ]]; then
+    #        sudo apt-get -y install bc
+    #        openaps device add cgm dexcom || die "Can't add CGM"
+    #        do_openaps_import $HOME/src/oref0/lib/oref0-setup/cgm-loop.json
+    #    fi
 
-        cd $directory || die "Can't cd $directory"
-    fi
+    #    cd $directory || die "Can't cd $directory"
+    #fi
 
     #TODO: finish removal of MDT setup in oref0-setup, as the new Go support for it only requires a preferences.json switch
     # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
@@ -1221,7 +1223,7 @@ if prompt_yn "" N; then
 	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
             cd $HOME/src && git clone git://github.com/cluckj/openaps-menu.git && git checkout radiofruit || (cd openaps-menu && git checkout radiofruit && git pull)
 	else
-            cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git pull)
+            cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
 	fi
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
