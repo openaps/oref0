@@ -352,7 +352,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           2) echocolor "Configuring for SPI-connected TI stick. "; ttyport=/dev/spidev0.0; hardwaretype=386-spi;;
           3)
              prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
-             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true;;
+             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true; hardwaretype=diy;;
           *) echocolor "Yay! Configuring for Edison with Explorer Board. "; ttyport=/dev/spidev5.1; hardware-type=edison-explorer;;
         esac
     elif is_pi; then
@@ -369,7 +369,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           4) echocolor "Configuring for SPI-connected TI stick. "; ttyport=/dev/spidev0.0; hardwaretype=arm-spi;;
           5)
              prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
-             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true;;
+             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true; hardwaretype=diy;;
           *) echocolor "Configuring Explorer Board HAT. "; ttyport=/dev/spidev0.0; hardwaretype=explorer-hat;;
         esac
     else
@@ -403,16 +403,15 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo "2) cc1101"
         echo "3) RFM69HCW on /dev/spidev0.0 (walrus)"
         echo "4) RFM69HCW on /dev/spidev0.1 (radiofruit bonnet)"
+        echo "5) Enter radiotags manually"
         read -p "Please enter the number for your radio configuration: [1] " -r
-        if [[ $REPLY =~ ^[2]$ ]]; then
-          radiotags="cc1101"
-        elif [[ $REPLY =~ ^[3]$ ]]; then
-          radiotags="rfm69 walrus"
-        elif [[ $REPLY =~ ^[4]$ ]]; then
-          radiotags="rfm69"
-        else
-          radiotags="cc111x"
-        fi
+        case $REPLY in
+          2) radiotags="cc1101";;
+          3) radiotags="rfm69 walrus";;
+          4) radiotags="rfm69";;
+          5) read -p "Enter your radiotags: " -r; radiotags=$REPLY;;
+          *) radiotags="cc111x";;
+        esac
         echo "Building Go pump binaries from source with " + "$radiotags" + " tags."
     else
       echo "Downloading latest precompiled Go pump binaries."
@@ -1286,6 +1285,7 @@ if prompt_yn "" N; then
         if [[ "$hardwaretype" =~ "explorer-hat" || "$hardwaretype" =~ "arm-spi" ]]; then arch=arm-spi
         elif [[ "$hardwaretype" =~ "radiofruit" || "$hardwaretype" =~ "rfm69hcw" ]]; then arch=arm-rfm69
         elif [[ "$hardwaretype" =~ "edison-explorer" || "$hardwaretype" =~ "386-spi" ]]; then arch=386-spi
+        elif [[ "$hardwaretype" =~ "diy" ]]; then gobuildfromsource=true #make sure binaries aren't downloaded for DIY rigs
         else arch=386-spi
         fi
     #TODO: Support non-spidev tty ports (TI stick over UART)
@@ -1394,8 +1394,7 @@ if prompt_yn "" N; then
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
 
 # Start cron back up in case the user doesn't decide to reboot
-#TURN THIS BACK ON BEFORE MAKING A COMMIT
-#service cron start
+service cron start
 
 if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
