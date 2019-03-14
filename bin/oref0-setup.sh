@@ -702,14 +702,13 @@ if prompt_yn "" N; then
 
     cd $directory || die "Can't cd $directory"
 
-    #TODO: finish deprecating mmeowlink, as all its functions are done in Go now...
-    #echo Checking mmeowlink installation
-    #if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-    #    pip show mmeowlink | egrep "Version: 0.11.1" || (
-    #        echo Installing latest mmeowlink
-    #        sudo pip install --default-timeout=1000 -U mmeowlink || die "Couldn't install mmeowlink"
-    #    )
-    #fi
+    echo Checking mmeowlink installation
+    if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
+        pip show mmeowlink | egrep "Version: 0.11.1" || (
+            echo Installing latest mmeowlink
+            sudo pip install --default-timeout=1000 -U mmeowlink || die "Couldn't install mmeowlink"
+        )
+    fi
 
     test -f preferences.json && cp preferences.json old_preferences.json || echo "No old preferences.json to save off"
     if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
