@@ -283,7 +283,7 @@ function move_mmtune () {
     request_stop_local_binary Go-mmtune
     if [ -f /usr/local/bin/mmtune ]; then
       mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't move mmtune to Go-mmtune"
-    else 
+    else
       die "Couldn't move_mmtune() because /usr/local/bin/mmtune exists"
     fi
 }
@@ -380,6 +380,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         buildgofromsource=true
     fi
 
+    #Ask about downloading binaries, only if hardware choices allow binaries to be used
     if [ $buildgofromsource = false ]; then
       read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
       if [[ $REPLY =~ ^[Uu]$ ]]; then
@@ -396,6 +397,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       fi
     fi
 
+    #Get details from the user about how binaries should be built from source, otherwise have setup download binaries
     if [ $buildgofromsource = true ]; then
         echo "Building Go pump binaries from source"
         echo "What type of radio do you use? Options are:"
@@ -645,6 +647,7 @@ if prompt_yn "" N; then
         echo Installing latest openaps w/ nogit && sudo pip install --default-timeout=1000 git+https://github.com/openaps/openaps.git@nogit || die "Couldn't install openaps w/ nogit"
     fi
 
+    #Make sure the directory is valid
     echo -n "Checking $directory: "
     mkdir -p $directory
     if openaps init $directory --nogit; then
@@ -740,7 +743,7 @@ if prompt_yn "" N; then
     fi
 
     # Save information to preferences.json
-    # Starting from 0.7.x all preferences for oref0 will be stored in this file
+    # Starting from 0.7.x all preferences for oref0 will be stored in this file, along with some hardware configurations
     set_pref_string .nightscout_host "$NIGHTSCOUT_HOST"
     set_pref_string .cgm "${CGM,,}"
     set_pref_string .enable "$ENABLE"
@@ -840,6 +843,7 @@ if prompt_yn "" N; then
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/report.json
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/alias.json
 
+    #Check to see if we need to install bluetooth
     echo Checking for BT Mac, BT Peb, Shareble, or xdrip-js
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL || ! -z $DEXCOM_CGM_TX_ID ]]; then
         # Install Bluez for BT Tethering
@@ -1061,6 +1065,7 @@ if prompt_yn "" N; then
     #        grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
     #    fi
     #else
+        #This is done to make sure other programs don't break. As of 0.7.0, OpenAPS itself no longer uses pump.ini
         echo '[device "pump"]' > pump.ini
         echo "serial = $serial" >> pump.ini
         echo "radio_locale = $radio_locale" >> pump.ini
@@ -1200,7 +1205,7 @@ if prompt_yn "" N; then
     #echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     echo
 
-    #Check to see if Explorer HAT is present, and install all necessary stuff
+    #Turn on i2c, install pi-buttons, and openaps-menu for hardware that has a screen and buttons (so far, only Explorer HAT and Radiofruit Bonnet)
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &> /dev/null || [[ "$hardwaretype" =~ "explorer-hat" ]] || [[ "$hardwaretype" =~ "radiofruit" ]]; then
         echo "Looks like you have buttons and a screen!"
         echo "Enabling i2c device nodes..."
@@ -1236,7 +1241,7 @@ if prompt_yn "" N; then
     echo "Clearing retrieved apt packages to free space."
     apt-get autoclean && apt-get clean
 
-    # Install Go if needed, set up paths
+    # Install Go if needed, or set up paths
     if [ $buildgofromsource = true ]; then
       source $HOME/.bash_profile
       if go version | grep go1.11.; then
@@ -1280,24 +1285,28 @@ if prompt_yn "" N; then
     fi
 
     if [[ "$ttyport" =~ "spidev" ]]; then
-        echo "Making sure SPI is enabled..."
-        sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+        #Turn on SPI for all pi-based setups. Not needed on the Edison
+        if is_pi; then
+          echo "Making sure SPI is enabled..."
+          sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+        fi
+        #Translate hardware type into arch for Go binary downloads
         if [[ "$hardwaretype" =~ "explorer-hat" || "$hardwaretype" =~ "arm-spi" ]]; then arch=arm-spi
         elif [[ "$hardwaretype" =~ "radiofruit" || "$hardwaretype" =~ "rfm69hcw" ]]; then arch=arm-rfm69
         elif [[ "$hardwaretype" =~ "edison-explorer" || "$hardwaretype" =~ "386-spi" ]]; then arch=386-spi
         elif [[ "$hardwaretype" =~ "diy" ]]; then gobuildfromsource=true #make sure binaries aren't downloaded for DIY rigs
         else arch=386-spi
         fi
-    #TODO: Support non-spidev tty ports (TI stick over UART)
+    #TODO: Support non-SPI ports (TI stick over UART)
     #elif [[ "$ttyport" =~ "tty" ]]; then
     #    if [[ "$hardwaretype" =~ "386-uart" && is_edison ]]; then arch=386-uart
     #    elif [[ "$hardwaretype" =~ "arm-uart" && is_pi ]]; then arch=arm-uart
     else
-        #TODO: write validate_ttyport...
+        #TODO: write validate_ttyport and support non-SPI ports
         die "Unsupported ttyport. Exiting."
     fi
 
-    #Build Go binaries from source, or download prebuilt package
+    #Build Go binaries from source, or download prebuilt binaries package
     if [ $buildgofromsource = true ]; then
       go get -u -v -tags $radiotags github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
       ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
