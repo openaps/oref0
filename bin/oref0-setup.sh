@@ -1078,7 +1078,7 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
         echo xdrip or xdrip-js selected as CGM, so configuring xDripAPS
         sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
-        git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
+        git clone https://github.com/renegadeandy/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/xdrip-cgm.json
         touch /tmp/reboot-required
