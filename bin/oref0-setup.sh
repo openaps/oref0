@@ -352,7 +352,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           2) echocolor "Configuring for SPI-connected TI stick. "; ttyport=/dev/spidev0.0; hardwaretype=386-spi;;
           3)
              prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
-             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. ";;
+             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true;;
           *) echocolor "Yay! Configuring for Edison with Explorer Board. "; ttyport=/dev/spidev5.1; hardware-type=edison-explorer;;
         esac
     elif is_pi; then
@@ -369,21 +369,34 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           4) echocolor "Configuring for SPI-connected TI stick. "; ttyport=/dev/spidev0.0; hardwaretype=arm-spi;;
           5)
              prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
-             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. ";;
+             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true;;
           *) echocolor "Configuring Explorer Board HAT. "; ttyport=/dev/spidev0.0; hardwaretype=explorer-hat;;
         esac
     else
         echo "Cannot auto-detect a supported platform (Edison or Raspberry Pi). Please make sure user 'edison' or 'pi' exists, or continue setup with manual configuration. "
         prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
         echocolor "Ok, we'll try TTY $ttyport then. "
-        echocolor "You may need to build Go binaries from source."
+        echocolor "You will need to build Go binaries from source."
+        buildgofromsource=true
     fi
 
-    read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
-    if [[ $REPLY =~ ^[Uu]$ ]]; then
-      read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2019.01.21' [S]/<version> " -r
-      if [[ $REPLY =~ ^[Ss]$ ]]; then
-        buildgofromsource=true
+    if [ $buildgofromsource = false ]; then
+      read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
+      if [[ $REPLY =~ ^[Uu]$ ]]; then
+        read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2019.01.21' [S]/<version> " -r
+        if [[ $REPLY =~ ^[Ss]$ ]]; then
+          buildgofromsource=true
+        else
+          ecc1medtronicversion="tags/$REPLY"
+          echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
+          read -p "Also enter the ecc1/dexcom version, example 'v2018.12.05' <version> " -r
+          ecc1dexcomversion="tags/$REPLY"
+          echo "Will use https://github.com/ecc1/dexcom/$REPLY if Go-dexcom is needed."
+        fi
+      fi
+    fi
+
+    if [ $buildgofromsource = true ]; then
         echo "Building Go pump binaries from source"
         echo "What type of radio do you use? Options are:"
         echo "1) cc1110 or cc1111"
@@ -401,14 +414,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           radiotags="cc111x"
         fi
         echo "Building Go pump binaries from source with " + "$radiotags" + " tags."
-      else
-        ecc1medtronicversion="tags/$REPLY"
-        echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
-
-        read -p "Also enter the ecc1/dexcom version, example 'v2018.12.05' <version> " -r
-        ecc1dexcomversion="tags/$REPLY"
-        echo "Will use https://github.com/ecc1/dexcom/$REPLY if Go-dexcom is needed."
-      fi
     else
       echo "Downloading latest precompiled Go pump binaries."
       ecc1medtronicversion="latest"
@@ -1233,39 +1238,38 @@ if prompt_yn "" N; then
     apt-get autoclean && apt-get clean
 
     # Install Go if needed, set up paths
-    if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
-      if $buildgofromsource; then
-        source $HOME/.bash_profile
-        if go version | grep go1.11.; then
-            echo Go already installed
-        else
-            echo "Installing Golang..."
-            if uname -m | grep armv; then
-                cd /tmp && wget -c https://storage.googleapis.com/golang/go1.11.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-armv6l.tar.gz
-            elif uname -m | grep i686; then
-                cd /tmp && wget -c https://dl.google.com/go/go1.11.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-386.tar.gz
-            fi
-        fi
-        if ! grep GOROOT $HOME/.bash_profile; then
-            sed --in-place '/.*GOROOT*/d' $HOME/.bash_profile
-            echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
-            echo 'export GOROOT' >> $HOME/.bash_profile
-        fi
-        if ! grep GOPATH $HOME/.bash_profile; then
-            sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
-            echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
-            echo 'export GOPATH' >> $HOME/.bash_profile
-            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
-            sed --in-place '/.*export PATH*/d' $HOME/.bash_profile
-            echo 'export PATH' >> $HOME/.bash_profile
-        fi
+    if [ $buildgofromsource = true ]; then
+      source $HOME/.bash_profile
+      if go version | grep go1.11.; then
+          echo Go already installed
       else
-            sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
-            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
-            sed --in-place '/.*export PATH*/d' $HOME/.bash_profile
-            echo 'export PATH' >> $HOME/.bash_profile
+          echo "Installing Golang..."
+          if uname -m | grep armv; then
+              cd /tmp && wget -c https://storage.googleapis.com/golang/go1.11.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-armv6l.tar.gz
+          elif uname -m | grep i686; then
+              cd /tmp && wget -c https://dl.google.com/go/go1.11.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-386.tar.gz
+          fi
       fi
+      if ! grep GOROOT $HOME/.bash_profile; then
+          sed --in-place '/.*GOROOT*/d' $HOME/.bash_profile
+          echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
+          echo 'export GOROOT' >> $HOME/.bash_profile
+      fi
+      if ! grep GOPATH $HOME/.bash_profile; then
+          sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
+          echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
+          echo 'export GOPATH' >> $HOME/.bash_profile
+          echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+          sed --in-place '/.*export PATH*/d' $HOME/.bash_profile
+          echo 'export PATH' >> $HOME/.bash_profile
+      fi
+    else
+      sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
+      echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+      sed --in-place '/.*export PATH*/d' $HOME/.bash_profile
+      echo 'export PATH' >> $HOME/.bash_profile
     fi
+
     mkdir -p $HOME/go
     source $HOME/.bash_profile
 
@@ -1279,20 +1283,22 @@ if prompt_yn "" N; then
     if [[ "$ttyport" =~ "spidev" ]]; then
         echo "Making sure SPI is enabled..."
         sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
-
         if [[ "$hardwaretype" =~ "explorer-hat" || "$hardwaretype" =~ "arm-spi" ]]; then arch=arm-spi
         elif [[ "$hardwaretype" =~ "radiofruit" || "$hardwaretype" =~ "rfm69hcw" ]]; then arch=arm-rfm69
         elif [[ "$hardwaretype" =~ "edison-explorer" || "$hardwaretype" =~ "386-spi" ]]; then arch=386-spi
         else arch=386-spi
         fi
+    #TODO: Support non-spidev tty ports (TI stick over UART)
+    #elif [[ "$ttyport" =~ "tty" ]]; then
+    #    if [[ "$hardwaretype" =~ "386-uart" && is_edison ]]; then arch=386-uart
+    #    elif [[ "$hardwaretype" =~ "arm-uart" && is_pi ]]; then arch=arm-uart
+    else
+        #TODO: write validate_ttyport...
+        die "Unsupported ttyport. Exiting."
     fi
 
-    #TODO: support for UART-connected cc111x radios
-    #    if [[ "$hardwaretype" =~ "386-uart" ]]; then arch=386-uart
-    #    if [[ "$hardwaretype" =~ "arm-uart" ]]; then arch=arm-uart
-
-    #Download Go radio binaries, or build from source
-    if $buildgofromsource; then
+    #Build Go binaries from source, or download prebuilt package
+    if [ $buildgofromsource = true ]; then
       go get -u -v -tags $radiotags github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
       ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
     else
@@ -1388,7 +1394,8 @@ if prompt_yn "" N; then
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
 
 # Start cron back up in case the user doesn't decide to reboot
-service cron start
+#TURN THIS BACK ON BEFORE MAKING A COMMIT
+#service cron start
 
 if [ -e /tmp/reboot-required ]; then
   read -p "Reboot required.  Press enter to reboot or Ctrl-C to cancel"
