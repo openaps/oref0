@@ -1307,7 +1307,7 @@ if prompt_yn "" N; then
 
     #Build Go binaries from source, or download prebuilt binaries package
     if [ $buildgofromsource = true ]; then
-      go get -u -v -tags $radiotags github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+      go get -u -v -tags "$radiotags" github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
       ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
     else
       mkdir -p $HOME/go/bin && \
