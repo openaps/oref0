@@ -35,14 +35,12 @@ if is_edison && ! ( hciconfig -a hci${adapter} | grep -q "PSCAN" ) ; then
 fi
 
 if ( hciconfig -a hci${adapter} | grep -q "DOWN" ) ; then
+   echo Bluetooth hci DOWN! Bringing it to UP.
    sudo hciconfig hci${adapter} up
    sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
 fi
 
 if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
-   sudo hciconfig hci${adapter} name $HOSTNAME
-
-if !( hciconfig -a | grep -q $HOSTNAME ) ; then
    echo Bluetooth hci name does not match hostname: $HOSTNAME. Setting bluetooth hci name.
-   sudo hciconfig hci0 name $HOSTNAME
+   sudo hciconfig hci${adapter} name $HOSTNAME
 fi
