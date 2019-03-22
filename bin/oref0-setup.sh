@@ -18,7 +18,7 @@ source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to r
 
 # TODO: deprecate g4-upload and g4-local-only
 usage "$@" <<EOT
-Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|G4-go|G5|MDT|xdrip|xdrip-js)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--dexcom_tx_sn=12A34B] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]
+Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|G4-go|G5|MDT|xdrip|xdrip-js)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--dexcom_tx_sn=12A34B] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] 
 EOT
 
 # defaults
@@ -55,9 +55,6 @@ case $i in
     ;;
     -rl=*|--radio_locale=*)
     radio_locale="${i#*=}"
-    ;;
-    -pm=*|--pumpmodel=*)
-    pumpmodel="${i#*=}"
     ;;
     -t=*|--tty=*)
     ttyport="${i#*=}"
@@ -104,9 +101,6 @@ case $i in
     -p=*|--btpeb=*)
     BT_PEB="${i#*=}"
     ;;
-    --ww_ti_usb_reset=*) # use reset if pump device disappears with TI USB and WW-pump
-    ww_ti_usb_reset="${i#*=}"
-    ;;
     -pt=*|--pushover_token=*)
     PUSHOVER_TOKEN="${i#*=}"
     ;;
@@ -136,10 +130,10 @@ function validate_cgm ()
     fi
 
     # TODO: Compare against list of supported CGMs
-    # list of CGM supported by oref0 0.6.x: "g4-upload", "g5", "g5-upload", "mdt", "shareble", "xdrip", "g4-local"
+    # list of CGM supported by oref0 0.7.x: "g4-upload", "g5", "g5-upload", "G6", "G6-upload", "mdt", "shareble", "xdrip", "g4-local"
 
-    if ! [[ $selection =~ "g4-go" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
-        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-local-only, G5, G5-upload, MDT, xdrip, or xdrip-js."
+    if ! [[ $selection =~ "g4-go" || $selection =~ "g5" || $selection =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" || $selection =~ "mdt" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
+        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-local-only, G5, G5-upload, G6, G6-upload, MDT, xdrip, or xdrip-js."
         echo
         return 1
     fi
@@ -284,7 +278,11 @@ function copy_go_binaries () {
 
 function move_mmtune () {
     request_stop_local_binary Go-mmtune
-    mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || echo "Couldn't move mmtune to Go-mmtune"
+    if [ -f /usr/local/bin/mmtune ]; then
+      mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't move mmtune to Go-mmtune"
+    else 
+      die "Couldn't move_mmtune() because /usr/local/bin/mmtune exists"
+    fi
 }
 
 
@@ -307,14 +305,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echocolor "Ok, $serial it is."
     echo
 
-    if prompt_yn "Do you have a 512 or 712 model pump?" N; then
-        pumpmodel=x12
-        echocolor "Ok, you'll be using a 512 or 712 pump. Got it. "
-        echo
-    else
-        echocolor "You're using a different model pump. Got it."
-    fi
-
     echo "What kind of CGM would you like to configure for offline use? Options are:"
     echo "G4-Go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
     # TODO: deprecate g4-upload and G4-local-only
@@ -322,6 +312,8 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
     echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
+    echo "G6: will use BGs from a plugged in G5/G6 touchscreen receiver, but will *not* upload them (the G6 app usually does that)"
+    echo "G6-upload: will use and upload BGs from a plugged in G5/G6 touchscreen receiver to Nightscout"
     echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
     echo "xdrip: will work with an xDrip receiver app on your Android phone"
     echo "xdrip-js: will work directly with a Dexcom G5 transmitter and will upload to Nightscout"
@@ -376,7 +368,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     fi
     read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
     if [[ $REPLY =~ ^[Uu]$ ]]; then
-      read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2018.08.08' [S]/<version> " -r
+      read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2019.01.21' [S]/<version> " -r
       if [[ $REPLY =~ ^[Ss]$ ]]; then
         buildgofromsource=true
         echo "Building Go pump binaries from source"
@@ -395,7 +387,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         ecc1medtronicversion="tags/$REPLY"
         echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
 
-        read -p "Also enter the ecc1/dexcom version, example 'v2018.07.26' <version> " -r
+        read -p "Also enter the ecc1/dexcom version, example 'v2018.12.05' <version> " -r
         ecc1dexcomversion="tags/$REPLY"
         echo "Will use https://github.com/ecc1/dexcom/$REPLY if Go-dexcom is needed."
       fi
@@ -419,20 +411,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       echo -n "Ok, "
       # Force uppercase, just in case the user entered ww
       radio_locale=${radio_locale^^}
-
-      # check if user has a TI USB stick and a WorldWide pump and want's to reset the USB subsystem during mmtune if the TI USB fails
-      ww_ti_usb_reset="no" # assume you don't want it by default
-      if ! is_edison; then
-        if [[ $radio_locale =~ ^WW$ ]]; then
-          echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process. If so, enter Y. Otherwise just hit enter (default no):"
-          echo
-          if prompt_yn "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces?" N; then
-            ww_ti_usb_reset="yes"
-         else
-           ww_ti_usb_reset="no"
-         fi
-       fi
-      fi
 
       if [[ -z "${radio_locale}" ]]; then
           radio_locale='US'
@@ -533,12 +511,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     echo
 
-else
-   if [[ $ww_ti_usb_reset =~ ^[Yy] ]]; then
-      ww_ti_usb_reset="yes"
-   else
-      ww_ti_usb_reset="no"
-   fi
 fi
 
 echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
@@ -550,9 +522,6 @@ if [[ ! -z $DEXCOM_CGM_TX_ID ]]; then
 fi
 echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
-if [[ ${pumpmodel,,} =~ "x12" ]]; then
-    echo -n "x12 pump, "
-fi
 
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
@@ -595,9 +564,6 @@ echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_R
 if [[ ! -z "$ttyport" ]]; then
     echo -n " --tty=$ttyport" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ ! -z "$pumpmodel" ]]; then
-    echo -n " --pumpmodel=$pumpmodel" | tee -a $OREF0_RUNAGAIN;
-fi
 echo -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN;
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
     echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a $OREF0_RUNAGAIN
@@ -616,9 +582,6 @@ if [[ ! -z "$ENABLE" ]]; then
 fi
 if [[ ! -z "$radio_locale" ]]; then
     echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN
-fi
-if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
-    echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN
 fi
 if [[ ! -z "$BLE_MAC" ]]; then
     echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN
@@ -700,6 +663,14 @@ if prompt_yn "" N; then
         sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
         sudo apt-get install -y nodejs || die "Couldn't install nodejs"
     fi
+    
+    # Make sure jq version >1.5 is installed
+    if is_edison; then
+        sudo apt-get -y -t jessie-backports install jq
+    else
+        sudo apt-get -y install jq
+    fi
+    
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
@@ -741,7 +712,7 @@ if prompt_yn "" N; then
             preferences_from_args+="\"min_5m_carbimpact\":$min_5m_carbimpact "
         fi
         function join_by { local IFS="$1"; shift; echo "$*"; }
-        # merge existing prefrences with preferences from arguments. (preferences from arguments take precedence)
+        # merge existing preferences with preferences from arguments. (preferences from arguments take precedence)
         echo "{ $(join_by , ${preferences_from_args[@]}) }" > arg_prefs.json
         if [[ -s preferences.json ]]; then
             cat arg_prefs.json | jq --slurpfile existing_prefs preferences.json '$existing_prefs[0] + .' > updated_prefs.json && rm arg_prefs.json
@@ -758,6 +729,8 @@ if prompt_yn "" N; then
     set_pref_string .enable "$ENABLE"
     set_pref_string .ttyport "$ttyport"
     set_pref_string .myopenaps_path "$directory"
+    set_pref_string .pump_serial "$serial"
+    set_pref_string .radio_locale "$radio_locale"
     if [[ ! -z "$BT_PEB" ]]; then
         set_pref_string .bt_peb "$BT_PEB"
     fi
@@ -774,7 +747,7 @@ if prompt_yn "" N; then
     # The Nightscout API_SECRET (admin password) should not be written in plain text, but in a hashed form
     # set_pref_string .nightscout_api_secret "$API_SECRET"
 
-    if [[ ${CGM,,} =~ "g4-go" ]]; then
+    if [[ ${CGM,,} =~ "g4-go" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
         set_pref_string .cgm_loop_path "$directory"
     elif [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g4-local-only" ]]; then # TODO: deprecate g4-upload and g4-local-only
         set_pref_string .cgm_loop_path "$directory-cgm-loop"
@@ -920,6 +893,11 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
+        set_pref_string .cgm_loop_path "$directory"
+    elif [[ ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
+        openaps use cgm config --G6
+        openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
+        set_pref_string .cgm_loop_path "$directory"
     ## TODO: figure out if any of this is still needed
     #elif [[ ${CGM,,} =~ "g4-go" ]]; then
         #echo Checking Adafruit_BluefruitLE installation
@@ -998,15 +976,6 @@ if prompt_yn "" N; then
             fi
         fi
 
-        # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-        # this will be called when mmtune is use with a WW pump.
-        # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-        # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not found.
-        # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
-        if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
-                openaps alias remove mmtune
-                openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(cat monitor/mmtune.json | jq -r .setFreq) | while read line; do echo -n \"$line \"; done\""
-        fi
         echo Checking kernel for mraa installation
         #if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
         #    echo "Skipping mraa install for kernel 4.10+"
@@ -1040,39 +1009,37 @@ if prompt_yn "" N; then
         #echo Installing latest openaps dev && sudo pip install  --default-timeout=1000  git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
     #fi
 
-    # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
+    # Create pump device
+    # We only need the openaps pump device for mdt CGM and mmeowlink users, which Go doesn't support yet
     if [[ ${CGM,,} =~ "mdt" ]]; then
         cd $directory || die "Can't cd $directory"
         echo "Removing any existing pump device:"
         ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
         if [[ -z "$ttyport" ]]; then
             openaps device add pump medtronic $serial || die "Can't add pump"
-            # add carelink to pump.ini
+            # add carelink to pump.ini. TODO: check if this workaround can be removed
             grep -q radio_type pump.ini || echo "radio_type=carelink" >> pump.ini
             # carelinks can't listen for silence or mmtune, so just do a preflight check instead
             openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
             openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
             openaps alias add mmtune 'report invoke monitor/temp_basal.json'
-        else
-            # radio_locale requires openaps 0.2.0-dev or later
-            openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
-            #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
-            #openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
-            if [[ ${radio_locale,,} =~ "ww" ]]; then
-                if [ -d "$HOME/src/subg_rfspy/" ]; then
-                    echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
-                    (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
-                else
-                    echo -n "Cloning subg_rfspy: "
-                    (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
-                fi
-            fi
-
-            # Hack to check if radio_locale has been set in pump.ini.
-            # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-            grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
         fi
-    else
+    elif [[ "$ttyport" =~ "mmeowlink" ]]; then # e.g. for TI USB
+        # radio_locale requires openaps 0.2.0-dev or later
+        openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
+        #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
+        #openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
+        # TODO: check in codebase if https://github.com/ps2/subg_rfspy/tree/master/tools python scripts are still used
+        if [[ ${radio_locale,,} =~ "ww" ]]; then
+           if [ -d "$HOME/src/subg_rfspy/" ]; then
+              echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
+              (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
+            else
+              echo -n "Cloning subg_rfspy: "
+              (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
+            fi
+        fi
+    else # in all other case create a pump.ini with serial and radio_locale. TODO: can we skip creating a pump.ini. I can't find references of it's being used
         echo '[device "pump"]' > pump.ini
         echo "serial = $serial" >> pump.ini
         echo "radio_locale = $radio_locale" >> pump.ini
@@ -1096,7 +1063,7 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
         echo xdrip or xdrip-js selected as CGM, so configuring xDripAPS
         sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
-        git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
+        git clone https://github.com/renegadeandy/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/xdrip-cgm.json
         touch /tmp/reboot-required
@@ -1153,11 +1120,6 @@ if prompt_yn "" N; then
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
 
-    if is_edison; then
-        sudo apt-get -y -t jessie-backports install jq
-    else
-        sudo apt-get -y install jq
-    fi
     # configure autotune if enabled
     if [[ $ENABLE =~ autotune ]]; then
         cd $directory || die "Can't cd $directory"
@@ -1166,13 +1128,6 @@ if prompt_yn "" N; then
         sudo update-locale
     fi
 
-    #Setup files for editing on the x12, and replace get-settings alias
-    if [[ ${pumpmodel,,} =~ "x12" ]]; then
-        echo "copying settings files for x12 pumps"
-        cp $HOME/src/oref0/lib/oref0-setup/bg_targets_raw.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/basal_profile.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/settings.json $directory/settings/ || die "Could not copy settings files for x12 pumps"
-    fi
-
-    #Moved this out of the conditional, so that x12 models will work with smb loops
     sudo apt-get -y install bc jq ntpdate bash-completion || die "Couldn't install bc etc."
     cd $directory || die "Can't cd $directory"
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
@@ -1285,13 +1240,9 @@ if prompt_yn "" N; then
     mkdir -p $HOME/go
     source $HOME/.bash_profile
 
-
     #Necessary to "bootstrap" Go commands...
     if [[ ${radio_locale,,} =~ "ww" ]]; then
       echo 868.4 > $directory/monitor/medtronic_frequency.ini
-      #Store radio_locale for later use
-      # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-      grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
     else
       echo 916.55 > $directory/monitor/medtronic_frequency.ini
     fi
@@ -1347,16 +1298,6 @@ if prompt_yn "" N; then
         move_mmtune
     fi
 
-    #if [[ "$ttyport" =~ "spi" ]]; then
-        #echo Resetting spi_serial
-        #reset_spi_serial.py
-    #fi
-# Commenting out the mmtune as attempt to stop the radio reboot errors that happen when re-setting up.
-#    echo Attempting to communicate with pump:
-#    ( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
-#    openaps mmtune
-#    echo
-
     # clear any extraneous input before prompting
     while(read -r -t 0.1); do true; done
 
@@ -1411,21 +1352,6 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "g4-go" ]]; then
         echo
         echo "To pair your G4 Share receiver, open its Settings, select Share, Forget Device (if previously paired), then turn sharing On"
-    fi
-
-    if [[ ${pumpmodel,,} =~ "x12" ]]; then
-        echo
-        echo To complete your x12 pump setup, you must edit your basal_profile.json,
-        echo and may want to edit your settings.json and bg_targets_raw.json as well.
-        read -p "Press enter to begin editing basal_profile.json, and then press Ctrl-X when done."
-        nano $directory/settings/basal_profile.json
-        read -p "Press enter to begin editing settings.json, and then press Ctrl-X when done."
-        nano $directory/settings/settings.json
-        read -p "Press enter to begin editing bg_targets_raw.json, and then press Ctrl-X when done."
-        nano $directory/settings/bg_targets_raw.json
-        echo To edit your basal_profile.json again in the future, run: nano $directory/settings/basal_profile.json
-        echo To edit your settings.json to set maxBasal or DIA, run: nano $directory/settings/settings.json
-        echo To edit your bg_targets_raw.json to set targets, run: nano $directory/settings/bg_targets_raw.json
     fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete

@@ -337,8 +337,8 @@ autoconfigure-device-crud)
   test -z "$API_SECRET" && setup_help && exit 1;
   openaps device add ns process --require "oper" nightscout ns "NIGHTSCOUT_HOST" "API_SECRET"
   openaps device show ns --json | \
-    jq '.extra.args |= sub(" NIGHTSCOUT_HOST " ; " '$NIGHTSCOUT_HOST' ")' \
-    | jq '.extra.args |= sub(" API_SECRET " ; " '$API_SECRET' ")' \
+    jq '.extra.args |= sub("NIGHTSCOUT_HOST" ; "'$NIGHTSCOUT_HOST'")' \
+    | jq '.extra.args |= sub("API_SECRET" ; "'$API_SECRET'")' \
     | openaps import
   ;;
 cull-latest-openaps-treatments)

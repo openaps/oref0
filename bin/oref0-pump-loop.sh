@@ -16,7 +16,7 @@ source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to r
 # -  when subcommand outputs are not needed in the main log file:
 #    - redirect the output to either fd >&3 or fd >&4 based on
 #    - when you want the output visible.
-export MEDTRONIC_PUMP_ID=`grep serial pump.ini | tr -cd 0-9`
+export MEDTRONIC_PUMP_ID=`get_pref_string .pump_serial | tr -cd 0-9`
 export MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
 OREF0_DEBUG=${OREF0_DEBUG:-0}
 if [[ "$OREF0_DEBUG" -ge 1 ]] ; then
@@ -87,12 +87,41 @@ main() {
             touch /tmp/pump_loop_success
             echo Completed oref0-pump-loop at $(date)
             update_display
+            run_plugins
             echo
         else
             # pump-loop errored out for some reason
             fail "$@"
         fi
     fi
+}
+
+function run_script() {
+  file=$1
+
+  echo "Running plugin script ($file)... "
+  timeout 60 $file
+  echo "Completed plugin script ($file). "
+
+  # -d means to only run the script once, so remove it once run
+  if [[ "$2" == "-d" ]]
+  then
+    #echo "Removing script file ($file)"
+    rm $file
+  fi
+}
+
+
+function run_plugins {
+        once=plugins/once
+        every=plugins/every
+        mkdir -p $once
+        mkdir -p $every
+        echo "scripts placed in this directory will run once after curent loop and be removed" > $once/readme.txt
+        echo "scripts placed in this directory will run after every loop" > $every/readme.txt
+        find $once/* -executable | while read file; do run_script "$file" -d ; done
+        find $every/* -executable | while read file; do run_script "$file" ; done
+
 }
 
 function update_display {
@@ -128,6 +157,7 @@ function fail {
         echo Error: syntax error in preferences.json: please go correct your typo.
     fi
     update_display
+    run_plugins
     echo
     exit 1
 }
@@ -454,12 +484,13 @@ function prep {
         upto30s=$(head -1 /tmp/wait_for_silence)
         upto45s=$(head -1 /tmp/wait_for_silence)
     fi
-    # read tty port from pump.ini
-    eval $(grep port pump.ini | sed "s/ //g")
+    #We don't need to get the tty port anymore...
+    # read tty port from preferences
+    #eval $(get_pref_string .ttyport | sed "s/ //g")
     # if that fails, try the Explorer board default port
-    if [ -z $port ]; then
-        port=/dev/spidev5.1
-    fi
+    #if [ -z $port ]; then
+    #    port=/dev/spidev5.1
+    #fi
 
     # necessary to enable SPI communication over edison GPIO 110 on Edison + Explorer Board
     [ -f /sys/kernel/debug/gpio_debug/gpio110/current_pinmux ] && echo mode0 > /sys/kernel/debug/gpio_debug/gpio110/current_pinmux
@@ -496,10 +527,11 @@ function preflight {
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
 function mmtune {
-    if grep "carelink" pump.ini 2>&1 >/dev/null; then
-    echo "using carelink; skipping mmtune"
-        return
-    fi
+    #carelink is deprecated in 0.7.0
+    #if grep "carelink" pump.ini 2>&1 >/dev/null; then
+    #echo "using carelink; skipping mmtune"
+    #    return
+    #fi
 
     echo -n "Listening for $upto45s s silence before mmtuning: "
     wait_for_silence $upto45s
@@ -624,26 +656,14 @@ function refresh_old_profile {
 # get-settings report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json
 function get_settings {
     SUCCESS=1
-    if grep -q 12 settings/model.json
-    then
-        # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
-        # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
-        [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
-    else
-        # On all other supported pumps, we should be able to get all the data we need from the pump.
-        [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_bg_targets 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_basal_profile 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_settings 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
-#        NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
-    fi
-#    retry_return openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
+    
+    [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return read_bg_targets 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return read_basal_profile 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return read_settings 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
 
     # If there was a failure, force a full refresh on the next loop
     if [[ $SUCCESS -eq 0 ]]; then
@@ -886,13 +906,10 @@ function valid_pump_settings() {
 
   [[ $SUCCESS -eq 1 ]] && valid_insulin_sensitivities >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid insulin_sensitivites.json"; SUCCESS=0; }
   [[ $SUCCESS -eq 1 ]] && valid_carb_ratios >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid carb_ratios.json"; SUCCESS=0; }
-
-  if ! grep -q 12 settings/model.json; then
-    [[ $SUCCESS -eq 1 ]] && valid_bg_targets >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid bg_targets.json"; SUCCESS=0; }
-    [[ $SUCCESS -eq 1 ]] && valid_basal_profile >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid basal_profile.json"; SUCCESS=0; }
-    [[ $SUCCESS -eq 1 ]] && valid_settings >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid settings.json"; SUCCESS=0; }
-  fi
-
+  [[ $SUCCESS -eq 1 ]] && valid_bg_targets >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid bg_targets.json"; SUCCESS=0; }
+  [[ $SUCCESS -eq 1 ]] && valid_basal_profile >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid basal_profile.json"; SUCCESS=0; }
+  [[ $SUCCESS -eq 1 ]] && valid_settings >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid settings.json"; SUCCESS=0; }
+  
   if [[ $SUCCESS -eq 0 ]]; then
     return 1
   else
