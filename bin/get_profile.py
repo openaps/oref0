@@ -132,6 +132,8 @@ def ns_to_oaps(ns_profile):
     oaps_profile = {}
     # Not represented in nightscout
     oaps_profile["min_5m_carbimpact"] = 8.0
+    oaps_profile["autosens_min"] = 0.7
+    oaps_profile["autosens_max"] = 1.2
     oaps_profile["dia"] = float(ns_profile["dia"])
     oaps_profile["timezone"] = ns_profile["timezone"]
 
