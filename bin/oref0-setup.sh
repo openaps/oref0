@@ -665,11 +665,7 @@ if prompt_yn "" N; then
     fi
     
     # Make sure jq version >1.5 is installed
-    if is_edison; then
-        sudo apt-get -y -t jessie-backports install jq
-    else
-        sudo apt-get -y install jq
-    fi
+    sudo apt-get -y install jq
     
     echo Checking oref0 installation
     cd $HOME/src/oref0
