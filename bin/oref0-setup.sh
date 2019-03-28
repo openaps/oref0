@@ -690,6 +690,14 @@ if prompt_yn "" N; then
         sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
         sudo apt-get install -y nodejs || die "Couldn't install nodejs"
     fi
+    
+    # Make sure jq version >1.5 is installed
+    if is_edison; then
+        sudo apt-get -y -t jessie-backports install jq
+    else
+        sudo apt-get -y install jq
+    fi
+    
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
@@ -1145,11 +1153,6 @@ if prompt_yn "" N; then
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
 
-    if is_edison; then
-        sudo apt-get -y -t jessie-backports install jq
-    else
-        sudo apt-get -y install jq
-    fi
     # configure autotune if enabled
     if [[ $ENABLE =~ autotune ]]; then
         cd $directory || die "Can't cd $directory"
