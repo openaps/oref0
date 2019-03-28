@@ -824,7 +824,7 @@ if prompt_yn "" N; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        # use packaged bluez with Rapsbian
+        # use packaged bluez with Rapsbian and Jubilinux Stretch, otherwise build from source
         bluetoothdminversion=5.43
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
