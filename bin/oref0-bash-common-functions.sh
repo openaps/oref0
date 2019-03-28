@@ -88,6 +88,7 @@ is_edison () {
 }
 
 # Returns success (0) if running on a Debian Jessie system, fail (1) otherwise
+#TODO: remove this
 is_debian_jessie() {
     if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /dev/null; then
         return 0
