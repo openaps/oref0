@@ -38,7 +38,7 @@ describe('cobhistory', function ( ) {
         console.log(output);
 
         // BolusWizard carb_input without a timestamp-matched Bolus will be ignored
-        output.length.should.equal(5);
+        output.length.should.equal(6);
     });
 
 });

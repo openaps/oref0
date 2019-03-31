@@ -9,7 +9,7 @@ main() {
     fi
 
     autosens 2>&1
-    touch /tmp/autons-completed
+    touch /tmp/autosens-completed
     echo Completed oref0-autons-loop at $(date)
 }
 
