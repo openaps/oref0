@@ -32,6 +32,12 @@ if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /de
     echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
 fi
 
+#Workaround for Jubilinux to install nodejs/npm from nodesource
+if getent passwd edison &> /dev/null; then
+    #Use nodesource setup script to add nodesource repository to sources.list.d
+    curl -sL https://deb.nodesource.com/setup_8.x | bash -
+fi
+
 #dpkg -P nodejs nodejs-dev
 # TODO: remove the `-o Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
