@@ -818,7 +818,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
                 # TODO: After each oref0 release, check whether there is a new stable MRAA release that is of interest for the OpenAPS community
                 # Latest (as of April 2019) master branch of mraa is working
-                MRAA_RELEASE="master" # GitHub hash 8ddbcde84e2d146bc0f9e38504d6c89c14291480
+                MRAA_RELEASE="master"
                 if [ -d "$HOME/src/mraa/" ]; then
                     echo -n "$HOME/src/mraa/ already exists; "
                     #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
