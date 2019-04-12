@@ -818,16 +818,20 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
                 # TODO: After each oref0 release, check whether there is a new stable MRAA release that is of interest for the OpenAPS community
                 # Latest (as of April 2019) master branch of mraa is working
-                MRAA_RELEASE="master"
-                if [ -d "$HOME/src/mraa/" ]; then
-                    echo -n "$HOME/src/mraa/ already exists; "
-                    #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
-                    (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE} release" # used for oref0 master
-                else
-                    echo -n "Cloning mraa "
-                    #(echo -n "master branch. " && cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master" # used for oref0 dev
-                    (echo -n "stable release ${MRAA_RELEASE}. " && cd $HOME/src && git clone -b ${MRAA_RELEASE} https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa release ${MRAA_RELEASE}" # used for oref0 master
-                fi
+                #MRAA_RELEASE="master"
+                #if [ -d "$HOME/src/mraa/" ]; then
+                #    echo -n "$HOME/src/mraa/ already exists; "
+                #    #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
+                #    (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE} release" # used for oref0 master
+                #else
+                #    echo -n "Cloning mraa "
+                #    #(echo -n "master branch. " && cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master" # used for oref0 dev
+                #    (echo -n "stable release ${MRAA_RELEASE}. " && cd $HOME/src && git clone -b ${MRAA_RELEASE} https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa release ${MRAA_RELEASE}" # used for oref0 master
+                #fi
+                # Force installation of v1.7.0 MRAA, as it is the only version we know works...
+                cd $HOME/src && rm -rf mraa/
+                wget https://github.com/intel-iot-devkit/mraa/archive/v1.7.0.tar.gz || die "Could not download mraa"
+                tar -xvf v1.7.0.tar.gz && mv mraa-1.7.0/ mraa/
                 # build mraa from source
                 ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
                 make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
