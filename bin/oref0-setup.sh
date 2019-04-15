@@ -337,12 +337,15 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
+    # Decision tree for hardware setup to give finer-grained control over setup automation.
+    # Passes $hardwaretype (default is explorer-board) to the rest of setup.
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &>/dev/null ; then
+        # Autodetect and set up Explorer HAT
         echocolor "Explorer Board HAT detected. "
         echocolor "Configuring for Explorer Board HAT. "
         ttyport=/dev/spidev0.0
         hardwaretype=explorer-hat
-    elif is_edison; then
+    elif is_edison; then # Options for Edison (Explorer Board is default)
         echo "What kind of hardware setup do you have? Options are:"
         echo "1) Explorer Board"
         echo "2) TI stick (DIY: SPI)"
@@ -355,7 +358,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
              echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true; hardwaretype=diy;;
           *) echocolor "Yay! Configuring for Edison with Explorer Board. "; ttyport=/dev/spidev5.1; hardwaretype=edison-explorer;;
         esac
-    elif is_pi; then
+    elif is_pi; then # Options for raspberry pi, including Explorer HAT (default) if it's not auto-detected
 	echo "What kind of hardware setup do you have? Options are:"
 	echo "1) Explorer HAT"
 	echo "2) Radiofruit RFM69HCW Bonnet"
@@ -372,7 +375,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
              echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true; hardwaretype=diy;;
           *) echocolor "Configuring Explorer Board HAT. "; ttyport=/dev/spidev0.0; hardwaretype=explorer-hat;;
         esac
-    else
+    else # If Edison or raspberry pi aren't detected, ask the user for their tty port and force Go binaries to be built from source
         echo "Cannot auto-detect a supported platform (Edison or Raspberry Pi). Please make sure user 'edison' or 'pi' exists, or continue setup with manual configuration. "
         prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
         echocolor "Ok, we'll try TTY $ttyport then. "
@@ -380,7 +383,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         buildgofromsource=true
     fi
 
-    #Ask about downloading binaries, only if hardware choices allow binaries to be used
+    # Ask about downloading binaries, but only if hardware choices allow binaries to be used.
     if [ $buildgofromsource = false ]; then
       read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
       if [[ $REPLY =~ ^[Uu]$ ]]; then
@@ -397,7 +400,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       fi
     fi
 
-    #Get details from the user about how binaries should be built from source, otherwise have setup download binaries
+    # Get details from the user about how binaries should be built from source, otherwise have setup download binaries. Default is cc111x.
     if [ $buildgofromsource = true ]; then
         echo "Building Go pump binaries from source"
         echo "What type of radio do you use? Options are:"
@@ -630,6 +633,8 @@ fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
+# End of interactive setup
+
 echocolor -n "Continue?"
 if prompt_yn "" N; then
 
@@ -690,14 +695,14 @@ if prompt_yn "" N; then
         sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
         sudo apt-get install -y nodejs || die "Couldn't install nodejs"
     fi
-    
+
     # Make sure jq version >1.5 is installed
-    if is_edison; then
+    if is_debian_jessie; then
         sudo apt-get -y -t jessie-backports install jq
     else
         sudo apt-get -y install jq
     fi
-    
+
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
@@ -856,7 +861,7 @@ if prompt_yn "" N; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        # use packaged bluez with Rapsbian
+        # use packaged bluez with Debian Stretch (Jubilinux 0.3.0 and Raspbian)
         bluetoothdminversion=5.43
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
@@ -1144,7 +1149,6 @@ if prompt_yn "" N; then
     # Install Pancreabble
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
-        sudo apt-get -y install jq
         sudo pip install --default-timeout=1000 libpebble2
         sudo pip install --default-timeout=1000 --user git+git://github.com/mddub/pancreabble.git
         oref0-bluetoothup
@@ -1162,7 +1166,7 @@ if prompt_yn "" N; then
     fi
 
     #Moved this out of the conditional, so that x12 models will work with smb loops
-    sudo apt-get -y install bc jq ntpdate bash-completion || die "Couldn't install bc etc."
+    sudo apt-get -y install bc ntpdate bash-completion || die "Couldn't install bc etc."
     cd $directory || die "Can't cd $directory"
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
 
