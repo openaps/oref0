@@ -1222,16 +1222,17 @@ if prompt_yn "" N; then
         apt-get install -y socat ntp
 	echo "Installing pi-buttons..."
 	systemctl stop pi-buttons
-	cd $HOME/src &&	git clone git://github.com/cluckj/pi-buttons.git
+	cd $HOME/src &&	git clone git://github.com/bnielsen1965/pi-buttons.git
 	echo "Make and install pi-buttons..."
 	cd pi-buttons
-	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
-	    git checkout radiofruit
-	fi
 	cd src && make && sudo make install && sudo make install_service
+	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
+            sed -i 's/17,27/5,6/g' /etc/pi-buttons.conf
+	fi
 	systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
 	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
+            #Once we have a radiofruit branch in openaps-menu, we can change the repo...
             cd $HOME/src && git clone git://github.com/cluckj/openaps-menu.git && git checkout radiofruit || (cd openaps-menu && git checkout radiofruit && git pull)
 	else
             cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
