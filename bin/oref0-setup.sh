@@ -723,6 +723,8 @@ if prompt_yn "" N; then
     else
         npm list -g --depth=0 | egrep oref0@0.6.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
+    # upgrade any npm packages with security vulnerabilities
+    npm audit fix
 
     cd $directory || die "Can't cd $directory"
 
