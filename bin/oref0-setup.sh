@@ -640,6 +640,8 @@ if prompt_yn "" N; then
 
     # Having the loop run in the background during setup slows things way down and lengthens the time before first loop
     service cron stop
+    # Kill oref0-pump-loop
+    pkill -f oref0-pump-loop
 
     # Attempting to remove git to make install --nogit by default for existing users
     echo Removing any existing git in $directory/.git
