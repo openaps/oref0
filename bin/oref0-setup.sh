@@ -657,20 +657,29 @@ if prompt_yn "" N; then
         echo -n "Cloning oref0: "
         (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
     fi
+
+    # Workaround for Jubilinux v0.2.0 (Debian Jessie) migration to LTS
+    if is_debian_jessie; then
+        # Disable valid-until check for archived Debian repos (expired certs)
+        echo "Acquire::Check-Valid-Until false;" | tee -a /etc/apt/apt.conf.d/10-nocheckvalid
+        # Replace apt sources.list with archive.debian.org locations
+        echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
+    fi
+
     # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
     if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
         echo Upgrading to node 8
         sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
         sudo apt-get install -y nodejs || die "Couldn't install nodejs"
     fi
-    
+
     # Make sure jq version >1.5 is installed
-    if is_edison; then
+    if is_debian_jessie; then
         sudo apt-get -y -t jessie-backports install jq
     else
         sudo apt-get -y install jq
     fi
-    
+
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
