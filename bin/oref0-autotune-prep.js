@@ -21,6 +21,8 @@
 */
 
 var generate = require('../lib/autotune-prep');
+var _ = require('lodash');
+var moment = require('moment');
 
 if (!module.parent) {
 
@@ -112,6 +114,9 @@ if (!module.parent) {
             console.error("Warning: could not parse "+carb_input);
         }
     }
+
+    // Have to sort history - NS sort doesn't account for different zulu and local timestamps
+    pumphistory_data = _.orderBy(pumphistory_data, [function (o) { return moment(o.created_at).valueOf(); }], ['desc']);
 
     inputs = {
       history: pumphistory_data
