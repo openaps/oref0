@@ -640,6 +640,38 @@ if prompt_yn "" N; then
 
     # Having the loop run in the background during setup slows things way down and lengthens the time before first loop
     service cron stop
+    # Kill oref0-pump-loop
+    pkill -f oref0-pump-loop
+
+    # Workaround for Jubilinux v0.2.0 (Debian Jessie) migration to LTS
+    if is_debian_jessie; then
+        # Disable valid-until check for archived Debian repos (expired certs)
+        echo "Acquire::Check-Valid-Until false;" | tee -a /etc/apt/apt.conf.d/10-nocheckvalid
+        # Replace apt sources.list with archive.debian.org locations
+        echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
+    fi
+
+    #TODO: remove this when IPv6 works reliably
+    echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
+
+    # update, upgrade, and autoclean apt-get
+    if file_is_recent /var/lib/apt/periodic/update-stamp 3600; then
+        echo apt-get update-stamp is recent: skipping
+    else
+        echo Running apt-get update
+        sudo apt-get update
+    fi
+    if file_is_recent /var/lib/apt/periodic/upgrade-stamp 3600; then
+        echo apt-get upgrade-stamp is recent: skipping
+    else
+        echo Running apt-get upgrade
+        sudo apt-get -y upgrade
+        # make sure hostapd and dnsmasq don't get re-enabled
+        update-rc.d -f hostapd remove
+        update-rc.d -f dnsmasq remove
+    fi
+    echo Running apt-get autoclean
+    sudo apt-get autoclean
 
     # Attempting to remove git to make install --nogit by default for existing users
     echo Removing any existing git in $directory/.git
@@ -688,14 +720,6 @@ if prompt_yn "" N; then
     else
         echo -n "Cloning oref0: "
         (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
-    fi
-
-    # Workaround for Jubilinux v0.2.0 (Debian Jessie) migration to LTS
-    if is_debian_jessie; then
-        # Disable valid-until check for archived Debian repos (expired certs)
-        echo "Acquire::Check-Valid-Until false;" | tee -a /etc/apt/apt.conf.d/10-nocheckvalid
-        # Replace apt sources.list with archive.debian.org locations
-        echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
     fi
 
     # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
@@ -822,28 +846,6 @@ if prompt_yn "" N; then
     if [[ -f /etc/cron.daily/logrotate ]]; then
         mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
     fi
-
-    #TODO: remove this when IPv6 works reliably
-    echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
-
-    # update, upgrade, and autoclean apt-get
-    if file_is_recent /var/lib/apt/periodic/update-stamp 3600; then
-        echo apt-get update-stamp is recent: skipping
-    else
-        echo Running apt-get update
-        sudo apt-get update
-    fi
-    if file_is_recent /var/lib/apt/periodic/upgrade-stamp 3600; then
-        echo apt-get upgrade-stamp is recent: skipping
-    else
-        echo Running apt-get upgrade
-        sudo apt-get -y upgrade
-        # make sure hostapd and dnsmasq don't get re-enabled
-        update-rc.d -f hostapd remove
-        update-rc.d -f dnsmasq remove
-    fi
-    echo Running apt-get autoclean
-    sudo apt-get autoclean
 
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
