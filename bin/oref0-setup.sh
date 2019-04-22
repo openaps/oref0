@@ -673,6 +673,22 @@ if prompt_yn "" N; then
     echo Running apt-get autoclean
     sudo apt-get autoclean
 
+    # Workaround for Jubilinux v0.2.0 (Debian Jessie) migration to LTS
+    if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /dev/null; then
+        # Disable validity check for archived Debian repos
+        echo "Acquire::Check-Valid-Until false;" | tee -a /etc/apt/apt.conf.d/10-nocheckvalid
+        # Replace apt sources.list with new archive.debian.org locations
+        echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
+    fi
+    
+    #Workaround for Jubilinux to install nodejs/npm from nodesource
+    if getent passwd edison &> /dev/null; then
+        # Use nodesource setup script to add nodesource repository to sources.list.d
+        curl -sL https://deb.nodesource.com/setup_8.x | bash -
+        # Install nodejs and npm from nodesource
+        apt-get -y install nodejs
+    fi
+
     # Attempting to remove git to make install --nogit by default for existing users
     echo Removing any existing git in $directory/.git
     rm -rf $directory/.git
