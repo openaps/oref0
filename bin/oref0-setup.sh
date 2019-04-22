@@ -480,6 +480,22 @@ echocolor-n "Continue? y/[N] "
 read -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
+    # Workaround for Jubilinux v0.2.0 (Debian Jessie) migration to LTS
+    if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /dev/null; then
+        # Disable validity check for archived Debian repos
+        echo "Acquire::Check-Valid-Until false;" | tee -a /etc/apt/apt.conf.d/10-nocheckvalid
+        # Replace apt sources.list with new archive.debian.org locations
+        echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
+    fi
+    
+    #Workaround for Jubilinux to install nodejs/npm from nodesource
+    if getent passwd edison &> /dev/null; then
+        # Use nodesource setup script to add nodesource repository to sources.list.d
+        curl -sL https://deb.nodesource.com/setup_8.x | bash -
+        # Install nodejs and npm from nodesource
+        apt-get -y install nodejs
+    fi
+
     # Attempting to remove git to make install --nogit by default for existing users
     echo Removing any existing git in $directory/.git
     rm -rf $directory/.git
@@ -634,12 +650,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        # use packaged bluez with Rapsbian
-        if getent passwd pi > /dev/null; then
-            bluetoothdminversion=5.43
-        else
-            bluetoothdminversion=5.48
-        fi
+        # use packaged bluez if on Debian stretch
+        bluetoothdminversion=5.43
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
             cd $HOME/src/ && wget -c4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.48.tar.gz && tar xvfz bluez-5.48.tar.gz || die "Couldn't download bluez"
@@ -804,18 +816,22 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             if ! ldconfig -p | grep -q mraa; then # if not installed, install it
                 echo Installing swig etc.
                 sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
-                # TODO: Due to mraa bug https://github.com/intel-iot-devkit/mraa/issues/771 we were not using the master branch of mraa on dev.
                 # TODO: After each oref0 release, check whether there is a new stable MRAA release that is of interest for the OpenAPS community
-                MRAA_RELEASE="v1.7.0" # GitHub hash 8ddbcde84e2d146bc0f9e38504d6c89c14291480
-                if [ -d "$HOME/src/mraa/" ]; then
-                    echo -n "$HOME/src/mraa/ already exists; "
-                    #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
-                    (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE} release" # used for oref0 master
-                else
-                    echo -n "Cloning mraa "
-                    #(echo -n "master branch. " && cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master" # used for oref0 dev
-                    (echo -n "stable release ${MRAA_RELEASE}. " && cd $HOME/src && git clone -b ${MRAA_RELEASE} https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa release ${MRAA_RELEASE}" # used for oref0 master
-                fi
+                # Latest (as of April 2019) master branch of mraa is working
+                #MRAA_RELEASE="master"
+                #if [ -d "$HOME/src/mraa/" ]; then
+                #    echo -n "$HOME/src/mraa/ already exists; "
+                #    #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
+                #    (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE} release" # used for oref0 master
+                #else
+                #    echo -n "Cloning mraa "
+                #    #(echo -n "master branch. " && cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master" # used for oref0 dev
+                #    (echo -n "stable release ${MRAA_RELEASE}. " && cd $HOME/src && git clone -b ${MRAA_RELEASE} https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa release ${MRAA_RELEASE}" # used for oref0 master
+                #fi
+                # Force installation of v1.7.0 MRAA, as it is the only version we know works...
+                cd $HOME/src && rm -rf mraa/
+                wget https://github.com/intel-iot-devkit/mraa/archive/v1.7.0.tar.gz || die "Could not download mraa"
+                tar -xvf v1.7.0.tar.gz && mv mraa-1.7.0/ mraa/
                 # build mraa from source
                 ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
                 make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
