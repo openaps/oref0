@@ -126,3 +126,13 @@ fi
 if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
     oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log &
 fi
+
+# check if 5 minutes have passed, and if yes, turn of the screen to save power
+ttyport="$(get_pref_string .ttyport)"
+upSeconds="$(cat /proc/uptime | grep -o '^[0-9]\+')"
+upMins=$((${upSeconds} / 60))
+
+if [[ "${upMins}" -gt "5" && "$ttyport" =~ spidev0.[01] ]]; then
+    # disable HDMI on Explorer HAT rigs to save battery
+    /usr/bin/tvservice -o &
+fi
