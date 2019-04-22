@@ -673,20 +673,13 @@ if prompt_yn "" N; then
     echo Running apt-get autoclean
     sudo apt-get autoclean
 
-    # Workaround for Jubilinux v0.2.0 (Debian Jessie) migration to LTS
-    if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /dev/null; then
-        # Disable validity check for archived Debian repos
-        echo "Acquire::Check-Valid-Until false;" | tee -a /etc/apt/apt.conf.d/10-nocheckvalid
-        # Replace apt sources.list with new archive.debian.org locations
-        echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
-    fi
-    
-    #Workaround for Jubilinux to install nodejs/npm from nodesource
-    if getent passwd edison &> /dev/null; then
+    # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
+    if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
+        echo Upgrading to node 8
         # Use nodesource setup script to add nodesource repository to sources.list.d
-        curl -sL https://deb.nodesource.com/setup_8.x | bash -
+        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
         # Install nodejs and npm from nodesource
-        apt-get -y install nodejs
+        sudo apt-get install -y nodejs || die "Couldn't install nodejs"
     fi
 
     # Attempting to remove git to make install --nogit by default for existing users
@@ -736,13 +729,6 @@ if prompt_yn "" N; then
     else
         echo -n "Cloning oref0: "
         (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
-    fi
-
-    # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
-    if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
-        echo Upgrading to node 8
-        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
-        sudo apt-get install -y nodejs || die "Couldn't install nodejs"
     fi
 
     # Make sure jq version >1.5 is installed
