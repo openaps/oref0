@@ -75,31 +75,6 @@ if (!module.parent) {
   var cwd = process.cwd();
   var outputPath = cwd + '/' + glucose_input;
 
-  /*
-    function loadFromSpike () {
-    
-    // try xDrip
-    
-    var options = {
-        uri: 'http://192.168.43.1:1979/api/v1/entries/sgv.json?count=576'
-        , json: true
-        , timeout: 10000
-    };
-
-    request(options, function(error, res, data) {
-    	if (data) {
-			console.error("CGM results from Nightscout written to ", outputPath);
-	        var fs = require('fs');
-			fs.writeFileSync(outputPath, JSON.stringify(data));
-		} else {
-			console.error("Load from Spike failed, exiting");
-		}
-	 	process.exit(1);
-    });
-    
-    }
-    */
-
   function loadFromxDrip(callback, ip) {
     var headers = {
       'api-secret': apisecret
