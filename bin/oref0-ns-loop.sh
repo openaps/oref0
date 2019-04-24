@@ -51,7 +51,6 @@ function pushover_snooze {
 
 
 function get_ns_bg {
-    #openaps get-ns-glucose > /dev/null
     # update 24h glucose file if it's 55m old or too small to calculate COB
     if ! file_is_recent cgm/ns-glucose-24h.json 54 \
         || ! grep -c glucose cgm/ns-glucose-24h.json | jq -e '. > 36' >/dev/null; then
