@@ -21,6 +21,8 @@
 */
 
 var generate = require('../lib/autotune-prep');
+var _ = require('lodash');
+var moment = require('moment');
 
 if (!module.parent) {
 
@@ -95,6 +97,9 @@ if (!module.parent) {
       profile_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
     }
 
+    // Always keep the curve value up to date with what's in the user preferences
+    profile_data.curve = pumpprofile_data.curve;
+
     try {
         var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
     } catch (e) {
@@ -110,7 +115,10 @@ if (!module.parent) {
         }
     }
 
-    var inputs = {
+    // Have to sort history - NS sort doesn't account for different zulu and local timestamps
+    pumphistory_data = _.orderBy(pumphistory_data, [function (o) { return moment(o.created_at).valueOf(); }], ['desc']);
+
+    inputs = {
       history: pumphistory_data
     , profile: profile_data
     , pumpprofile: pumpprofile_data

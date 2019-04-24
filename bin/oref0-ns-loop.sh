@@ -149,6 +149,13 @@ function battery_status {
         sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | tee monitor/edison-battery.json | colorize_json
     elif [ -e /root/src/openaps-menu/scripts/getvoltage.sh ]; then
         sudo /root/src/openaps-menu/scripts/getvoltage.sh | tee monitor/edison-battery.json | colorize_json
+    elif [ -e monitor/low-battery.json ]; then
+        low=$(cat monitor/low-battery.json)
+        if [ "$low" = True ]; then
+          echo '{"batteryVoltage":3000, "battery":9}' | tee monitor/edison-battery.json
+        else
+          echo '{"batteryVoltage":3680, "battery":50}' | tee monitor/edison-battery.json
+        fi
     fi
 }
 
@@ -195,7 +202,7 @@ function upload_recent_treatments {
 }
 
 function latest_ns_treatment_time {
-    nightscout latest-openaps-treatment $NIGHTSCOUT_HOST $API_SECRET | json created_at
+    nightscout latest-openaps-treatment $NIGHTSCOUT_HOST $API_SECRET | jq -r .created_at
 }
 
 #nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
@@ -210,7 +217,9 @@ function format_latest_nightscout_treatments {
         jq .[0:9] monitor/pumphistory-24h-zoned.json > upload/recent-pumphistory.json
         historyfile=upload/recent-pumphistory.json
     fi
-        nightscout cull-latest-openaps-treatments $historyfile settings/model.json $latest_ns_treatment_time > upload/latest-treatments.json
+
+    echo "Latest NS treatment: $latest_ns_treatment_time"
+    nightscout cull-latest-openaps-treatments $historyfile settings/model.json $latest_ns_treatment_time > upload/latest-treatments.json
 }
 
 function check_mdt_upload {

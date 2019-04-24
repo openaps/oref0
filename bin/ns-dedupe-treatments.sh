@@ -13,7 +13,7 @@ function fetch ( ) {
 }
 
 function flatten ( ) {
-  json -a created_at | uniq -c
+  jq -r '.created_at' | uniq -c
 }
 
 
@@ -42,10 +42,11 @@ ENDPOINT=${NIGHTSCOUT_HOST}/api/v1/treatments
 export NIGHTSCOUT_HOST ENDPOINT
 fetch | flatten | while read count date; do
   test $count -gt 1 && echo "{}" \
-    | json -e "this.count = $count" \
-    -e "this.date = '$date'" \
-    -e "this.created_at = '$date'"
-done | json -g
+    | jq '[ .[]
+      | .count = '$count'
+      | .date = '$date'
+      | .created_at = '$date' ]'
+done | jq '.[]' | jq -s
 }
 
 function main ( ) {
@@ -62,7 +63,7 @@ fi
 
 export NIGHTSCOUT_HOST ENDPOINT
 fetch | flatten | while read count date; do
-  find_dupes_on $count $date | json -a _id | tac \
+  find_dupes_on $count $date | jq -r '.[] | ._id' | tac \
   | head -n 30 | while read tid line ; do
     echo -n $count' '
     $ACTION $tid

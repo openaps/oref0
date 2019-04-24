@@ -18,7 +18,7 @@ source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to r
 
 # TODO: deprecate g4-upload and g4-local-only
 usage "$@" <<EOT
-Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-upload|G4-local-only|G4-go|G5|MDT|xdrip|xdrip-js)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--dexcom_tx_sn=12A34B] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)] [--ww_ti_usb_reset=(yes|no)]
+Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-go|G5|MDT|xdrip|xdrip-js)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--dexcom_tx_sn=12A34B] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)]
 EOT
 
 # defaults
@@ -32,6 +32,7 @@ buildgofromsource=false
 ecc1medtronicversion="latest"
 ecc1dexcomversion="latest"
 radiotags="cc111x"
+hardwaretype=explorer-board
 
 # Echo text, but in bright-blue. Used for confirmation echo text. This takes
 # the same arguments as echo, including the -n option.
@@ -55,9 +56,6 @@ case $i in
     ;;
     -rl=*|--radio_locale=*)
     radio_locale="${i#*=}"
-    ;;
-    -pm=*|--pumpmodel=*)
-    pumpmodel="${i#*=}"
     ;;
     -t=*|--tty=*)
     ttyport="${i#*=}"
@@ -104,14 +102,14 @@ case $i in
     -p=*|--btpeb=*)
     BT_PEB="${i#*=}"
     ;;
-    --ww_ti_usb_reset=*) # use reset if pump device disappears with TI USB and WW-pump
-    ww_ti_usb_reset="${i#*=}"
-    ;;
     -pt=*|--pushover_token=*)
     PUSHOVER_TOKEN="${i#*=}"
     ;;
     -pu=*|--pushover_user=*)
     PUSHOVER_USER="${i#*=}"
+    ;;
+    -ht=*|--hardwaretype=*)
+    hardwaretype="${i#*=}"
     ;;
     -npm=*|--npm_install=*)
     npm_option="${i#*=}"
@@ -129,17 +127,17 @@ function validate_cgm ()
     # Conver to lowercase
     local selection="${1,,}"
 
-    if [[ $selection =~ "g4-upload"  ]]; then
-        echo "Unsupported CGM.  CGM=G4-upload has been replaced by CGM=G4-go (default). Please change your CGM in oref0-runagain.sh"
+    if [[ $selection =~ "g4-upload" || $selection =~ "g4-local-only" ]]; then
+        echo "Unsupported CGM.  CGM=G4-upload has been replaced by CGM=G4-go (default). Please change your CGM in oref0-runagain.sh, or run interactive setup."
         echo
         return 1
     fi
 
     # TODO: Compare against list of supported CGMs
-    # list of CGM supported by oref0 0.6.x: "g4-upload", "g5", "g5-upload", "mdt", "shareble", "xdrip", "g4-local"
+    # list of CGM supported by oref0 0.7.x: "g4-go", "g5", "g5-upload", "G6", "G6-upload", "mdt", "shareble", "xdrip", "xdrip-js"
 
-    if ! [[ $selection =~ "g4-go" || $selection =~ "g5" || $selection =~ "g5-upload" || $selection =~ "mdt" || $selection =~ "xdrip" || $selection =~ "xdrip-js" || $selection =~ "g4-local" ]]; then
-        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G4-local-only, G5, G5-upload, MDT, xdrip, or xdrip-js."
+    if ! [[ $selection =~ "g4-go" || $selection =~ "g5" || $selection =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" || $selection =~ "mdt" || $selection =~ "xdrip" || $selection =~ "xdrip-js" ]]; then
+        echo "Unsupported CGM.  Please select (Dexcom) G4-go (default), G5, G5-upload, G6, G6-upload, MDT, xdrip, or xdrip-js."
         echo
         return 1
     fi
@@ -236,7 +234,6 @@ function validate_ble_mac ()
     true #TODO
 }
 
-
 # Usage: do_openaps_import <file.json>
 # Import aliases, devices, and reports from a JSON file into OpenAPS. What this
 # means in practice is adding entries top openaps.ini, and creating other ini
@@ -279,12 +276,16 @@ function copy_go_binaries () {
     done
     request_stop_local_binary Go-mmtune
 
-    cp -pruv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
+    cp -prv $HOME/go/bin/* /usr/local/bin/ || die "Couldn't copy go/bin"
 }
 
 function move_mmtune () {
     request_stop_local_binary Go-mmtune
-    mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || echo "Couldn't move mmtune to Go-mmtune"
+    if [ -f /usr/local/bin/mmtune ]; then
+      mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't move mmtune to Go-mmtune"
+    else
+      die "Couldn't move_mmtune() because /usr/local/bin/mmtune exists"
+    fi
 }
 
 
@@ -307,21 +308,15 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echocolor "Ok, $serial it is."
     echo
 
-    if prompt_yn "Do you have a 512 or 712 model pump?" N; then
-        pumpmodel=x12
-        echocolor "Ok, you'll be using a 512 or 712 pump. Got it. "
-        echo
-    else
-        echocolor "You're using a different model pump. Got it."
-    fi
-
     echo "What kind of CGM would you like to configure for offline use? Options are:"
     echo "G4-Go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
-    # TODO: deprecate g4-upload and G4-local-only
-    echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
-    echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
+    # TODO: finish deprecating g4-upload and G4-local-only
+    #echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
+    #echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
     echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
+    echo "G6: will use BGs from a plugged in G5/G6 touchscreen receiver, but will *not* upload them (the G6 app usually does that)"
+    echo "G6-upload: will use and upload BGs from a plugged in G5/G6 touchscreen receiver to Nightscout"
     echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
     echo "xdrip: will work with an xDrip receiver app on your Android phone"
     echo "xdrip-js: will work directly with a Dexcom G5 transmitter and will upload to Nightscout"
@@ -342,63 +337,87 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
+    # Decision tree for hardware setup to give finer-grained control over setup automation.
+    # Passes $hardwaretype (default is explorer-board) to the rest of setup.
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &>/dev/null ; then
+        # Autodetect and set up Explorer HAT
         echocolor "Explorer Board HAT detected. "
+        echocolor "Configuring for Explorer Board HAT. "
         ttyport=/dev/spidev0.0
-    else
-        if ! prompt_yn "Are you using an Explorer Board?" Y; then
-            if ! prompt_yn "Are you using an Explorer HAT?" Y; then
-                echo 'Are you using mmeowlink (i.e. with a TI stick)? If not, press enter. If so, paste your full port address: it looks like "/dev/ttySOMETHING" without the quotes.'
-                prompt_and_validate ttyport "What is your TTY port?" validate_ttyport
-                echocolor -n "Ok, "
-                if [[ -z "$ttyport" ]]; then
-                    echo -n Carelink
-                else
-                    echo -n TTY $ttyport
-                fi
-                echocolor " it is. "
-                echo
-            else
-                echocolor "Configuring Explorer Board HAT. "
-                ttyport=/dev/spidev0.0
-            fi
-        else
-            if is_edison; then
-                echocolor "Yay! Configuring for Edison with Explorer Board. "
-                ttyport=/dev/spidev5.1
-            else
-                echo "Hmm, you don't seem to be using an Edison."
-                prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
-                echocolor "Ok, we'll try TTY $ttyport then."
-            fi
-            echo
-        fi
-    fi
-    read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
-    if [[ $REPLY =~ ^[Uu]$ ]]; then
-      read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2018.08.08' [S]/<version> " -r
-      if [[ $REPLY =~ ^[Ss]$ ]]; then
+        hardwaretype=explorer-hat
+    elif is_edison; then # Options for Edison (Explorer Board is default)
+        echo "What kind of hardware setup do you have? Options are:"
+        echo "1) Explorer Board"
+        echo "2) TI stick (DIY: SPI)"
+        echo "3) Other Radio (DIY: rfm69, cc11xx)"
+        read -p "Please enter the number for your hardware configuration: [1] " -r
+        case $REPLY in
+          2) echocolor "Configuring for SPI-connected TI stick. "; ttyport=/dev/spidev0.0; hardwaretype=386-spi;;
+          3)
+             prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
+             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true; hardwaretype=diy;;
+          *) echocolor "Yay! Configuring for Edison with Explorer Board. "; ttyport=/dev/spidev5.1; hardwaretype=edison-explorer;;
+        esac
+    elif is_pi; then # Options for raspberry pi, including Explorer HAT (default) if it's not auto-detected
+	echo "What kind of hardware setup do you have? Options are:"
+	echo "1) Explorer HAT"
+	echo "2) Radiofruit RFM69HCW Bonnet"
+        echo "3) RFM69HCW (DIY: SPI)"
+        echo "4) TI Stick (DIY: SPI)"
+	echo "5) Other radio (DIY: rfm69, cc11xx)"
+	read -p "Please enter the number for your hardware configuration: [1] " -r
+        case $REPLY in
+          2) echocolor "Configuring Radiofruit RFM69HCW Bonnet. "; ttyport=/dev/spidev0.1; hardwaretype=radiofruit;;
+          3) echocolor "Configuring RFM69HCW. "; ttyport=/dev/spidev0.1; hardwaretype=rfm69hcw;;
+          4) echocolor "Configuring for SPI-connected TI stick. "; ttyport=/dev/spidev0.0; hardwaretype=arm-spi;;
+          5)
+             prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
+             echocolor "Ok, we'll try TTY $ttyport then. "; echocolor "You will need to build Go binaries from source. "; buildgofromsource=true; hardwaretype=diy;;
+          *) echocolor "Configuring Explorer Board HAT. "; ttyport=/dev/spidev0.0; hardwaretype=explorer-hat;;
+        esac
+    else # If Edison or raspberry pi aren't detected, ask the user for their tty port and force Go binaries to be built from source
+        echo "Cannot auto-detect a supported platform (Edison or Raspberry Pi). Please make sure user 'edison' or 'pi' exists, or continue setup with manual configuration. "
+        prompt_and_validate ttyport "What is your TTY port? (/dev/ttySOMETHING)" validate_ttyport
+        echocolor "Ok, we'll try TTY $ttyport then. "
+        echocolor "You will need to build Go binaries from source."
         buildgofromsource=true
-        echo "Building Go pump binaries from source"
-        read -p "What type of radio do you use? [1] for cc1101 [2] for CC1110 or CC1111 [3] for RFM69HCW radio module 1/[2]/3 " -r
-        if [[ $REPLY =~ ^[1]$ ]]; then
-          radiotags="cc1101"
-        elif [[ $REPLY =~ ^[2]$ ]]; then
-          radiotags="cc111x"
-        elif [[ $REPLY =~ ^[3]$ ]]; then
-          radiotags="rfm69"
-        else
-          radiotags="cc111x"
-        fi
-        echo "Building Go pump binaries from source with " + radiotags + " tags."
-      else
-        ecc1medtronicversion="tags/$REPLY"
-        echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
+    fi
 
-        read -p "Also enter the ecc1/dexcom version, example 'v2018.07.26' <version> " -r
-        ecc1dexcomversion="tags/$REPLY"
-        echo "Will use https://github.com/ecc1/dexcom/$REPLY if Go-dexcom is needed."
+    # Ask about downloading binaries, but only if hardware choices allow binaries to be used.
+    if [ $buildgofromsource = false ]; then
+      read -p "Would you like to [D]ownload released precompiled Go pump communication library or install an [U]nofficial (possibly untested) version.[D]/U " -r
+      if [[ $REPLY =~ ^[Uu]$ ]]; then
+        read -p "You could either build the Medtronic library from [S]ource, or type the version tag you would like to use, example 'v2019.01.21' [S]/<version> " -r
+        if [[ $REPLY =~ ^[Ss]$ ]]; then
+          buildgofromsource=true
+        else
+          ecc1medtronicversion="tags/$REPLY"
+          echo "Will use https://github.com/ecc1/medtronic/releases/$REPLY."
+          read -p "Also enter the ecc1/dexcom version, example 'v2018.12.05' <version> " -r
+          ecc1dexcomversion="tags/$REPLY"
+          echo "Will use https://github.com/ecc1/dexcom/$REPLY if Go-dexcom is needed."
+        fi
       fi
+    fi
+
+    # Get details from the user about how binaries should be built from source, otherwise have setup download binaries. Default is cc111x.
+    if [ $buildgofromsource = true ]; then
+        echo "Building Go pump binaries from source"
+        echo "What type of radio do you use? Options are:"
+        echo "1) cc1110 or cc1111"
+        echo "2) cc1101"
+        echo "3) RFM69HCW on /dev/spidev0.0 (walrus)"
+        echo "4) RFM69HCW on /dev/spidev0.1 (radiofruit bonnet)"
+        echo "5) Enter radiotags manually"
+        read -p "Please enter the number for your radio configuration: [1] " -r
+        case $REPLY in
+          2) radiotags="cc1101";;
+          3) radiotags="rfm69 walrus";;
+          4) radiotags="rfm69";;
+          5) read -p "Enter your radiotags: " -r; radiotags=$REPLY;;
+          *) radiotags="cc111x";;
+        esac
+        echo "Building Go pump binaries from source with " + "$radiotags" + " tags."
     else
       echo "Downloading latest precompiled Go pump binaries."
       ecc1medtronicversion="latest"
@@ -412,27 +431,12 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
       echo "USA pumps have a serial number / model number that has 'NA' in it."
       echo "Non-USA pumps have a serial number / model number that 'WW' in it."
       echo
-      echo "When using MMeowlink, we need to know which frequency we should use:"
       echo -e "\e[1mAre you using a USA/North American pump? If so, just hit enter. Otherwise enter WW: \e[0m"
       read -r
       radio_locale=$REPLY
       echo -n "Ok, "
       # Force uppercase, just in case the user entered ww
       radio_locale=${radio_locale^^}
-
-      # check if user has a TI USB stick and a WorldWide pump and want's to reset the USB subsystem during mmtune if the TI USB fails
-      ww_ti_usb_reset="no" # assume you don't want it by default
-      if ! is_edison; then
-        if [[ $radio_locale =~ ^WW$ ]]; then
-          echo "If you have a TI USB stick and a WW pump and a Raspberry PI, you might want to reset the USB subsystem if it can't be found during a mmtune process. If so, enter Y. Otherwise just hit enter (default no):"
-          echo
-          if prompt_yn "Do you want to reset the USB system in case the TI USB stick can't be found during a mmtune proces?" N; then
-            ww_ti_usb_reset="yes"
-         else
-           ww_ti_usb_reset="no"
-         fi
-       fi
-      fi
 
       if [[ -z "${radio_locale}" ]]; then
           radio_locale='US'
@@ -491,7 +495,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     echo -e "\e[4mIf you are unsure of what you would like max_IOB to be, we recommend starting with either 0 or one hour worth of basals.\e[0m"
     echo
-    echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can come back and change this easily later).\e[0m"
+    echo -e "\e[3mRead the docs for more tips on how to determine a max_IOB that is right for you. (You can edit this in ~/myopenaps/preferences.json later).\e[0m"
     echo
     prompt_and_validate REPLY "Type a whole number (without a decimal) [i.e. 0] and hit enter:" validate_max_iob
       if [[ $REPLY =~ [0-9] ]]; then
@@ -533,12 +537,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     echo
 
-else
-   if [[ $ww_ti_usb_reset =~ ^[Yy] ]]; then
-      ww_ti_usb_reset="yes"
-   else
-      ww_ti_usb_reset="no"
-   fi
 fi
 
 echo -n "Setting up oref0 in $directory for pump $serial with $CGM CGM, "
@@ -550,9 +548,6 @@ if [[ ! -z $DEXCOM_CGM_TX_ID ]]; then
 fi
 echo
 echo -n "NS host $NIGHTSCOUT_HOST, "
-if [[ ${pumpmodel,,} =~ "x12" ]]; then
-    echo -n "x12 pump, "
-fi
 
 if [[ -z "$ttyport" ]]; then
     echo -n Carelink
@@ -595,9 +590,6 @@ echo -n " --ns-host=$NIGHTSCOUT_HOST --api-secret=$API_SECRET" | tee -a $OREF0_R
 if [[ ! -z "$ttyport" ]]; then
     echo -n " --tty=$ttyport" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ ! -z "$pumpmodel" ]]; then
-    echo -n " --pumpmodel=$pumpmodel" | tee -a $OREF0_RUNAGAIN;
-fi
 echo -n " --max_iob=$max_iob" | tee -a $OREF0_RUNAGAIN;
 if [[ ! -z "$max_daily_safety_multiplier" ]]; then
     echo -n " --max_daily_safety_multiplier=$max_daily_safety_multiplier" | tee -a $OREF0_RUNAGAIN
@@ -617,9 +609,6 @@ fi
 if [[ ! -z "$radio_locale" ]]; then
     echo -n " --radio_locale='$radio_locale'" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
-    echo -n " --ww_ti_usb_reset='$ww_ti_usb_reset'" | tee -a $OREF0_RUNAGAIN
-fi
 if [[ ! -z "$BLE_MAC" ]]; then
     echo -n " --blemac='$BLE_MAC'" | tee -a $OREF0_RUNAGAIN
 fi
@@ -638,26 +627,73 @@ fi
 if [[ ! -z "$PUSHOVER_USER" ]]; then
     echo -n " --pushover_user='$PUSHOVER_USER'" | tee -a $OREF0_RUNAGAIN
 fi
+if [[ ! -z "$hardwaretype" ]]; then
+    echo -n " --hardwaretype='$hardwaretype'" | tee -a $OREF0_RUNAGAIN
+fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
+
+# End of interactive setup
 
 echocolor -n "Continue?"
 if prompt_yn "" N; then
 
     # Having the loop run in the background during setup slows things way down and lengthens the time before first loop
     service cron stop
+    # Kill oref0-pump-loop
+    pkill -f oref0-pump-loop
+
+    # Workaround for Jubilinux v0.2.0 (Debian Jessie) migration to LTS
+    if is_debian_jessie; then
+        # Disable valid-until check for archived Debian repos (expired certs)
+        echo "Acquire::Check-Valid-Until false;" | tee -a /etc/apt/apt.conf.d/10-nocheckvalid
+        # Replace apt sources.list with archive.debian.org locations
+        echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
+    fi
+
+    #TODO: remove this when IPv6 works reliably
+    echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
+
+    # update, upgrade, and autoclean apt-get
+    if file_is_recent /var/lib/apt/periodic/update-stamp 3600; then
+        echo apt-get update-stamp is recent: skipping
+    else
+        echo Running apt-get update
+        sudo apt-get update
+    fi
+    if file_is_recent /var/lib/apt/periodic/upgrade-stamp 3600; then
+        echo apt-get upgrade-stamp is recent: skipping
+    else
+        echo Running apt-get upgrade
+        sudo apt-get -y upgrade
+        # make sure hostapd and dnsmasq don't get re-enabled
+        update-rc.d -f hostapd remove
+        update-rc.d -f dnsmasq remove
+    fi
+    echo Running apt-get autoclean
+    sudo apt-get autoclean
+
+    # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
+    if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
+        echo Upgrading to node 8
+        # Use nodesource setup script to add nodesource repository to sources.list.d
+        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
+        # Install nodejs and npm from nodesource
+        sudo apt-get install -y nodejs || die "Couldn't install nodejs"
+    fi
 
     # Attempting to remove git to make install --nogit by default for existing users
     echo Removing any existing git in $directory/.git
     rm -rf $directory/.git
     echo Removed any existing git
 
-    # TODO: delete this after openaps 0.2.1 release
-    echo Checking openaps 0.2.1 installation with --nogit support
-    if ! openaps --version 2>&1 | egrep "0.[2-9].[1-9]"; then
+    # TODO: delete this after openaps 0.2.2 release
+    echo Checking openaps 0.2.2 installation with --nogit support
+    if ! openaps --version 2>&1 | egrep "0.[2-9].[2-9]"; then
         echo Installing latest openaps w/ nogit && sudo pip install --default-timeout=1000 git+https://github.com/openaps/openaps.git@nogit || die "Couldn't install openaps w/ nogit"
     fi
 
+    #Make sure the directory is valid
     echo -n "Checking $directory: "
     mkdir -p $directory
     if openaps init $directory --nogit; then
@@ -694,12 +730,14 @@ if prompt_yn "" N; then
         echo -n "Cloning oref0: "
         (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
     fi
-    # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
-    if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
-        echo Upgrading to node 8
-        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
-        sudo apt-get install -y nodejs || die "Couldn't install nodejs"
+
+    # Make sure jq version >1.5 is installed
+    if is_debian_jessie; then
+        sudo apt-get -y -t jessie-backports install jq
+    else
+        sudo apt-get -y install jq
     fi
+
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
@@ -712,7 +750,7 @@ if prompt_yn "" N; then
 
     cd $directory || die "Can't cd $directory"
 
-    #echo Checking mmeowlink installation
+    echo Checking mmeowlink installation
     if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
         pip show mmeowlink | egrep "Version: 0.11.1" || (
             echo Installing latest mmeowlink
@@ -741,7 +779,7 @@ if prompt_yn "" N; then
             preferences_from_args+="\"min_5m_carbimpact\":$min_5m_carbimpact "
         fi
         function join_by { local IFS="$1"; shift; echo "$*"; }
-        # merge existing prefrences with preferences from arguments. (preferences from arguments take precedence)
+        # merge existing preferences with preferences from arguments. (preferences from arguments take precedence)
         echo "{ $(join_by , ${preferences_from_args[@]}) }" > arg_prefs.json
         if [[ -s preferences.json ]]; then
             cat arg_prefs.json | jq --slurpfile existing_prefs preferences.json '$existing_prefs[0] + .' > updated_prefs.json && rm arg_prefs.json
@@ -752,12 +790,14 @@ if prompt_yn "" N; then
     fi
 
     # Save information to preferences.json
-    # Starting from 0.7.x all preferences for oref0 will be stored in this file
+    # Starting from 0.7.x all preferences for oref0 will be stored in this file, along with some hardware configurations
     set_pref_string .nightscout_host "$NIGHTSCOUT_HOST"
     set_pref_string .cgm "${CGM,,}"
     set_pref_string .enable "$ENABLE"
     set_pref_string .ttyport "$ttyport"
     set_pref_string .myopenaps_path "$directory"
+    set_pref_string .pump_serial "$serial"
+    set_pref_string .radio_locale "$radio_locale"
     if [[ ! -z "$BT_PEB" ]]; then
         set_pref_string .bt_peb "$BT_PEB"
     fi
@@ -774,10 +814,10 @@ if prompt_yn "" N; then
     # The Nightscout API_SECRET (admin password) should not be written in plain text, but in a hashed form
     # set_pref_string .nightscout_api_secret "$API_SECRET"
 
-    if [[ ${CGM,,} =~ "g4-go" ]]; then
+    if [[ ${CGM,,} =~ "g4-go" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
         set_pref_string .cgm_loop_path "$directory"
-    elif [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g4-local-only" ]]; then # TODO: deprecate g4-upload and g4-local-only
-        set_pref_string .cgm_loop_path "$directory-cgm-loop"
+    #elif [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g4-local-only" ]]; then # TODO: deprecate g4-upload and g4-local-only
+    #    set_pref_string .cgm_loop_path "$directory-cgm-loop"
     fi
 
     if [[ ${CGM,,} =~ "xdrip" ]]; then # Evaluates true for both xdrip and xdrip-js 
@@ -809,28 +849,6 @@ if prompt_yn "" N; then
         mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
     fi
 
-    #TODO: remove this when IPv6 works reliably
-    echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
-
-    # update, upgrade, and autoclean apt-get
-    if file_is_recent /var/lib/apt/periodic/update-stamp 3600; then
-        echo apt-get update-stamp is recent: skipping
-    else
-        echo Running apt-get update
-        sudo apt-get update
-    fi
-    if file_is_recent /var/lib/apt/periodic/upgrade-stamp 3600; then
-        echo apt-get upgrade-stamp is recent: skipping
-    else
-        echo Running apt-get upgrade
-        sudo apt-get -y upgrade
-        # make sure hostapd and dnsmasq don't get re-enabled
-        update-rc.d -f hostapd remove
-        update-rc.d -f dnsmasq remove
-    fi
-    echo Running apt-get autoclean
-    sudo apt-get autoclean
-
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
@@ -850,17 +868,13 @@ if prompt_yn "" N; then
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/report.json
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/alias.json
 
+    #Check to see if we need to install bluetooth
     echo Checking for BT Mac, BT Peb, Shareble, or xdrip-js
     if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" || ! -z $BLE_SERIAL || ! -z $DEXCOM_CGM_TX_ID ]]; then
-        if [ ! -z "$BT_MAC" ]; then
-          printf 'Checking for the bnep0 interface in the interfaces file and adding if missing...'
-          # Make sure the bnep0 interface is in the /etc/networking/interface
-          (grep -qa bnep0 /etc/network/interfaces && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces && printf 'added.\n') 
-        fi
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        # use packaged bluez with Rapsbian
+        # use packaged bluez with Debian Stretch (Jubilinux 0.3.0 and Raspbian)
         bluetoothdminversion=5.43
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
@@ -900,6 +914,11 @@ if prompt_yn "" N; then
         sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
         cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
         cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
+        if [ ! -z "$BT_MAC" ]; then
+          printf 'Checking for the bnep0 interface in the interfaces.client file and adding if missing...'
+          # Make sure the bnep0 interface is in the /etc/networking/interface
+          (grep -qa bnep0 /etc/network/interfaces.client && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces.client && printf 'added.\n') 
+        fi
         #Stop automatic startup of hostapd & dnsmasq
         update-rc.d -f hostapd remove
         update-rc.d -f dnsmasq remove
@@ -920,6 +939,11 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
+        set_pref_string .cgm_loop_path "$directory"
+    elif [[ ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
+        openaps use cgm config --G6
+        openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
+        set_pref_string .cgm_loop_path "$directory"
     ## TODO: figure out if any of this is still needed
     #elif [[ ${CGM,,} =~ "g4-go" ]]; then
         #echo Checking Adafruit_BluefruitLE installation
@@ -952,87 +976,79 @@ if prompt_yn "" N; then
         #sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     fi
 
-    # TODO: deprecate g4-upload and g4-local-only
-    if [[ ${CGM,,} =~ "g4-upload" ]]; then
-        mkdir -p $directory-cgm-loop
-        if ( cd $directory-cgm-loop && test -f openaps.ini && openaps use -h >/dev/null ); then
-            echo $directory-cgm-loop already exists
-        elif openaps init $directory-cgm-loop --nogit; then
-            echo $directory-cgm-loop initialized
-        else
-            die "Can't init $directory-cgm-loop"
-        fi
-        cd $directory-cgm-loop || die "Can't cd $directory-cgm-loop"
-        mkdir -p monitor || die "Can't mkdir monitor"
-        mkdir -p nightscout || die "Can't mkdir nightscout"
+    # TODO: finish deprecating g4-upload and g4-local-only
+    #if [[ ${CGM,,} =~ "g4-upload" ]]; then
+    #    mkdir -p $directory-cgm-loop
+    #    if ( cd $directory-cgm-loop && test -f openaps.ini && openaps use -h >/dev/null ); then
+    #        echo $directory-cgm-loop already exists
+    #    elif openaps init $directory-cgm-loop --nogit; then
+    #        echo $directory-cgm-loop initialized
+    #    else
+    #        die "Can't init $directory-cgm-loop"
+    #    fi
+    #    cd $directory-cgm-loop || die "Can't cd $directory-cgm-loop"
+    #    mkdir -p monitor || die "Can't mkdir monitor"
+    #    mkdir -p nightscout || die "Can't mkdir nightscout"
 
-        openaps device remove cgm 2>/dev/null
+    #    openaps device remove cgm 2>/dev/null
 
         # configure ns
-        if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
-            echo "Removing any existing ns device: "
-            ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
-            echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
-            nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
-        fi
+    #    if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
+    #        echo "Removing any existing ns device: "
+    #        ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
+    #        echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
+    #        nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
+    #    fi
 
-        # TODO: deprecate g4-upload and g4-local-only
-        if [[ ${CGM,,} =~ "g4-upload" ]]; then
-            sudo apt-get -y install bc
-            openaps device add cgm dexcom || die "Can't add CGM"
-            do_openaps_import $HOME/src/oref0/lib/oref0-setup/cgm-loop.json
-        fi
+    #    # TODO: deprecate g4-upload and g4-local-only
+    #    if [[ ${CGM,,} =~ "g4-upload" ]]; then
+    #        sudo apt-get -y install bc
+    #        openaps device add cgm dexcom || die "Can't add CGM"
+    #        do_openaps_import $HOME/src/oref0/lib/oref0-setup/cgm-loop.json
+    #    fi
 
-        cd $directory || die "Can't cd $directory"
-    fi
+    #    cd $directory || die "Can't cd $directory"
+    #fi
 
+    #TODO: finish removal of MDT setup in oref0-setup, as the new Go support for it only requires a preferences.json switch
     # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
-    if [[ "$ttyport" =~ "spi" ]] && [[ ${CGM,,} =~ "mdt" ]]; then
-        echo Checking kernel for spi_serial installation
-        if ! python -c "import spi_serial" 2>/dev/null; then
-            if [[ "$ttyport" =~ "spidev0.0" ]]; then
-                echo Installing spi_serial && sudo pip install --default-timeout=1000 --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
-                sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
-            else
-                echo Installing spi_serial && sudo pip install --default-timeout=1000 --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
-            fi
-        fi
+    #if [[ "$ttyport" =~ "spi" ]] && [[ ${CGM,,} =~ "mdt" ]]; then
+    #    echo Checking kernel for spi_serial installation
+    #    if ! python -c "import spi_serial" 2>/dev/null; then
+    #        if [[ "$ttyport" =~ "spidev0.0" ]]; then
+    #            echo Installing spi_serial && sudo pip install --default-timeout=1000 --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
+    #            sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
+    #        else
+    #            echo Installing spi_serial && sudo pip install --default-timeout=1000 --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
+    #        fi
+    #    fi
 
-        # from 0.5.0 the subg-ww-radio-parameters script will be run from oref0_init_pump_comms.py
-        # this will be called when mmtune is use with a WW pump.
-        # See https://github.com/oskarpearson/mmeowlink/issues/51 or https://github.com/oskarpearson/mmeowlink/wiki/Non-USA-pump-settings for details
-        # use --ww_ti_usb_reset=yes if using a TI USB stick and a WW pump. This will reset the USB subsystem if the TI USB device is not found.
-        # TODO: remove this workaround once https://github.com/oskarpearson/mmeowlink/issues/60 has been fixed
-        if [[ ${ww_ti_usb_reset,,} =~ "yes" ]]; then
-                openaps alias remove mmtune
-                openaps alias add mmtune "! bash -c \"oref0_init_pump_comms.py --ww_ti_usb_reset=yes -v; find monitor/ -size +5c | grep -q mmtune && cp monitor/mmtune.json mmtune_old.json; echo {} > monitor/mmtune.json; echo -n \"mmtune: \" && openaps report invoke monitor/mmtune.json; grep -v setFreq monitor/mmtune.json | grep -A2 $(cat monitor/mmtune.json | jq -r .setFreq) | while read line; do echo -n \"$line \"; done\""
-        fi
-        echo Checking kernel for mraa installation
-        #if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
-        #    echo "Skipping mraa install for kernel 4.10+"
-        #else # check if mraa is installed
-            if ! ldconfig -p | grep -q mraa; then # if not installed, install it
-                echo Installing swig etc.
-                sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
-                # TODO: Due to mraa bug https://github.com/intel-iot-devkit/mraa/issues/771 we were not using the master branch of mraa on dev.
-                # TODO: After each oref0 release, check whether there is a new stable MRAA release that is of interest for the OpenAPS community
-                MRAA_RELEASE="v1.7.0" # GitHub hash 8ddbcde84e2d146bc0f9e38504d6c89c14291480
-                if [ -d "$HOME/src/mraa/" ]; then
-                    echo -n "$HOME/src/mraa/ already exists; "
-                    #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
-                    (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE} release" # used for oref0 master
-                else
-                    echo -n "Cloning mraa "
-                    #(echo -n "master branch. " && cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master" # used for oref0 dev
-                    (echo -n "stable release ${MRAA_RELEASE}. " && cd $HOME/src && git clone -b ${MRAA_RELEASE} https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa release ${MRAA_RELEASE}" # used for oref0 master
-                fi
-                # build mraa from source
-                ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
-                make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
-                sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
-            fi
+    #    echo Checking kernel for mraa installation
+    #    #if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
+    #    #    echo "Skipping mraa install for kernel 4.10+"
+    #    #else # check if mraa is installed
+    #        if ! ldconfig -p | grep -q mraa; then # if not installed, install it
+    #            echo Installing swig etc.
+    #            sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
+    #            # TODO: Due to mraa bug https://github.com/intel-iot-devkit/mraa/issues/771 we were not using the master branch of mraa on dev.
+    #            # TODO: After each oref0 release, check whether there is a new stable MRAA release that is of interest for the OpenAPS community
+    #            MRAA_RELEASE="v1.7.0" # GitHub hash 8ddbcde84e2d146bc0f9e38504d6c89c14291480
+    #            if [ -d "$HOME/src/mraa/" ]; then
+    #                echo -n "$HOME/src/mraa/ already exists; "
+    #                #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
+    #                (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE} release" # used for oref0 master
+    #            else
+    #                echo -n "Cloning mraa "
+    #                #(echo -n "master branch. " && cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master" # used for oref0 dev
+    #                (echo -n "stable release ${MRAA_RELEASE}. " && cd $HOME/src && git clone -b ${MRAA_RELEASE} https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa release ${MRAA_RELEASE}" # used for oref0 master
+    #            fi
+    #            # build mraa from source
+    #            ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
+    #            make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
+    #            sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
+    #        fi
         #fi
-    fi
+    #fi
 
     #echo Checking openaps dev installation
     #if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
@@ -1040,55 +1056,57 @@ if prompt_yn "" N; then
         #echo Installing latest openaps dev && sudo pip install  --default-timeout=1000  git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
     #fi
 
-    # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
-    if [[ ${CGM,,} =~ "mdt" ]]; then
-        cd $directory || die "Can't cd $directory"
-        echo "Removing any existing pump device:"
-        ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
-        if [[ -z "$ttyport" ]]; then
-            openaps device add pump medtronic $serial || die "Can't add pump"
-            # add carelink to pump.ini
-            grep -q radio_type pump.ini || echo "radio_type=carelink" >> pump.ini
-            # carelinks can't listen for silence or mmtune, so just do a preflight check instead
-            openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
-            openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
-            openaps alias add mmtune 'report invoke monitor/temp_basal.json'
-        else
-            # radio_locale requires openaps 0.2.0-dev or later
-            openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
-            #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
-            #openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
-            if [[ ${radio_locale,,} =~ "ww" ]]; then
-                if [ -d "$HOME/src/subg_rfspy/" ]; then
-                    echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
-                    (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
-                else
-                    echo -n "Cloning subg_rfspy: "
-                    (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
-                fi
-            fi
+    # Create pump device
+    #TODO: Deprecate this, we have separate support for this
+    #if [[ ${CGM,,} =~ "mdt" ]]; then
+    #    cd $directory || die "Can't cd $directory"
+    #    echo "Removing any existing pump device:"
+    #    ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
+    #    if [[ -z "$ttyport" ]]; then
+    #        openaps device add pump medtronic $serial || die "Can't add pump"
+    #        # add carelink to pump.ini
+    #        grep -q radio_type pump.ini || echo "radio_type=carelink" >> pump.ini
+    #        # carelinks can't listen for silence or mmtune, so just do a preflight check instead
+    #        openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
+    #        openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
+    #        openaps alias add mmtune 'report invoke monitor/temp_basal.json'
+    #    else
+    #        # radio_locale requires openaps 0.2.0-dev or later
+    #        openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
+    #        #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
+    #        #openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
+    #        if [[ ${radio_locale,,} =~ "ww" ]]; then
+    #            if [ -d "$HOME/src/subg_rfspy/" ]; then
+    #                echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
+    #                (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
+    #            else
+    #                echo -n "Cloning subg_rfspy: "
+    #                (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
+    #            fi
+    #        fi
 
             # Hack to check if radio_locale has been set in pump.ini.
             # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-            grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
-        fi
-    else
+    #        grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
+    #    fi
+    #else
+        #This is done to make sure other programs don't break. As of 0.7.0, OpenAPS itself no longer uses pump.ini
         echo '[device "pump"]' > pump.ini
         echo "serial = $serial" >> pump.ini
         echo "radio_locale = $radio_locale" >> pump.ini
-    fi
+    #fi
 
     # Medtronic CGM
-    if [[ ${CGM,,} =~ "mdt" ]]; then
-        sudo pip install --default-timeout=1000 -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
-        openaps device remove cgm 2>/dev/null
-        if [[ -z "$ttyport" ]]; then
-            openaps device add cgm medtronic $serial || die "Can't add cgm"
-        else
-            openaps device add cgm mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add cgm"
-        fi
-        do_openaps_import $HOME/src/oref0/lib/oref0-setup/mdt-cgm.json
-    fi
+    #if [[ ${CGM,,} =~ "mdt" ]]; then
+    #    sudo pip install --default-timeout=1000 -U openapscontrib.glucosetools || die "Couldn't install glucosetools"
+    #    openaps device remove cgm 2>/dev/null
+    #    if [[ -z "$ttyport" ]]; then
+    #        openaps device add cgm medtronic $serial || die "Can't add cgm"
+    #    else
+    #        openaps device add cgm mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add cgm"
+    #    fi
+    #    do_openaps_import $HOME/src/oref0/lib/oref0-setup/mdt-cgm.json
+    #fi
 
     sudo pip install --default-timeout=1000 flask flask-restful  || die "Can't add xdrip cgm - error installing flask packages"
 
@@ -1096,7 +1114,7 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
         echo xdrip or xdrip-js selected as CGM, so configuring xDripAPS
         sudo apt-get -y install sqlite3 || die "Can't add xdrip cgm - error installing sqlite3"
-        git clone https://github.com/colinlennon/xDripAPS.git $HOME/.xDripAPS
+        git clone https://github.com/renegadeandy/xDripAPS.git $HOME/.xDripAPS
         mkdir -p $HOME/.xDripAPS_data
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/xdrip-cgm.json
         touch /tmp/reboot-required
@@ -1137,14 +1155,13 @@ if prompt_yn "" N; then
         # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
         grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
     fi
-    if [[ ${CGM,,} =~ "mdt" ]]; then # still need this for the old ns-loop for now
-        cd $directory || die "Can't cd $directory"
-        do_openaps_import $HOME/src/oref0/lib/oref0-setup/edisonbattery.json
-    fi
+    #if [[ ${CGM,,} =~ "mdt" ]]; then # still need this for the old ns-loop for now
+    #    cd $directory || die "Can't cd $directory"
+    #    do_openaps_import $HOME/src/oref0/lib/oref0-setup/edisonbattery.json
+    #fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
-        sudo apt-get -y install jq
         sudo pip install --default-timeout=1000 libpebble2
         sudo pip install --default-timeout=1000 --user git+git://github.com/mddub/pancreabble.git
         oref0-bluetoothup
@@ -1153,11 +1170,6 @@ if prompt_yn "" N; then
         sudo cp $HOME/src/oref0/lib/oref0-setup/pancreoptions.json $directory/pancreoptions.json
     fi
 
-    if is_edison; then
-        sudo apt-get -y -t jessie-backports install jq
-    else
-        sudo apt-get -y install jq
-    fi
     # configure autotune if enabled
     if [[ $ENABLE =~ autotune ]]; then
         cd $directory || die "Can't cd $directory"
@@ -1166,14 +1178,8 @@ if prompt_yn "" N; then
         sudo update-locale
     fi
 
-    #Setup files for editing on the x12, and replace get-settings alias
-    if [[ ${pumpmodel,,} =~ "x12" ]]; then
-        echo "copying settings files for x12 pumps"
-        cp $HOME/src/oref0/lib/oref0-setup/bg_targets_raw.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/basal_profile.json $directory/settings/ && cp $HOME/src/oref0/lib/oref0-setup/settings.json $directory/settings/ || die "Could not copy settings files for x12 pumps"
-    fi
-
     #Moved this out of the conditional, so that x12 models will work with smb loops
-    sudo apt-get -y install bc jq ntpdate bash-completion || die "Couldn't install bc etc."
+    sudo apt-get -y install bc ntpdate bash-completion || die "Couldn't install bc etc."
     cd $directory || die "Can't cd $directory"
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
 
@@ -1218,23 +1224,36 @@ if prompt_yn "" N; then
     #echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     echo
 
-    #Check to see if Explorer HAT is present, and install all necessary stuff
-    if grep -qa "Explorer HAT" /proc/device-tree/hat/product &> /dev/null || [[ "$ttyport" =~ "spidev0.0" ]]; then
-        echo "Looks like you're using an Explorer HAT!"
-        echo "Making sure SPI is enabled..."
+    #Turn on i2c, install pi-buttons, and openaps-menu for hardware that has a screen and buttons (so far, only Explorer HAT and Radiofruit Bonnet)
+    if grep -qa "Explorer HAT" /proc/device-tree/hat/product &> /dev/null || [[ "$hardwaretype" =~ "explorer-hat" ]] || [[ "$hardwaretype" =~ "radiofruit" ]]; then
+        echo "Looks like you have buttons and a screen!"
+        echo "Enabling i2c device nodes..."
         if ! ( grep -q i2c-dev /etc/modules-load.d/i2c.conf && egrep "^dtparam=i2c1=on" /boot/config.txt ); then
             echo Enabling i2c for the first time: this will require a reboot after oref0-setup.
             touch /tmp/reboot-required
         fi
-        sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
-        echo "Enabling i2c device nodes..."
         sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
         egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
         echo "Installing socat and ntp..."
         apt-get install -y socat ntp
+	echo "Installing pi-buttons..."
+	systemctl stop pi-buttons
+	cd $HOME/src &&	git clone git://github.com/bnielsen1965/pi-buttons.git
+	echo "Make and install pi-buttons..."
+	cd pi-buttons
+	cd src && make && sudo make install && sudo make install_service
+	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
+            sed -i 's/17,27/5,6/g' /etc/pi-buttons.conf
+	fi
+	systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
-        cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
+            #Once we have a radiofruit branch in openaps-menu, we can change the repo...
+            cd $HOME/src && git clone git://github.com/cluckj/openaps-menu.git && git checkout radiofruit || (cd openaps-menu && git checkout radiofruit && git pull)
+	else
+            cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+	fi
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     fi
@@ -1242,81 +1261,85 @@ if prompt_yn "" N; then
     echo "Clearing retrieved apt packages to free space."
     apt-get autoclean && apt-get clean
 
-    # install Go for Explorer Board/HAT
-    if [[ "$ttyport" =~ "spidev" ]] || [[ ${CGM,,} =~ "g4-go" ]]; then
-      if $buildgofromsource; then
-        source $HOME/.bash_profile
-        if go version | grep go1.11.; then
-            echo Go already installed
-        else
-            echo "Installing Golang..."
-            if uname -m | grep armv; then
-                cd /tmp && wget -c https://storage.googleapis.com/golang/go1.11.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-armv6l.tar.gz
-            elif uname -m | grep i686; then
-                cd /tmp && wget -c https://dl.google.com/go/go1.11.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-386.tar.gz
-            fi
-        fi
-        if ! grep GOROOT $HOME/.bash_profile; then
-            sed --in-place '/.*GOROOT*/d' $HOME/.bash_profile
-            echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
-            echo 'export GOROOT' >> $HOME/.bash_profile
-        fi
-        if ! grep GOPATH $HOME/.bash_profile; then
-            sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
-            echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
-            echo 'export GOPATH' >> $HOME/.bash_profile
-            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
-            sed --in-place '/.*export PATH*/d' $HOME/.bash_profile
-            echo 'export PATH' >> $HOME/.bash_profile
-        fi
+    # Install Go if needed, or set up paths
+    if [ $buildgofromsource = true ]; then
+      source $HOME/.bash_profile
+      if go version | grep go1.11.; then
+          echo Go already installed
       else
-            sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
-            echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
-            sed --in-place '/.*export PATH*/d' $HOME/.bash_profile
-            echo 'export PATH' >> $HOME/.bash_profile
+          echo "Installing Golang..."
+          if uname -m | grep armv; then
+              cd /tmp && wget -c https://storage.googleapis.com/golang/go1.11.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-armv6l.tar.gz
+          elif uname -m | grep i686; then
+              cd /tmp && wget -c https://dl.google.com/go/go1.11.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-386.tar.gz
+          fi
       fi
+      if ! grep GOROOT $HOME/.bash_profile; then
+          sed --in-place '/.*GOROOT*/d' $HOME/.bash_profile
+          echo 'GOROOT=/usr/local/go' >> $HOME/.bash_profile
+          echo 'export GOROOT' >> $HOME/.bash_profile
+      fi
+      if ! grep GOPATH $HOME/.bash_profile; then
+          sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
+          echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
+          echo 'export GOPATH' >> $HOME/.bash_profile
+          echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+          sed --in-place '/.*export PATH*/d' $HOME/.bash_profile
+          echo 'export PATH' >> $HOME/.bash_profile
+      fi
+    else
+      sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
+      echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+      sed --in-place '/.*export PATH*/d' $HOME/.bash_profile
+      echo 'export PATH' >> $HOME/.bash_profile
     fi
+
     mkdir -p $HOME/go
     source $HOME/.bash_profile
-
 
     #Necessary to "bootstrap" Go commands...
     if [[ ${radio_locale,,} =~ "ww" ]]; then
       echo 868.4 > $directory/monitor/medtronic_frequency.ini
-      #Store radio_locale for later use
-      # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-      grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
     else
       echo 916.55 > $directory/monitor/medtronic_frequency.ini
     fi
 
     if [[ "$ttyport" =~ "spidev" ]]; then
-        if $buildgofromsource; then
-          #go get -u -v github.com/ecc1/cc111x || die "Couldn't go get cc111x"
-          go get -u -v -tags $radiotags github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
-          #cd $HOME/go/src/github.com/ecc1/medtronic/cmd
-          #cd mdt && go install -tags cc111x || die "Couldn't go install mdt"
-          #cd ../mmtune && go install -tags cc111x || die "Couldn't go install mmtune"
-          #cd ../pumphistory && go install -tags cc111x || die "Couldn't go install pumphistory"
-          #cd ../listen && go install -tags cc111x || die "Couldn't go install listen"
-          ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
-        else
-          arch=arm-spi
-          if is_edison; then
-            arch=386-spi
-          fi
-          mkdir -p $HOME/go/bin && \
-          downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/$ecc1medtronicversion | \
-            jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
-          echo "Downloading Go pump binaries from:" $downloadUrl
-          wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
-          echo "Installing Go pump binaries ..."
-          ln -sf $HOME/go/bin/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
+        #Turn on SPI for all pi-based setups. Not needed on the Edison
+        if is_pi; then
+          echo "Making sure SPI is enabled..."
+          sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
         fi
-
-        copy_go_binaries
-        move_mmtune
+        #Translate hardware type into arch for Go binary downloads
+        if [[ "$hardwaretype" =~ "explorer-hat" || "$hardwaretype" =~ "arm-spi" ]]; then arch=arm-spi
+        elif [[ "$hardwaretype" =~ "radiofruit" || "$hardwaretype" =~ "rfm69hcw" ]]; then arch=arm-rfm69
+        elif [[ "$hardwaretype" =~ "edison-explorer" || "$hardwaretype" =~ "386-spi" ]]; then arch=386-spi
+        elif [[ "$hardwaretype" =~ "diy" ]]; then gobuildfromsource=true #make sure binaries aren't downloaded for DIY rigs
+        else arch=386-spi
+        fi
+    #TODO: Support non-SPI ports (TI stick over UART)
+    #elif [[ "$ttyport" =~ "tty" ]]; then
+    #    if [[ "$hardwaretype" =~ "386-uart" && is_edison ]]; then arch=386-uart
+    #    elif [[ "$hardwaretype" =~ "arm-uart" && is_pi ]]; then arch=arm-uart
+    else
+        #TODO: write validate_ttyport and support non-SPI ports
+        die "Unsupported ttyport. Exiting."
     fi
+
+    #Build Go binaries from source, or download prebuilt binaries package
+    if [ $buildgofromsource = true ]; then
+      go get -u -v -tags "$radiotags" github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+      ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
+    else
+      mkdir -p $HOME/go/bin && \
+      downloadUrl=$(curl -s https://api.github.com/repos/ecc1/medtronic/releases/$ecc1medtronicversion | \
+        jq --raw-output '.assets[] | select(.name | contains("'$arch'")) | .browser_download_url')
+      echo "Downloading Go pump binaries from:" $downloadUrl
+      wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go pump binaries"
+      echo "Installing Go pump binaries ..."
+      ln -sf $HOME/go/bin/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
+    fi
+
     if [[ ${CGM,,} =~ "g4-go" ]]; then
         if [ ! -d $HOME/go/bin ]; then mkdir -p $HOME/go/bin; fi
         echo "Installing or Compiling Go dexcom binaries ..."
@@ -1336,20 +1359,10 @@ if prompt_yn "" N; then
             echo "Downloading Go dexcom binaries from:" $downloadUrl
             wget -qO- $downloadUrl | tar xJv -C $HOME/go/bin || die "Couldn't download and extract Go dexcom binaries"
         fi
-
-        copy_go_binaries
-        move_mmtune
     fi
 
-    #if [[ "$ttyport" =~ "spi" ]]; then
-        #echo Resetting spi_serial
-        #reset_spi_serial.py
-    #fi
-# Commenting out the mmtune as attempt to stop the radio reboot errors that happen when re-setting up.
-#    echo Attempting to communicate with pump:
-#    ( killall -g openaps; killall -g oref0-pump-loop ) 2>/dev/null
-#    openaps mmtune
-#    echo
+    copy_go_binaries
+    move_mmtune
 
     # clear any extraneous input before prompting
     while(read -r -t 0.1); do true; done
@@ -1405,21 +1418,6 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "g4-go" ]]; then
         echo
         echo "To pair your G4 Share receiver, open its Settings, select Share, Forget Device (if previously paired), then turn sharing On"
-    fi
-
-    if [[ ${pumpmodel,,} =~ "x12" ]]; then
-        echo
-        echo To complete your x12 pump setup, you must edit your basal_profile.json,
-        echo and may want to edit your settings.json and bg_targets_raw.json as well.
-        read -p "Press enter to begin editing basal_profile.json, and then press Ctrl-X when done."
-        nano $directory/settings/basal_profile.json
-        read -p "Press enter to begin editing settings.json, and then press Ctrl-X when done."
-        nano $directory/settings/settings.json
-        read -p "Press enter to begin editing bg_targets_raw.json, and then press Ctrl-X when done."
-        nano $directory/settings/bg_targets_raw.json
-        echo To edit your basal_profile.json again in the future, run: nano $directory/settings/basal_profile.json
-        echo To edit your settings.json to set maxBasal or DIA, run: nano $directory/settings/settings.json
-        echo To edit your bg_targets_raw.json to set targets, run: nano $directory/settings/bg_targets_raw.json
     fi
 
 fi # from 'read -p "Continue? y/[N] " -r' after interactive setup is complete
