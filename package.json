@@ -87,6 +87,7 @@
     "oref0-upload-entries": "./bin/oref0-upload-entries.sh",
     "oref0-upload-profile": "./bin/oref0-upload-profile.js",
     "oref0-version": "./bin/oref0-version.sh",
+    "oref0-get-ns-entries": "./bin/oref0-get-ns-entries.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "wifi": "./bin/oref0-tail-wifi.sh"
   },
