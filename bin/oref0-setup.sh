@@ -624,6 +624,9 @@ fi
 if [[ ! -z "$hardwaretype" ]]; then
     echo -n " --hardwaretype='$hardwaretype'" | tee -a $OREF0_RUNAGAIN
 fi
+if [[ ! -z "$radiotags" ]]; then
+    echo -n " --radiotags='$radiotags'" | tee -a $OREF0_RUNAGAIN
+fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
@@ -1298,6 +1301,17 @@ if prompt_yn "" N; then
           echo "Making sure SPI is enabled..."
           sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
         fi
+
+        #Make sure radiotags are set properly for different hardware types
+        #The only necessary one here at the moment is rfm69 (cc111x is the default in oref0-setup)
+        case $hardwaretype in
+          edison-explorer) radiotags="cc111x";;
+          explorer-hat) radiotags="cc111x";;
+          radiofruit) radiotags="rfm69";;
+          arm-spi) radiotags="cc111x";;
+          386-spi) radiotags="cc111x";;
+        esac
+
         #Build Go binaries
         go get -u -v -tags "$radiotags" github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
         ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
