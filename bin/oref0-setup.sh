@@ -647,7 +647,16 @@ if prompt_yn "" N; then
         # Replace apt sources.list with archive.debian.org locations
         echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
     fi
-
+    
+    #Mount the Edison's fat32 partition at /usr/local/go to give us lots of room to install golang
+    if is_edison && [ -e /dev/mmcblk0p9 ] && ! mount | grep -qa mmcblk0p9 ; then
+        echo 'Removing golang from /usr partition...' && rm -rf /usr/local/go && mkdir -p /usr/local/go
+        if ! grep -qa "mmcblk0p9" /etc/fstab ; then
+          echo 'Adding Edison FAT32 partition to /etc/fstab...' && echo "/dev/mmcblk0p9 /usr/local/go auto defaults 1 1" >> /etc/fstab
+        fi
+        echo 'Mounting Edison FAT32 partition...' && mount -a
+    fi
+    
     #TODO: remove this when IPv6 works reliably
     echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
 
