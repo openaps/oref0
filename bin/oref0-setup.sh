@@ -110,6 +110,9 @@ case $i in
     -ht=*|--hardwaretype=*)
     hardwaretype="${i#*=}"
     ;;
+    -rt=*|--radiotags=*)
+    radiotags="${i#*=}"
+    ;;
     -npm=*|--npm_install=*)
     npm_option="${i#*=}"
     shift
