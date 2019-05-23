@@ -858,6 +858,10 @@ if prompt_yn "" N; then
         mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
     fi
 
+    if ! grep -qa "kernel.panic" /etc/sysctl.conf ; then
+      echo -e "# reboot rig 3 seconds after a kernel panic\nkernel.panic = 3" >> /etc/sysctl.conf
+    fi
+
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
