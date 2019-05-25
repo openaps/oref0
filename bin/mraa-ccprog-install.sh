@@ -24,4 +24,4 @@ fi
 
 mkdir -p ~/src
 cd ~/src && git clone https://github.com/ps2/ccprog.git || echo "Could not clone ccprog"
-cd ccprog && make ccprog || echo Could not make ccprog"
+cd ccprog && make ccprog || echo "Could not make ccprog"
