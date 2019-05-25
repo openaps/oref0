@@ -24,9 +24,9 @@ fi
 
 mkdir -p ~/src
 if [ -d "$HOME/src/ccprog/" ]; then
-    echo -n "$HOME/src/ccprog/ already exists; updating"
+    echo "$HOME/src/ccprog/ already exists; updating"
     cd $HOME/src/ccprog/ && git pull || echo "Could not git pull ccprog"
 else
     cd ~/src && git clone https://github.com/ps2/ccprog.git || echo "Could not clone ccprog"
 fi
-cd ccprog && make ccprog || echo "Could not make ccprog"
+cd $HOME/src/ccprog/ && make ccprog || echo "Could not make ccprog"
