@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # This script installs mraa and ccprog for purposes of reflashing the cc1110
-#chip on an Explorer Board or Explorer HAT.
+# chip on an Explorer Board or Explorer HAT.
 
 if ! ldconfig -p | grep -q mraa; then # if not installed, install it
     echo Installing swig etc.
