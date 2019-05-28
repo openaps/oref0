@@ -992,6 +992,7 @@ if prompt_yn "" N; then
         cd $HOME/src/Logger            
         sudo apt-get install -y bluez-tools
         sudo npm run global-install
+        cgm-transmitter $DEXCOM_CGM_TX_ID
         touch /tmp/reboot-required
     fi
 
