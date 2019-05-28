@@ -116,7 +116,7 @@ case $i in
     -npm=*|--npm_install=*)
     npm_option="${i#*=}"
     ;;
-    -hotspot=*)
+    --hotspot=*)
     hotspot_option="${i#*=}"
     shift
     ;;
