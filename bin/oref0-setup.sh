@@ -925,7 +925,7 @@ if prompt_yn "" N; then
         else
             echo bluez version ${bluetoothdversion} already installed
         fi
-        if $HOTSPOT; then
+        if [[ ${hotspot_option,,} =~ "true" ]]; then
             echo Installing prerequisites and configs for local-only hotspot
             apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
             test ! -f  /etc/dnsmasq.conf.bak && mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
