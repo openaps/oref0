@@ -1150,6 +1150,7 @@ if prompt_yn "" N; then
         git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
         cd $HOME/src/Logger
         sudo npm run global-install
+        cgm-transmitter $DEXCOM_CGM_TX_ID
         touch /tmp/reboot-required
     fi
 
