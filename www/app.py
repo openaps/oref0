@@ -2,10 +2,12 @@ import os
 import socket
 
 from flask import Flask, render_template, url_for, json, jsonify, request
+from flask_cors import CORS
 from datetime import datetime
 import pytz
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/")
 def index():
