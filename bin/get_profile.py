@@ -67,7 +67,7 @@ def get_current_profile(nightscout, token, profile_name):
             except KeyError:
                 sys.exit(
                     """Latest 'Profile Switch' event doesn't contain profile,
-                    please specify profile name to use.""")
+                    please specify profile name to use with --name flag.""")
         p_list[0]["store"][default_profile]["name"] = default_profile
         try:
             if not p_list[0]["store"][default_profile]["units"]:
