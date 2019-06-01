@@ -19,6 +19,7 @@ import argparse
 from datetime import datetime
 import json
 import logging
+import sys
 
 # External modules
 import requests
@@ -56,12 +57,17 @@ def get_current_profile(nightscout, token, profile_name):
             p_url = p_url + "?" + token
         p_switch = requests.get(p_url).json()
         if p_switch:
-            sw_prof = json.loads(p_switch[0]["profileJson"])
-            if sw_prof:
-                profile = sw_prof
-                profile["name"] = p_switch[0]["profile"]
-                if profile["timezone"] is not None:
-                    return profile
+            try:
+                sw_prof = json.loads(p_switch[0]["profileJson"])
+                if sw_prof:
+                    profile = sw_prof
+                    profile["name"] = p_switch[0]["profile"]
+                    if profile["timezone"] is not None:
+                        return profile
+            except KeyError:
+                sys.exit(
+                    """Latest 'Profile Switch' event doesn't contain profile,
+                    please specify profile name to use.""")
         p_list[0]["store"][default_profile]["name"] = default_profile
         try:
             if not p_list[0]["store"][default_profile]["units"]:
@@ -329,18 +335,17 @@ if __name__ == "__main__":
     )
     parser.add_argument("--token", help="Authenticaton token")
 
-    subparsers = parser.add_subparsers(
-        help="Sub-command to run", dest="subparser")
+    subparsers = parser.add_subparsers(help="Sub-command to run",
+                                       dest="subparser")
 
-    parser_profiles = subparsers.add_parser(
-        "profiles", help="List all profile names")
+    parser_profiles = subparsers.add_parser("profiles",
+                                            help="List all profile names")
 
     parser_display = subparsers.add_parser("display", help="Display a profile")
-    parser_display.add_argument(
-        "--name",
-        help="Which profile to display",
-        nargs="?",
-        dest="profile_name")
+    parser_display.add_argument("--name",
+                                help="Which profile to display",
+                                nargs="?",
+                                dest="profile_name")
     parser_display.add_argument(
         "--format",
         default="nightscout",
