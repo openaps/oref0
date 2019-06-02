@@ -76,6 +76,17 @@ def temptargets():
     data = json.load(open(json_url))
     return jsonify(data)
 
+@app.route("/cgm")
+def cgm():
+    json_url = os.path.join("/root/myopenaps/monitor/xdripjs/cgm-pill.json")
+    data = json.load(open(json_url))
+    return jsonify(data)
+
+@app.route("/hostname")
+def hostname():
+    return '{"hostname": "' + socket.gethostname() + '"}'
+
+
 @app.route("/profile")
 def profile():
     json_url = os.path.join("/root/myopenaps/settings/profile.json")
