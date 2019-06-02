@@ -8,6 +8,18 @@ import pytz
 
 app = Flask(__name__)
 CORS(app)
+    
+def getip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
 
 @app.route("/")
 def index():
@@ -82,9 +94,12 @@ def cgm():
     data = json.load(open(json_url))
     return jsonify(data)
 
-@app.route("/hostname")
-def hostname():
-    return '{"hostname": "' + socket.gethostname() + '"}'
+@app.route("/system")
+def system():
+    data = {}
+    data['hostname'] = socket.gethostname() 
+    data['ip'] = getip() 
+    return jsonify(data) 
 
 
 @app.route("/profile")
@@ -128,6 +143,6 @@ def temp_basal():
     json_url = os.path.join("/root/myopenaps/monitor/temp_basal.json")
     data = json.load(open(json_url))
     return jsonify(data)
-    
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
