@@ -5,7 +5,7 @@ By default lists all profiles found, and supports following sub-commands:
 * profiles - list defined profiles
 * display - display named (or default) profile
     (in nightscout or OpenAPS format)
-* save - save to disk profile in OpenAPS format
+* write - write to disk profile in OpenAPS format
 
 Bunch of things inspired by https://github.com/MarkMpn/AutotuneWeb/
 """
@@ -18,6 +18,7 @@ from __future__ import absolute_import, with_statement, print_function, unicode_
 import argparse
 from datetime import datetime
 import json
+import os.path
 import logging
 import sys
 
@@ -25,7 +26,14 @@ import sys
 import requests
 from texttable import Texttable
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
+
+PROFILE_FILES = ['autotune.json', 'profile.json', 'pumpprofile.json']
+PROFILE_KEYS = [
+    'autosens_max', 'autosens_min', 'basalprofile', 'bg_targets', 'carb_ratio',
+    'carb_ratios', 'dia', 'isfProfile', 'min_5m_carbimpact', 'timezone'
+]
 
 
 def get_profiles(nightscout, token):
@@ -113,6 +121,33 @@ def display(nightscout, token, profile_name, profile_format):
         print(json.dumps(ns_to_oaps(profile), indent=4))
 
 
+def write(nightscout, token, profile_name, directory):
+    """
+    Write profile in OpenAPS format to a directory
+    """
+    profile = ns_to_oaps(get_current_profile(nightscout, token, profile_name))
+    logging.debug("Checking for directory: %s", directory)
+    if not os.path.isdir(os.fspath(directory)):
+        sys.exit(
+            "Please provide an existing directory to write profile files to")
+    # Check whether there's already a profile file with settings we don't have
+    for profile_file in PROFILE_FILES:
+        with open(os.path.join(directory, profile_file), 'r') as p:
+            old_profile = json.loads(p.read())
+            for key in old_profile.keys():
+                logging.debug("Checking key %s from profile file %s", key,
+                              profile_file)
+                if key not in PROFILE_KEYS:
+                    logging.error(
+                        "Existing profile file %s contains key %s we wouldn't set!",
+                        profile_file, key)
+                    sys.exit(
+                        "Existing profile contains a key we wouldn't set!")
+    for profile_file in PROFILE_FILES:
+        with open(os.path.join(directory, profile_file), 'w') as f:
+            f.write(json.dumps(profile, indent=4))
+
+
 def normalize_entry(entry):
     """
     Clean up an entry before further processing
@@ -136,6 +171,7 @@ def ns_to_oaps(ns_profile):
     Convert nightscout profile to OpenAPS format
     """
     oaps_profile = {}
+    # XXX If addint any new entries, make sure to update PROFILE_KEYS at the top
     # Not represented in nightscout
     oaps_profile["min_5m_carbimpact"] = 8.0
     oaps_profile["autosens_min"] = 0.7
@@ -248,7 +284,12 @@ def ns_to_oaps(ns_profile):
     oaps_profile["carb_ratio"] = oaps_profile["carb_ratios"]["schedule"][0][
         "ratio"]
 
-    return oaps_profile
+    sorted_profile = {}
+    for key in sorted(oaps_profile.keys()):
+        sorted_profile[key] = oaps_profile[key]
+
+    # return oaps_profile
+    return sorted_profile
 
 
 def display_nightscout(profile_data, profile_name):
@@ -354,6 +395,16 @@ if __name__ == "__main__":
         choices=["nightscout", "openaps", "text"],
         help="What format to display profile in",
     )
+
+    parser_write = subparsers.add_parser(
+        "write", help="Write profile in OpenAPS format to a directory")
+    parser_write.add_argument("--directory",
+                              help="What directory to write files to",
+                              required=True)
+    parser_write.add_argument("--name",
+                              help="Which profile to display",
+                              nargs="?",
+                              dest="profile_name")
 
     logging.debug(vars(parser.parse_args()))
 
