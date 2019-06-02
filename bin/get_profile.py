@@ -156,14 +156,21 @@ def normalize_entry(entry):
     Clean up an entry before further processing
     """
     try:
-        if not entry["timeAsSeconds"]:
-            entry_time = datetime.strptime(entry["time"], "%H:%M")
-            entry[
-                "timeAsSeconds"] = 3600 * entry_time.hour + 60 * entry_time.minute
+        if entry["timeAsSeconds"]:
+            pass
     except KeyError:
         entry_time = datetime.strptime(entry["time"], "%H:%M")
         entry[
             "timeAsSeconds"] = 3600 * entry_time.hour + 60 * entry_time.minute
+    try:
+        if entry["time"]:
+            pass
+    except KeyError:
+        entry_hour = int(entry['timeAsSeconds'] / 3600)
+        entry_minute = int(entry['timeAsSeconds'] % 60)
+        entry["time"] = str(entry_hour).rjust(
+            2, '0') + ":" + str(entry_minute).rjust(2, '0')
+
     entry["start"] = entry["time"] + ":00"
     entry["minutes"] = int(entry["timeAsSeconds"]) / 60
     return entry
