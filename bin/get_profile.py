@@ -34,6 +34,7 @@ PROFILE_KEYS = [
     'autosens_max', 'autosens_min', 'basalprofile', 'bg_targets', 'carb_ratio',
     'carb_ratios', 'dia', 'isfProfile', 'min_5m_carbimpact', 'timezone'
 ]
+TIMED_ENTRIES = ['carbratio', 'sens', 'basal', 'target_low', 'target_high']
 
 
 def get_profiles(nightscout, token):
@@ -191,8 +192,10 @@ def ns_to_oaps(ns_profile):
 
     # Create a list of dicts with basal profile
     oaps_profile["basalprofile"] = []
+    for entry_type in TIMED_ENTRIES:
+        for entry in ns_profile[entry_type]:
+            normalize_entry(entry)
     for basal_item in ns_profile["basal"]:
-        basal_item = normalize_entry(basal_item)
         oaps_profile["basalprofile"].append({
             "i":
             len(oaps_profile["basalprofile"]),
