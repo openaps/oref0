@@ -127,7 +127,7 @@ def write(nightscout, token, profile_name, directory):
     """
     profile = ns_to_oaps(get_current_profile(nightscout, token, profile_name))
     logging.debug("Checking for directory: %s", directory)
-    if not os.path.isdir(os.fspath(directory)):
+    if not os.path.isdir(directory):
         sys.exit(
             "Please provide an existing directory to write profile files to")
     # Check whether there's already a profile file with settings we don't have
