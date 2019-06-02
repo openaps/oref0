@@ -132,17 +132,20 @@ def write(nightscout, token, profile_name, directory):
             "Please provide an existing directory to write profile files to")
     # Check whether there's already a profile file with settings we don't have
     for profile_file in PROFILE_FILES:
-        with open(os.path.join(directory, profile_file), 'r') as p:
-            old_profile = json.loads(p.read())
-            for key in old_profile.keys():
-                logging.debug("Checking key %s from profile file %s", key,
-                              profile_file)
-                if key not in PROFILE_KEYS:
-                    logging.error(
-                        "Existing profile file %s contains key %s we wouldn't set!",
-                        profile_file, key)
-                    sys.exit(
-                        "Existing profile contains a key we wouldn't set!")
+        try:
+            with open(os.path.join(directory, profile_file), 'r') as p:
+                old_profile = json.loads(p.read())
+                for key in old_profile.keys():
+                    logging.debug("Checking key %s from profile file %s", key,
+                                  profile_file)
+                    if key not in PROFILE_KEYS:
+                        logging.error(
+                            "Existing profile file %s contains key %s we wouldn't set!",
+                            profile_file, key)
+                        sys.exit(
+                            "Existing profile contains a key we wouldn't set!")
+        except FileNotFoundError:
+            pass
     for profile_file in PROFILE_FILES:
         with open(os.path.join(directory, profile_file), 'w') as f:
             f.write(json.dumps(profile, indent=4))
