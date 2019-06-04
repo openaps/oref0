@@ -8,6 +8,7 @@ import pytz
 
 app = Flask(__name__)
 CORS(app)
+myopenaps_dir = "/root/myopenaps/"
     
 def getip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
