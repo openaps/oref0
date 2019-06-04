@@ -72,7 +72,7 @@ def sgvjson():
     data = json.load(open(json_url))
     units = data['out_units']
     count = request.args.get('count', default = 10, type = int)
-    if os.path.getmtime(mypenaps_dir + "xdrip/glucose.json") > os.path.getmtime(myopenaps_dir + "monitor/glucose.json"):
+    if os.path.getmtime(myopenaps_dir + "xdrip/glucose.json") > os.path.getmtime(myopenaps_dir + "monitor/glucose.json"):
         json_url = os.path.join(myopenaps_dir + "xdrip/glucose.json")
     else:
         json_url = os.path.join(myopenaps_dir + "monitor/glucose.json")
