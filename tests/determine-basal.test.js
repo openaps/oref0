@@ -479,7 +479,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal({glucose:10},currenttemp, iob_data, profile, autosens, meal_data, tempBasalFunctions);
         //console.log(output);
         output.rate.should.be.below(1);
-        output.reason.should.match(/Canceling high temp/);
+        output.reason.should.match(/Replacing high temp/);
     });
 
     it('profile should contain min_bg,max_bg', function () {
