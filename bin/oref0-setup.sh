@@ -1138,7 +1138,8 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "xdrip-js" ]]; then
         echo xdrip-js selected as CGM, so configuring xdrip-js
         git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
-        cd $HOME/src/Logger
+        cd $HOME/src/Logger            
+	sudo apt-get install -y bluez-tools
         sudo npm run global-install
         touch /tmp/reboot-required
     fi
