@@ -18,7 +18,7 @@ function get_tid ( ) {
 }
 
 function write_backup() {
-tee >(json -a >> $BACKUP_DIR/devicestatus.txt) 
+tee >(json -a -o jsony-0 >> $BACKUP_DIR/devicestatus.txt) 
 }
 
 function debug_cmd ( ) {
