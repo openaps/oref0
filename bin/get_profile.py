@@ -56,27 +56,36 @@ def get_current_profile(nightscout, token, profile_name):
     if token is not None:
         r_url = r_url + "?" + token
     p_list = requests.get(r_url).json()
+    logging.debug("profile list: %s", p_list)
     default_profile = p_list[0]["defaultProfile"]
     if profile_name is None:
         p_url = (
             nightscout +
-            "/api/v1/treatments.json?find[eventType][$eq]=Profile%20Switch&count=1"
+            "/api/v1/treatments.json?find[eventType][$eq]=Profile Switch&count=1"
         )
         if token is not None:
             p_url = p_url + "?" + token
         p_switch = requests.get(p_url).json()
+        logging.debug("p_switch: %s", p_switch)
         if p_switch:
             try:
                 sw_prof = json.loads(p_switch[0]["profileJson"])
+                logging.debug("sw_prof: %s", sw_prof)
                 if sw_prof:
                     profile = sw_prof
                     profile["name"] = p_switch[0]["profile"]
                     if profile["timezone"] is not None:
                         return profile
+                    else:
+                        profile["timezone"] = default_profile["timezone"]
+                        return profile
             except KeyError:
-                sys.exit(
-                    """Latest 'Profile Switch' event doesn't contain profile,
-                    please specify profile name to use with --name flag.""")
+                logging.debug("default profile: %s", default_profile)
+                profile["timezone"] = p_list[0]["store"][default_profile]["timezone"]
+                return profile
+#                sys.exit(
+#                    """Latest 'Profile Switch' event doesn't contain profile, """ +
+#                    """please specify profile name to use with --name flag.""")
         p_list[0]["store"][default_profile]["name"] = default_profile
         try:
             if not p_list[0]["store"][default_profile]["units"]:
@@ -323,16 +332,14 @@ def display_text(p_data):
     # Single value data
     singletons = Texttable()
     singletons.set_deco(Texttable.HEADER)
-    singletons.set_cols_align(["c", "c", "c", "c", "c", "c"])
+    singletons.set_cols_align(["c", "c", "c", "c"])
     singletons.add_rows([
-        ["Profile name", "Timezone", "Units", "DIA", "Delay", "Start date"],
+        ["Profile name", "Timezone", "Units", "DIA"],
         [
             p_data["name"],
             p_data["timezone"],
             p_data["units"],
-            p_data["dia"],
-            p_data["delay"],
-            p_data["startDate"],
+            p_data["dia"]
         ],
     ])
     print(singletons.draw() + "\n")
