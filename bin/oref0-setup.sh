@@ -328,7 +328,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echocolor "Ok, $CGM it is."
     echo
     if [[ ${CGM,,} =~ "g4-go" ]]; then
-        prompt_and_validate BLE_SERIAL "If your G4 has Share, what is your G4 Share Serial Number? (i.e. SM12345678)" validate_g4share_serial
+        prompt_and_validate BLE_SERIAL "If your G4 has Share, what is your G4 Share Serial Number? (i.e. SM12345678)" validate_g4share_serial ""
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
         echo
