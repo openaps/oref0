@@ -47,17 +47,10 @@ if is_edison && ! ( hciconfig -a hci${adapter} | grep -q "PSCAN" ) ; then
 fi
 
 if ( hciconfig -a hci${adapter} | grep -q "DOWN" ) ; then
-   if is_debian_jessie ; then
-      echo Bluetooth hci DOWN! Bringing it to UP.
-      sudo hciconfig hci${adapter} up
-      sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
-   else
-      # Not sure this will ever get called on Stretch, here just in case.
-      echo Bluetooth hci DOWN! Bringing it to UP.
-      sudo hciconfig hci${adapter} up
-      echo Bluetooth hci DOWN! It shouldn't be.......
-   fi
-fi
+   # Not sure that this is needed on Stretch, add an is_debian_jessie check here if something different required.
+   echo Bluetooth hci DOWN! Bringing it to UP.
+   sudo hciconfig hci${adapter} up
+ fi
 
 if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
       # Not sure that this is needed on Stretch, add an is_debian_jessie check here if something different required.
