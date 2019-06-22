@@ -807,6 +807,7 @@ if prompt_yn "" N; then
     set_pref_string .myopenaps_path "$directory"
     set_pref_string .pump_serial "$serial"
     set_pref_string .radio_locale "$radio_locale"
+    set_pref_string .hardwaretype "$hardwaretype"
     if [[ ! -z "$BT_PEB" ]]; then
         set_pref_string .bt_peb "$BT_PEB"
     fi
