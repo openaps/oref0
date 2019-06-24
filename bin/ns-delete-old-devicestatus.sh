@@ -22,6 +22,7 @@ ENDPOINT=$2/api/v1/devicestatus
 
 if [ $1 = "nightly" ]; then
    test -n "$2" && NUM_DAYS=$2
+   ENDPOINT=$NIGHTSCOUT_HOST/api/v1/devicestatus
 fi
 
 if [[ -z "$API_SECRET" || -z "$NUM_DAYS" ]] ; then
