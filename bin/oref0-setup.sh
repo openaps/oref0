@@ -858,6 +858,10 @@ if prompt_yn "" N; then
         mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
     fi
 
+    if ! grep -qa "kernel.panic" /etc/sysctl.conf ; then
+      echo -e "# reboot rig 3 seconds after a kernel panic\nkernel.panic = 3" >> /etc/sysctl.conf
+    fi
+
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
@@ -1118,6 +1122,7 @@ if prompt_yn "" N; then
     #fi
 
     sudo pip install --default-timeout=1000 flask flask-restful  || die "Can't add xdrip cgm - error installing flask packages"
+    sudo pip install --default-timeout=1000 -U flask-cors
 
     # xdrip CGM (xDripAPS), also gets installed when using xdrip-js
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
@@ -1133,7 +1138,8 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "xdrip-js" ]]; then
         echo xdrip-js selected as CGM, so configuring xdrip-js
         git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
-        cd $HOME/src/Logger
+        cd $HOME/src/Logger            
+	sudo apt-get install -y bluez-tools
         sudo npm run global-install
         touch /tmp/reboot-required
     fi
@@ -1273,14 +1279,17 @@ if prompt_yn "" N; then
     # Install Golang
     mkdir -p $HOME/go
     source $HOME/.bash_profile
-    if go version | grep go1.11.; then
+    golangversion=1.12.5
+    if go version | grep go${golangversion}.; then
         echo Go already installed
     else
+        echo "Removing possible old go install..."
+        rm -rf /usr/local/go/*
         echo "Installing Golang..."
         if uname -m | grep armv; then
-            cd /tmp && wget -c https://storage.googleapis.com/golang/go1.11.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-armv6l.tar.gz
+            cd /tmp && wget -c https://storage.googleapis.com/golang/go${golangversion}.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go${golangversion}.linux-armv6l.tar.gz
         elif uname -m | grep i686; then
-            cd /tmp && wget -c https://dl.google.com/go/go1.11.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-386.tar.gz
+            cd /tmp && wget -c https://dl.google.com/go/go${golangversion}.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go${golangversion}.linux-386.tar.gz
         fi
     fi
     if ! grep GOROOT $HOME/.bash_profile; then

@@ -23,24 +23,37 @@ if [ "$DEBUG" != "" ]; then
 fi
 
 # start bluetoothd if bluetoothd is not running
+# Added a bunch of if is_debian_jessie checks as stretch seems to behave better here.
+
 if ! ( ps -fC bluetoothd >/dev/null ) ; then
-   echo bluetoothd not running! Starting bluetoothd...
-   sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
+   if is_debian_jessie ; then
+      echo bluetoothd not running! Starting bluetoothd.
+      sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
+   else
+      echo bluetoothd not running! Starting bluetoothd via systemctl.
+      sudo systemctl bluetooth start
+   fi
 fi
 
 if is_edison && ! ( hciconfig -a hci${adapter} | grep -q "PSCAN" ) ; then
-   echo Bluetooth PSCAN not enabled! Restarting bluetoothd...
-   sudo killall bluetoothd
-   sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
+   if is_debian_jessie ; then
+      echo Bluetooth PSCAN not enabled! Restarting bluetoothd...
+      sudo killall bluetoothd 
+      sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
+   else
+      echo Bluetooth PSCAN not enabled! Restarting bluetoothd via systemctl...
+      sudo systemctl bluetooth restart
+   fi
 fi
 
 if ( hciconfig -a hci${adapter} | grep -q "DOWN" ) ; then
+   # Not sure that this is needed on Stretch, add an is_debian_jessie check here if something different required.
    echo Bluetooth hci DOWN! Bringing it to UP.
    sudo hciconfig hci${adapter} up
-   sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
-fi
+ fi
 
 if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
-   echo Bluetooth hci name does not match hostname: $HOSTNAME. Setting bluetooth hci name.
-   sudo hciconfig hci${adapter} name $HOSTNAME
+      # Not sure that this is needed on Stretch, add an is_debian_jessie check here if something different required.
+      echo Bluetooth hci name does not match hostname: $HOSTNAME. Setting bluetooth hci name.
+      sudo hciconfig hci${adapter} name $HOSTNAME
 fi
