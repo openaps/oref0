@@ -684,11 +684,11 @@ if prompt_yn "" N; then
 
     # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
     if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
-        echo Upgrading to node 8
+        echo Installing node 8
         # Use nodesource setup script to add nodesource repository to sources.list.d
         sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
         # Install nodejs and npm from nodesource
-        sudo apt-get install -y nodejs || die "Couldn't install nodejs"
+        sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
     fi
 
     # Attempting to remove git to make install --nogit by default for existing users
