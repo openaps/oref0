@@ -684,11 +684,11 @@ if prompt_yn "" N; then
 
     # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
     if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
-        echo Upgrading to node 8
+        echo Installing node 8
         # Use nodesource setup script to add nodesource repository to sources.list.d
         sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
         # Install nodejs and npm from nodesource
-        sudo apt-get install -y nodejs || die "Couldn't install nodejs"
+        sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
     fi
 
     # Attempting to remove git to make install --nogit by default for existing users
@@ -807,6 +807,7 @@ if prompt_yn "" N; then
     set_pref_string .myopenaps_path "$directory"
     set_pref_string .pump_serial "$serial"
     set_pref_string .radio_locale "$radio_locale"
+    set_pref_string .hardwaretype "$hardwaretype"
     if [[ ! -z "$BT_PEB" ]]; then
         set_pref_string .bt_peb "$BT_PEB"
     fi
@@ -1258,18 +1259,14 @@ if prompt_yn "" N; then
 	echo "Make and install pi-buttons..."
 	cd pi-buttons
 	cd src && make && sudo make install && sudo make install_service
+	# Radiofruit buttons are on different GPIOs than the Explorer HAT
 	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
             sed -i 's/17,27/5,6/g' /etc/pi-buttons.conf
 	fi
 	systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
-	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
-            #Once we have a radiofruit branch in openaps-menu, we can change the repo...
-            cd $HOME/src && git clone git://github.com/cluckj/openaps-menu.git && git checkout radiofruit || (cd openaps-menu && git checkout radiofruit && git pull)
-	else
-            cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
-	fi
-        cd $HOME/src/openaps-menu && sudo npm install
+	cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+	cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     fi
 

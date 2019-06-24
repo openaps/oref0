@@ -24,7 +24,7 @@ if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' &> /dev/null ; then
         # nodesource doesn't support armv6
         if ! arch | grep -e 'armv6' &> /dev/null ; then
             sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
-            sudo apt-get install -y nodejs || die "Couldn't install nodejs"
+            sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
         else
             sudo apt-get install -y nodejs npm || die "Couldn't install nodejs and npm"
             npm install npm@latest -g || die "Couldn't update npm"
