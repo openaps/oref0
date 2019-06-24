@@ -78,7 +78,7 @@ describe('determine-basal', function ( ) {
    //function determine_basal(glucose_status, currenttemp, iob_data, profile)
 
     // standard initial conditions for all determine-basal test cases unless overridden
-    var glucose_status = {"delta":0,"glucose":115,"long_avgdelta":0.1,"short_avgdelta":0};
+    var glucose_status = {"delta":0,"glucose":115,"long_avgdelta":1.1,"short_avgdelta":0};
     var currenttemp = {"duration":0,"rate":0,"temp":"absolute"};
     var iob_data = {"iob":0,"activity":0,"bolussnooze":0};
     var autosens = {"ratio":1.0};
@@ -126,7 +126,7 @@ describe('determine-basal', function ( ) {
     it('should do nothing when low and rising w/o IOB', function () {
         var glucose_status = {"delta":6,"glucose":75,"long_avgdelta":6,"short_avgdelta":6};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens, meal_data, tempBasalFunctions);
-        console.log(output);
+        //console.log(output);
         output.rate.should.equal(0.9);
         output.duration.should.equal(30);
         //output.reason.should.match(/75<80.*setting current basal/);
@@ -248,27 +248,30 @@ describe('determine-basal', function ( ) {
     });
 
     it('should temp to 0 when LOW w/ positive IOB', function () {
-        var glucose_status = {"delta":0,"glucose":39,"long_avgdelta":0.1,"short_avgdelta":0};
+        var glucose_status = {"delta":0,"glucose":39,"long_avgdelta":-1.1,"short_avgdelta":0};
         var iob_data = {"iob":1,"activity":0.01,"bolussnooze":0.5};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens, meal_data, tempBasalFunctions);
+        //console.log(output);
         output.rate.should.equal(0);
         output.duration.should.be.above(29);
         //output.reason.should.match(/BG 39<80/);
     });
 
     it('should low temp when LOW w/ negative IOB', function () {
-        var glucose_status = {"delta":0,"glucose":39,"long_avgdelta":0.1,"short_avgdelta":0};
+        var glucose_status = {"delta":0,"glucose":39,"long_avgdelta":-1.1,"short_avgdelta":0};
         var iob_data = {"iob":-2.5,"activity":-0.03,"bolussnooze":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens, meal_data, tempBasalFunctions);
+        //console.log(output);
         output.rate.should.be.below(0.8);
         output.duration.should.be.above(29);
         //output.reason.should.match(/BG 39<80/);
     });
 
     it('should temp to 0 when LOW w/ no IOB', function () {
-        var glucose_status = {"delta":0,"glucose":39,"long_avgdelta":0.1,"short_avgdelta":0};
+        var glucose_status = {"delta":0,"glucose":39,"long_avgdelta":-1.1,"short_avgdelta":0};
         var iob_data = {"iob":0,"activity":0,"bolussnooze":0};
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens, meal_data, tempBasalFunctions);
+        //console.log(output);
         output.rate.should.equal(0);
         output.duration.should.be.above(29);
         //output.reason.should.match(/BG 39<80/);
@@ -476,7 +479,7 @@ describe('determine-basal', function ( ) {
         var output = determine_basal({glucose:10},currenttemp, iob_data, profile, autosens, meal_data, tempBasalFunctions);
         //console.log(output);
         output.rate.should.be.below(1);
-        output.reason.should.match(/Canceling high temp/);
+        output.reason.should.match(/Replacing high temp/);
     });
 
     it('profile should contain min_bg,max_bg', function () {
@@ -725,6 +728,7 @@ describe('determine-basal', function ( ) {
         profile.current_basal = 0.825;
         profile.model = "523";
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens, meal_data, tempBasalFunctions);
+        //console.log(output);
         //output.rate.should.equal(0);
         //output.duration.should.equal(0);
         output.rate.should.equal(0.825);
@@ -738,6 +742,7 @@ describe('determine-basal', function ( ) {
         profile.current_basal = 0.875;
         profile.model = "522";
         var output = determine_basal(glucose_status, currenttemp, iob_data, profile, autosens, meal_data, tempBasalFunctions);
+        //console.log(output);
         //output.rate.should.equal(0);
         //output.duration.should.equal(0);
         output.rate.should.equal(0.9);
