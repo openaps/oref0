@@ -31,7 +31,7 @@ if ! ( ps -fC bluetoothd >/dev/null ) ; then
       sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
    else
       echo bluetoothd not running! Starting bluetoothd via systemctl.
-      sudo systemctl bluetooth start
+      sudo systemctl start bluetooth
    fi
 fi
 
@@ -42,7 +42,7 @@ if is_edison && ! ( hciconfig -a hci${adapter} | grep -q "PSCAN" ) ; then
       sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
    else
       echo Bluetooth PSCAN not enabled! Restarting bluetoothd via systemctl...
-      sudo systemctl bluetooth restart
+      sudo systemctl restart bluetooth
    fi
 fi
 
