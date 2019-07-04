@@ -88,7 +88,10 @@ main() {
             echo Completed oref0-pump-loop at $(date)
             update_display
             run_plugins
-            update_bgproxy
+            # skip bgproxy if we already have a new glucose value and it's time for another loop
+            if ! glucose-fresh; then
+                update_bgproxy
+            fi
             echo
         else
             # pump-loop errored out for some reason
