@@ -42,7 +42,7 @@ if ! is_bash_process_running_named "oref0-online $BT_MAC"; then
     oref0-online "$BT_MAC" 2>&1 >> /var/log/openaps/network.log &
 fi
 
-sudo wpa_cli scan &
+sudo wpa_cli -i wlan0 scan &
 
 (
     killall -g --older-than 30m openaps
