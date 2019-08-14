@@ -26,11 +26,15 @@ var _ = require('lodash');
 if (!module.parent) {
 
     var argv = require('yargs')
-        .usage("$0 profile.json NSURL api-secret [--preview]")
+        .usage("$0 profile.json NSURL api-secret [--preview] [--switch]")
         .option('preview', {
             alias: 'p'
             , describe: "Give a preview of the outcome without uploading"
             , default: false
+        })
+        .option('switch', {
+            default: false
+            , describe: "Issue Profile Switch event to enable this profile"
         })
         .strict(true)
         .help('help');
@@ -263,16 +267,16 @@ if (!module.parent) {
 
             console.log('Profile changed, uploading to Nightscout');
 
-            nsurl += '/api/v1/profile';
+            var nsurl_upload = nsurl + '/api/v1/profile';
 
             if (apisecret.indexOf('token=') === 0) {
-                nsurl = nsurl + '?' + apisecret;
+                nsurl_upload = nsurl_upload + '?' + apisecret;
             } else {
                 nsheaders['API-SECRET'] = apisecret;
             }
 
             options = {
-                uri: nsurl
+                uri: nsurl_upload
                 , json: true
                 , method: 'POST'
                 , headers: nsheaders
@@ -287,6 +291,46 @@ if (!module.parent) {
                     console.log('Profile uploaded to Nightscout');
                 }
             });
+            if (params.switch) {
+                var nsheaders = {
+                    'Content-Type': 'application/json'
+                };
+
+                console.log('Switching profile');
+
+                var nsurl_switch = nsurl + '/api/v1/treatments.json';
+
+                if (apisecret.indexOf('token=') === 0) {
+                    nsurl_switch = nsurl_switch + '?' + apisecret;
+                } else {
+                    nsheaders['API-SECRET'] = apisecret;
+                }
+
+                var switch_event = {};
+                switch_event['enteredBy'] = 'OpenAPS';
+                switch_event['eventType'] = 'Profile Switch';
+                switch_event['duration'] = 0;
+                switch_event['profile'] = 'OpenAPS Autosync';
+                switch_event['reason'] = 'Applying uploaded profile';
+                switch_event['notes'] = 'Applying uploaded profile';
+
+                switch_options = {
+                    uri: nsurl_switch
+                    , json: true
+                    , method: 'POST'
+                    , headers: nsheaders
+                    , body: switch_event
+                };
+
+                request(switch_options, function(error, res, data) {
+                    if (error || res.statusCode !== 200) {
+                        console.log(error);
+                        console.log(res.body);
+                    } else {
+                        console.log('Profile switch event sent to Nightscout');
+                    }
+                });
+            }
         } else {
             console.log('Profiles match, no upload needed');
         }
