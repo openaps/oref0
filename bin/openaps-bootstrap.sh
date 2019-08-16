@@ -33,6 +33,6 @@ sleep 5
 echo "Press Enter to continue installing the current release (master) of oref0,"
 read -p "or enter the oref0 branch name to install." -r
 BRANCH=${REPLY:-master}
-curl https://raw.githubusercontent.com/openaps/oref0/$BRANCH/bin/openaps-install.sh > /tmp/openaps-install.sh $BRANCH
-bash /tmp/openaps-install.sh
+curl https://raw.githubusercontent.com/openaps/oref0/$BRANCH/bin/openaps-install.sh > /tmp/openaps-install.sh
+bash /tmp/openaps-install.sh $BRANCH
 )
