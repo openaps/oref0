@@ -18,6 +18,27 @@ if [[ "${CGM,,}" =~ "xdrip" ]]; then
     python "$XDRIP_PATH/xDripAPS.py" &
 fi
 
+# Get time from pump for offline looping in case a rig was down for a while
+# At some point the rig will come online again and calibrates the local clock 
+# and the clock of the pump
+export MEDTRONIC_PUMP_ID=`get_pref_string .pump_serial | tr -cd 0-9`
+export MEDTRONIC_FREQUENCY=`cat monitor/medtronic_frequency.ini`
+
+sudo wpa_cli -i wlan0 scan
+sleep 60 # wait for wifi to connect
+
+if ! ifconfig | grep wlan0 -A 1 | grep -q inet ; then
+  echo "$(date) -- Not online, getting clock from pump with $MEDTRONIC_PUMP_ID and $MEDTRONIC_FREQUENCY " >> /var/log/openaps/clock.log
+  date -s $(mdt clock | sed 's/"//g')
+  while [ $? -ne 0 ]; do 
+    echo "$(date) -- FAILED. Trying again" >> /var/log/openaps/clock.log
+    sleep 15
+    date -s $(mdt clock | sed 's/"//g')
+  done
+  echo "$(date) -- SUCCESS" >> /var/log/openaps/clock.log
+fi
+# END CLOCK
+
 oref0-delete-future-entries &
 
 (
