@@ -56,4 +56,8 @@ if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
       # Not sure that this is needed on Stretch, add an is_debian_jessie check here if something different required.
       echo Bluetooth hci name does not match hostname: $HOSTNAME. Setting bluetooth hci name.
       sudo hciconfig hci${adapter} name $HOSTNAME
+      if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
+         echo Failed to set bluetooth hci name. Reset bluetooth adapter.
+         hciconfig hci${adapter} reset
+      fi
 fi
