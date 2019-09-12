@@ -88,6 +88,10 @@ main() {
             echo Completed oref0-pump-loop at $(date)
             update_display
             run_plugins
+            # skip bgproxy if we already have a new glucose value and it's time for another loop
+            if ! glucose-fresh; then
+                update_bgproxy
+            fi
             echo
         else
             # pump-loop errored out for some reason
@@ -111,6 +115,16 @@ function run_script() {
   fi
 }
 
+
+function update_bgproxy {
+    if [ "$(get_pref_string .enableEnliteBgproxy '')" == "true" ]; then
+        echo Calling Bgproxy
+        jq 'map({sgv:.sgv, date:.date, dateString:.dateString})' monitor/glucose.json  > monitor/bgproxydata.json
+        bgproxy -f monitor/bgproxydata.json
+        echo Bgproxy completed
+    fi
+
+}
 
 function run_plugins {
         once=plugins/once

@@ -110,6 +110,9 @@ case $i in
     -ht=*|--hardwaretype=*)
     hardwaretype="${i#*=}"
     ;;
+    -rt=*|--radiotags=*)
+    radiotags="${i#*=}"
+    ;;
     -npm=*|--npm_install=*)
     npm_option="${i#*=}"
     shift
@@ -647,7 +650,16 @@ if prompt_yn "" N; then
         # Replace apt sources.list with archive.debian.org locations
         echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
     fi
-
+    
+    #Mount the Edison's fat32 partition at /usr/local/go to give us lots of room to install golang
+    if is_edison && [ -e /dev/mmcblk0p9 ] && ! mount | grep -qa mmcblk0p9 ; then
+        echo 'Removing golang from /usr partition...' && rm -rf /usr/local/go && mkdir -p /usr/local/go
+        if ! grep -qa "mmcblk0p9" /etc/fstab ; then
+          echo 'Adding Edison FAT32 partition to /etc/fstab...' && echo "/dev/mmcblk0p9 /usr/local/go auto defaults 1 1" >> /etc/fstab
+        fi
+        echo 'Mounting Edison FAT32 partition...' && mount -a
+    fi
+    
     #TODO: remove this when IPv6 works reliably
     echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
 
@@ -672,11 +684,11 @@ if prompt_yn "" N; then
 
     # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
     if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
-        echo Upgrading to node 8
+        echo Installing node 8
         # Use nodesource setup script to add nodesource repository to sources.list.d
         sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
         # Install nodejs and npm from nodesource
-        sudo apt-get install -y nodejs || die "Couldn't install nodejs"
+        sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
     fi
 
     # Attempting to remove git to make install --nogit by default for existing users
@@ -795,6 +807,7 @@ if prompt_yn "" N; then
     set_pref_string .myopenaps_path "$directory"
     set_pref_string .pump_serial "$serial"
     set_pref_string .radio_locale "$radio_locale"
+    set_pref_string .hardwaretype "$hardwaretype"
     if [[ ! -z "$BT_PEB" ]]; then
         set_pref_string .bt_peb "$BT_PEB"
     fi
@@ -844,6 +857,10 @@ if prompt_yn "" N; then
 
     if [[ -f /etc/cron.daily/logrotate ]]; then
         mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
+    fi
+
+    if ! grep -qa "kernel.panic" /etc/sysctl.conf ; then
+      echo -e "# reboot rig 3 seconds after a kernel panic\nkernel.panic = 3" >> /etc/sysctl.conf
     fi
 
     # configure ns
@@ -1106,6 +1123,7 @@ if prompt_yn "" N; then
     #fi
 
     sudo pip install --default-timeout=1000 flask flask-restful  || die "Can't add xdrip cgm - error installing flask packages"
+    sudo pip install --default-timeout=1000 -U flask-cors
 
     # xdrip CGM (xDripAPS), also gets installed when using xdrip-js
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
@@ -1121,7 +1139,8 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "xdrip-js" ]]; then
         echo xdrip-js selected as CGM, so configuring xdrip-js
         git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
-        cd $HOME/src/Logger
+        cd $HOME/src/Logger            
+	sudo apt-get install -y bluez-tools
         sudo npm run global-install
         touch /tmp/reboot-required
     fi
@@ -1240,18 +1259,14 @@ if prompt_yn "" N; then
 	echo "Make and install pi-buttons..."
 	cd pi-buttons
 	cd src && make && sudo make install && sudo make install_service
+	# Radiofruit buttons are on different GPIOs than the Explorer HAT
 	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
             sed -i 's/17,27/5,6/g' /etc/pi-buttons.conf
 	fi
 	systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
-	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
-            #Once we have a radiofruit branch in openaps-menu, we can change the repo...
-            cd $HOME/src && git clone git://github.com/cluckj/openaps-menu.git && git checkout radiofruit || (cd openaps-menu && git checkout radiofruit && git pull)
-	else
-            cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
-	fi
-        cd $HOME/src/openaps-menu && sudo npm install
+	cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+	cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     fi
 
@@ -1261,14 +1276,17 @@ if prompt_yn "" N; then
     # Install Golang
     mkdir -p $HOME/go
     source $HOME/.bash_profile
-    if go version | grep go1.11.; then
+    golangversion=1.12.5
+    if go version | grep go${golangversion}.; then
         echo Go already installed
     else
+        echo "Removing possible old go install..."
+        rm -rf /usr/local/go/*
         echo "Installing Golang..."
         if uname -m | grep armv; then
-            cd /tmp && wget -c https://storage.googleapis.com/golang/go1.11.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-armv6l.tar.gz
+            cd /tmp && wget -c https://storage.googleapis.com/golang/go${golangversion}.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go${golangversion}.linux-armv6l.tar.gz
         elif uname -m | grep i686; then
-            cd /tmp && wget -c https://dl.google.com/go/go1.11.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-386.tar.gz
+            cd /tmp && wget -c https://dl.google.com/go/go${golangversion}.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go${golangversion}.linux-386.tar.gz
         fi
     fi
     if ! grep GOROOT $HOME/.bash_profile; then
