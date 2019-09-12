@@ -11,6 +11,16 @@ adapter=$(get_pref_string .bt_hci 2>/dev/null) || adapter=0
 
 DAEMON_PATHS=(/usr/local/bin/bluetoothd /usr/libexec/bluetooth/bluetoothd /usr/sbin/bluetoothd)
 
+function stop_bluetooth {
+   echo "$(date) Stopping bluetoothd..."
+   if is_debian_jessie ; then
+      sudo killall bluetoothd
+   else
+      sudo systemctl stop bluetooth
+   fi
+   echo "$(date) Stopped bluetoothd"
+}
+
 for EXEC_PATH in ${DAEMON_PATHS[@]}; do
   if [ -x $EXEC_PATH ]; then
     EXECUTABLE=$EXEC_PATH
@@ -57,7 +67,8 @@ if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
       echo Bluetooth hci name does not match hostname: $HOSTNAME. Setting bluetooth hci name.
       sudo hciconfig hci${adapter} name $HOSTNAME
       if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
-         echo Failed to set bluetooth hci name. Reset bluetooth adapter.
-         hciconfig hci${adapter} reset
+         hciconfig -a hci${adapter}
+         echo "$(date) Failed to set bluetooth hci name. Stop bluetoothd and allow next cycle to handle restart."
+         stop_bluetooth
       fi
 fi
