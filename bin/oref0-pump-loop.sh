@@ -256,11 +256,11 @@ function smb_reservoir_before {
     echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
-	# Check for bolus in progress and issue 3xESC to back out of pump bolus menu
+        # Check for bolus in progress and issue 3xESC to back out of pump bolus menu
         smb_verify_status \
         && try_return mdt -f internal button esc esc esc 2>&3 \
-        && oref0-set-device-clocks
-       fi
+        && oref0-set-device-clocks || oref0-set-system-clock 2>&3 >&4
+    fi
     (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
     && (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
     find monitor/ -mmin -5 -size +5c | grep -q pumphistory || { echo "Error: pumphistory-24h >5m old (or empty)"; fail "$@"; }
@@ -461,7 +461,7 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-	refresh_pumphistory_and_meal || return 1
+        refresh_pumphistory_and_meal || return 1
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
