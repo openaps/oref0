@@ -259,7 +259,9 @@ function smb_reservoir_before {
         # Check for bolus in progress and issue 3xESC to back out of pump bolus menu
         smb_verify_status \
         && try_return mdt -f internal button esc esc esc 2>&3 \
-        && oref0-set-device-clocks || oref0-set-system-clock
+        && oref0-set-device-clocks
+        echo "Checking system clock against pump clock:"
+        oref0-set-system-clock
     fi
     (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
     && (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
