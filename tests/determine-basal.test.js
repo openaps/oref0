@@ -44,7 +44,7 @@ describe('round_basal', function ( ) {
     ];
 
     data.forEach(function (rate) {
-        it(`should round basal rates properly (${rate.basal} -> ${rate.rounded})`, function () {
+        it('should round basal rates properly (' + rate.basal + ' -> ' + rate.rounded + ')', function () {
             var output = round_basal(rate.basal);
             output.should.equal(rate.rounded);
         });
