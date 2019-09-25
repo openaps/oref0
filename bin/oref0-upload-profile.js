@@ -144,13 +144,21 @@ if (!module.parent) {
 
             var time = target_entry.start.substring(0, 5);
             var seconds = parseInt(time.substring(0, 2)) * 60 * 60 + parseInt(time.substring(3, 5)) * 60;
-            var low_value = Math.round(target_entry.low);
-            var high_value = Math.round(target_entry.high);
+            var low_value = target_entry.low;
+            var high_value = target_entry.high;
+            var conversionFactor = 1;
+            var decimals = new_profile.units === 'mmol' ? 10 : 1;
 
-            if (new_profile.units === 'mmol' && profiledata.bg_targets.units === 'mg/dL') {
-                low_value = +(Math.round(target_entry.low / 18 + 'e+1') + 'e-1');
-                high_value = +(Math.round(target_entry.high / 18 + 'e+1') + 'e-1');
+            if (new_profile.units !== profiledata.bg_targets.units) {
+                // if the new profile is using a different unit than our BG targets, then set the conversion factor accordingly
+                conversionFactor = (new_profile.units == 'mmol' ? 0.055 : 18);
             }
+
+            low_value *= conversionFactor;
+            high_value *= conversionFactor;
+
+            low_value = Math.round(low_value * decimals) / decimals;
+            high_value = Math.round(high_value * decimals) / decimals;
 
             var new_low_entry = {
                 time: '' + time
