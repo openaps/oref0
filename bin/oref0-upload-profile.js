@@ -178,11 +178,17 @@ if (!module.parent) {
 
         _.forEach(profiledata.isfProfile.sensitivities, function(isf_entry) {
 
-            var value = Math.round(isf_entry.sensitivity);
+            var value = isf_entry.sensitivity;
+            var conversionFactor = 1;
+            var decimals = new_profile.units === 'mmol' ? 10 : 1;
 
-            if (new_profile.units === 'mmol' && profiledata.isfProfile.units === 'mg/dL') {
-                value = +(Math.round(isf_entry.sensitivity / 18 + 'e+1') + 'e-1');
+            if (profiledata.isfProfile.units && new_profile.units !== profiledata.isfProfile.units) {
+                // if the new profile is using a different unit than our ISF, then set the conversion factor accordingly
+                conversionFactor = (new_profile.units == 'mmol' ? 0.055 : 18);
             }
+
+            value *= conversionFactor;
+            value = Math.round(value * decimals) / decimals;
 
             var new_isf_entry = {
                 time: isf_entry.start.substring(0, 5)
