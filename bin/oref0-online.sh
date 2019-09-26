@@ -155,7 +155,12 @@ function bt_connect {
                || (test -f preferences.json \
                 && jq -e .bt_with_wifi < preferences.json > /dev/null); then
             echo; echo "No Internet access detected, attempting to connect BT to $MAC"
-            oref0-bluetoothup
+            if ! is_bash_process_running_named "oref0-bluetoothup"; then
+                oref0-bluetoothup
+            else
+                echo "oref0-bluetoothup already running"
+            fi
+            
             if ! test -f preferences.json \
                 || ! jq -e .bt_offline < preferences.json > /dev/null \
                 || ! ifconfig | egrep -q "bnep0" >/dev/null; then
