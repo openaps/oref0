@@ -58,7 +58,7 @@ function uploaderStatus (status) {
 if (!module.parent) {
 
     var argv = require('yargs')
-        .usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json] [preferences.json]")
+        .usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json] [--preferences preferences.json]")
         .option('uploader', {
             alias: 'u',
             nargs: 1,
@@ -78,7 +78,7 @@ if (!module.parent) {
     var reservoir_input = inputs[5];
     var status_input = inputs[6];
     var mmtune_input = inputs[7];
-    var preferences_input = inputs[8];
+    var preferences_input = params.uploader;
     var uploader_input = params.uploader;
 
     if (inputs.length < 7 || inputs.length > 8) {
