@@ -64,7 +64,7 @@ if (!module.parent) {
             nargs: 1,
             describe: "OpenAPS preferences file",
             default: false
-        },
+        })
         .option('uploader', {
             alias: 'u',
             nargs: 1,
