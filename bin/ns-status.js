@@ -59,6 +59,12 @@ if (!module.parent) {
 
     var argv = require('yargs')
         .usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json] [--preferences preferences.json]")
+        .option('preferences', {
+            alias: 'p',
+            nargs: 1,
+            describe: "OpenAPS preferences file",
+            default: false
+        },
         .option('uploader', {
             alias: 'u',
             nargs: 1,
