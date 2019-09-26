@@ -92,6 +92,9 @@ if (!module.parent) {
         process.exit(1);
     }
 
+    var pjson = require('../package.json');
+    console.error(pjson.version);
+
     var cwd = process.cwd() + '/';
 
     var hostname = 'unknown';
@@ -127,7 +130,8 @@ if (!module.parent) {
             openaps: {
                 iob: iob,
                 suggested: suggested,
-                enacted: enacted
+                enacted: enacted,
+                version: pjson.version
             },
             pump: {
                 clock: safeRequire(cwd + clock_input),
