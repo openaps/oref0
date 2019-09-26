@@ -84,7 +84,7 @@ if (!module.parent) {
     var reservoir_input = inputs[5];
     var status_input = inputs[6];
     var mmtune_input = inputs[7];
-    var preferences_input = params.uploader;
+    var preferences_input = params.preferences;
     var uploader_input = params.uploader;
 
     if (inputs.length < 7 || inputs.length > 8) {
