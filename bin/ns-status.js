@@ -35,6 +35,13 @@ function mmtuneStatus (status) {
     }
 }
 
+function preferencesStatus (status) {
+    var preferences = requireWithTimestamp(cwd + preferences_input);
+    if (preferences) {
+      status.preferences = preferences;
+    }
+}
+
 function uploaderStatus (status) {
     var uploader = require(cwd + uploader_input);
     if (uploader) {
@@ -51,7 +58,7 @@ function uploaderStatus (status) {
 if (!module.parent) {
 
     var argv = require('yargs')
-        .usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json]")
+        .usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json] [preferences.json]")
         .option('uploader', {
             alias: 'u',
             nargs: 1,
@@ -71,6 +78,7 @@ if (!module.parent) {
     var reservoir_input = inputs[5];
     var status_input = inputs[6];
     var mmtune_input = inputs[7];
+    var preferences_input = inputs[8];
     var uploader_input = params.uploader;
 
     if (inputs.length < 7 || inputs.length > 8) {
@@ -125,6 +133,10 @@ if (!module.parent) {
 
         if (mmtune_input) {
             mmtuneStatus(status);
+        }
+
+        if (preferences_input) {
+            preferencesStatus(status);
         }
 
         if (uploader_input) {
