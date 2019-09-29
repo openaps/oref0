@@ -347,7 +347,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "Configuring for Explorer Board HAT. "
         ttyport=/dev/spidev0.0
         hardwaretype=explorer-hat
-	radiotags="cc111x"
+        radiotags="cc111x"
     elif is_edison; then # Options for Edison (Explorer Board is default)
         echo "What kind of hardware setup do you have? Options are:"
         echo "1) Explorer Board"
@@ -362,13 +362,13 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           *) echocolor "Yay! Configuring for Edison with Explorer Board. "; ttyport=/dev/spidev5.1; hardwaretype=edison-explorer; radiotags="cc111x";;
         esac
     elif is_pi; then # Options for raspberry pi, including Explorer HAT (default) if it's not auto-detected
-	echo "What kind of hardware setup do you have? Options are:"
-	echo "1) Explorer HAT"
-	echo "2) Radiofruit RFM69HCW Bonnet"
+        echo "What kind of hardware setup do you have? Options are:"
+        echo "1) Explorer HAT"
+        echo "2) Radiofruit RFM69HCW Bonnet"
         echo "3) RFM69HCW (DIY: SPI)"
         echo "4) TI Stick (SPI-connected)"
-	echo "5) Other radio (DIY: rfm69, cc11xx)"
-	read -p "Please enter the number for your hardware configuration: [1] " -r
+        echo "5) Other radio (DIY: rfm69, cc11xx)"
+        read -p "Please enter the number for your hardware configuration: [1] " -r
         case $REPLY in
           2) echocolor "Configuring Radiofruit RFM69HCW Bonnet. "; ttyport=/dev/spidev0.1; hardwaretype=radiofruit; radiotags="rfm69";;
           3) echocolor "Configuring RFM69HCW. "; hardwaretype=diy;;
@@ -1140,7 +1140,7 @@ if prompt_yn "" N; then
         echo xdrip-js selected as CGM, so configuring xdrip-js
         git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
         cd $HOME/src/Logger            
-	sudo apt-get install -y bluez-tools
+        sudo apt-get install -y bluez-tools
         sudo npm run global-install
         touch /tmp/reboot-required
     fi
@@ -1253,20 +1253,20 @@ if prompt_yn "" N; then
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
         echo "Installing socat and ntp..."
         apt-get install -y socat ntp
-	echo "Installing pi-buttons..."
-	systemctl stop pi-buttons
-	cd $HOME/src &&	git clone git://github.com/bnielsen1965/pi-buttons.git
-	echo "Make and install pi-buttons..."
-	cd pi-buttons
-	cd src && make && sudo make install && sudo make install_service
-	# Radiofruit buttons are on different GPIOs than the Explorer HAT
-	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
+        echo "Installing pi-buttons..."
+        systemctl stop pi-buttons
+        cd $HOME/src && git clone git://github.com/bnielsen1965/pi-buttons.git
+        echo "Make and install pi-buttons..."
+        cd pi-buttons
+        cd src && make && sudo make install && sudo make install_service
+        # Radiofruit buttons are on different GPIOs than the Explorer HAT
+        if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
             sed -i 's/17,27/5,6/g' /etc/pi-buttons.conf
-	fi
-	systemctl enable pi-buttons && systemctl restart pi-buttons
+        fi
+        systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
-	cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
-	cd $HOME/src/openaps-menu && sudo npm install
+        cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+        cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     fi
 
