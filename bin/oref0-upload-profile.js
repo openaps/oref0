@@ -150,7 +150,8 @@ if (!module.parent) {
             var decimals = new_profile.units === 'mmol' ? 10 : 1;
 
             // Check if the input profile units don't match the Nightscout profile units
-            if (new_profile.units.toUpperCase() !== profiledata.bg_targets.units.toUpperCase()) {
+            if (new_profile.units && profiledata.bg_targets.units && 
+            		new_profile.units.toUpperCase() !== profiledata.bg_targets.units.toUpperCase()) {
                 // Set the conversion factor according to the units wanted
                 // 0.055 = divide by 18 (convert mg/dL to mmol/L)
                 // 18 = multiply by 18 (convert mmol/L to mg/dL)
@@ -194,7 +195,8 @@ if (!module.parent) {
             var decimals = new_profile.units === 'mmol' ? 10 : 1;
 
             // Check if the input profile units don't match the Nightscout profile units 
-            if (profiledata.isfProfile.units && new_profile.units.toUpperCase() !== profiledata.isfProfile.units.toUpperCase()) {
+            if (new_profile.units && profiledata.isfProfile.units && 
+            		new_profile.units.toUpperCase() !== profiledata.isfProfile.units.toUpperCase()) {
                 // Set the conversion factor according to the units wanted
                 // 0.055 = divide by 18 (convert mg/dL to mmol/L)
                 // 18 = multiply by 18 (convert mmol/L to mg/dL)
