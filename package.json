@@ -44,6 +44,7 @@
     "oref0-bash-common-functions.sh": "./bin/oref0-bash-common-functions.sh",
     "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
+    "oref0-calculate-glucose-noise": "./bin/oref0-calculate-glucose-noise.js",
     "oref0-copy-fresher": "./bin/oref0-copy-fresher",
     "oref0-crun": "./bin/oref0-conditional-run.sh",
     "oref0-cron-every-minute": "./bin/oref0-cron-every-minute.sh",
