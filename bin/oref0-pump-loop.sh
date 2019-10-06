@@ -921,7 +921,7 @@ function compare_with_fullhistory() {
 }
 
 function update_glucose_noise() {
-    if check_pref_bool .calc_glucose_noise true; then
+    if check_pref_bool .calc_glucose_noise; then
       echo "Recalculating glucose noise measurement"
       oref0-calculate-glucose-noise monitor/glucose.json > monitor/glucose.json.new
       mv monitor/glucose.json.new monitor/glucose.json
