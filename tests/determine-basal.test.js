@@ -34,40 +34,20 @@ describe('round_basal', function ( ) {
         output.should.equal(0.05);
     });
 
-    it('should round basal rates properly (0.83 -> 0.825)', function() {
-        var basal = 0.83;
-        var output = round_basal(basal);
-        output.should.equal(0.85);
-    });
+    var data = [
+        { basal: 0.83, rounded: 0.85},
+        { basal: 0.86, rounded: 0.85},
+        { basal: 1.83, rounded: 1.85},
+        { basal: 1.86, rounded: 1.85},
+        { basal: 10.83, rounded: 10.8},
+        { basal: 10.86, rounded: 10.9}
+    ];
 
-    it('should round basal rates properly (0.86 -> 0.85)', function() {
-        var basal = 0.86;
-        var output = round_basal(basal);
-        output.should.equal(0.85);
-    });
-
-    it('should round basal rates properly: (1.83 -> 1.85)', function() {
-        var basal = 1.83;
-        var output = round_basal(basal);
-        output.should.equal(1.85);
-    });
-
-    it('should round basal rates properly: (1.86 -> 1.85)', function() {
-        var basal = 1.86;
-        var output = round_basal(basal);
-        output.should.equal(1.85);
-    });
-
-    it('should round basal rates properly: (10.83 -> 10.8)', function() {
-        var basal = 10.83;
-        var output = round_basal(basal);
-        output.should.equal(10.8);
-    });
-
-    it('should round basal rates properly: (10.86 -> 10.9)', function() {
-        var basal = 10.86;
-        var output = round_basal(basal);
-        output.should.equal(10.9);
+    data.forEach(function (rate) {
+        it('should round basal rates properly (' + rate.basal + ' -> ' + rate.rounded + ')', function () {
+            var output = round_basal(rate.basal);
+            output.should.equal(rate.rounded);
+        });
     });
 });
 
