@@ -834,8 +834,6 @@ describe('IOB', function() {
         // Calculate IOB with inputs that will be the same as
         var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
 
-        console.log(iobInputs);
-
         inputs = {
             clock: timestamp,
             history: [{
@@ -868,8 +866,6 @@ describe('IOB', function() {
         };
 
         iobInputs = inputs;
-
-        console.log(iobInputs);
 
         var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
 
