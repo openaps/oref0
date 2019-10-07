@@ -95,7 +95,7 @@
   "dependencies": {
     "json": "^9.0.6",
     "json-stable-stringify": "^1.0.1",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "moment-timezone": "0.5.23",
     "network": "^0.4.1",
