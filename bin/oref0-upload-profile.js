@@ -120,12 +120,14 @@ if (!module.parent) {
         // Basals
 
         var new_basal = [];
+        var decimals = 100; // always round basal rates to 0.01 U/h
 
         _.forEach(profiledata.basalprofile, function(basalentry) {
 
             var newEntry = {
                 time: '' + basalentry.start.substring(0, 5)
-                , value: '' + +(Math.round(basalentry.rate + 'e+2') + 'e-2')
+                //, value: '' + +(Math.round(basalentry.rate + 'e+2') + 'e-2')
+                , value: '' + Math.round( basalentry.rate  * decimals) / decimals
                 , timeAsSeconds: '' + basalentry.minutes * 60
             };
 
