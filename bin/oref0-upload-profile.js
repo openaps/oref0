@@ -125,7 +125,7 @@ if (!module.parent) {
 
             var newEntry = {
                 time: '' + basalentry.start.substring(0, 5)
-                , value: '' + +(Math.round(basalentry.rate + 'e+3') + 'e-3')
+                , value: '' + +(Math.round(basalentry.rate + 'e+2') + 'e-2')
                 , timeAsSeconds: '' + basalentry.minutes * 60
             };
 
