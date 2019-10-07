@@ -226,7 +226,7 @@ if (!module.parent) {
 
             var new_entry = {
                 time: carb_entry.start.substring(0, 5)
-                , value: '' + Math.round( carb_entry.ratio * decimals) / decimals;
+                , value: '' + Math.round( carb_entry.ratio * decimals) / decimals
                 , timeAsSeconds: '' + carb_entry.offset * 60
             };
 
