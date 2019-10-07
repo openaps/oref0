@@ -126,7 +126,6 @@ if (!module.parent) {
 
             var newEntry = {
                 time: '' + basalentry.start.substring(0, 5)
-                //, value: '' + +(Math.round(basalentry.rate + 'e+2') + 'e-2')
                 , value: '' + Math.round( basalentry.rate  * decimals) / decimals
                 , timeAsSeconds: '' + basalentry.minutes * 60
             };
