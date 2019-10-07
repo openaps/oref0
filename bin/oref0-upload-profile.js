@@ -220,12 +220,13 @@ if (!module.parent) {
         // Carb ratios
 
         var new_carb_ratios = [];
+        var decimals = 10; // always round insulin to carb ratios to 0.1g
 
         _.forEach(profiledata.carb_ratios.schedule, function(carb_entry) {
 
             var new_entry = {
                 time: carb_entry.start.substring(0, 5)
-                , value: '' + carb_entry.ratio
+                , value: '' + Math.round( carb_entry.ratio * decimals) / decimals;
                 , timeAsSeconds: '' + carb_entry.offset * 60
             };
 
