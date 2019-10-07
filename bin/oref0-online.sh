@@ -8,6 +8,9 @@ Attempt to get a working internet connection via wifi or bluetooth. Typically
 run from crontab.
 EOT
 
+hci_adapter=$(get_pref_string .bt_hci 2>/dev/null) || hci_adapter=0
+
+hci_address=$(hciconfig hci${hci_adapter} | grep Address | cut -d' ' -f 3)
 
 main() {
     MACs=$@
@@ -131,7 +134,7 @@ function print_local_ip {
 }
 
 function check_ip {
-    PUBLIC_IP=$(curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F , '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$")
+    PUBLIC_IP=$(curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F '[, ]' '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$")
     if [[ -z $PUBLIC_IP ]]; then
         echo not found
         return 1
@@ -152,15 +155,20 @@ function bt_connect {
                || (test -f preferences.json \
                 && jq -e .bt_with_wifi < preferences.json > /dev/null); then
             echo; echo "No Internet access detected, attempting to connect BT to $MAC"
-            oref0-bluetoothup
+            if ! is_bash_process_running_named "oref0-bluetoothup"; then
+                oref0-bluetoothup
+            else
+                echo "oref0-bluetoothup already running"
+            fi
+            
             if ! test -f preferences.json \
                 || ! jq -e .bt_offline < preferences.json > /dev/null \
                 || ! ifconfig | egrep -q "bnep0" >/dev/null; then
                 echo "Attempting to connect to bt $MAC..."
-                sudo bt-pan client $MAC -d
+                sudo bt-pan -i $hci_address client $MAC -d
               for i in {1..3}
               do
-                sudo bt-pan client $MAC
+                sudo bt-pan -i $hci_address client $MAC
                 sudo dhclient bnep0
               done
                 if ! has_ip bnep0; then
@@ -198,7 +206,7 @@ function bt_disconnect {
     ifdown bnep0
     # loop over as many MACs as are provided as arguments
     for MAC; do
-        sudo bt-pan client $MAC -d
+        sudo bt-pan -i $hci_address client $MAC -d
     done
 }
 

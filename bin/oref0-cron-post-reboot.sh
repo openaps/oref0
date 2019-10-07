@@ -25,8 +25,3 @@ oref0-delete-future-entries &
     export FLASK_APP=app.py
     flask run -p 80 --host=0.0.0.0 | tee -a /var/log/openaps/flask.log
 ) &
-
-if [[ "$ttyport" =~ "spidev0.0" ]]; then
-    # disable HDMI on Explorer HAT rigs to save battery
-    /usr/bin/tvservice -o &
-fi

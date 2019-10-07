@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Python version of oref0-autotune.sh
 # Original bash code: scottleibrand, pietergit, beached, danamlewis
 
@@ -110,7 +111,7 @@ def assign_args_to_variables(args):
 def get_nightscout_profile(nightscout_host):
     #TODO: Add ability to use API secret for Nightscout.
     res = requests.get(nightscout_host + '/api/v1/profile.json')
-    with open(os.path.join(autotune_directory, 'nightscout.profile.json'), 'w') as f:
+    with open(os.path.join(autotune_directory, 'nightscout.profile.json'), 'w') as f:  # noqa: F821
         f.write(res.text)
 
 def get_openaps_profile(directory):
@@ -155,7 +156,7 @@ def get_nightscout_bg_entries(nightscout_host, start_date, end_date, directory):
     date_list = [start_date + datetime.timedelta(days=x) for x in range(0, (end_date - start_date).days)]
 
     for date in date_list:
-        url="{0}/api/v1/entries/sgv.json?find\[date\]\[\$gte\]={1}&find\[date\]\[\$lte\]={1}`&count=1000"
+        url="{0}/api/v1/entries/sgv.json?find\[date\]\[\$gte\]={1}&find\[date\]\[\$lte\]={1}`&count=1500"
         url = url.format(nightscout_host, date)
         #TODO: Add ability to use API secret for Nightscout.
         res = requests.get(url)

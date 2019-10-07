@@ -26,11 +26,15 @@ var _ = require('lodash');
 if (!module.parent) {
 
     var argv = require('yargs')
-        .usage("$0 profile.json NSURL api-secret [--preview]")
+        .usage("$0 profile.json NSURL api-secret [--preview] [--switch]")
         .option('preview', {
             alias: 'p'
             , describe: "Give a preview of the outcome without uploading"
             , default: false
+        })
+        .option('switch', {
+            default: false
+            , describe: "Issue Profile Switch event to enable this profile"
         })
         .strict(true)
         .help('help');
@@ -140,13 +144,25 @@ if (!module.parent) {
 
             var time = target_entry.start.substring(0, 5);
             var seconds = parseInt(time.substring(0, 2)) * 60 * 60 + parseInt(time.substring(3, 5)) * 60;
-            var low_value = Math.round(target_entry.low);
-            var high_value = Math.round(target_entry.high);
+            var low_value = target_entry.low;
+            var high_value = target_entry.high;
+            var conversionFactor = 1;
+            var decimals = new_profile.units === 'mmol' ? 10 : 1;
 
-            if (new_profile.units === 'mmol' && profiledata.bg_targets.units === 'mg/dL') {
-                low_value = +(Math.round(target_entry.low / 18 + 'e+1') + 'e-1');
-                high_value = +(Math.round(target_entry.high / 18 + 'e+1') + 'e-1');
+            // Check if the input profile units don't match the Nightscout profile units
+            if (new_profile.units && profiledata.bg_targets.units && 
+            		new_profile.units.toUpperCase() !== profiledata.bg_targets.units.toUpperCase()) {
+                // Set the conversion factor according to the units wanted
+                // 0.055 = divide by 18 (convert mg/dL to mmol/L)
+                // 18 = multiply by 18 (convert mmol/L to mg/dL)
+                conversionFactor = (new_profile.units == 'mmol' ? 0.055 : 18);
             }
+
+            low_value *= conversionFactor;
+            high_value *= conversionFactor;
+
+            low_value = Math.round(low_value * decimals) / decimals;
+            high_value = Math.round(high_value * decimals) / decimals;
 
             var new_low_entry = {
                 time: '' + time
@@ -174,11 +190,21 @@ if (!module.parent) {
 
         _.forEach(profiledata.isfProfile.sensitivities, function(isf_entry) {
 
-            var value = Math.round(isf_entry.sensitivity);
+            var value = isf_entry.sensitivity;
+            var conversionFactor = 1;
+            var decimals = new_profile.units === 'mmol' ? 10 : 1;
 
-            if (new_profile.units === 'mmol' && profiledata.isfProfile.units === 'mg/dL') {
-                value = +(Math.round(isf_entry.sensitivity / 18 + 'e+1') + 'e-1');
+            // Check if the input profile units don't match the Nightscout profile units 
+            if (new_profile.units && profiledata.isfProfile.units && 
+            		new_profile.units.toUpperCase() !== profiledata.isfProfile.units.toUpperCase()) {
+                // Set the conversion factor according to the units wanted
+                // 0.055 = divide by 18 (convert mg/dL to mmol/L)
+                // 18 = multiply by 18 (convert mmol/L to mg/dL)
+                conversionFactor = (new_profile.units == 'mmol' ? 0.055 : 18);
             }
+
+            value *= conversionFactor;
+            value = Math.round(value * decimals) / decimals;
 
             var new_isf_entry = {
                 time: isf_entry.start.substring(0, 5)
@@ -263,16 +289,16 @@ if (!module.parent) {
 
             console.log('Profile changed, uploading to Nightscout');
 
-            nsurl += '/api/v1/profile';
+            var nsurl_upload = nsurl + '/api/v1/profile';
 
             if (apisecret.indexOf('token=') === 0) {
-                nsurl = nsurl + '?' + apisecret;
+                nsurl_upload = nsurl_upload + '?' + apisecret;
             } else {
                 nsheaders['API-SECRET'] = apisecret;
             }
 
             options = {
-                uri: nsurl
+                uri: nsurl_upload
                 , json: true
                 , method: 'POST'
                 , headers: nsheaders
@@ -287,6 +313,46 @@ if (!module.parent) {
                     console.log('Profile uploaded to Nightscout');
                 }
             });
+            if (params.switch) {
+                var nsheaders = {
+                    'Content-Type': 'application/json'
+                };
+
+                console.log('Switching profile');
+
+                var nsurl_switch = nsurl + '/api/v1/treatments.json';
+
+                if (apisecret.indexOf('token=') === 0) {
+                    nsurl_switch = nsurl_switch + '?' + apisecret;
+                } else {
+                    nsheaders['API-SECRET'] = apisecret;
+                }
+
+                var switch_event = {};
+                switch_event['enteredBy'] = 'OpenAPS';
+                switch_event['eventType'] = 'Profile Switch';
+                switch_event['duration'] = 0;
+                switch_event['profile'] = 'OpenAPS Autosync';
+                switch_event['reason'] = 'Applying uploaded profile';
+                switch_event['notes'] = 'Applying uploaded profile';
+
+                switch_options = {
+                    uri: nsurl_switch
+                    , json: true
+                    , method: 'POST'
+                    , headers: nsheaders
+                    , body: switch_event
+                };
+
+                request(switch_options, function(error, res, data) {
+                    if (error || res.statusCode !== 200) {
+                        console.log(error);
+                        console.log(res.body);
+                    } else {
+                        console.log('Profile switch event sent to Nightscout');
+                    }
+                });
+            }
         } else {
             console.log('Profiles match, no upload needed');
         }

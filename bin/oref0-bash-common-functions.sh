@@ -87,6 +87,15 @@ is_edison () {
     fi
 }
 
+# Returns success (0) if running on a Debian Jessie system, fail (1) otherwise
+is_debian_jessie() {
+    if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Returns success (0) if running on a Raspberry Pi, fail (1) otherwise. Uses
 # the existence of a "pi" account in /etc/passwd to determine that.
 is_pi () {
@@ -158,7 +167,8 @@ uncolor () {
         sed --expression="s/\o33\[[01]m//g" | 
         sed --expression="s/\o33\[[01];39m//g" |
         sed --expression="s/\o33\[[01];32m//g" |
-        sed --expression="s/\o33\[34;1m//g" 
+        sed --expression="s/\o33\[34;1m//g"  |
+        sed --expression="s/\o33\[1;30m//g" 
      done
 }
 

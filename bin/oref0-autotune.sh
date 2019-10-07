@@ -203,7 +203,7 @@ echo "Grabbing NIGHTSCOUT treatments.json and entries/sgv.json for date range...
 for i in "${date_list[@]}"
 do 
     # pull CGM data from 4am-4am
-    query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime "$i +4 hours" |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$i +28 hours" |nonl; echo 000)&count=1000"
+    query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime "$i +4 hours" |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$i +28 hours" |nonl; echo 000)&count=1500"
     echo Query: $NIGHTSCOUT_HOST entries/sgv.json $query
     ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
     ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
@@ -252,7 +252,12 @@ do
         fi
     else
         # Copy tuned profile produced by autotune to profile.json for use with next day of data
-        cp newprofile.$i.json profile.json
+        if cat newprofile.$i.json | jq . | grep -q start; then
+            cp newprofile.$i.json profile.json
+        else
+            jq -c newprofile.$i.json
+            die "newprofile.$i.json invalid"
+        fi
     fi
 
 

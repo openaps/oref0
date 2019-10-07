@@ -45,14 +45,37 @@ if (!module.parent) {
     }
 
     var fs = require('fs');
+    var pumphistory_data;
+    var profile_data;
+    var clock_data;
+    var basalprofile_data;
+  
     try {
-        var pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
-        var profile_data = JSON.parse(fs.readFileSync(profile_input, 'utf8'));
-        var clock_data = JSON.parse(fs.readFileSync(clock_input, 'utf8'));
-        var basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
+        pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
     } catch (e) {
-        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse input data" }');
-        return console.error("Could not parse input data: ", e);
+        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse pumphistory data" }');
+        return console.error("Could not parse pumphistory data: ", e);
+    }
+
+    try {
+        profile_data = JSON.parse(fs.readFileSync(profile_input, 'utf8'));
+    } catch (e) {
+        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse profile data" }');
+        return console.error("Could not parse profile data: ", e);
+    }
+
+    try {
+        clock_data = JSON.parse(fs.readFileSync(clock_input, 'utf8'));
+    } catch (e) {
+        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse clock data" }');
+        return console.error("Could not parse clock data: ", e);
+    }
+
+    try {
+        basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
+    } catch (e) {
+        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse basalprofile data" }');
+        return console.error("Could not parse basalprofile data: ", e);
     }
 
     // disallow impossibly low carbRatios due to bad decoding
@@ -87,7 +110,7 @@ if (!module.parent) {
       basalprofile_data = temp;
     }
 
-    var inputs = {
+    inputs = {
         history: pumphistory_data
     , profile: profile_data
     , basalprofile: basalprofile_data
