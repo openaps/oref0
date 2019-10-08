@@ -98,7 +98,6 @@ if (!module.parent) {
     }
 
     var pjson = require('../package.json');
-    console.error(pjson.version);
 
     var cwd = process.cwd() + '/';
 
