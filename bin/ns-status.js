@@ -39,6 +39,11 @@ function preferencesStatus (status) {
     var preferences = requireWithTimestamp(cwd + preferences_input);
     if (preferences) {
       status.preferences = preferences;
+      if (preferences.nightscout_host) { status.preferences.nightscout_host = "redacted"; }
+      if (preferences.bt_mac) { status.preferences.bt_mac = "redacted"; }
+      if (preferences.pushover_token) { status.preferences.pushover_token = "redacted"; }
+      if (preferences.pushover_user) { status.preferences.pushover_user = "redacted"; }
+      if (preferences.pump_serial) { status.preferences.pump_serial = "redacted"; }
     }
 }
 
