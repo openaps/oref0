@@ -120,12 +120,13 @@ if (!module.parent) {
         // Basals
 
         var new_basal = [];
+        var decimals = 100; // always round basal rates to 0.01 U/h
 
         _.forEach(profiledata.basalprofile, function(basalentry) {
 
             var newEntry = {
                 time: '' + basalentry.start.substring(0, 5)
-                , value: '' + +(Math.round(basalentry.rate + 'e+3') + 'e-3')
+                , value: '' + Math.round( basalentry.rate  * decimals) / decimals
                 , timeAsSeconds: '' + basalentry.minutes * 60
             };
 
@@ -144,13 +145,25 @@ if (!module.parent) {
 
             var time = target_entry.start.substring(0, 5);
             var seconds = parseInt(time.substring(0, 2)) * 60 * 60 + parseInt(time.substring(3, 5)) * 60;
-            var low_value = Math.round(target_entry.low);
-            var high_value = Math.round(target_entry.high);
+            var low_value = target_entry.low;
+            var high_value = target_entry.high;
+            var conversionFactor = 1;
+            var decimals = new_profile.units === 'mmol' ? 10 : 1;
 
-            if (new_profile.units === 'mmol' && profiledata.bg_targets.units === 'mg/dL') {
-                low_value = +(Math.round(target_entry.low / 18 + 'e+1') + 'e-1');
-                high_value = +(Math.round(target_entry.high / 18 + 'e+1') + 'e-1');
+            // Check if the input profile units don't match the Nightscout profile units
+            if (new_profile.units && profiledata.bg_targets.units && 
+            		new_profile.units.toUpperCase() !== profiledata.bg_targets.units.toUpperCase()) {
+                // Set the conversion factor according to the units wanted
+                // 0.055 = divide by 18 (convert mg/dL to mmol/L)
+                // 18 = multiply by 18 (convert mmol/L to mg/dL)
+                conversionFactor = (new_profile.units == 'mmol' ? 0.055 : 18);
             }
+
+            low_value *= conversionFactor;
+            high_value *= conversionFactor;
+
+            low_value = Math.round(low_value * decimals) / decimals;
+            high_value = Math.round(high_value * decimals) / decimals;
 
             var new_low_entry = {
                 time: '' + time
@@ -178,11 +191,21 @@ if (!module.parent) {
 
         _.forEach(profiledata.isfProfile.sensitivities, function(isf_entry) {
 
-            var value = Math.round(isf_entry.sensitivity);
+            var value = isf_entry.sensitivity;
+            var conversionFactor = 1;
+            var decimals = new_profile.units === 'mmol' ? 10 : 1;
 
-            if (new_profile.units === 'mmol' && profiledata.isfProfile.units === 'mg/dL') {
-                value = +(Math.round(isf_entry.sensitivity / 18 + 'e+1') + 'e-1');
+            // Check if the input profile units don't match the Nightscout profile units 
+            if (new_profile.units && profiledata.isfProfile.units && 
+            		new_profile.units.toUpperCase() !== profiledata.isfProfile.units.toUpperCase()) {
+                // Set the conversion factor according to the units wanted
+                // 0.055 = divide by 18 (convert mg/dL to mmol/L)
+                // 18 = multiply by 18 (convert mmol/L to mg/dL)
+                conversionFactor = (new_profile.units == 'mmol' ? 0.055 : 18);
             }
+
+            value *= conversionFactor;
+            value = Math.round(value * decimals) / decimals;
 
             var new_isf_entry = {
                 time: isf_entry.start.substring(0, 5)
@@ -198,12 +221,13 @@ if (!module.parent) {
         // Carb ratios
 
         var new_carb_ratios = [];
+        var decimals = 10; // always round insulin to carb ratios to 0.1g
 
         _.forEach(profiledata.carb_ratios.schedule, function(carb_entry) {
 
             var new_entry = {
                 time: carb_entry.start.substring(0, 5)
-                , value: '' + carb_entry.ratio
+                , value: '' + Math.round( carb_entry.ratio * decimals) / decimals
                 , timeAsSeconds: '' + carb_entry.offset * 60
             };
 

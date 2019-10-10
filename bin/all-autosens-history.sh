@@ -35,7 +35,7 @@ main() {
                     echo $line >> parts/entries-$year-$month.json
                 fi
             done | uniq
-            for year in 2018 2017 2016; do
+            for year in 2019 2018 2017 2016; do
                 for month in 12 11 10 09 08 07 06 05 04 03 02 01; do
                     if [ -f parts/entries-$year-$month.json ]; then
                         cat parts/entries-$year-$month.json | jq -s . > $year-$month-entries.json
