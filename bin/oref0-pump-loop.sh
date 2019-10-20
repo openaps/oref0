@@ -500,13 +500,6 @@ function prep {
         upto30s=$(head -1 /tmp/wait_for_silence)
         upto45s=$(head -1 /tmp/wait_for_silence)
     fi
-    #We don't need to get the tty port anymore...
-    # read tty port from preferences
-    #eval $(get_pref_string .ttyport | sed "s/ //g")
-    # if that fails, try the Explorer board default port
-    #if [ -z $port ]; then
-    #    port=/dev/spidev5.1
-    #fi
 
     # necessary to enable SPI communication over edison GPIO 110 on Edison + Explorer Board
     [ -f /sys/kernel/debug/gpio_debug/gpio110/current_pinmux ] && echo mode0 > /sys/kernel/debug/gpio_debug/gpio110/current_pinmux
