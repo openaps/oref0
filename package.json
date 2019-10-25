@@ -20,6 +20,7 @@
   },
   "bin": {
     "bt-pan": "./bin/bt-pan",
+    "killall-g": "./bin/killall-g.sh",
     "l": "./bin/oref0-tail-log.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",
     "mm-format-ns-profile": "./bin/mm-format-ns-profile.sh",
