@@ -46,16 +46,16 @@ sudo wpa_cli -i wlan0 scan &
 
 (
     killall -g --older-than 30m openaps
-    killall -g --older-than 30m oref0-pump-loop
+    killall-g oref0-pump-loop 1800
     killall -g --older-than 30m openaps-report
-    killall -g --older-than 10m oref0-g4-loop
+    killall-g oref0-g4-loop 600
 ) &
 
 # kill pump-loop after 5 minutes of not writing to pump-loop.log
 find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && (
     echo No updates to pump-loop.log in 5m - killing processes
     killall -g --older-than 5m openaps
-    killall -g --older-than 5m oref0-pump-loop
+    killall-g oref0-pump-loop 300
     killall -g --older-than 5m openaps-report
 ) | tee -a /var/log/openaps/pump-loop.log | adddate openaps.pump-loop | uncolor |tee -a /var/log/openaps/openaps-date.log &
 
