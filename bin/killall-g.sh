@@ -19,11 +19,11 @@ if [[ -z "$3" ]]; then
 else
     process=$3
 fi
-ps x -A -o pid,fname,etimes,pgid,args |   while read pid fname etimes pgid args; do
-    #echo $pid
-    if [[ $fname == $process ]] && [[ $args == $script ]] &&  [[ $etimes > $older_than ]]; then
-        echo killing all $fname $args
-        kill -- -$pgid
+ps x -A -o pid,fname,etimes,pgid,args | egrep -v "grep|killall" | awk '$NF ~ /'$script'/' | while read pid fname etimes pgid args; do
+    #echo pid $pid, args $args, fname $fname, pgid $pgid, etimes $etimes
+    if [[ $fname == $process ]] && [ $etimes -ge $older_than ]; then
+        #echo killing $args pid $pid pgid $pgid etimes $etimes
+        pstree -a $pid && echo killing $args pid $pid pgid $pgid etimes $etimes && kill -- -$pgid
     fi;
 done;
 #ps x -O pgid,etimes | egrep -v "grep|killall" | grep $1 | tail -1 | awk '{if ($3 >= '$older_than') print $2}'  | while read pgid; do kill -- -$pgid; done
