@@ -21,7 +21,7 @@ else
 fi
 ps x -A -o pid,fname,etimes,pgid,args | egrep -v "grep|killall" | awk '$NF ~ /'$script'/' | while read pid fname etimes pgid args; do
     #echo pid $pid, args $args, fname $fname, pgid $pgid, etimes $etimes
-    if [[ $fname == $process ]] && [ $etimes -ge $older_than ]; then
+    if [[ $fname == $process ]] && [ $etimes -ge $older_than ] && ps -p $pid > /dev/null; then
         #echo killing $args pid $pid pgid $pgid etimes $etimes
         pstree -a $pid && echo killing $args pid $pid pgid $pgid etimes $etimes && kill -- -$pgid
     fi;
