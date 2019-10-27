@@ -99,7 +99,7 @@ if (!module.parent) {
       }
 
       if (error) {
-        if (error.code == 'ETIMEDOUT') {
+        if (error.code == 'ETIMEDOUT' || error.code == 'ESOCKETTIMEDOUT') {
           console.error('Load from xDrip timed out');
         } else {
           console.error("Load from xDrip failed", error);
