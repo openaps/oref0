@@ -53,7 +53,7 @@ function pushover_snooze {
 function get_ns_bg {
     # update 24h glucose file if it's 55m old or too small to calculate COB
     if ! file_is_recent cgm/ns-glucose-24h.json 54 \
-        || ! grep -c glucose cgm/ns-glucose-24h.json | jq -e '. > 36' >/dev/null; then
+        || ! jq . cgm/ns-glucose-24h.json | grep -c glucose | jq -e '. > 36' >/dev/null; then
         #nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -24hours > cgm/ns-glucose-24h.json
         cp cgm/ns-glucose-24h.json cgm/ns-glucose-24h-temp.json
         oref0-get-ns-entries cgm/ns-glucose-24h-temp.json $NIGHTSCOUT_HOST $API_SECRET 24 2>&1 >cgm/ns-glucose-24h.json
