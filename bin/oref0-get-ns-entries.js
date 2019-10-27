@@ -40,9 +40,6 @@ if (!module.parent) {
   }
 
   var params = argv.argv;
-  var errors = [];
-  var warnings = [];
-
   var glucose_input = params._.slice(0, 1).pop();
 
   if ([null, '--help', '-h', 'help'].indexOf(glucose_input) > 0) {
@@ -72,8 +69,6 @@ if (!module.parent) {
     apisecret = shasum.digest('hex');
   }
 
-  var lastDate = null;
-
   var cwd = process.cwd();
   var outputPath = cwd + '/' + glucose_input;
 
@@ -91,7 +86,7 @@ if (!module.parent) {
       , headers: headers
     };
 
-    console.error("Trying to load CGM data from local xDrip");
+    console.error('Connected to', ip, ', testing for xDrip API availability');
 
     request(options, function(error, res, data) {
       var failed = false;
@@ -202,7 +197,6 @@ if (!module.parent) {
   }
 
   network.get_gateway_ip(function(err, ip) {
-    console.error("My router IP is " + ip); // err may be 'No active network interface found.'
     loadFromxDrip(nsCallback, ip);
   });
 
