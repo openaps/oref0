@@ -27,6 +27,7 @@ var fs = require('fs');
 var network = require('network');
 
 var safe_errors = ['ECONNREFUSED', 'ESOCKETTIMEDOUT', 'ETIMEDOUT'];
+var log_errors = true;
 
 if (!module.parent) {
 
@@ -86,7 +87,7 @@ if (!module.parent) {
       , headers: headers
     };
 
-    console.error('Connected to', ip, ', testing for xDrip API availability');
+    if (log_errors) console.error('Connected to ' + ip +', testing for xDrip API availability');
 
     request(options, function(error, res, data) {
       var failed = false;
@@ -97,9 +98,11 @@ if (!module.parent) {
 
       if (error) {
         if (safe_errors.includes(error.code)) {
-          console.error('Load from local xDrip timed out, likely not connected to xDrip hotspot');
+          if (log_errors) console.error('Load from local xDrip timed out, likely not connected to xDrip hotspot');
+          log_errors = false;
         } else {
-          console.error("Load from xDrip failed", error);
+          if (log_errors) console.error("Load from xDrip failed", error);
+          log_errors = false;
           failed = true;
         }
 
