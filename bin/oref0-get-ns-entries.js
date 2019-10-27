@@ -26,6 +26,8 @@ var _ = require('lodash');
 var fs = require('fs');
 var network = require('network');
 
+var safe_errors = ['ECONNREFUSED', 'ESOCKETTIMEDOUT', 'ETIMEDOUT'];
+
 if (!module.parent) {
 
   var argv = require('yargs')
@@ -99,8 +101,8 @@ if (!module.parent) {
       }
 
       if (error) {
-        if (error.code == 'ETIMEDOUT' || error.code == 'ESOCKETTIMEDOUT') {
-          console.error('Load from xDrip timed out');
+        if (safe_errors.includes(error.code)) {
+          console.error('Load from local xDrip timed out, likely not connected to xDrip hotspot');
         } else {
           console.error("Load from xDrip failed", error);
           failed = true;
