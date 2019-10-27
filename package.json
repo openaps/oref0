@@ -67,6 +67,7 @@
     "oref0-mdt-update": "./bin/oref0-mdt-update.sh",
     "oref0-meal": "./bin/oref0-meal.js",
     "oref0-monitor-cgm": "./bin/oref0-monitor-cgm.sh",
+    "oref0-mraa-install": "./bin/oref0-mraa-install.sh",
     "oref0-ns-loop": "./bin/oref0-ns-loop.sh",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "oref0_nightscout_check": "./bin/oref0_nightscout_check.py",
@@ -95,7 +96,7 @@
   "dependencies": {
     "json": "^9.0.6",
     "json-stable-stringify": "^1.0.1",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "moment-timezone": "0.5.23",
     "network": "^0.4.1",

@@ -11,6 +11,16 @@ adapter=$(get_pref_string .bt_hci 2>/dev/null) || adapter=0
 
 DAEMON_PATHS=(/usr/local/bin/bluetoothd /usr/libexec/bluetooth/bluetoothd /usr/sbin/bluetoothd)
 
+function stop_bluetooth {
+   echo "$(date) Stopping bluetoothd..."
+   if is_debian_jessie ; then
+      sudo killall bluetoothd
+   else
+      sudo systemctl stop bluetooth
+   fi
+   echo "$(date) Stopped bluetoothd"
+}
+
 for EXEC_PATH in ${DAEMON_PATHS[@]}; do
   if [ -x $EXEC_PATH ]; then
     EXECUTABLE=$EXEC_PATH
@@ -31,7 +41,7 @@ if ! ( ps -fC bluetoothd >/dev/null ) ; then
       sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
    else
       echo bluetoothd not running! Starting bluetoothd via systemctl.
-      sudo systemctl bluetooth start
+      sudo systemctl start bluetooth
    fi
 fi
 
@@ -42,7 +52,7 @@ if is_edison && ! ( hciconfig -a hci${adapter} | grep -q "PSCAN" ) ; then
       sudo $EXECUTABLE 2>&1 | tee -a /var/log/openaps/bluetoothd.log &
    else
       echo Bluetooth PSCAN not enabled! Restarting bluetoothd via systemctl...
-      sudo systemctl bluetooth restart
+      sudo systemctl restart bluetooth
    fi
 fi
 
@@ -56,4 +66,9 @@ if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
       # Not sure that this is needed on Stretch, add an is_debian_jessie check here if something different required.
       echo Bluetooth hci name does not match hostname: $HOSTNAME. Setting bluetooth hci name.
       sudo hciconfig hci${adapter} name $HOSTNAME
+      if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
+         hciconfig -a hci${adapter}
+         echo "$(date) Failed to set bluetooth hci name. Stop bluetoothd and allow next cycle to handle restart."
+         stop_bluetooth
+      fi
 fi

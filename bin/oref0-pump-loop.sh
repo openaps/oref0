@@ -88,7 +88,10 @@ main() {
             echo Completed oref0-pump-loop at $(date)
             update_display
             run_plugins
-            update_bgproxy
+            # skip bgproxy if we already have a new glucose value and it's time for another loop
+            if ! glucose-fresh; then
+                update_bgproxy
+            fi
             echo
         else
             # pump-loop errored out for some reason
@@ -253,11 +256,13 @@ function smb_reservoir_before {
     echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
-	# Check for bolus in progress and issue 3xESC to back out of pump bolus menu
+        # Check for bolus in progress and issue 3xESC to back out of pump bolus menu
         smb_verify_status \
         && try_return mdt -f internal button esc esc esc 2>&3 \
         && oref0-set-device-clocks
-       fi
+        echo "Checking system clock against pump clock:"
+        oref0-set-system-clock
+    fi
     (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
     && (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
     find monitor/ -mmin -5 -size +5c | grep -q pumphistory || { echo "Error: pumphistory-24h >5m old (or empty)"; fail "$@"; }
@@ -458,7 +463,7 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-	refresh_pumphistory_and_meal || return 1
+        refresh_pumphistory_and_meal || return 1
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
@@ -495,13 +500,6 @@ function prep {
         upto30s=$(head -1 /tmp/wait_for_silence)
         upto45s=$(head -1 /tmp/wait_for_silence)
     fi
-    #We don't need to get the tty port anymore...
-    # read tty port from preferences
-    #eval $(get_pref_string .ttyport | sed "s/ //g")
-    # if that fails, try the Explorer board default port
-    #if [ -z $port ]; then
-    #    port=/dev/spidev5.1
-    #fi
 
     # necessary to enable SPI communication over edison GPIO 110 on Edison + Explorer Board
     [ -f /sys/kernel/debug/gpio_debug/gpio110/current_pinmux ] && echo mode0 > /sys/kernel/debug/gpio_debug/gpio110/current_pinmux
