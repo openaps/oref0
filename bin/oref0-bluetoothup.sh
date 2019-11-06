@@ -11,9 +11,9 @@ adapter=$(get_pref_string .bt_hci 2>/dev/null) || adapter=0
 
 DAEMON_PATHS=(/usr/local/bin/bluetoothd /usr/libexec/bluetooth/bluetoothd /usr/sbin/bluetoothd)
 
-# wait up to 10 seconds for hci name to be set
+# wait up to 3 seconds for hci name to be set
 function wait_for_hci_name {
-   max_wait_seconds=10
+   max_wait_seconds=3
    elapsed_seconds=0
    while (( elapsed_seconds < max_wait_seconds )) && ! ( hciconfig -a hci${adapter} | grep -q "$HOSTNAME" )
    do
