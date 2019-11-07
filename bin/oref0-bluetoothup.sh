@@ -75,13 +75,13 @@ if ( hciconfig -a hci${adapter} | grep -q "DOWN" ) ; then
  fi
 
 if !( hciconfig -a hci${adapter} | grep -q $HOSTNAME ) ; then
-       # Not sure that this is needed on Stretch, add an is_debian_jessie check here if something different required.
-       echo Bluetooth hci name does not match hostname: $HOSTNAME. Setting bluetooth hci name.
-       sudo hciconfig hci${adapter} name $HOSTNAME
-       wait_for_hci_name
-       if ! ( hciconfig -a hci${adapter} | grep -q "$HOSTNAME" ) ; then
-          hciconfig -a hci${adapter}
-          echo "$(date) Failed to set bluetooth hci name. Stop bluetoothd and allow next cycle to handle restart."
-          stop_bluetooth
-      fi
+   # Not sure that this is needed on Stretch, add an is_debian_jessie check here if something different required.
+   echo Bluetooth hci name does not match hostname: $HOSTNAME. Setting bluetooth hci name.
+   sudo hciconfig hci${adapter} name $HOSTNAME
+   wait_for_hci_name
+   if ! ( hciconfig -a hci${adapter} | grep -q "$HOSTNAME" ) ; then
+      hciconfig -a hci${adapter}
+      echo "$(date) Failed to set bluetooth hci name. Stop bluetoothd and allow next cycle to handle restart."
+      stop_bluetooth
+   fi
 fi
