@@ -25,16 +25,6 @@
   },
   {
     "type": "report",
-    "name": "monitor/cgm-glucose.json",
-    "monitor/cgm-glucose.json": {
-      "hours": "25.0",
-      "device": "cgm",
-      "use": "iter_glucose_hours",
-      "reporter": "JSON"
-    }
-  },
-  {
-    "type": "report",
     "name": "raw-cgm/raw-entries.json",
     "raw-cgm/raw-entries.json": {
       "count": "",
@@ -51,18 +41,6 @@
       "date": "display_time",
       "glucose": ""
     }
-  },
-  {
-    "cgm/ns-glucose.json": {
-      "oper": "oref0_glucose_since",
-      "use": "shell",
-      "reporter": "JSON",
-      "device": "ns",
-      "remainder": "-24hours",
-      "json_default": "True"
-    },
-    "type": "report",
-    "name": "cgm/ns-glucose.json"
   },
   {
     "type": "report",
