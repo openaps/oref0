@@ -51,19 +51,28 @@ function fileHM(file) {
 }
 
 if (!module.parent) {
+    var argv = require('yargs')
+        .usage('$0 <glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json> [meal.json]')
+        .demand(6)
+        .strict(true)
+        .help('help');
     
     var fs = require('fs');
 
-    var glucose_input = process.argv[2]
-    var iob_input = process.argv[3]
-    var basalprofile_input = process.argv[4]
-    var currenttemp_input = process.argv[5]
-    var requestedtemp_input = process.argv[6]
-    var enactedtemp_input = process.argv[7]
-    var meal_input = process.argv[8]
+    var params = argv.argv;
+    var inputs = params._;
+
+    var glucose_input = inputs[0];
+    var iob_input = inputs[1];
+    var basalprofile_input = inputs[2];
+    var currenttemp_input = inputs[3];
+    var requestedtemp_input = inputs[4];
+    var enactedtemp_input = inputs[5];
+    var meal_input = inputs[6];
     
-    if (!glucose_input || !iob_input || !basalprofile_input || !currenttemp_input || !requestedtemp_input ) {
-        console.log('usage: ', process.argv.slice(0, 2), '<glucose.json> <iob.json> <current_basal_profile.json> <currenttemp.json> <requestedtemp.json> <enactedtemp.json> [meal.json]');
+    if (inputs.length > 7) {
+        argv.showHelp();
+        console.error('Too many arguments');
         process.exit(1);
     }
     
@@ -82,7 +91,7 @@ if (!module.parent) {
     var tick = delta;
     if (delta >= 0) { tick = "+" + delta; } 
     var iob_data = require(cwd + '/' + iob_input);
-    iob = iob_data[0].iob.toFixed(1);
+    var iob = iob_data[0].iob.toFixed(1);
     var basalprofile_data = require(cwd + '/' + basalprofile_input);
     var basalRate;
     basalLookup();
@@ -115,17 +124,17 @@ if (!module.parent) {
     //} else { 
         //enactedstring = enactedtemp.duration + "m@" + enactedtemp.rate.toFixed(1) + "U";
     //}
-    tz = new Date().toString().match(/([-\+][0-9]+)\s/)[1]
+    var tz = new Date().toString().match(/([-+][0-9]+)\s/)[1]
     //enactedDate = new Date(enactedtemp.timestamp.concat(tz));
     //enactedHMS = enactedDate.toLocaleTimeString().split(":")
     //enactedat = enactedHMS[0].concat(":", enactedHMS[1]);
 
     var mealCOB = "???";
-    if (typeof meal_input != 'undefined') {
+    if (typeof meal_input !== 'undefined') {
         try {
-            meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
+            var meal_data = JSON.parse(fs.readFileSync(meal_input, 'utf8'));
             //console.error(JSON.stringify(meal_data));
-            if (typeof meal_data.mealCOB != 'undefined') {
+            if (typeof meal_data.mealCOB !== 'undefined') {
                 mealCOB = meal_data.mealCOB;
             }
         } catch (e) {

@@ -35,6 +35,18 @@ function mmtuneStatus (status) {
     }
 }
 
+function preferencesStatus (status) {
+    var preferences = requireWithTimestamp(cwd + preferences_input);
+    if (preferences) {
+      status.preferences = preferences;
+      if (preferences.nightscout_host) { status.preferences.nightscout_host = "redacted"; }
+      if (preferences.bt_mac) { status.preferences.bt_mac = "redacted"; }
+      if (preferences.pushover_token) { status.preferences.pushover_token = "redacted"; }
+      if (preferences.pushover_user) { status.preferences.pushover_user = "redacted"; }
+      if (preferences.pump_serial) { status.preferences.pump_serial = "redacted"; }
+    }
+}
+
 function uploaderStatus (status) {
     var uploader = require(cwd + uploader_input);
     if (uploader) {
@@ -51,9 +63,16 @@ function uploaderStatus (status) {
 if (!module.parent) {
 
     var argv = require('yargs')
-        .usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json]")
+        .usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json] [--preferences preferences.json]")
+        .option('preferences', {
+            alias: 'p',
+            nargs: 1,
+            describe: "OpenAPS preferences file",
+            default: false
+        })
         .option('uploader', {
             alias: 'u',
+            nargs: 1,
             describe: "Uploader battery status",
             default: false
         })
@@ -70,17 +89,15 @@ if (!module.parent) {
     var reservoir_input = inputs[5];
     var status_input = inputs[6];
     var mmtune_input = inputs[7];
+    var preferences_input = params.preferences;
     var uploader_input = params.uploader;
 
-    if (inputs.length > 8) {
-        uploader_input = params.uploader ? inputs[7] : false;
-        mmtune_input = inputs[8];
-    }
-
-    if (!clock_input || !iob_input || !suggested_input || !enacted_input || !battery_input || !reservoir_input || !status_input) {
-        console.log('usage: ', process.argv.slice(0, 2), '<clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json]');
+    if (inputs.length < 7 || inputs.length > 8) {
+        argv.showHelp();
         process.exit(1);
     }
+
+    var pjson = require('../package.json');
 
     var cwd = process.cwd() + '/';
 
@@ -117,7 +134,8 @@ if (!module.parent) {
             openaps: {
                 iob: iob,
                 suggested: suggested,
-                enacted: enacted
+                enacted: enacted,
+                version: pjson.version
             },
             pump: {
                 clock: safeRequire(cwd + clock_input),
@@ -129,6 +147,10 @@ if (!module.parent) {
 
         if (mmtune_input) {
             mmtuneStatus(status);
+        }
+
+        if (preferences_input) {
+            preferencesStatus(status);
         }
 
         if (uploader_input) {

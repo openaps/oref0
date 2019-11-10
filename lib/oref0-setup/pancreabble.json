@@ -31,19 +31,5 @@
       "status_text": "",
       "status_json": "upload/urchin-status.json"
     }
-  },
-  {
-    "type": "alias",
-    "name": "upload-pbbl",
-    "upload-pbbl": {
-      "command": "! bash -c \"openaps use pbbl send_urchin_data upload/urchin-data.json\""
-    }
-  },
-  {
-    "urchin-loop": {
-      "command": "! bash -c \"openaps invoke upload/urchin-data.json && openaps upload-pbbl\""
-    },
-    "type": "alias",
-    "name": "urchin-loop"
   }
 ]

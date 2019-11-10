@@ -1,4 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
+
+usage "$@" <<EOT
+Usage: $self
+
+Install development tools and download source code to OpenAPS projects from
+GitHub to ~/src. This is not run as part of a normal end-user setup of OpenAPS,
+but may be useful for developers or for advanced troubleshooting.
+EOT
 
 apt-get install -y sudo
 sudo apt-get update
