@@ -446,7 +446,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
         echo "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET, but must first be configured in Nightscout."
-        if prompt_yn "Do you want to use token based authentication?" N; then
+        if prompt_yn "Do you want to use token based authentication? (Enter 'N' to provide your Nightscout secret instead)" N; then
             prompt_and_validate REPLY "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig?" validate_nightscout_token
             API_SECRET="token=${REPLY}"
             echocolor "Ok, $API_SECRET it is."
