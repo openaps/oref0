@@ -317,7 +317,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "G6-upload: will use and upload BGs from a plugged in G5/G6 touchscreen receiver to Nightscout"
     echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
     echo "xdrip: will work with an xDrip receiver app on your Android phone"
-    echo "xdrip-js: will work directly with a Dexcom G5 transmitter and will upload to Nightscout"
+    echo "xdrip-js: will work directly with a Dexcom G5/G6 transmitter and will upload to Nightscout"
     echo "Note: no matter which option you choose, CGM data will also be downloaded from NS when available."
     echo
     prompt_and_validate CGM "What kind of CGM would you like to configure?:" validate_cgm
