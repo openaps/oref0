@@ -482,7 +482,7 @@
             
             function loadBasalBolus(param) {
                 var i_bg = 0 ;
-                var bg = 0;
+                var bg = 100;
                 $.ajax({
                     url: "pumphistory",
                     async: false,
@@ -513,15 +513,17 @@
                                 } else if ( data[i]._type == 'Bolus' ) {
                                     if ( date1 >= param.minDate ) { 
                                         if (parseFloat(data[i].amount) > param.maxBolus) { param.maxBolus = parseFloat(data[i].amount);}
-                                        while (i_bg <= param.data.bg.length-1 && param.data.bg[i_bg].t > date1 ) {
-                                            i_bg++ ;
-                                        }
-                                        if ( i_bg == 0 ) {
-                                            bg = param.data.bg[i_bg].y;
-                                        } else if ( i_bg == param.data.bg.length) {
-                                            bg = param.data.bg[i_bg-1].y ;
-                                        } else {
-                                            bg = ( param.data.bg[i_bg].y +  param.data.bg[i_bg-1].y ) / 2;
+                                        if (param.data.bg.length > 0) {
+                                            while (i_bg <= param.data.bg.length-1 && param.data.bg[i_bg].t > date1 ) {
+                                                i_bg++ ;
+                                            }
+                                            if ( i_bg == 0 ) {
+                                                bg = param.data.bg[i_bg].y;
+                                            } else if ( i_bg == param.data.bg.length) {
+                                                bg = param.data.bg[i_bg-1].y ;
+                                            } else {
+                                                bg = ( param.data.bg[i_bg].y +  param.data.bg[i_bg-1].y ) / 2;
+                                            }
                                         }
                                         param.data.bolusBG[param.data.bolusBG.length] = {t:date1,y:bg,label:data[i].amount.toString().replace(/^0+/, '')};
                                         var date3 = new Date(date1.getTime()-60000)

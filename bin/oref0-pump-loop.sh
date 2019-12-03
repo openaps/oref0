@@ -88,6 +88,10 @@ main() {
             echo Completed oref0-pump-loop at $(date)
             update_display
             run_plugins
+            # skip bgproxy if we already have a new glucose value and it's time for another loop
+            if ! glucose-fresh; then
+                update_bgproxy
+            fi
             echo
         else
             # pump-loop errored out for some reason
@@ -111,6 +115,16 @@ function run_script() {
   fi
 }
 
+
+function update_bgproxy {
+    if [ "$(get_pref_string .enableEnliteBgproxy '')" == "true" ]; then
+        echo Calling Bgproxy
+        jq 'map({sgv:.sgv, date:.date, dateString:.dateString})' monitor/glucose.json  > monitor/bgproxydata.json
+        bgproxy -f monitor/bgproxydata.json
+        echo Bgproxy completed
+    fi
+
+}
 
 function run_plugins {
         once=plugins/once
@@ -146,6 +160,7 @@ function fail {
         refresh_after_bolus_or_enact
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
     else
+        pumphistory_daily_refresh
         maybe_mmtune
         echo "If pump and rig are close enough, this error usually self-resolves. Stand by for the next loop."
         echo Unsuccessful oref0-pump-loop at $(date)
@@ -242,11 +257,13 @@ function smb_reservoir_before {
     echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
-	# Check for bolus in progress and issue 3xESC to back out of pump bolus menu
+        # Check for bolus in progress and issue 3xESC to back out of pump bolus menu
         smb_verify_status \
         && try_return mdt -f internal button esc esc esc 2>&3 \
         && oref0-set-device-clocks
-       fi
+        echo "Checking system clock against pump clock:"
+        oref0-set-system-clock
+    fi
     (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
     && (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
     find monitor/ -mmin -5 -size +5c | grep -q pumphistory || { echo "Error: pumphistory-24h >5m old (or empty)"; fail "$@"; }
@@ -300,6 +317,9 @@ function smb_suggest {
 
 function determine_basal {
     cat monitor/meal.json
+
+    update_glucose_noise
+
     if ( grep -q 12 settings/model.json ); then
       oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json --auto-sens settings/autosens.json --meal monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
@@ -447,7 +467,7 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-	refresh_pumphistory_and_meal || return 1
+        refresh_pumphistory_and_meal || return 1
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
@@ -483,12 +503,6 @@ function prep {
     if [ -f "/tmp/wait_for_silence" ]; then
         upto30s=$(head -1 /tmp/wait_for_silence)
         upto45s=$(head -1 /tmp/wait_for_silence)
-    fi
-    # read tty port from preferences
-    eval $(get_pref_string .ttyport | sed "s/ //g")
-    # if that fails, try the Explorer board default port
-    if [ -z $port ]; then
-        port=/dev/spidev5.1
     fi
 
     # necessary to enable SPI communication over edison GPIO 110 on Edison + Explorer Board
@@ -655,26 +669,14 @@ function refresh_old_profile {
 # get-settings report invoke settings/model.json settings/bg_targets_raw.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/basal_profile.json settings/settings.json settings/carb_ratios.json settings/pumpprofile.json settings/profile.json
 function get_settings {
     SUCCESS=1
-    if grep -q 12 settings/model.json
-    then
-        # If we have a 512 or 712, then remove the incompatible reports, so the loop will work
-        # On the x12 pumps, these 'reports' are simulated by static json files created during the oref0-setup.sh run.
-        [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
-    else
-        # On all other supported pumps, we should be able to get all the data we need from the pump.
-        [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_bg_targets 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_basal_profile 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return read_settings 2>&3 >&4 || SUCCESS=0
-        [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
-#        NON_X12_ITEMS="settings/bg_targets_raw.json settings/bg_targets.json settings/basal_profile.json settings/settings.json"
-    fi
-#    retry_return openaps report invoke settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json $NON_X12_ITEMS 2>&3 >&4 | tail -1 || return 1
+    
+    [[ $SUCCESS -eq 1 ]] && retry_return check_model 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return read_insulin_sensitivities 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return read_carb_ratios 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return read_bg_targets 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return read_basal_profile 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return read_settings 2>&3 >&4 || SUCCESS=0
+    [[ $SUCCESS -eq 1 ]] && retry_return openaps report invoke settings/insulin_sensitivities.json settings/bg_targets.json 2>&3 >&4 || SUCCESS=0
 
     # If there was a failure, force a full refresh on the next loop
     if [[ $SUCCESS -eq 0 ]]; then
@@ -912,18 +914,23 @@ function compare_with_fullhistory() {
   fi
 }
 
+function update_glucose_noise() {
+    if check_pref_bool .calc_glucose_noise false; then
+      echo "Recalculating glucose noise measurement"
+      oref0-calculate-glucose-noise monitor/glucose.json > monitor/glucose.json.new
+      mv monitor/glucose.json.new monitor/glucose.json
+    fi
+}
+
 function valid_pump_settings() {
   SUCCESS=1
 
   [[ $SUCCESS -eq 1 ]] && valid_insulin_sensitivities >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid insulin_sensitivites.json"; SUCCESS=0; }
   [[ $SUCCESS -eq 1 ]] && valid_carb_ratios >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid carb_ratios.json"; SUCCESS=0; }
-
-  if ! grep -q 12 settings/model.json; then
-    [[ $SUCCESS -eq 1 ]] && valid_bg_targets >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid bg_targets.json"; SUCCESS=0; }
-    [[ $SUCCESS -eq 1 ]] && valid_basal_profile >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid basal_profile.json"; SUCCESS=0; }
-    [[ $SUCCESS -eq 1 ]] && valid_settings >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid settings.json"; SUCCESS=0; }
-  fi
-
+  [[ $SUCCESS -eq 1 ]] && valid_bg_targets >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid bg_targets.json"; SUCCESS=0; }
+  [[ $SUCCESS -eq 1 ]] && valid_basal_profile >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid basal_profile.json"; SUCCESS=0; }
+  [[ $SUCCESS -eq 1 ]] && valid_settings >&3 || { [[ $SUCCESS -eq 0 ]] || echo "Invalid settings.json"; SUCCESS=0; }
+  
   if [[ $SUCCESS -eq 0 ]]; then
     return 1
   else
