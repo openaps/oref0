@@ -16,7 +16,6 @@
 
 source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0-setup.sh in the right directory?"; exit 1)
 
-# TODO: deprecate g4-upload and g4-local-only
 usage "$@" <<EOT
 Usage: $self <--dir=directory> <--serial=pump_serial_#> [--tty=/dev/ttySOMETHING] [--max_iob=0] [--ns-host=https://mynightscout.herokuapp.com] [--api-secret=[myplaintextapisecret|token=subjectname-plaintexthashsecret] [--cgm=(G4-go|G5|MDT|xdrip|xdrip-js)] [--bleserial=SM123456] [--blemac=FE:DC:BA:98:76:54] [--dexcom_tx_sn=12A34B] [--btmac=AB:CD:EF:01:23:45] [--enable='autotune'] [--radio_locale=(WW|US)]
 EOT
@@ -312,9 +311,6 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
 
     echo "What kind of CGM would you like to configure for offline use? Options are:"
     echo "G4-Go: will use and upload BGs from a plugged in or BLE-paired G4 receiver to Nightscout"
-    # TODO: finish deprecating g4-upload and G4-local-only
-    #echo "G4-upload: will use and upload BGs from a plugged in G4 receiver to Nightscout"
-    #echo "G4-local-only: will use BGs from a plugged in G4, but will *not* upload them"
     echo "G5: will use BGs from a plugged in G5, but will *not* upload them (the G5 app usually does that)"
     echo "G5-upload: will use and upload BGs from a plugged in G5 receiver to Nightscout"
     echo "G6: will use BGs from a plugged in G5/G6 touchscreen receiver, but will *not* upload them (the G6 app usually does that)"
@@ -328,7 +324,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echocolor "Ok, $CGM it is."
     echo
     if [[ ${CGM,,} =~ "g4-go" ]]; then
-        prompt_and_validate BLE_SERIAL "If your G4 has Share, what is your G4 Share Serial Number? (i.e. SM12345678)" validate_g4share_serial
+        prompt_and_validate BLE_SERIAL "If your G4 has Share, what is your G4 Share Serial Number? (i.e. SM12345678)" validate_g4share_serial ""
         BLE_SERIAL=$REPLY
         echo "$BLE_SERIAL? Got it."
         echo
@@ -347,7 +343,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "Configuring for Explorer Board HAT. "
         ttyport=/dev/spidev0.0
         hardwaretype=explorer-hat
-	radiotags="cc111x"
+        radiotags="cc111x"
     elif is_edison; then # Options for Edison (Explorer Board is default)
         echo "What kind of hardware setup do you have? Options are:"
         echo "1) Explorer Board"
@@ -362,13 +358,13 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
           *) echocolor "Yay! Configuring for Edison with Explorer Board. "; ttyport=/dev/spidev5.1; hardwaretype=edison-explorer; radiotags="cc111x";;
         esac
     elif is_pi; then # Options for raspberry pi, including Explorer HAT (default) if it's not auto-detected
-	echo "What kind of hardware setup do you have? Options are:"
-	echo "1) Explorer HAT"
-	echo "2) Radiofruit RFM69HCW Bonnet"
+        echo "What kind of hardware setup do you have? Options are:"
+        echo "1) Explorer HAT"
+        echo "2) Radiofruit RFM69HCW Bonnet"
         echo "3) RFM69HCW (DIY: SPI)"
         echo "4) TI Stick (SPI-connected)"
-	echo "5) Other radio (DIY: rfm69, cc11xx)"
-	read -p "Please enter the number for your hardware configuration: [1] " -r
+        echo "5) Other radio (DIY: rfm69, cc11xx)"
+        read -p "Please enter the number for your hardware configuration: [1] " -r
         case $REPLY in
           2) echocolor "Configuring Radiofruit RFM69HCW Bonnet. "; ttyport=/dev/spidev0.1; hardwaretype=radiofruit; radiotags="rfm69";;
           3) echocolor "Configuring RFM69HCW. "; hardwaretype=diy;;
@@ -684,11 +680,11 @@ if prompt_yn "" N; then
 
     # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
     if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
-        echo Upgrading to node 8
+        echo Installing node 8
         # Use nodesource setup script to add nodesource repository to sources.list.d
         sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
         # Install nodejs and npm from nodesource
-        sudo apt-get install -y nodejs || die "Couldn't install nodejs"
+        sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
     fi
 
     # Attempting to remove git to make install --nogit by default for existing users
@@ -807,6 +803,7 @@ if prompt_yn "" N; then
     set_pref_string .myopenaps_path "$directory"
     set_pref_string .pump_serial "$serial"
     set_pref_string .radio_locale "$radio_locale"
+    set_pref_string .hardwaretype "$hardwaretype"
     if [[ ! -z "$BT_PEB" ]]; then
         set_pref_string .bt_peb "$BT_PEB"
     fi
@@ -825,8 +822,6 @@ if prompt_yn "" N; then
 
     if [[ ${CGM,,} =~ "g4-go" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "g6" || ${CGM,,} =~ "g6-upload" ]]; then
         set_pref_string .cgm_loop_path "$directory"
-    #elif [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g4-local-only" ]]; then # TODO: deprecate g4-upload and g4-local-only
-    #    set_pref_string .cgm_loop_path "$directory-cgm-loop"
     fi
 
     if [[ ${CGM,,} =~ "xdrip" ]]; then # Evaluates true for both xdrip and xdrip-js 
@@ -858,10 +853,14 @@ if prompt_yn "" N; then
         mv -f /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
     fi
 
+    if ! grep -qa "kernel.panic" /etc/sysctl.conf ; then
+      echo -e "# reboot rig 3 seconds after a kernel panic\nkernel.panic = 3" >> /etc/sysctl.conf
+    fi
+
     # configure ns
     if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
         echo "Removing any existing ns device: "
-        ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
+        ( killall -g openaps; killall-g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
         echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
         nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
         if [[ "${API_SECRET,,}" =~ "token=" ]]; then # install requirements for token based authentication
@@ -953,152 +952,8 @@ if prompt_yn "" N; then
         openaps use cgm config --G6
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
         set_pref_string .cgm_loop_path "$directory"
-    ## TODO: figure out if any of this is still needed
-    #elif [[ ${CGM,,} =~ "g4-go" ]]; then
-        #echo Checking Adafruit_BluefruitLE installation
-        #if ! python -c "import Adafruit_BluefruitLE" 2>/dev/null; then
-            #if [ -d "$HOME/src/Adafruit_Python_BluefruitLE/" ]; then
-                #echo "$HOME/src/Adafruit_Python_BluefruitLE/ already exists; pulling latest master branch"
-                #(cd $HOME/src/Adafruit_Python_BluefruitLE && git fetch && git checkout wip/bewest/custom-gatt-profile && git pull) || die "Couldn't pull latest Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
-            #else
-                #echo -n "Cloning Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile: "
-                ## TODO: get this moved over to openaps and install with pip
-                #(cd $HOME/src && git clone -b wip/bewest/custom-gatt-profile https://github.com/bewest/Adafruit_Python_BluefruitLE.git) || die "Couldn't clone Adafruit_Python_BluefruitLE wip/bewest/custom-gatt-profile"
-            #fi
-            #echo Installing Adafruit_BluefruitLE && cd $HOME/src/Adafruit_Python_BluefruitLE && sudo python setup.py develop || die "Couldn't install Adafruit_BluefruitLE"
-        #fi
-        #sudo apt-get update; sudo apt-get upgrade
-        #sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
-        #echo Checking bluez installation
-        ## start bluetoothd in /etc/rc.local if it is missing.
-        #if ! grep -q '/usr/local/bin/bluetoothd &' /etc/rc.local; then
-            #sed -i"" 's/^exit 0/\/usr\/local\/bin\/bluetoothd \&\n\nexit 0/' /etc/rc.local
-        #fi
-        ## starting with bluez 5.48 the --experimental command line option is not needed. remove the --experimental if it still exists in /etc/rc.local. this is for rigs with version 0.6.0 or earlier
-        #if ! grep -q '/usr/local/bin/bluetoothd --experimental &' /etc/rc.local; then
-            #sed -i"" 's/^\/usr\/local\/bin\/bluetoothd --experimental \&/\/usr\/local\/bin\/bluetoothd \&/' /etc/rc.local
-        #fi
-        #if ! grep -q 'bluetooth_rfkill_event >/dev/null 2>&1 &' /etc/rc.local; then
-            #sed -i"" 's/^exit 0/bluetooth_rfkill_event >\/dev\/null 2>\&1 \&\n\nexit 0/' /etc/rc.local
-        #fi
-        ## comment out existing line if it exists and isn't already commented out
-        #sed -i"" 's/^screen -S "brcm_patchram_plus" -d -m \/usr\/local\/sbin\/bluetooth_patchram.sh/# &/' /etc/rc.local
     fi
 
-    # TODO: finish deprecating g4-upload and g4-local-only
-    #if [[ ${CGM,,} =~ "g4-upload" ]]; then
-    #    mkdir -p $directory-cgm-loop
-    #    if ( cd $directory-cgm-loop && test -f openaps.ini && openaps use -h >/dev/null ); then
-    #        echo $directory-cgm-loop already exists
-    #    elif openaps init $directory-cgm-loop --nogit; then
-    #        echo $directory-cgm-loop initialized
-    #    else
-    #        die "Can't init $directory-cgm-loop"
-    #    fi
-    #    cd $directory-cgm-loop || die "Can't cd $directory-cgm-loop"
-    #    mkdir -p monitor || die "Can't mkdir monitor"
-    #    mkdir -p nightscout || die "Can't mkdir nightscout"
-
-    #    openaps device remove cgm 2>/dev/null
-
-        # configure ns
-    #    if [[ ! -z "$NIGHTSCOUT_HOST" && ! -z "$API_SECRET" ]]; then
-    #        echo "Removing any existing ns device: "
-    #        ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove ns 2>/dev/null
-    #        echo "Running nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET"
-    #        nightscout autoconfigure-device-crud $NIGHTSCOUT_HOST $API_SECRET || die "Could not run nightscout autoconfigure-device-crud"
-    #    fi
-
-    #    # TODO: deprecate g4-upload and g4-local-only
-    #    if [[ ${CGM,,} =~ "g4-upload" ]]; then
-    #        sudo apt-get -y install bc
-    #        openaps device add cgm dexcom || die "Can't add CGM"
-    #        do_openaps_import $HOME/src/oref0/lib/oref0-setup/cgm-loop.json
-    #    fi
-
-    #    cd $directory || die "Can't cd $directory"
-    #fi
-
-    #TODO: finish removal of MDT setup in oref0-setup, as the new Go support for it only requires a preferences.json switch
-    # we only need spi_serial and mraa for MDT CGM, which Go doesn't support yet
-    #if [[ "$ttyport" =~ "spi" ]] && [[ ${CGM,,} =~ "mdt" ]]; then
-    #    echo Checking kernel for spi_serial installation
-    #    if ! python -c "import spi_serial" 2>/dev/null; then
-    #        if [[ "$ttyport" =~ "spidev0.0" ]]; then
-    #            echo Installing spi_serial && sudo pip install --default-timeout=1000 --upgrade git+https://github.com/scottleibrand/spi_serial.git@explorer-hat || die "Couldn't install scottleibrand/spi_serial for explorer-hat"
-    #            sed -i.bak -e "s/#dtparam=spi=on/dtparam=spi=on/" /boot/config.txt
-    #        else
-    #            echo Installing spi_serial && sudo pip install --default-timeout=1000 --upgrade git+https://github.com/scottleibrand/spi_serial.git || die "Couldn't install scottleibrand/spi_serial"
-    #        fi
-    #    fi
-
-    #    echo Checking kernel for mraa installation
-    #    #if uname -r 2>&1 | egrep "^4.1[0-9]"; then # don't install mraa on 4.10+ kernels
-    #    #    echo "Skipping mraa install for kernel 4.10+"
-    #    #else # check if mraa is installed
-    #        if ! ldconfig -p | grep -q mraa; then # if not installed, install it
-    #            echo Installing swig etc.
-    #            sudo apt-get install -y libpcre3-dev git cmake python-dev swig || die "Could not install swig etc."
-    #            # TODO: Due to mraa bug https://github.com/intel-iot-devkit/mraa/issues/771 we were not using the master branch of mraa on dev.
-    #            # TODO: After each oref0 release, check whether there is a new stable MRAA release that is of interest for the OpenAPS community
-    #            MRAA_RELEASE="v1.7.0" # GitHub hash 8ddbcde84e2d146bc0f9e38504d6c89c14291480
-    #            if [ -d "$HOME/src/mraa/" ]; then
-    #                echo -n "$HOME/src/mraa/ already exists; "
-    #                #(echo "Pulling latest master branch" && cd ~/src/mraa && git fetch && git checkout master && git pull) || die "Couldn't pull latest mraa master" # used for oref0 dev
-    #                (echo "Updating mraa source to stable release ${MRAA_RELEASE}" && cd $HOME/src/mraa && git fetch && git checkout ${MRAA_RELEASE} && git pull) || die "Couldn't pull latest mraa ${MRAA_RELEASE} release" # used for oref0 master
-    #            else
-    #                echo -n "Cloning mraa "
-    #                #(echo -n "master branch. " && cd ~/src && git clone -b master https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa master" # used for oref0 dev
-    #                (echo -n "stable release ${MRAA_RELEASE}. " && cd $HOME/src && git clone -b ${MRAA_RELEASE} https://github.com/intel-iot-devkit/mraa.git) || die "Couldn't clone mraa release ${MRAA_RELEASE}" # used for oref0 master
-    #            fi
-    #            # build mraa from source
-    #            ( cd $HOME/src/ && mkdir -p mraa/build && cd $_ && cmake .. -DBUILDSWIGNODE=OFF && \
-    #            make && sudo make install && echo && touch /tmp/reboot-required && echo mraa installed. Please reboot before using. && echo ) || die "Could not compile mraa"
-    #            sudo bash -c "grep -q i386-linux-gnu /etc/ld.so.conf || echo /usr/local/lib/i386-linux-gnu/ >> /etc/ld.so.conf && ldconfig" || die "Could not update /etc/ld.so.conf"
-    #        fi
-        #fi
-    #fi
-
-    #echo Checking openaps dev installation
-    #if ! openaps --version 2>&1 | egrep "0.[2-9].[0-9]"; then
-        # TODO: switch this back to master once https://github.com/openaps/openaps/pull/116 is merged/released
-        #echo Installing latest openaps dev && sudo pip install  --default-timeout=1000  git+https://github.com/openaps/openaps.git@dev || die "Couldn't install openaps"
-    #fi
-
-    # Create pump device
-    #TODO: Deprecate this, we have separate support for this
-    #if [[ ${CGM,,} =~ "mdt" ]]; then
-    #    cd $directory || die "Can't cd $directory"
-    #    echo "Removing any existing pump device:"
-    #    ( killall -g openaps; killall -g oref0-pump-loop) 2>/dev/null; openaps device remove pump 2>/dev/null
-    #    if [[ -z "$ttyport" ]]; then
-    #        openaps device add pump medtronic $serial || die "Can't add pump"
-    #        # add carelink to pump.ini
-    #        grep -q radio_type pump.ini || echo "radio_type=carelink" >> pump.ini
-    #        # carelinks can't listen for silence or mmtune, so just do a preflight check instead
-    #        openaps alias add wait-for-silence 'report invoke monitor/temp_basal.json'
-    #        openaps alias add wait-for-long-silence 'report invoke monitor/temp_basal.json'
-    #        openaps alias add mmtune 'report invoke monitor/temp_basal.json'
-    #    else
-    #        # radio_locale requires openaps 0.2.0-dev or later
-    #        openaps device add pump mmeowlink subg_rfspy $ttyport $serial $radio_locale || die "Can't add pump"
-    #        #openaps alias add wait-for-silence '! bash -c "(mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 1 | grep -q comms && echo -n Radio ok, || openaps mmtune) && echo -n \" Listening: \"; for i in $(seq 1 100); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 30 2>/dev/null | egrep -v subg | egrep No && break; done"'
-    #        #openaps alias add wait-for-long-silence '! bash -c "echo -n \"Listening: \"; for i in $(seq 1 200); do echo -n .; mmeowlink-any-pump-comms.py --port '$ttyport' --wait-for 45 2>/dev/null | egrep -v subg | egrep No && break; done"'
-    #        if [[ ${radio_locale,,} =~ "ww" ]]; then
-    #            if [ -d "$HOME/src/subg_rfspy/" ]; then
-    #                echo "$HOME/src/subg_rfspy/ already exists; pulling latest"
-    #                (cd $HOME/src/subg_rfspy && git fetch && git pull) || die "Couldn't pull latest subg_rfspy"
-    #            else
-    #                echo -n "Cloning subg_rfspy: "
-    #                (cd $HOME/src && git clone https://github.com/ps2/subg_rfspy) || die "Couldn't clone oref0"
-    #            fi
-    #        fi
-
-            # Hack to check if radio_locale has been set in pump.ini.
-            # It will remove empty line at the end of pump.ini and then append radio_locale if it's not there yet
-    #        grep -q radio_locale pump.ini ||  echo "$(< pump.ini)" > pump.ini ; echo "radio_locale=$radio_locale" >> pump.ini
-    #    fi
-    #else
         #This is done to make sure other programs don't break. As of 0.7.0, OpenAPS itself no longer uses pump.ini
         echo '[device "pump"]' > pump.ini
         echo "serial = $serial" >> pump.ini
@@ -1118,6 +973,7 @@ if prompt_yn "" N; then
     #fi
 
     sudo pip install --default-timeout=1000 flask flask-restful  || die "Can't add xdrip cgm - error installing flask packages"
+    sudo pip install --default-timeout=1000 -U flask-cors
 
     # xdrip CGM (xDripAPS), also gets installed when using xdrip-js
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
@@ -1133,7 +989,8 @@ if prompt_yn "" N; then
     if [[ ${CGM,,} =~ "xdrip-js" ]]; then
         echo xdrip-js selected as CGM, so configuring xdrip-js
         git clone https://github.com/xdrip-js/Logger.git $HOME/src/Logger
-        cd $HOME/src/Logger
+        cd $HOME/src/Logger            
+        sudo apt-get install -y bluez-tools
         sudo npm run global-install
         touch /tmp/reboot-required
     fi
@@ -1246,23 +1103,19 @@ if prompt_yn "" N; then
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
         echo "Installing socat and ntp..."
         apt-get install -y socat ntp
-	echo "Installing pi-buttons..."
-	systemctl stop pi-buttons
-	cd $HOME/src &&	git clone git://github.com/bnielsen1965/pi-buttons.git
-	echo "Make and install pi-buttons..."
-	cd pi-buttons
-	cd src && make && sudo make install && sudo make install_service
-	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
+        echo "Installing pi-buttons..."
+        systemctl stop pi-buttons
+        cd $HOME/src && git clone git://github.com/bnielsen1965/pi-buttons.git
+        echo "Make and install pi-buttons..."
+        cd pi-buttons
+        cd src && make && sudo make install && sudo make install_service
+        # Radiofruit buttons are on different GPIOs than the Explorer HAT
+        if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
             sed -i 's/17,27/5,6/g' /etc/pi-buttons.conf
-	fi
-	systemctl enable pi-buttons && systemctl restart pi-buttons
+        fi
+        systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
-	if  [[ "$hardwaretype" =~ "radiofruit" ]]; then
-            #Once we have a radiofruit branch in openaps-menu, we can change the repo...
-            cd $HOME/src && git clone git://github.com/cluckj/openaps-menu.git && git checkout radiofruit || (cd openaps-menu && git checkout radiofruit && git pull)
-	else
-            cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
-	fi
+        cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     fi
@@ -1273,14 +1126,17 @@ if prompt_yn "" N; then
     # Install Golang
     mkdir -p $HOME/go
     source $HOME/.bash_profile
-    if go version | grep go1.11.; then
+    golangversion=1.12.5
+    if go version | grep go${golangversion}.; then
         echo Go already installed
     else
+        echo "Removing possible old go install..."
+        rm -rf /usr/local/go/*
         echo "Installing Golang..."
         if uname -m | grep armv; then
-            cd /tmp && wget -c https://storage.googleapis.com/golang/go1.11.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-armv6l.tar.gz
+            cd /tmp && wget -c https://storage.googleapis.com/golang/go${golangversion}.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go${golangversion}.linux-armv6l.tar.gz
         elif uname -m | grep i686; then
-            cd /tmp && wget -c https://dl.google.com/go/go1.11.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go1.11.linux-386.tar.gz
+            cd /tmp && wget -c https://dl.google.com/go/go${golangversion}.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go${golangversion}.linux-386.tar.gz
         fi
     fi
     if ! grep GOROOT $HOME/.bash_profile; then
