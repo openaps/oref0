@@ -937,7 +937,7 @@ if prompt_yn "" N; then
             if [ ! -z "$BT_MAC" ]; then
                 printf 'Checking for the bnep0 interface in the interfaces.client file and adding if missing...'
                 # Make sure the bnep0 interface is in the /etc/networking/interface
-                (grep -qa bnep0 /etc/network/interfaces.client && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces.client && printf 'added.\n') 
+                (grep -qa bnep0 /etc/network/interfaces.client && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces.client && printf 'added.\n')
             fi
             #Stop automatic startup of hostapd & dnsmasq
             update-rc.d -f hostapd remove
