@@ -9,19 +9,6 @@
     "extra": {}
   },
   {
-    "ns-glucose": {
-      "vendor": "openaps.vendors.process",
-      "extra": "ns-glucose.ini"
-    },
-    "type": "device",
-    "name": "ns-glucose",
-    "extra": {
-      "fields": "",
-      "cmd": "bash -c \"curl --compressed -m 30 -s $NIGHTSCOUT_HOST/api/v1/entries/sgv.json?count=1000 | json -e \\\"this.glucose = this.sgv\\\"\"",
-      "args": ""
-    }
-  },
-  {
     "extra": {
       "fields": "",
       "cmd": "oref0",

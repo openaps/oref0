@@ -88,6 +88,10 @@ main() {
             echo Completed oref0-pump-loop at $(date)
             update_display
             run_plugins
+            # skip bgproxy if we already have a new glucose value and it's time for another loop
+            if ! glucose-fresh; then
+                update_bgproxy
+            fi
             echo
         else
             # pump-loop errored out for some reason
@@ -111,6 +115,16 @@ function run_script() {
   fi
 }
 
+
+function update_bgproxy {
+    if [ "$(get_pref_string .enableEnliteBgproxy '')" == "true" ]; then
+        echo Calling Bgproxy
+        jq 'map({sgv:.sgv, date:.date, dateString:.dateString})' monitor/glucose.json  > monitor/bgproxydata.json
+        bgproxy -f monitor/bgproxydata.json
+        echo Bgproxy completed
+    fi
+
+}
 
 function run_plugins {
         once=plugins/once
@@ -146,6 +160,7 @@ function fail {
         refresh_after_bolus_or_enact
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
     else
+        pumphistory_daily_refresh
         maybe_mmtune
         echo "If pump and rig are close enough, this error usually self-resolves. Stand by for the next loop."
         echo Unsuccessful oref0-pump-loop at $(date)
@@ -242,11 +257,13 @@ function smb_reservoir_before {
     echo -n " is within 90s of current time: " && date +'%Y-%m-%dT%H:%M:%S%z'
     if (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < -55 )) || (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > 55 )); then
         echo Pump clock is more than 55s off: attempting to reset it and reload pumphistory
-	# Check for bolus in progress and issue 3xESC to back out of pump bolus menu
+        # Check for bolus in progress and issue 3xESC to back out of pump bolus menu
         smb_verify_status \
         && try_return mdt -f internal button esc esc esc 2>&3 \
         && oref0-set-device-clocks
-       fi
+        echo "Checking system clock against pump clock:"
+        oref0-set-system-clock
+    fi
     (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") > -90 )) \
     && (( $(bc <<< "$(to_epochtime $(cat monitor/clock-zoned.json)) - $(epochtime_now)") < 90 )) || { echo "Error: pump clock refresh error / mismatch"; fail "$@"; }
     find monitor/ -mmin -5 -size +5c | grep -q pumphistory || { echo "Error: pumphistory-24h >5m old (or empty)"; fail "$@"; }
@@ -300,6 +317,9 @@ function smb_suggest {
 
 function determine_basal {
     cat monitor/meal.json
+
+    update_glucose_noise
+
     if ( grep -q 12 settings/model.json ); then
       oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json --auto-sens settings/autosens.json --meal monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
@@ -447,7 +467,7 @@ function refresh_after_bolus_or_enact {
         fi
         # refresh profile if >5m old to give SMB a chance to deliver
         refresh_profile 3
-	refresh_pumphistory_and_meal || return 1
+        refresh_pumphistory_and_meal || return 1
         # TODO: check that last pumphistory record is newer than last bolus and refresh again if not
         calculate_iob && determine_basal 2>&3 \
         && cp -up enact/smb-suggested.json enact/suggested.json \
@@ -484,13 +504,6 @@ function prep {
         upto30s=$(head -1 /tmp/wait_for_silence)
         upto45s=$(head -1 /tmp/wait_for_silence)
     fi
-    #We don't need to get the tty port anymore...
-    # read tty port from preferences
-    #eval $(get_pref_string .ttyport | sed "s/ //g")
-    # if that fails, try the Explorer board default port
-    #if [ -z $port ]; then
-    #    port=/dev/spidev5.1
-    #fi
 
     # necessary to enable SPI communication over edison GPIO 110 on Edison + Explorer Board
     [ -f /sys/kernel/debug/gpio_debug/gpio110/current_pinmux ] && echo mode0 > /sys/kernel/debug/gpio_debug/gpio110/current_pinmux
@@ -899,6 +912,14 @@ function compare_with_fullhistory() {
     cp monitor/full-pumphistory-24h-zoned.json monitor/full-pumphistory-24h-zoned.json.$timestamp
     cp monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned.json.$timestamp
   fi
+}
+
+function update_glucose_noise() {
+    if check_pref_bool .calc_glucose_noise false; then
+      echo "Recalculating glucose noise measurement"
+      oref0-calculate-glucose-noise monitor/glucose.json > monitor/glucose.json.new
+      mv monitor/glucose.json.new monitor/glucose.json
+    fi
 }
 
 function valid_pump_settings() {
