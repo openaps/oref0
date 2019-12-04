@@ -5,8 +5,9 @@
 source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
 function init {
+    echo Initializing /tmp/oref0-simulator
     mkdir -p /tmp/oref0-simulator
-    cd /tmp/oref0-simulator
+    cd /tmp/oref0-simulator && rm *.json
     for file in pumphistory profile clock autosens glucose basal_profile carbhistory temp_basal; do
         #echo -n "${file}.json: "
         #if ! file_is_recent_and_min_size ${file}.json || ! jq -C -c . ${file}.json; then
@@ -14,7 +15,7 @@ function init {
         cp ~/src/oref0/examples/${file}.json ./
         #fi
     done
-    ls -la
+    pwd && ls -la
     #echo
     exit 0
 }
@@ -130,9 +131,14 @@ function stats {
 if [[ $1 == *"init"* ]]; then
     init
 else
+    # TODO: support specifying where to run
+    cd /tmp/oref0-simulator && ls glucose.json || init
     deviation=$1
+    if [ -z "$1" ]; then deviation=0; fi
     noise=$2
+    if [ -z "$2" ]; then noise=0; fi
     carbs=$3
+    if [ -z "$3" ]; then carbs=0; fi
     echo Running oref-simulator with deviation $deviation, noise $noise, and carbs $carbs
     main
     stats
