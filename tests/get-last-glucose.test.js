@@ -30,4 +30,8 @@ describe('getLastGlucose', function ( ) {
       glucose_status.short_avgdelta.should.equal(4.44);
       glucose_status.long_avgdelta.should.equal(2.86);
     });
+    it('should fall back to dateString property', function () {
+      var glucose_status = getLastGlucose([{dateString: "2019-12-04T08:54:19.288-0800", sgv: 100}, {date: 1467942544500, sgv: 95}, {date: 1467942244000, sgv: 85}, {date: 1467941944000, sgv: 70}]);
+      glucose_status.date.should.equal(1575478459288);
+    });
 });
