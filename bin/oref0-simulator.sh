@@ -106,6 +106,8 @@ function main {
     # advance the clock by 5m
     if jq -e .deliverAt suggested.json >/dev/null; then
         echo '"'$(date -d "$(cat suggested.json | jq .deliverAt | tr -d '"')+5 minutes" -Iseconds)'"' > clock.json
+    else
+        echo '"'$(date -d "$(cat clock.json | tr -d '"')+5minutes" -Iseconds)'"' > clock.json
     fi
 }
 
