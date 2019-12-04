@@ -29,11 +29,12 @@ function main {
     oref0-calculate-iob pumphistory.json profile.json clock.json autosens.json > iob.json
     # calculate naive IOB without autosens
     oref0-calculate-iob pumphistory.json profile.json clock.json > naive_iob.json
+    #cat naive_iob.json | jq -c .[0]
     oref0-meal pumphistory.json profile.json clock.json glucose.json basal_profile.json carbhistory.json > meal.json
     # calculate naive BGI and deviation without autosens
-    oref0-determine-basal naive_iob.json temp_basal.json glucose.json profile.json meal.json --microbolus --currentTime $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000) > naive_suggested.json
+    oref0-determine-basal naive_iob.json temp_basal.json glucose.json profile.json --meal meal.json --microbolus --currentTime $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000) > naive_suggested.json
     cat naive_suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)'
-    oref0-determine-basal iob.json temp_basal.json glucose.json profile.json autosens.json meal.json --microbolus --currentTime $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000) > suggested.json
+    oref0-determine-basal iob.json temp_basal.json glucose.json profile.json --auto-sens autosens.json --meal meal.json --microbolus --currentTime $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000) > suggested.json
     jq . -c suggested.json >> log.json
     cat suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)'
     cat suggested.json | jq -C -c .reason
@@ -64,6 +65,7 @@ function main {
         jq '. | .duration=.duration-5 | { rate: .rate, duration: .duration, temp: "absolute" }' temp_basal.json > temp_basal.json.new
         mv temp_basal.json.new temp_basal.json
     fi
+    #cat temp_basal.json | jq -c
 
 
     if [ -z $deviation ]; then
