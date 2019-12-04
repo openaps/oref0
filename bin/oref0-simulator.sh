@@ -123,6 +123,10 @@ function addcarbs {
     fi
 }
 
+function stats {
+    cat glucose.json | jq .[].sgv | awk -f ~/src/oref0/bin/glucose-stats.awk
+}
+
 if [[ $1 == *"init"* ]]; then
     init
 else
@@ -131,5 +135,6 @@ else
     carbs=$3
     echo Running oref-simulator with deviation $deviation, noise $noise, and carbs $carbs
     main
+    stats
 fi
 
