@@ -136,7 +136,7 @@ else
     deviation=$1
     if [ -z "$1" ]; then deviation=0; fi
     noise=$2
-    if [ -z "$2" ]; then noise=0; fi
+    if [ -z "$2" ]; then noise=10; fi
     carbs=$3
     if [ -z "$3" ]; then carbs=0; fi
     echo Running oref-simulator with deviation $deviation, noise $noise, and carbs $carbs
