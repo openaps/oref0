@@ -90,11 +90,11 @@ function main {
             adjustment="$deviation + $noiseformula"
         fi
         echo "Invalid suggested.json: updating glucose.json + $adjustment"
-        jq '.[0].glucose + '"$adjustment"' |floor| [ { date: '$(echo $(date -d $(cat clock.json | tr -d '"')+5minutes +%s)000)', glucose: ., sgv: ., dateString: "'$(date -d $(cat clock.json | tr -d '"')+5minutes -Iseconds )'", device: "fakecgm" } ] ' glucose.json | tee newrecord.json
+        jq '.[0].glucose + '"$adjustment"' |floor| [ { date: '$(echo $(date -d $(cat clock.json | tr -d '"')+5minutes +%s)000)', glucose: ., sgv: ., dateString: "'$(date -d $(cat clock.json | tr -d '"') -Iseconds )'", device: "fakecgm" } ] ' glucose.json | tee newrecord.json
     fi
     if jq -e '.[0].glucose < 39' newrecord.json; then
         echo "Glucose < 39 invalid"
-        echo '[ { "date": '$(echo $(date -d $(cat clock.json | tr -d '"')+5minutes +%s)000)', "glucose": 39, "sgv": 39, "dateString": "'$(date -d $(cat clock.json | tr -d '"')+5minutes -Iseconds )'", "device": "fakecgm" } ] ' | tee newrecord.json
+        echo '[ { "date": '$(echo $(date -d $(cat clock.json | tr -d '"')  +%s)000)', "glucose": 39, "sgv": 39, "dateString": "'$(date -d $(cat clock.json | tr -d '"')+5minutes -Iseconds )'", "device": "fakecgm" } ] ' | tee newrecord.json
     fi
     # write a new glucose entry to glucose.json, and truncate it to 432 records (36 hours)
     jq -s '[.[][]] | .[0:432]' newrecord.json glucose.json > glucose.json.new
