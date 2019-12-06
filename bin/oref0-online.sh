@@ -141,7 +141,7 @@ function check_ip {
         return 1
     else
         echo $PUBLIC_IP
-        touch /tmp/hasPublicIp
+        echo $PUBLIC_IP > /tmp/hasPublicIp
     fi
 }
 
