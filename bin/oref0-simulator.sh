@@ -8,13 +8,14 @@ function init {
     echo Initializing /tmp/oref0-simulator
     mkdir -p /tmp/oref0-simulator
     cd /tmp/oref0-simulator && rm *.json
-    for file in pumphistory profile clock autosens glucose basal_profile carbhistory temp_basal; do
+    cp -r ~/src/oref0/examples/* ./
+    #for file in pumphistory profile clock autosens glucose basal_profile carbhistory temp_basal; do
         #echo -n "${file}.json: "
         #if ! file_is_recent_and_min_size ${file}.json || ! jq -C -c . ${file}.json; then
             #echo $PWD/${file}.json is too old, does not exist, or is invalid: copying from ~/src/oref0/examples/
-        cp ~/src/oref0/examples/${file}.json ./
+        #cp ~/src/oref0/examples/${file}.json ./
         #fi
-    done
+    #done
     pwd && ls -la
     #echo
     exit 0
