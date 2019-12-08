@@ -99,17 +99,37 @@ fi
 # TODO: support $DIR in oref0-simulator
 oref0-simulator init $DIR
 cd $DIR
-# download preferences.json from Nightscout devicestatus.json endpoint and overwrite profile.json with it
-curl $NIGHTSCOUT_HOST/api/v1/devicestatus.json | jq .[0].preferences > preferences.json.new
-if jq -e .max_iob preferences.json.new; then
-    mv preferences.json.new preferences.json
-    jq -s '.[0] * .[1]' profile.json preferences.json > profile.json.new
-    if jq -e .max_iob profile.json.new; then
-        mv profile.json.new profile.json
-    fi
-fi
 
-# TODO: download profile.json from Nightscout profile.json endpoint, and copy over to pumpprofile.json for autotuning
+# download profile.json from Nightscout profile.json endpoint and copy over to pumpprofile.json for autotuning
+~/src/oref0/bin/get_profile.py --nightscout $NIGHTSCOUT_HOST display --format openaps 2>/dev/null > profile.json.new
+if jq -e .dia profile.json.new; then
+    jq -s '.[0] * .[1]' profile.json profile.json.new > profile.json.new.merged
+    if jq -e .dia profile.json.new.merged; then
+        mv profile.json.new.merged profile.json
+    else
+        echo Bad profile.json.new.merged
+    fi
+else
+    echo Bad profile.json.new from get_profile.py
+fi
+cp profile.json pumpprofile.json
+
+# download preferences.json from Nightscout devicestatus.json endpoint and overwrite profile.json with it
+for i in $(seq 0 10); do
+    curl $NIGHTSCOUT_HOST/api/v1/devicestatus.json | jq .[$i].preferences > preferences.json.new
+    if jq -e .max_iob preferences.json.new; then
+        mv preferences.json.new preferences.json
+        jq -s '.[0] * .[1]' profile.json preferences.json > profile.json.new
+        if jq -e .max_iob profile.json.new; then
+            mv profile.json.new profile.json
+            echo Successfully merged preferences.json into profile.json
+            break
+        else
+            echo Bad profile.json.new from preferences.json merge attempt $1
+        fi
+    fi
+done
+
 # TODO: download historical glucose data from Nightscout entries.json for the day leading up to $START_DATE
 echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE 
 oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE | grep "dev: " | awk '{print $13 "," $20}' | while IFS=',' read dev carbs; do
