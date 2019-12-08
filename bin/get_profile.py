@@ -24,7 +24,7 @@ import sys
 
 # External modules
 import requests
-from texttable import Texttable
+#from texttable import Texttable
 
 # logging.basicConfig(level=logging.INFO)
 logging.basicConfig(level=logging.DEBUG)
@@ -123,7 +123,7 @@ def display(nightscout, token, profile_name, profile_format):
     profile = get_current_profile(nightscout, token, profile_name)
     if profile_format == "nightscout":
         # display_nightscout(p_list, profile_name)
-        print("Displaying profile {}".format(profile["name"]))
+        logging.debug("Displaying profile {}".format(profile["name"]))
         print(json.dumps(profile, indent=4))
     elif profile_format == "text":
         display_text(profile)
@@ -330,19 +330,19 @@ def display_text(p_data):
     logging.debug("Data keys: %s", p_data.keys())
 
     # Single value data
-    singletons = Texttable()
-    singletons.set_deco(Texttable.HEADER)
-    singletons.set_cols_align(["c", "c", "c", "c"])
-    singletons.add_rows([
-        ["Profile name", "Timezone", "Units", "DIA"],
-        [
-            p_data["name"],
-            p_data["timezone"],
-            p_data["units"],
-            p_data["dia"]
-        ],
-    ])
-    print(singletons.draw() + "\n")
+    #singletons = Texttable()
+    #singletons.set_deco(Texttable.HEADER)
+    #singletons.set_cols_align(["c", "c", "c", "c"])
+    #singletons.add_rows([
+        #["Profile name", "Timezone", "Units", "DIA"],
+        #[
+            #p_data["name"],
+            #p_data["timezone"],
+            #p_data["units"],
+            #p_data["dia"]
+        #],
+    #])
+    #print(singletons.draw() + "\n")
 
     times = {}
     tgt_low = {v["time"]: v["value"] for v in p_data["target_low"]}
