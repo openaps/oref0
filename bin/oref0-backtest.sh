@@ -99,7 +99,16 @@ fi
 # TODO: support $DIR in oref0-simulator
 oref0-simulator init $DIR
 cd $DIR
-# TODO: download preferences.json from Nightscout devicestatus.json endpoint
+# download preferences.json from Nightscout devicestatus.json endpoint and overwrite profile.json with it
+curl $NIGHTSCOUT_HOST/api/v1/devicestatus.json | jq .[0].preferences > preferences.json.new
+if jq -e .max_iob preferences.json.new; then
+    mv preferences.json.new preferences.json
+    jq -s '.[0] * .[1]' profile.json preferences.json > profile.json.new
+    if jq -e .max_iob profile.json.new; then
+        mv profile.json.new profile.json
+    fi
+fi
+
 # TODO: download profile.json from Nightscout profile.json endpoint, and copy over to pumpprofile.json for autotuning
 # TODO: download historical glucose data from Nightscout entries.json for the day leading up to $START_DATE
 echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE 
