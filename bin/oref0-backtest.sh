@@ -5,7 +5,10 @@
 source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
 function stats {
-    cat glucose.json | jq .[].sgv | awk -f ~/src/oref0/bin/glucose-stats.awk
+    echo Simulated:
+    cat glucose.json | jq '.[] | select (.device=="fakecgm") | .sgv' | awk -f ~/src/oref0/bin/glucose-stats.awk
+    echo Actual:
+    cat ns-entries.json | jq .[].sgv | awk -f ~/src/oref0/bin/glucose-stats.awk
 }
 
 # defaults
@@ -103,7 +106,7 @@ cd $DIR
 # download profile.json from Nightscout profile.json endpoint and copy over to pumpprofile.json for autotuning
 ~/src/oref0/bin/get_profile.py --nightscout $NIGHTSCOUT_HOST display --format openaps 2>/dev/null > profile.json.new
 if jq -e .dia profile.json.new; then
-    jq -s '.[0] * .[1]' profile.json profile.json.new > profile.json.new.merged
+    jq -s '.[0] * .[1]' profile.json profile.json.new | jq '.sens = .isfProfile.sensitivities[0].sensitivity' > profile.json.new.merged
     if jq -e .dia profile.json.new.merged; then
         mv profile.json.new.merged profile.json
     else
@@ -130,8 +133,10 @@ for i in $(seq 0 10); do
     fi
 done
 
-# download historical glucose data from Nightscout entries.json for the day leading up to $START_DATE at 4am
+cp profile.json settings/
+cp pumpprofile.json settings/
 
+# download historical glucose data from Nightscout entries.json for the day leading up to $START_DATE at 4am
 query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime "$START_DATE -24 hours" |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$START_DATE +4 hours" |nonl; echo 000)&count=1500"
 echo Query: $NIGHTSCOUT_HOST entries/sgv.json $query
 ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.json || die "Couldn't download ns-entries.json"
@@ -140,6 +145,12 @@ if jq -e .[0].sgv ns-entries.json; then
     mv ns-entries.json glucose.json
     cat glucose.json | jq .[0].dateString > clock.json
 fi
+
+# download actual glucose data from Nightscout entries.json for the simulated time period
+query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime "$START_DATE +4 hours" |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$END_DATE +28 hours" |nonl; echo 000)&count=9999999"
+echo Query: $NIGHTSCOUT_HOST entries/sgv.json $query
+ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.json || die "Couldn't download ns-entries.json"
+ls -la ns-entries.json || die "No ns-entries.json downloaded"
 
 echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE 
 oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE | grep "dev: " | awk '{print $13 "," $20}' | while IFS=',' read dev carbs; do
