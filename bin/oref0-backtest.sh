@@ -145,6 +145,14 @@ if jq -e .[0].sgv ns-entries.json; then
     mv ns-entries.json glucose.json
     cat glucose.json | jq .[0].dateString > clock.json
 fi
+# download historical treatments data from Nightscout treatments.json for the day leading up to $START_DATE at 4am
+query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$START_DATE -24 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$START_DATE +4 hours" -Iminutes`"
+echo Query: $NIGHTSCOUT_HOST treatments.json $query
+ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.json || die "Couldn't download ns-treatments.json"
+ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
+if jq -e .[0].created_at ns-treatments.json; then
+    mv ns-treatments.json pumphistory.json
+fi
 
 # download actual glucose data from Nightscout entries.json for the simulated time period
 query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime "$START_DATE +4 hours" |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$END_DATE +28 hours" |nonl; echo 000)&count=9999999"
