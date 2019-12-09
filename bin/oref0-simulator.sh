@@ -94,7 +94,7 @@ function main {
         echo "Invalid suggested.json: updating glucose.json + $adjustment"
         jq '.[0].glucose + '"$adjustment"' |floor| [ { date: '$(echo $(date -d $(cat clock.json | tr -d '"')+5minutes +%s)000)', glucose: ., sgv: ., dateString: "'$(date -d $(cat clock.json | tr -d '"') -Iseconds )'", device: "fakecgm" } ] ' glucose.json | tee newrecord.json
     fi
-    if jq -e '.[0].glucose < 39' newrecord.json; then
+    if jq -e '.[0].glucose < 39' newrecord.json > /dev/null; then
         echo "Glucose < 39 invalid"
         echo '[ { "date": '$(echo $(date -d $(cat clock.json | tr -d '"')  +%s)000)', "glucose": 39, "sgv": 39, "dateString": "'$(date -d $(cat clock.json | tr -d '"')+5minutes -Iseconds )'", "device": "fakecgm" } ] ' | tee newrecord.json
     fi
@@ -137,7 +137,7 @@ if [[ $1 == *"init"* ]]; then
     init
 else
     # TODO: support specifying where to run
-    cd /tmp/oref0-simulator && ls glucose.json || init
+    cd /tmp/oref0-simulator && ls glucose.json >/dev/null || init
     deviation=$1
     if [ -z "$1" ]; then deviation=0; fi
     noise=$2
