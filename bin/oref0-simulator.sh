@@ -25,7 +25,7 @@ function main {
 
     jq .isfProfile profile.json > isf.json
     # only run autosens every "20m"
-    if egrep T[0-2][0-9]:[024]0: clock.json; then
+    if egrep T[0-2][0-9]:[024][0-4]: clock.json; then
         oref0-detect-sensitivity glucose.json pumphistory.json isf.json basal_profile.json profile.json carbhistory.json > autosens.json
     fi
     oref0-calculate-iob pumphistory.json profile.json clock.json autosens.json > iob.json
