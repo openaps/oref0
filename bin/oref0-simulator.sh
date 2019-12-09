@@ -126,8 +126,11 @@ function addcarbs {
 }
 
 function stats {
+    echo Simulated:
     cat glucose.json | jq '.[] | select (.device=="fakecgm") | .sgv' | awk -f ~/src/oref0/bin/glucose-stats.awk
     #cat glucose.json | jq .[].sgv | awk -f ~/src/oref0/bin/glucose-stats.awk
+    echo Actual:
+    cat ns-entries.json | jq .[].sgv | awk -f ~/src/oref0/bin/glucose-stats.awk
 }
 
 if [[ $1 == *"init"* ]]; then
