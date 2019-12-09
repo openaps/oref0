@@ -156,7 +156,7 @@ describe('NOISE', function() {
       readDateMills: 1528892189592,
       filtered: 148544,
       unfiltered: 144256,
-      glucose: 158,
+      glucose: 148,
       trend: -6.002474353316756,
     }];
 
