@@ -130,7 +130,17 @@ for i in $(seq 0 10); do
     fi
 done
 
-# TODO: download historical glucose data from Nightscout entries.json for the day leading up to $START_DATE
+# download historical glucose data from Nightscout entries.json for the day leading up to $START_DATE at 4am
+
+query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime "$START_DATE -24 hours" |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$START_DATE +4 hours" |nonl; echo 000)&count=1500"
+echo Query: $NIGHTSCOUT_HOST entries/sgv.json $query
+ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.json || die "Couldn't download ns-entries.json"
+ls -la ns-entries.json || die "No ns-entries.json downloaded"
+if jq -e .[0].sgv ns-entries.json; then
+    mv ns-entries.json glucose.json
+    cat glucose.json | jq .[0].dateString > clock.json
+fi
+
 echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE 
 oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE | grep "dev: " | awk '{print $13 "," $20}' | while IFS=',' read dev carbs; do
     ~/src/oref0/bin/oref0-simulator.sh $dev 0 $carbs
