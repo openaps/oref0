@@ -378,10 +378,10 @@ def display_text(p_data):
             times[time].get("tgt_low", ""),
             times[time].get("tgt_high", ""),
         ])
-    times_table = Texttable()
-    times_table.set_cols_align(["c", "c", "c", "c", "c", "c"])
-    times_table.add_rows(times_list)
-    print(times_table.draw() + "\n")
+    # times_table = Texttable()
+    #times_table.set_cols_align(["c", "c", "c", "c", "c", "c"])
+    #times_table.add_rows(times_list)
+    #print(times_table.draw() + "\n")
 
 
 if __name__ == "__main__":
