@@ -154,7 +154,7 @@ def write(nightscout, token, profile_name, directory):
                             profile_file, key)
                         sys.exit(
                             "Existing profile contains a key we wouldn't set!")
-        except FileNotFoundError:
+        except IOError:
             pass
     for profile_file in PROFILE_FILES:
         with open(os.path.join(directory, profile_file), 'w') as f:
