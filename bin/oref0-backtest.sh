@@ -77,6 +77,7 @@ done
 NIGHTSCOUT_HOST=$(echo $NIGHTSCOUT_HOST | sed 's/\/$//g')
 
 # TODO: add support for backtesting from autotune.*.log files specified on the command-line via glob, as an alternative to NS
+# TODO: add support for specifying a preferences.json to override the one from nightscout (for testing impact of preferences)
 if [[ -z "$NIGHTSCOUT_HOST" ]]; then
     echo "Usage: $0 [--dir=/tmp/oref0-simulator] --ns-host=https://mynightscout.herokuapp.com [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--log=(true)|false] ]"
 exit 1
