@@ -101,6 +101,9 @@ function main {
     # write a new glucose entry to glucose.json, and truncate it to 432 records (36 hours)
     jq -s '[.[][]] | .[0:432]' newrecord.json glucose.json > glucose.json.new
     mv glucose.json.new glucose.json
+    # keep all glucose records for easy stats
+    jq -s '[.[][]]' newrecord.json all-glucose.json > all-glucose.json.new
+    mv all-glucose.json.new all-glucose.json
 
     # if there are any new carbs, add them to carbhistory.json
     addcarbs $carbs
@@ -127,7 +130,7 @@ function addcarbs {
 
 function stats {
     echo Simulated:
-    cat glucose.json | jq '.[] | select (.device=="fakecgm") | .sgv' | awk -f ~/src/oref0/bin/glucose-stats.awk
+    cat all-glucose.json | jq '.[] | select (.device=="fakecgm") | .sgv' | awk -f ~/src/oref0/bin/glucose-stats.awk
     #cat glucose.json | jq .[].sgv | awk -f ~/src/oref0/bin/glucose-stats.awk
     echo Actual:
     cat ns-entries.json | jq .[].sgv | awk -f ~/src/oref0/bin/glucose-stats.awk

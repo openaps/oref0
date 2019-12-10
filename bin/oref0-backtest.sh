@@ -6,7 +6,7 @@ source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to r
 
 function stats {
     echo Simulated:
-    cat glucose.json | jq '.[] | select (.device=="fakecgm") | .sgv' | awk -f ~/src/oref0/bin/glucose-stats.awk
+    cat all-glucose.json | jq '.[] | select (.device=="fakecgm") | .sgv' | awk -f ~/src/oref0/bin/glucose-stats.awk
     echo Actual:
     cat ns-entries.json | jq .[].sgv | awk -f ~/src/oref0/bin/glucose-stats.awk
 }
@@ -143,6 +143,7 @@ ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.json || die "C
 ls -la ns-entries.json || die "No ns-entries.json downloaded"
 if jq -e .[0].sgv ns-entries.json; then
     mv ns-entries.json glucose.json
+    cp glucose.json all-glucose.json
     cat glucose.json | jq .[0].dateString > clock.json
 fi
 # download historical treatments data from Nightscout treatments.json for the day leading up to $START_DATE at 4am
