@@ -104,7 +104,7 @@ if [[ -z "$END_DATE" ]]; then
 fi
 
 if [[ -z "$UNKNOWN_OPTION" ]] ; then # everything is ok
-  echo "Running oref0-backtest --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE"
+  echo "Running oref0-backtest --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE" | tee $DIR/commands.log
 else
   echo "Unknown options. Exiting"
   exit 1
@@ -184,7 +184,7 @@ echo Query: $NIGHTSCOUT_HOST entries/sgv.json $query
 ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.json || die "Couldn't download ns-entries.json"
 ls -la ns-entries.json || die "No ns-entries.json downloaded"
 
-echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE
+echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE | tee $DIR/commands.log
 oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE | grep "dev: " | awk '{print $13 "," $20}' | while IFS=',' read dev carbs; do
     ~/src/oref0/bin/oref0-simulator.sh $dev 0 $carbs $DIR
 done
