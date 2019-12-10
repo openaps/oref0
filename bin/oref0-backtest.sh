@@ -167,5 +167,6 @@ oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --
 done
 cp autotune/profile.json settings/autotune.json
 
-stats
+# these get run at the end of every oref0-simulator run, so no need to repeat
+#stats
 
