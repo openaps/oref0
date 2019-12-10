@@ -31,7 +31,7 @@ case $i in
     DIR="${i#*=}"
     # ~/ paths have to be expanded manually
     DIR="${DIR/#\~/$HOME}"
-    # If DIR is a symlink, get actual path: 
+    # If DIR is a symlink, get actual path:
     if [[ -L $DIR ]] ; then
         directory="$(readlink $DIR)"
     else
@@ -65,6 +65,18 @@ case $i in
     TERMINAL_LOGGING="${i#*=}"
     shift
     ;;
+    -p=*|--preferences=*)
+    PREF="${i#*=}"
+    # ~/ paths have to be expanded manually
+    PREF="${PREF/#\~/$HOME}"
+    # If PREF is a symlink, get actual path:
+    if [[ -L $PREF ]] ; then
+        preferences="$(readlink $PREF)"
+    else
+        preferences="$PREF"
+    fi
+    shift
+    ;;
     *)
     # unknown option
     echo "Option ${i#*=} unknown"
@@ -77,9 +89,8 @@ done
 NIGHTSCOUT_HOST=$(echo $NIGHTSCOUT_HOST | sed 's/\/$//g')
 
 # TODO: add support for backtesting from autotune.*.log files specified on the command-line via glob, as an alternative to NS
-# TODO: add support for specifying a preferences.json to override the one from nightscout (for testing impact of preferences)
 if [[ -z "$NIGHTSCOUT_HOST" ]]; then
-    echo "Usage: $0 [--dir=/tmp/oref0-simulator] --ns-host=https://mynightscout.herokuapp.com [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--log=(true)|false] ]"
+    echo "Usage: $0 [--dir=/tmp/oref0-simulator] --ns-host=https://mynightscout.herokuapp.com [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--log=(true)|false] [--preferences=/path/to/preferences.json]"
 exit 1
 fi
 if [[ -z "$START_DATE" ]]; then
@@ -116,7 +127,6 @@ if jq -e .dia profile.json.new; then
 else
     echo Bad profile.json.new from get_profile.py
 fi
-cp profile.json pumpprofile.json
 
 # download preferences.json from Nightscout devicestatus.json endpoint and overwrite profile.json with it
 for i in $(seq 0 10); do
@@ -134,7 +144,19 @@ for i in $(seq 0 10); do
     fi
 done
 
+# read a --preferences file to override the one from nightscout (for testing impact of different preferences)
+if [[ -e $preferences ]]; then
+    jq -s '.[0] * .[1]' profile.json $preferences > profile.json.new
+    if jq -e .max_iob profile.json.new; then
+        mv profile.json.new profile.json
+        echo Successfully merged $preferences into profile.json
+    else
+        echo Unable to merge $preferences into profile.json
+    fi
+fi
+
 cp profile.json settings/
+cp profile.json pumpprofile.json
 cp pumpprofile.json settings/
 
 # download historical glucose data from Nightscout entries.json for the day leading up to $START_DATE at 4am
@@ -162,7 +184,7 @@ echo Query: $NIGHTSCOUT_HOST entries/sgv.json $query
 ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.json || die "Couldn't download ns-entries.json"
 ls -la ns-entries.json || die "No ns-entries.json downloaded"
 
-echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE 
+echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE
 oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE | grep "dev: " | awk '{print $13 "," $20}' | while IFS=',' read dev carbs; do
     ~/src/oref0/bin/oref0-simulator.sh $dev 0 $carbs $DIR
 done
