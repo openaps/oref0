@@ -12,7 +12,7 @@ function stats {
 }
 
 # defaults
-DIR="/tmp/oref0-simulator"
+DIR="/tmp/oref0-simulator.$(date +%s)"
 NIGHTSCOUT_HOST=""
 START_DATE=""
 END_DATE=""
@@ -163,7 +163,7 @@ ls -la ns-entries.json || die "No ns-entries.json downloaded"
 
 echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE 
 oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE | grep "dev: " | awk '{print $13 "," $20}' | while IFS=',' read dev carbs; do
-    ~/src/oref0/bin/oref0-simulator.sh $dev 0 $carbs
+    ~/src/oref0/bin/oref0-simulator.sh $dev 0 $carbs $DIR
 done
 cp autotune/profile.json settings/autotune.json
 
