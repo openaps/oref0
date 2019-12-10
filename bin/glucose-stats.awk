@@ -4,6 +4,7 @@ BEGIN {
     if (!max_bg) { max_bg=180 }
 }
 { sum+=$1; count++ }
+($1 < 39) { next }
 ($1 < min) { min=$1 }
 ($1 > max) { max=$1 }
 ($1 <= max_bg && $1 >= min_bg) { inrange++ }
