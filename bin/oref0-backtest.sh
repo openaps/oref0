@@ -79,8 +79,21 @@ case $i in
     ;;
     *)
     # unknown option
-    echo "Option ${i#*=} unknown"
-    UNKNOWN_OPTION="yes"
+    OPT=${i#*=}
+    # ~/ paths have to be expanded manually
+    OPT="${OPT/#\~/$HOME}"
+    # If OPT is a symlink, get actual path:
+    if [[ -L $OPT ]] ; then
+        autotunelog="$(readlink $OPT)"
+    else
+        autotunelog="$OPT"
+    fi
+    if ls $autotunelog; then
+        shift
+    else
+        echo "Option $OPT unknown"
+        UNKNOWN_OPTION="yes"
+    fi
     ;;
 esac
 done
@@ -89,9 +102,10 @@ done
 NIGHTSCOUT_HOST=$(echo $NIGHTSCOUT_HOST | sed 's/\/$//g')
 
 # TODO: add support for backtesting from autotune.*.log files specified on the command-line via glob, as an alternative to NS
-if [[ -z "$NIGHTSCOUT_HOST" ]]; then
-    echo "Usage: $0 [--dir=/tmp/oref0-simulator] --ns-host=https://mynightscout.herokuapp.com [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--log=(true)|false] [--preferences=/path/to/preferences.json]"
-exit 1
+if [[ -z "$NIGHTSCOUT_HOST" ]] && [[ -z "$autotunelog" ]]; then
+    echo "Usage: NS mode: $0 [--dir=/tmp/oref0-simulator] --ns-host=https://mynightscout.herokuapp.com [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--log=(true)|false] [--preferences=/path/to/preferences.json]"
+    echo "Usage: file mode: $0 [--dir=/tmp/oref0-simulator] /path/to/autotune*.log [--log=(true)|false] [--preferences=/path/to/preferences.json]"
+    exit 1
 fi
 if [[ -z "$START_DATE" ]]; then
     # Default start date of yesterday
@@ -110,11 +124,20 @@ else
   exit 1
 fi
 
-
-# TODO: support $DIR in oref0-simulator
 oref0-simulator init $DIR
 cd $DIR
 
+# file mode: run simulator from deviations from an autotune log file
+# TODO: support specifying a json to override contents of example profile.json
+if ! [[ -z "$autotunelog" ]]; then
+    echo cat $autotunelog | tee -a $DIR/commands.log
+    cat $autotunelog | grep "dev: " | awk '{print $13 "," $20}' | while IFS=',' read dev carbs; do
+        ~/src/oref0/bin/oref0-simulator.sh $dev 0 $carbs $DIR
+    done
+    exit 0
+fi
+
+# nightscout mode: download data from Nightscout
 # download profile.json from Nightscout profile.json endpoint and copy over to pumpprofile.json for autotuning
 ~/src/oref0/bin/get_profile.py --nightscout $NIGHTSCOUT_HOST display --format openaps 2>/dev/null > profile.json.new
 if jq -e .dia profile.json.new; then
@@ -188,7 +211,8 @@ echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DA
 oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE | grep "dev: " | awk '{print $13 "," $20}' | while IFS=',' read dev carbs; do
     ~/src/oref0/bin/oref0-simulator.sh $dev 0 $carbs $DIR
 done
-cp autotune/profile.json settings/autotune.json
+
+#cp autotune/profile.json settings/autotune.json
 
 # these get run at the end of every oref0-simulator run, so no need to repeat
 #stats
