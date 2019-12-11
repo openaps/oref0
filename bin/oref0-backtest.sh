@@ -12,7 +12,7 @@ function stats {
 }
 
 # defaults
-DIR="/tmp/oref0-simulator.$(date +%s)"
+DIR="/tmp/oref0-simulator.$(mydate +%s)"
 NIGHTSCOUT_HOST=""
 START_DATE=""
 END_DATE=""
@@ -45,12 +45,12 @@ case $i in
     ;;
     -s=*|--start-date=*)
     START_DATE="${i#*=}"
-    START_DATE=`date --date="$START_DATE" +%Y-%m-%d`
+    START_DATE=`mydate --date="$START_DATE" +%Y-%m-%d`
     shift # past argument=value
     ;;
     -e=*|--end-date=*)
     END_DATE="${i#*=}"
-    END_DATE=`date --date="$END_DATE" +%Y-%m-%d`
+    END_DATE=`mydate --date="$END_DATE" +%Y-%m-%d`
     shift # past argument=value
     ;;
     -t=*|--start-days-ago=*)
@@ -109,12 +109,12 @@ if [[ -z "$NIGHTSCOUT_HOST" ]] && [[ -z "$autotunelog" ]]; then
 fi
 if [[ -z "$START_DATE" ]]; then
     # Default start date of yesterday
-    START_DATE=`date --date="$START_DAYS_AGO days ago" +%Y-%m-%d`
+    START_DATE=`mydate --date="$START_DAYS_AGO days ago" +%Y-%m-%d`
 fi
 if [[ -z "$END_DATE" ]]; then
     # Default end-date as this morning at midnight in order to not get partial day samples for now
     # (ISF/CSF adjustments are still single values across each day)
-    END_DATE=`date --date="$END_DAYS_AGO days ago" +%Y-%m-%d`
+    END_DATE=`mydate --date="$END_DAYS_AGO days ago" +%Y-%m-%d`
 fi
 
 if [[ -z "$UNKNOWN_OPTION" ]] ; then # everything is ok
@@ -193,7 +193,7 @@ if jq -e .[0].sgv ns-entries.json; then
     cat glucose.json | jq .[0].dateString > clock.json
 fi
 # download historical treatments data from Nightscout treatments.json for the day leading up to $START_DATE at 4am
-query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$START_DATE -24 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$START_DATE +4 hours" -Iminutes`"
+query="find%5Bcreated_at%5D%5B%24gte%5D=`mydate --date="$START_DATE -24 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`mydate --date="$START_DATE +4 hours" -Iminutes`"
 echo Query: $NIGHTSCOUT_HOST treatments.json $query
 ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.json || die "Couldn't download ns-treatments.json"
 ls -la ns-treatments.json || die "No ns-treatments.json downloaded"
