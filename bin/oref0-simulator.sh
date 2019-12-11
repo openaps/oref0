@@ -37,9 +37,9 @@ function main {
     #cat naive_iob.json | jq -c .[0]
     oref0-meal pumphistory.json profile.json clock.json glucose.json basal_profile.json carbhistory.json > meal.json
     # calculate naive BGI and deviation without autosens
-    oref0-determine-basal naive_iob.json temp_basal.json glucose.json profile.json --meal meal.json --microbolus --currentTime $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000) > naive_suggested.json
+    oref0-determine-basal naive_iob.json temp_basal.json glucose.json profile.json --meal meal.json --microbolus --currentTime $(echo $(mydate -d $(cat clock.json | tr -d '"') +%s)000) > naive_suggested.json
     cat naive_suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)'
-    oref0-determine-basal iob.json temp_basal.json glucose.json profile.json --auto-sens autosens.json --meal meal.json --microbolus --currentTime $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000) > suggested.json
+    oref0-determine-basal iob.json temp_basal.json glucose.json profile.json --auto-sens autosens.json --meal meal.json --microbolus --currentTime $(echo $(mydate -d $(cat clock.json | tr -d '"') +%s)000) > suggested.json
     jq . -c suggested.json >> log.json
     cat suggested.json | jq -C -c '. | del(.predBGs) | del(.reason)'
     cat suggested.json | jq -C -c .reason
@@ -87,7 +87,7 @@ function main {
     noiseformula="2*$noise*$RANDOM/32767 - $noise + 0.5"
     echo " and noise of +/- $noise ($noiseformula)"
     if ( jq -e .bg naive_suggested.json && jq -e .BGI naive_suggested.json && jq -e .deviation naive_suggested.json ) >/dev/null; then
-        jq ".bg + .BGI + $deviation + $noiseformula |floor| [ { date: $(echo $(date -d $(cat clock.json | tr -d '"') +%s)000), glucose: ., sgv: ., dateString: \"$(date -d $(cat clock.json | tr -d '"') -Iseconds )\", device: \"fakecgm\" } ] " naive_suggested.json > newrecord.json
+        jq ".bg + .BGI + $deviation + $noiseformula |floor| [ { date: $(echo $(mydate -d $(cat clock.json | tr -d '"') +%s)000), glucose: ., sgv: ., dateString: \"$(mydate -d $(cat clock.json | tr -d '"') -Iseconds )\", device: \"fakecgm\" } ] " naive_suggested.json > newrecord.json
     else
         if [[ $deviation == *".deviation"* ]]; then
             adjustment=$noiseformula
@@ -95,11 +95,11 @@ function main {
             adjustment="$deviation + $noiseformula"
         fi
         echo "Invalid suggested.json: updating glucose.json + $adjustment"
-        jq '.[0].glucose + '"$adjustment"' |floor| [ { date: '$(echo $(date -d $(cat clock.json | tr -d '"')+5minutes +%s)000)', glucose: ., sgv: ., dateString: "'$(date -d $(cat clock.json | tr -d '"') -Iseconds )'", device: "fakecgm" } ] ' glucose.json | tee newrecord.json
+        jq '.[0].glucose + '"$adjustment"' |floor| [ { date: '$(echo $(mydate -d $(cat clock.json | tr -d '"')+5minutes +%s)000)', glucose: ., sgv: ., dateString: "'$(mydate -d $(cat clock.json | tr -d '"') -Iseconds )'", device: "fakecgm" } ] ' glucose.json | tee newrecord.json
     fi
     if jq -e '.[0].glucose < 39' newrecord.json > /dev/null; then
         echo "Glucose < 39 invalid"
-        echo '[ { "date": '$(echo $(date -d $(cat clock.json | tr -d '"')  +%s)000)', "glucose": 39, "sgv": 39, "dateString": "'$(date -d $(cat clock.json | tr -d '"')+5minutes -Iseconds )'", "device": "fakecgm" } ] ' | tee newrecord.json
+        echo '[ { "date": '$(echo $(mydate -d $(cat clock.json | tr -d '"')  +%s)000)', "glucose": 39, "sgv": 39, "dateString": "'$(mydate -d $(cat clock.json | tr -d '"')+5minutes -Iseconds )'", "device": "fakecgm" } ] ' | tee newrecord.json
     fi
     # write a new glucose entry to glucose.json, and truncate it to 432 records (36 hours)
     jq -s '[.[][]] | .[0:432]' newrecord.json glucose.json > glucose.json.new
@@ -113,9 +113,9 @@ function main {
 
     # advance the clock by 5m
     if jq -e .deliverAt suggested.json >/dev/null; then
-        echo '"'$(date -d "$(cat suggested.json | jq .deliverAt | tr -d '"')+5 minutes" -Iseconds)'"' > clock.json
+        echo '"'$(mydate -d "$(cat suggested.json | jq .deliverAt | tr -d '"')+5 minutes" -Iseconds)'"' > clock.json
     else
-        echo '"'$(date -d "$(cat clock.json | tr -d '"')+5minutes" -Iseconds)'"' > clock.json
+        echo '"'$(mydate -d "$(cat clock.json | tr -d '"')+5minutes" -Iseconds)'"' > clock.json
     fi
 }
 
@@ -123,7 +123,7 @@ function addcarbs {
     # if a carbs argument is provided, write the carb entry to carbhistory.json
     carbs=$1
     if ! [ -z "$carbs" ] && [ "$carbs" -gt 0 ]; then
-        echo '[ { "carbs": '$carbs', "insulin": null, "created_at": "'$(date -d $(cat clock.json | tr -d '"')+5minutes -Iseconds )'", "enteredBy": "oref0-simulator" } ] ' | tee newrecord.json
+        echo '[ { "carbs": '$carbs', "insulin": null, "created_at": "'$(mydate -d $(cat clock.json | tr -d '"')+5minutes -Iseconds )'", "enteredBy": "oref0-simulator" } ] ' | tee newrecord.json
 
         # write the new record to carbhistory.json, and truncate it to 100 records
         jq -s '[.[][]] | .[0:100]' newrecord.json carbhistory.json > carbhistory.json.new
