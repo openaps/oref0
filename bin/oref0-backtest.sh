@@ -156,7 +156,7 @@ for i in $(seq 0 10); do
     curl $NIGHTSCOUT_HOST/api/v1/devicestatus.json | jq .[$i].preferences > preferences.json.new
     if jq -e .max_iob preferences.json.new; then
         mv preferences.json.new preferences.json
-        jq -rs 'reduce .[] as $item ({}; . * $item)' profile.json preferences.json > profile.json.new
+        jq -s '.[0] + .[1]' profile.json preferences.json > profile.json.new
         if jq -e .max_iob profile.json.new; then
             mv profile.json.new profile.json
             echo Successfully merged preferences.json into profile.json
@@ -169,7 +169,7 @@ done
 
 # read a --preferences file to override the one from nightscout (for testing impact of different preferences)
 if [[ -e $preferences ]]; then
-    jq -rs 'reduce .[] as $item ({}; . * $item)' profile.json $preferences > profile.json.new
+    jq -s '.[0] + .[1]' profile.json $preferences > profile.json.new
     if jq -e .max_iob profile.json.new; then
         mv profile.json.new profile.json
         echo Successfully merged $preferences into profile.json
