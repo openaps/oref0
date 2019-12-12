@@ -77,6 +77,18 @@ case $i in
     fi
     shift
     ;;
+    -a=*|--autosens-override=*)
+    AS_OVER="${i#*=}"
+    # ~/ paths have to be expanded manually
+    AS_OVER="${AS_OVER/#\~/$HOME}"
+    # If AS_OVER is a symlink, get actual path:
+    if [[ -L $AS_OVER ]] ; then
+        as_override="$(readlink $AS_OVER)"
+    else
+        as_override="$AS_OVER"
+    fi
+    shift
+    ;;
     *)
     # unknown option
     OPT=${i#*=}
@@ -103,8 +115,8 @@ NIGHTSCOUT_HOST=$(echo $NIGHTSCOUT_HOST | sed 's/\/$//g')
 
 # TODO: add support for backtesting from autotune.*.log files specified on the command-line via glob, as an alternative to NS
 if [[ -z "$NIGHTSCOUT_HOST" ]] && [[ -z "$autotunelog" ]]; then
-    echo "Usage: NS mode: $0 [--dir=/tmp/oref0-simulator] --ns-host=https://mynightscout.herokuapp.com [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--log=(true)|false] [--preferences=/path/to/preferences.json]"
-    echo "Usage: file mode: $0 [--dir=/tmp/oref0-simulator] /path/to/autotune*.log [--log=(true)|false] [--preferences=/path/to/preferences.json]"
+    echo "Usage: NS mode: $0 [--dir=/tmp/oref0-simulator] --ns-host=https://mynightscout.herokuapp.com [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--log=(true)|false] [--preferences=/path/to/preferences.json] [--autosens-override=/path/to/autosens-override.json]"
+    echo "Usage: file mode: $0 [--dir=/tmp/oref0-simulator] /path/to/autotune*.log [--log=(true)|false] [--preferences=/path/to/preferences.json] [--autosens-override=/path/to/autosens-override.json]"
     exit 1
 fi
 if [[ -z "$START_DATE" ]]; then
@@ -181,6 +193,12 @@ fi
 cp profile.json settings/
 cp profile.json pumpprofile.json
 cp pumpprofile.json settings/
+
+if [[ -e $as_override ]]; then
+    echo Overriding autosens with:
+    cat $as_override
+    cp $as_override autosens-override.json
+fi
 
 # download historical glucose data from Nightscout entries.json for the day leading up to $START_DATE at 4am
 query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime "$START_DATE -24 hours" |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$START_DATE +4 hours" |nonl; echo 000)&count=1500"
