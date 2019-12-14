@@ -127,6 +127,16 @@ if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
     oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log &
 fi
 
+cd /var/log/openaps/ && df . | awk '($4 < 50000) {print $4}' | while read line; do
+    # find the oldest log file
+    ls -t | tail -1
+done | while read file; do
+    # delete the oldest log file
+    rm $file
+    # attempt a logrotate
+    logrotate /etc/logrotate.conf -f
+done
+
 # check if 5 minutes have passed, and if yes, turn of the screen to save power
 ttyport="$(get_pref_string .ttyport)"
 upSeconds="$(cat /proc/uptime | grep -o '^[0-9]\+')"
