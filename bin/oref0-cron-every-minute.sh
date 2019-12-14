@@ -127,7 +127,8 @@ if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
     oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log &
 fi
 
-cd /var/log/openaps/ && df . | awk '($4 < 50000) {print $4}' | while read line; do
+# if disk has less than 10MB free, delete something and logrotate
+cd /var/log/openaps/ && df . | awk '($4 < 10000) {print $4}' | while read line; do
     # find the oldest log file
     ls -t | tail -1
 done | while read file; do
