@@ -15,6 +15,11 @@ if is_edison; then
     sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | jq .batteryVoltage | awk '{if ($1<=3050)system("sudo shutdown -h now")}' &
 fi
 
+# proper shutdown of pi rigs once the battery level is below 2 % (should be more than enough to shut down on a standard 18600 ~2Ah cell)
+if is_pi; then
+    sudo ~/src/openaps-menu/scripts/getvoltage.sh | tee ~/myopenaps/monitor/edison-battery.json | jq .battery | awk '{if ($1<2)system("sudo shutdown -h now")}' &
+fi
+
 # temporarily disable hotspot for 1m every 15m to allow it to try to connect via wifi again
 (
     touch /tmp/disable_hotspot
