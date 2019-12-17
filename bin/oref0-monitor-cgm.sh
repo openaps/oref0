@@ -25,19 +25,7 @@ function glucose_report {
 }
 
 function upload {
-    openaps report invoke nightscout/recent-missing-entries.json nightscout/uploaded-entries.json
-}
-
-function upload_first {
-    openaps report invoke monitor/glucose-zoned-first.json nightscout/uploaded-first.json
-}
-
-function maybe_extras {
-    if (oref0-dex-is-fresh monitor/glucose-zoned.json 3); then
-        openaps report invoke monitor/cal.json monitor/cal-zoned.json nightscout/uploaded-cals.json
-    else
-        echo "Glucose is not fresh, not pulling extra data"
-    fi
+    report invoke nightscout/recent-missing-entries.json nightscout/uploaded-entries.json
 }
 
 if [[ "${CGM,,}" == "mdt" ]]; then
@@ -46,9 +34,9 @@ elif [[ ${CGM,,} =~ "g4-upload" ]] ||  [[ ${CGM,,} =~ "shareble" ]]; then
     wait_until_expected \
     && time glucose_report \
     && echo_glucose \
-    && (upload_first || echo upload first failed) \
+    && (openaps upload-first || echo upload first failed) \
     && (upload || echo cgm upload failed) \
-    && (maybe_extras || echo cgm extras failed)
+    && (openaps maybe-extras || echo cgm extras failed)
 else
     openaps report invoke raw-cgm/raw-entries.json cgm/cgm-glucose.json
 fi
