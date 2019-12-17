@@ -522,7 +522,13 @@ function if_mdt_get_bg {
 
 # helper function for if_mdt_get_bg
 function mdt_get_bg {
-        oref0-mdt-update 2>&1 | tee -a /var/log/openaps/cgm-loop.log >&3
+        if oref0-mdt-update 2>&1 | tee -a /var/log/openaps/cgm-loop.log >&3; then
+            return 0
+        else
+            # if Enlite data retrieval fails, run smb_reservoir_before function to see if time needs to be reset
+            smb_reservoir_before
+            return 1
+        fi
 }
 
 # make sure we can talk to the pump and get a valid model number
