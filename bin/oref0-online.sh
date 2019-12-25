@@ -43,6 +43,7 @@ main() {
     else
         echo "At $(date) my Bluetooth PAN is not connected"
     fi
+    ping_default_gateways
     echo -n "At $(date) my public IP is: "
     if check_ip; then
         stop_hotspot
@@ -137,10 +138,37 @@ function check_ip {
     PUBLIC_IP=$(curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F '[, ]' '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$")
     if [[ -z $PUBLIC_IP ]]; then
         echo not found
+        rm /tmp/hasPublicIp 2> /dev/null
         return 1
     else
         echo $PUBLIC_IP
+        touch /tmp/hasPublicIp
     fi
+}
+
+# network_name ip metric
+function ping_to_default_gw {
+ping $2 -c 1 > /dev/null
+    if [[ $? == 0 ]] ; then 
+        echo At $(date) ping to default gateway $2 '('$1' metric = '$3')' passed ; 
+    else
+        echo At $(date) ping to default gateway $2 '('$1' metric = '$3')' failed ; 
+    fi
+}
+
+function ping_default_gateways {
+# Here is an example to the output of the netstat command that we parse.
+# route -n
+# Kernel IP routing table
+# Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+# 0.0.0.0         192.168.44.1    0.0.0.0         UG    0      0        0 bnep0
+# 0.0.0.0         192.168.44.1    0.0.0.0         UG    214    0        0 bnep0
+# 0.0.0.0         192.168.3.1     0.0.0.0         UG    302    0        0 wlan0
+# 192.168.3.0     0.0.0.0         255.255.255.0   U     302    0        0 wlan0
+# 192.168.44.0    0.0.0.0         255.255.255.0   U     214    0        0 bnep0
+route -n | grep ^0.0.0.0 |awk '{print $8 " " $2 " " $5}'| uniq | while read -r line ; do
+    ping_to_default_gw $line 
+done
 }
 
 function has_ip {
