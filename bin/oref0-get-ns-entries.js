@@ -158,7 +158,7 @@ if (!module.parent) {
     // append the token secret to the end of the ns url, or add it to the headers if token based authentication is not used
     var headers = {} ;
     var tokenAuth = "";
-    if apisecret.startsWith("token=") {
+    if (apisecret.startsWith("token=")) {
       tokenAuth = "&" + apisecret;
     } else { 
       headers = { 'api-secret': apisecret };
