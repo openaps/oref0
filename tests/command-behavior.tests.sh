@@ -570,8 +570,7 @@ EOT
    "sensitivity_raises_target": true,
    "suspend_zeros_iob": true,
    "unsuspend_if_no_temp": false,
-   "useCustomPeakTime": true,
-   "wide_bg_target_range": false
+   "useCustomPeakTime": true
 }
 EOT
 
@@ -675,8 +674,7 @@ EOT
    "sensitivity_raises_target": true,
    "suspend_zeros_iob": true,
    "unsuspend_if_no_temp": false,
-   "useCustomPeakTime": true,
-   "wide_bg_target_range": false
+   "useCustomPeakTime": true
 }
 EOT
 
