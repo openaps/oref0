@@ -11,11 +11,11 @@ date
 cp -rf xdrip/glucose.json xdrip/last-glucose.json
 curl --compressed -s http://localhost:5000/api/v1/entries?count=288 | jq '[ .[] | .glucose = .sgv ]' > xdrip/glucose.json
 if ! cmp --silent xdrip/glucose.json xdrip/last-glucose.json; then
-    if cat xdrip/glucose.json
+    if cat xdrip/glucose.json \
     	|  jq \
 	        --arg AT_LATEST   "`date -u +'%Y-%m-%dT%H:%M:%S.000Z' --date '5 minutes'`"\
 	        --arg AT_EARLIEST "`date -u +'%Y-%m-%dT%H:%M:%S.000Z' --date '-10 minutes'`"\
-	        '[.[] | (select (.dateString >= $AT_EARLIEST)) | (select (.dateString <= $AT_LATEST)) | (select (.glucose > 38))]'
+	        '[.[] | (select (.dateString >= $AT_EARLIEST)) | (select (.dateString <= $AT_LATEST)) | (select (.glucose > 38))]' \
     	| grep -q glucose; then
         cp -up xdrip/glucose.json monitor/glucose.json
     else
