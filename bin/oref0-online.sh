@@ -149,10 +149,10 @@ function check_ip {
 # network_name ip metric
 function ping_to_default_gw {
 ping $2 -c 1 > /dev/null
-    if [[ $? == 0 ]] ; then 
-        echo At $(date) ping to default gateway $2 '('$1' metric = '$3')' passed ; 
+    if [[ $? == 0 ]] ; then
+        echo At $(date) ping to default gateway $2 '('$1' metric = '$3')' passed ;
     else
-        echo At $(date) ping to default gateway $2 '('$1' metric = '$3')' failed ; 
+        echo At $(date) ping to default gateway $2 '('$1' metric = '$3')' failed ;
     fi
 }
 
@@ -167,7 +167,7 @@ function ping_default_gateways {
 # 192.168.3.0     0.0.0.0         255.255.255.0   U     302    0        0 wlan0
 # 192.168.44.0    0.0.0.0         255.255.255.0   U     214    0        0 bnep0
 route -n | grep ^0.0.0.0 |awk '{print $8 " " $2 " " $5}'| uniq | while read -r line ; do
-    ping_to_default_gw $line 
+    ping_to_default_gw $line
 done
 }
 
@@ -188,7 +188,7 @@ function bt_connect {
             else
                 echo "oref0-bluetoothup already running"
             fi
-            
+
             if ! test -f preferences.json \
                 || ! jq -e .bt_offline < preferences.json > /dev/null \
                 || ! ifconfig | egrep -q "bnep0" >/dev/null; then
@@ -282,7 +282,7 @@ function stop_cycle {
 function bt_bnep0_cycle {
   echo -n "No IP address assigned, cycling the bnep0 interface"
   sudo ifdown bnep0; sudo ifup bnep0;
-  echo "...done" 
+  echo "...done"
 }
 
 
