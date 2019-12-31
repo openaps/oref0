@@ -196,11 +196,11 @@ function format_ns_status {
     fi
 }
 
-#openaps format-latest-nightscout-treatments && test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0 && (ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json ) || echo \\\"No recent treatments to upload\\\"
+#openaps format-latest-nightscout-treatments && test $(jq -r '.[] |.created_at + " " + .eventType' upload/latest-treatments.json | wc -l ) -gt 0 && (ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json ) || echo \\\"No recent treatments to upload\\\"
 function upload_recent_treatments {
     #echo Uploading treatments
     format_latest_nightscout_treatments || die "Couldn't format latest NS treatments"
-    if test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0; then
+    if test $(jq -r '.[] |.created_at + " " + .eventType' upload/latest-treatments.json | wc -l ) -gt 0; then # this could probably just be a grep
         ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json | colorize_json || die "Couldn't upload latest treatments to NS"
     else
         echo "No new treatments to upload"
