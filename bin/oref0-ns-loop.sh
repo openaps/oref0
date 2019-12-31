@@ -92,8 +92,10 @@ function glucose_fresh {
 }
 
 function find_valid_ns_glucose {
-    # TODO: use jq for this if possible
-    cat cgm/ns-glucose.json | json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"
+    jq \
+        --arg AT_LATEST   "`date -u +'%Y-%m-%dT%H:%M:%S.000Z' --date '5 minutes'`"\
+        --arg AT_EARLIEST "`date -u +'%Y-%m-%dT%H:%M:%S.000Z' --date '-10 minutes'`"\
+        '[.[] | (select (.dateString >= $AT_EARLIEST)) | (select (.dateString <= $AT_LATEST)) | (select (.glucose > 38))]' cgm/ns-glucose.json
 }
 
 function ns_temptargets {
