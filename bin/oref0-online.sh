@@ -138,11 +138,11 @@ function check_ip {
     PUBLIC_IP=$(curl --compressed -4 -s -m 15 checkip.amazonaws.com | awk -F '[, ]' '{print $NF}' | egrep "^[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]\.[12]*[0-9]*[0-9]$")
     if [[ -z $PUBLIC_IP ]]; then
         echo not found
-        rm /tmp/hasPublicIp 2> /dev/null
+        rm /tmp/publicIP 2> /dev/null
         return 1
     else
         echo $PUBLIC_IP
-        touch /tmp/hasPublicIp
+        echo $PUBLIC_IP > /tmp/publicIP
     fi
 }
 
