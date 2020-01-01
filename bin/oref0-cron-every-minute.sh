@@ -49,6 +49,7 @@ sudo wpa_cli -i wlan0 scan &
     killall-g oref0-pump-loop 1800
     killall -g --older-than 30m openaps-report
     killall-g oref0-g4-loop 600
+    killall-g oref0-ns-loop 600
 ) &
 
 # kill pump-loop after 5 minutes of not writing to pump-loop.log
@@ -126,6 +127,17 @@ fi
 if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
     oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log &
 fi
+
+# if disk has less than 10MB free, delete something and logrotate
+cd /var/log/openaps/ && df . | awk '($4 < 10000) {print $4}' | while read line; do
+    # find the oldest log file
+    ls -t | tail -1
+done | while read file; do
+    # delete the oldest log file
+    rm $file
+    # attempt a logrotate
+    logrotate /etc/logrotate.conf -f
+done
 
 # check if 5 minutes have passed, and if yes, turn of the screen to save power
 ttyport="$(get_pref_string .ttyport)"

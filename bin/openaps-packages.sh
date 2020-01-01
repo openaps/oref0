@@ -33,6 +33,8 @@ if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' &> /dev/null ; then
         ##sudo apt-get install gcc g++ make
 fi
 
+# upgrade setuptools to avoid "'install_requires' must be a string" error
+sudo pip install setuptools -U # no need to die if this fails
 sudo pip install -U openaps || die "Couldn't install openaps toolkit"
 sudo pip install -U openaps-contrib || die "Couldn't install openaps-contrib"
 sudo openaps-install-udev-rules || die "Couldn't run openaps-install-udev-rules"
