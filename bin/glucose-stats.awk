@@ -15,4 +15,5 @@ END { print "Count: " count;
     printf "%%TIR / high / low (%.0f-%.0f): ", min_bg, max_bg
     #print "%TIR / high / low (" min_bg "-" max_bg "): " \
     printf "%.1f%% / %.1f%% / %.1f%%\n", inrange/(high+inrange+low)*100, high/(high+inrange+low)*100, low/(high+inrange+low)*100
+    printf "%.0f,,,,%.1f,%.1f,%.1f", count, sum/count, high/(high+inrange+low)*100, low/(high+inrange+low)*100
 }
