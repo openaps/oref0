@@ -70,6 +70,9 @@ function main {
     else
         # otherwise, advance the clock 5m on the currently running temp
         jq '. | .duration=.duration-5 | { rate: .rate, duration: .duration, temp: "absolute" }' temp_basal.json > temp_basal.json.new
+        if ! ( jq -e .rate temp_basal.json.new && jq -e .duration temp_basal.json.new && jq -e .temp temp_basal.json.new ) >/dev/null; then
+            echo '{"rate": 0, "duration": 0, "temp": "absolute"}' > temp_basal.json.new
+        fi
         mv temp_basal.json.new temp_basal.json
     fi
     #cat temp_basal.json | jq -c
