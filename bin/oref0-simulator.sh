@@ -26,6 +26,19 @@ function init {
 
 function main {
 
+    # look up the currently active bg_target based on the current clock.json
+    target=$((cat profile.json | jq -r '.bg_targets.targets[] | [.start, .min_bg] | @csv'; echo -n \"; cat clock.json | awk -F T '{print $2}') | sort | grep -B1 '\"$' | head -1 | awk -F , '{print $2}')
+    if ! [ -z "$target" ]; then
+        cat profile.json | jq ". | .min_bg=$target" > profile.json.new
+        echo setting target to $target
+        if jq -e .dia profile.json.new >/dev/null; then
+            mv profile.json.new profile.json
+            cp profile.json settings/
+            cp profile.json pumpprofile.json
+            cp pumpprofile.json settings/
+        fi
+    fi
+
     jq .isfProfile profile.json > isf.json
     # only run autosens every "20m"
     if [[ -e autosens-override.json ]]; then
