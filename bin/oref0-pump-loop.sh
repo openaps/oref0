@@ -103,6 +103,7 @@ main() {
 function run_script() {
   file=$1
 
+  wait_for_silence $upto10s
   echo "Running plugin script ($file)... "
   timeout 60 $file
   echo "Completed plugin script ($file). "
