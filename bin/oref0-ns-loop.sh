@@ -187,6 +187,11 @@ function upload_ns_status {
     find upload -maxdepth 1 -mmin +1440 -type f -name "ns-status*.json" -delete
     # Upload the files one by one according to their order.
     ls upload/ns-status*.json | while read -r file_name ; do
+        if ! grep -q iob $file_name ; then
+            #echo deleteing file $file_name
+            rm $file_name
+            continue
+        fi
         ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json $file_name | colorize_json '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' || die "Couldn't upload devicestatus to NS"
         rm $file_name
     done
