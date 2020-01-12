@@ -8,6 +8,16 @@ self=$(basename $0)
 
 PREFERENCES_FILE="preferences.json"
 
+function run_remote_command () {
+	out_file=$( mktemp /tmp/shared_node.XXXXXXXXXXXX)
+	#echo $out_file
+	echo -n $1 |socat -t90 - UNIX-CONNECT:/tmp/unixSocket > $out_file
+	#cat $out_file
+	jq -r .err $out_file >2
+	jq -r .stdout $out_file 
+	return_val=$( jq -r .return_val $out_file) 
+	return $(( return_val ))
+}
 
 function overtemp {
     # check for CPU temperature above 85°C

@@ -202,9 +202,9 @@ function upload_ns_status {
 # first parameter - ns_status file name
 function format_ns_status {
     if [ -s monitor/edison-battery.json ]; then
-        ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json --uploader monitor/edison-battery.json > upload/$1
+        run_remote_command 'ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json --uploader monitor/edison-battery.json' > upload/$1
     else
-        ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json > upload/$1
+        run_remote_command 'ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json' > upload/$1
     fi
 }
 
@@ -238,6 +238,7 @@ function format_latest_nightscout_treatments {
 
     echo "Latest NS treatment: $latest_ns_treatment_time"
     nightscout cull-latest-openaps-treatments $historyfile settings/model.json $latest_ns_treatment_time > upload/latest-treatments.json
+    cat upload/latest-treatments.json
 }
 
 function check_mdt_upload {
