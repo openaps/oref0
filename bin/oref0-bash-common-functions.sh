@@ -13,7 +13,7 @@ function run_remote_command () {
 	#echo $out_file
 	echo -n $1 |socat -t90 - UNIX-CONNECT:/tmp/unixSocket > $out_file
 	#cat $out_file
-	jq -r .err $out_file >2
+	jq -r .err $out_file 2>
 	jq -r .stdout $out_file 
 	return_val=$( jq -r .return_val $out_file) 
 	return $(( return_val ))
