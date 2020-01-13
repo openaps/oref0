@@ -91,6 +91,7 @@
     "oref0-upload-profile": "./bin/oref0-upload-profile.js",
     "oref0-version": "./bin/oref0-version.sh",
     "oref0-get-ns-entries": "./bin/oref0-get-ns-entries.js",
+    "oref0-shared-node-loop": "./bin/oref0-shared-node-loop.sh",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "wifi": "./bin/oref0-tail-wifi.sh"
   },

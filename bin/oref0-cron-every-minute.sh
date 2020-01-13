@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+#exit 1
 source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
 usage "$@" <<EOT
@@ -110,6 +110,10 @@ fi
 
 if ! is_bash_process_running_named oref0-pump-loop; then
     oref0-pump-loop 2>&1 | tee -a /var/log/openaps/pump-loop.log | adddate openaps.pump-loop | uncolor |tee -a /var/log/openaps/openaps-date.log &
+fi
+
+if ! is_bash_process_running_named oref0-shared-node-loop; then
+    oref0-shared-node-loop | tee -a /var/log/openaps/oref0-shared-node.log | adddate openaps.shared-node | uncolor |tee -a /var/log/openaps/openaps-date.log &
 fi
 
 if [[ ! -z "$BT_PEB" ]]; then
