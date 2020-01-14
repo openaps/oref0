@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#exit 1
+
 source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
 usage "$@" <<EOT
@@ -113,7 +113,7 @@ if ! is_bash_process_running_named oref0-pump-loop; then
 fi
 
 if ! is_bash_process_running_named oref0-shared-node-loop; then
-    oref0-shared-node-loop | tee -a /var/log/openaps/oref0-shared-node.log | adddate openaps.shared-node | uncolor |tee -a /var/log/openaps/openaps-date.log &
+    oref0-shared-node-loop | tee -a /var/log/openaps/shared-node.log | adddate openaps.shared-node | uncolor |tee -a /var/log/openaps/openaps-date.log &
 fi
 
 if [[ ! -z "$BT_PEB" ]]; then
@@ -142,6 +142,7 @@ done | while read file; do
     # attempt a logrotate
     logrotate /etc/logrotate.conf -f
 done
+start_share_node_if_needed
 
 # check if 5 minutes have passed, and if yes, turn of the screen to save power
 ttyport="$(get_pref_string .ttyport)"
