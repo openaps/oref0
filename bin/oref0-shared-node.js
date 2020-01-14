@@ -21,7 +21,7 @@ function serverListen() {
     const fs = require('fs');
     const unixSocketServer = net.createServer({allowHalfOpen:true});
 
-    var socketPath = '/tmp/unixSocket';
+    var socketPath = '/tmp/oaps_shared_node';
     try {
         fs.unlinkSync(socketPath);
     } catch (err) {
@@ -77,6 +77,8 @@ function serverListen() {
 		} catch (err) {
 		    console.log('exception when parsing oref0-normalize-temps ' , err);
 		}
+	    } else if (command [0] == 'ping') {
+		    result = 'pong';
 	    } else {
 	        console.error('Unknown command = ' , command);
 	    }
