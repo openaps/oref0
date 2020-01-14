@@ -187,6 +187,11 @@ function upload_ns_status {
 #ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json
 # ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --uploader monitor/edison-battery.json > upload/ns-status.json
 function format_ns_status {
+    dir_name=~/test_data/ns-status$(date +"%Y-%m-%d-%T")
+    echo dir_name = $dir_name
+    mkdir -p $dir_name
+    cp  monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json preferences.json   monitor/edison-battery.json $dir_name
+    
     if [ -s monitor/edison-battery.json ]; then
         run_remote_command 'ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json --uploader monitor/edison-battery.json' > upload/ns-status.json
     else

@@ -29,7 +29,7 @@ function start_share_node_if_needed() {
 		return 0
 	fi
 	echo 'killing node so it will restart later'
-	node_pid="$(ps -ef | grep 'node oref0-shared-node.js' | grep -v grep | awk '{print $2 }')"
+        node_pid="$(ps -ef | grep node | grep oref0-shared-node.js | grep -v grep | awk '{print $2 }')"
 	echo $node_pid
 	kill -9 $node_pid
 	# Node should start automaticly by oref0-shared-node-loop
@@ -37,7 +37,6 @@ function start_share_node_if_needed() {
 	for i in {1..90}
     do
        sleep 1
-       echo "Welcome $i times"
        output="$(echo ping |socat -t90 - UNIX-CONNECT:/tmp/oaps_shared_node)"
 	   echo $output
 	   if [ "$output" = '{"err":"","stdout":"pong","return_val":0}' ]; then
