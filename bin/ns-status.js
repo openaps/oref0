@@ -92,11 +92,6 @@ var ns_status = function ns_status(argv_params) {
     var params = argv.argv;
     var inputs = params._;
  
-
-console.error('input length = ', inputs.length , inputs[1]);	
-
-    
-
     var clock_input = inputs[0];
     var iob_input = inputs[1];
     var suggested_input = inputs[2];
