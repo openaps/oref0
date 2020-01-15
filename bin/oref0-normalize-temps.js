@@ -61,7 +61,7 @@ if (!module.parent) {
    var command = process.argv;
    command.shift();
    command.shift();
-   var result = oref0-normalize-temps(command)
+   var result = oref0_normalize_temps(command)
    console.log(result);
 }
 
