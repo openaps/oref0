@@ -765,7 +765,7 @@ function setglucosetimestamp {
 function check_reservoir() {
   set -o pipefail
   mdt reservoir 2>&3 | tee monitor/reservoir.json && nonl < monitor/reservoir.json \
-    && egrep -q [0-9] monitor/reservoir.json
+    && egrep -q "[0-9]" monitor/reservoir.json
 }
 function check_model() {
   set -o pipefail
