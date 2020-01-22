@@ -4,7 +4,6 @@
 var os = require("os");
 
 var requireUtils = require('../lib/require-utils');
-var safeRequire = requireUtils.safeRequire;
 var requireWithTimestamp = requireUtils.requireWithTimestamp;
 var safeLoadFile = requireUtils.safeLoadFile;
 

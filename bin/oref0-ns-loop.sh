@@ -92,9 +92,9 @@ function glucose_fresh {
 }
 
 function find_valid_ns_glucose {
-    # TODO: use jq for this if possible
-    cat cgm/ns-glucose.json | json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"
+    run_remote_command 'json -f cgm/ns-glucose.json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"'
 }
+
 
 function ns_temptargets {
     #openaps report invoke settings/temptargets.json settings/profile.json >/dev/null
@@ -217,7 +217,7 @@ function format_ns_status {
 function upload_recent_treatments {
     #echo Uploading treatments
     format_latest_nightscout_treatments || die "Couldn't format latest NS treatments"
-    if test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0; then
+    if test $(jq -r '.[] |.created_at + " " + .eventType' upload/latest-treatments.json | wc -l ) -gt 0; then
         ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json | colorize_json || die "Couldn't upload latest treatments to NS"
     else
         echo "No new treatments to upload"

@@ -113,7 +113,7 @@ if ! is_bash_process_running_named oref0-pump-loop; then
 fi
 
 if ! is_bash_process_running_named oref0-shared-node-loop; then
-    oref0-shared-node-loop | tee -a /var/log/openaps/shared-node.log | adddate openaps.shared-node | uncolor |tee -a /var/log/openaps/openaps-date.log &
+    oref0-shared-node-loop 2>&1 | tee -a /var/log/openaps/shared-node.log | adddate openaps.shared-node | uncolor |tee -a /var/log/openaps/openaps-date.log &
 fi
 
 if [[ ! -z "$BT_PEB" ]]; then
