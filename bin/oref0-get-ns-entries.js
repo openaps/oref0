@@ -172,6 +172,7 @@ if (!module.parent) {
     var options = {
       uri: uri
       , json: true
+      , timeout: 90000
       , headers: headers
     };
 
