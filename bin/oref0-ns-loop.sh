@@ -92,6 +92,12 @@ function glucose_fresh {
 }
 
 function find_valid_ns_glucose {
+    dir_name=~/test_data/find-glucose$(date +"%Y-%m-%d-%T")
+    echo dir_name = $dir_name
+    mkdir -p $dir_name
+    cp cgm/ns-glucose.json  $dir_name
+    date --iso-8601=seconds >  $dir_name/date_string
+
     run_remote_command 'json -f cgm/ns-glucose.json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"'
 }
 
@@ -217,6 +223,11 @@ function format_ns_status {
 function upload_recent_treatments {
     #echo Uploading treatments
     format_latest_nightscout_treatments || die "Couldn't format latest NS treatments"
+
+    dir_name=~/test_data/json_jq$(date +"%Y-%m-%d-%T")
+    mkdir -p $dir_name
+    cp upload/latest-treatments.json  $dir_name
+
     if test $(jq -r '.[] |.created_at + " " + .eventType' upload/latest-treatments.json | wc -l ) -gt 0; then
         ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json | colorize_json || die "Couldn't upload latest treatments to NS"
     else
