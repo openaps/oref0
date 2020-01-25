@@ -152,8 +152,7 @@ var ns_status = function ns_status(argv_params) {
                 battery: safeLoadFile(cwd + battery_input),
                 reservoir: safeLoadFile(cwd + reservoir_input),
                 status: requireWithTimestamp(cwd + status_input)
-            },
-            created_at: new Date()
+            }
         };
 
         if (mmtune_input) {
