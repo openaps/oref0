@@ -34,8 +34,7 @@ var oref0_normalize_temps = function oref0_normalize_temps(argv_params) {
 
   if (params._.length > 1) {
     argv.showHelp();
-    console.error('Too many arguments');
-    process.exit(1);
+    return console.error('Too many arguments');
   }
 
   var cwd = process.cwd()
@@ -62,7 +61,9 @@ if (!module.parent) {
    command.shift();
    command.shift();
    var result = oref0_normalize_temps(command)
-   console.log(result);
+   if(result !== undefined) {
+       console.log(result);
+   }
 }
 
 exports = module.exports = oref0_normalize_temps
