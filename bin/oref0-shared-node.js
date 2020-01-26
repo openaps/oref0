@@ -5,8 +5,6 @@
 var os = require("os");
 var ns_status = require("./ns-status");
 var oref0_normalize_temps = require("./oref0-normalize-temps");
-var json = require("json");
-var uniqueFilename = require('unique-filename')
 var fs = require('fs');
 var requireUtils = require('../lib/require-utils');
 
@@ -87,7 +85,7 @@ function serverListen() {
                 // remove the first parameter.
                 command.shift();
                 try {
-                    result = ns_status(command);
+                    result = ns_status(command) + "\n";
                     //sleepFor(2000);
                 } catch (err) {
                     return_val = 1;
@@ -96,8 +94,13 @@ function serverListen() {
             } else if (command[0] == 'oref0-normalize-temps') {
                 command.shift();
                 try {
-
                     result = oref0_normalize_temps(command);
+                    if (typeof result === 'undefined') {
+                        // This preserves the oref0_normalize_temps behavior.
+                        result = ""
+                    } else {
+                        result += "\n";
+                    }
                 } catch (err) {
                     return_val = 1;
                     console.log('exception when parsing oref0-normalize-temps ', err);
@@ -108,7 +111,8 @@ function serverListen() {
                 // remove the first parameter.
                 command.shift();
                 try {
-                    result = jsonWrapper(command);
+                    [result, return_val] = jsonWrapper(command);
+                    result += "\n";
                 } catch (err) {
                     return_val = 1;
                     console.log('exception when running json_wrarpper ', err);
@@ -122,6 +126,25 @@ function serverListen() {
         });
     });
 }
+
+/**
+ * Return a function for the given JS code that returns.
+ *
+ * If no 'return' in the given javascript snippet, then assume we are a single
+ * statement and wrap in 'return (...)'. This is for convenience for short
+ * '-c ...' snippets.
+ */
+function funcWithReturnFromSnippet(js) {
+    // auto-"return"
+    if (js.indexOf('return') === -1) {
+        if (js.substring(js.length - 1) === ';') {
+            js = js.substring(0, js.length - 1);
+        }
+        js = 'return (' + js + ')';
+    }
+    return (new Function(js));
+}
+
 
 // The goal is to run something like:
 // json -f monitor/status.1.json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"
@@ -143,33 +166,43 @@ function jsonWrapper(argv_params) {
         .strict(true)
         .fail(function(msg, err, yargs) {
             if (err) {
-                return console.error('Error found', err);
+                return [console.error('Error found', err), 1];
             }
-            return console.error('Parsing of command arguments failed', msg)
+            return [console.error('Parsing of command arguments failed', msg), 1];
         })
         .help('help');
     var params = argv.argv;
     var inputs = params._;
     if (inputs.length > 0) {
-        return console.error('Error: too many input parameters.');
+        return [console.error('Error: too many input parameters.'), 1];
     }
     if (!params.input_file) {
-        return console.error('Error: No input file.');
+        return [console.error('Error: No input file.'), 1];
     }
     if (!params.filtering_code) {
-        return console.error('Error: No filtering_code');
+        return [console.error('Error: No filtering_code'), 1];
     }
-    // Copy the input file to a temp one (we must work inplace).
-    var jsonTmpfile = uniqueFilename(os.tmpdir(), 'json_input')
-    fs.copyFileSync(params.input_file, jsonTmpfile);
-    console.log("Coppied file to ", jsonTmpfile);
-
-    var newCommand = ['node', '/home/pi/lib/json', '-I', '-f', jsonTmpfile, '-c', params.filtering_code];
-    json.main(newCommand);
-    // output should be in the temp file.
-    var output = requireUtils.safeLoadFile(jsonTmpfile);
-    // Shoud we check for errors here?
-    return output;
+    
+    var data = requireUtils.safeLoadFile(params.input_file);
+    if (!data) {
+        // file is empty. For this files json returns nothing
+        console.error('Error: No data loaded')
+        return ["", 1];
+    }
+    if (!Array.isArray(data)) {
+        // file is not an array of json, we do not handle this.
+        console.error('Error: data is not an array.')
+        return ["", 1];
+    }
+    
+    var condFuncs = funcWithReturnFromSnippet(params.filtering_code);
+    var filtered = [];
+    for (var i = 0; i < data.length; i++) {
+        if (condFuncs.call(data[i])) {
+            filtered.push(data[i]);
+        }
+    }
+    return [JSON.stringify(filtered, null, 2), 0];
 }
 
 
