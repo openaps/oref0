@@ -101,7 +101,6 @@ function find_valid_ns_glucose {
     run_remote_command 'json -f cgm/ns-glucose.json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"'
 }
 
-
 function ns_temptargets {
     #openaps report invoke settings/temptargets.json settings/profile.json >/dev/null
     nightscout ns $NIGHTSCOUT_HOST $API_SECRET temp_targets > settings/ns-temptargets.json.new
@@ -240,7 +239,6 @@ function format_latest_nightscout_treatments {
 
     echo "Latest NS treatment: $latest_ns_treatment_time"
     nightscout cull-latest-openaps-treatments $historyfile settings/model.json $latest_ns_treatment_time > upload/latest-treatments.json
-    cat upload/latest-treatments.json
 }
 
 function check_mdt_upload {

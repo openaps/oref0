@@ -107,6 +107,7 @@ var ns_status = function ns_status(argv_params) {
         return;
     }
 
+    // TODO: For some reason the following line does not work (../package.json ia not found).
     //var pjson = JSON.parse(fs.readFileSync('../package.json', 'utf8'));
     var pjson = require('../package.json');
 
