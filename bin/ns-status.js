@@ -2,6 +2,7 @@
 'use strict';
 
 var os = require("os");
+var fs = require('fs');
 
 var requireUtils = require('../lib/require-utils');
 var requireWithTimestamp = requireUtils.requireWithTimestamp;
@@ -48,7 +49,7 @@ function preferencesStatus (status, cwd ,preferences_input) {
 }
 
 function uploaderStatus (status, cwd, uploader_input) {
-    var uploader = require(cwd + uploader_input);
+    var uploader = JSON.parse(fs.readFileSync(cwd + uploader_input, 'utf8'));
     if (uploader) {
         if (typeof uploader === 'number') {
             status.uploader = {
@@ -80,7 +81,6 @@ var ns_status = function ns_status(argv_params) {
             default: false
         })
         .strict(true)
-        //.exitProcess(false)
         .fail(function (msg, err, yargs) {
             if (err) {
                 return console.error('Error found', err);
@@ -107,6 +107,7 @@ var ns_status = function ns_status(argv_params) {
         return;
     }
 
+    //var pjson = JSON.parse(fs.readFileSync('../package.json', 'utf8'));
     var pjson = require('../package.json');
 
     var cwd = process.cwd() + '/';
@@ -174,12 +175,14 @@ var ns_status = function ns_status(argv_params) {
 }
 
 if (!module.parent) {
-   // remove the first parameter.
-   var command = process.argv;
-   command.shift();
-   command.shift();
-   var result = ns_status(command)
-   console.log(result);
+    // remove the first parameter.
+    var command = process.argv;
+    command.shift();
+    command.shift();
+    var result = ns_status(command);
+    if(result !== undefined) {
+        console.log(result);
+    }
 }
 
 exports = module.exports = ns_status

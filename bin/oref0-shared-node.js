@@ -85,8 +85,8 @@ function serverListen() {
                 // remove the first parameter.
                 command.shift();
                 try {
-                    result = ns_status(command) + "\n";
-                    //sleepFor(2000);
+                    result = ns_status(command);
+                    result = addNewlToResult(result);
                 } catch (err) {
                     return_val = 1;
                     console.log('exception when parsing ns_status ', err);
@@ -95,12 +95,7 @@ function serverListen() {
                 command.shift();
                 try {
                     result = oref0_normalize_temps(command);
-                    if (typeof result === 'undefined') {
-                        // This preserves the oref0_normalize_temps behavior.
-                        result = ""
-                    } else {
-                        result += "\n";
-                    }
+                    result = addNewlToResult(result);
                 } catch (err) {
                     return_val = 1;
                     console.log('exception when parsing oref0-normalize-temps ', err);
@@ -112,7 +107,7 @@ function serverListen() {
                 command.shift();
                 try {
                     [result, return_val] = jsonWrapper(command);
-                    result += "\n";
+                    result = addNewlToResult(result);
                 } catch (err) {
                     return_val = 1;
                     console.log('exception when running json_wrarpper ', err);
@@ -145,6 +140,16 @@ function funcWithReturnFromSnippet(js) {
     return (new Function(js));
 }
 
+
+function addNewlToResult(result) {
+    if (result === undefined) {
+        // This preserves the oref0_normalize_temps behavior.
+        result = ""
+    } else {
+        result += "\n";
+    }
+    return result;
+}
 
 // The goal is to run something like:
 // json -f monitor/status.1.json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"
