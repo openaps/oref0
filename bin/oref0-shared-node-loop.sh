@@ -18,6 +18,4 @@ Usage: $self
 Sync data with Nightscout. Typically runs from crontab.
 EOT
 
-
-
 main "$@"
