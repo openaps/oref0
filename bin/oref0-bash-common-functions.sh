@@ -14,8 +14,8 @@ function run_remote_command () {
 	#echo $out_file
 	echo -n $1 |socat -t90 - UNIX-CONNECT:/tmp/oaps_shared_node > $out_file || return 1
 	#cat $out_file
-	jq -r .err $out_file >&2
-	jq -r .stdout $out_file 
+	jq -j .err $out_file >&2
+	jq -j .stdout $out_file 
 	return_val=$( jq -r .return_val $out_file) 
 	return $(( return_val ))
 }
