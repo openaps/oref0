@@ -1,6 +1,6 @@
 {
   "name": "oref0",
-  "version": "0.7.0-dev",
+  "version": "0.7.0",
   "description": "openaps oref0 reference implementation of the reference design",
   "scripts": {
     "test": "make test",
@@ -20,6 +20,7 @@
   },
   "bin": {
     "bt-pan": "./bin/bt-pan",
+    "killall-g": "./bin/killall-g.sh",
     "l": "./bin/oref0-tail-log.sh",
     "mm-format-ns-glucose": "./bin/mm-format-ns-glucose.sh",
     "mm-format-ns-profile": "./bin/mm-format-ns-profile.sh",
@@ -41,9 +42,11 @@
     "oref0-autotune-export-to-xlsx": "./bin/oref0-autotune-export-to-xlsx.py",
     "oref0-autotune-prep": "./bin/oref0-autotune-prep.js",
     "oref0-autotune-recommends-report": "./bin/oref0-autotune-recommends-report.sh",
+    "oref0-backtest": "./bin/oref0-backtest.sh",
     "oref0-bash-common-functions.sh": "./bin/oref0-bash-common-functions.sh",
     "oref0-bluetoothup": "./bin/oref0-bluetoothup.sh",
     "oref0-calculate-iob": "./bin/oref0-calculate-iob.js",
+    "oref0-calculate-glucose-noise": "./bin/oref0-calculate-glucose-noise.js",
     "oref0-copy-fresher": "./bin/oref0-copy-fresher",
     "oref0-crun": "./bin/oref0-conditional-run.sh",
     "oref0-cron-every-minute": "./bin/oref0-cron-every-minute.sh",
@@ -67,6 +70,7 @@
     "oref0-mdt-update": "./bin/oref0-mdt-update.sh",
     "oref0-meal": "./bin/oref0-meal.js",
     "oref0-monitor-cgm": "./bin/oref0-monitor-cgm.sh",
+    "oref0-mraa-install": "./bin/oref0-mraa-install.sh",
     "oref0-ns-loop": "./bin/oref0-ns-loop.sh",
     "oref0-normalize-temps": "./bin/oref0-normalize-temps.js",
     "oref0_nightscout_check": "./bin/oref0_nightscout_check.py",
@@ -83,10 +87,12 @@
     "oref0-set-system-clock": "./bin/oref0-set-system-clock.sh",
     "oref0-set-local-temptarget": "./bin/oref0-set-local-temptarget.js",
     "oref0-setup": "./bin/oref0-setup.sh",
+    "oref0-simulator": "./bin/oref0-simulator.sh",
     "oref0-truncate-git-history": "./bin/oref0-truncate-git-history.sh",
     "oref0-upload-entries": "./bin/oref0-upload-entries.sh",
     "oref0-upload-profile": "./bin/oref0-upload-profile.js",
     "oref0-version": "./bin/oref0-version.sh",
+    "oref0-get-ns-entries": "./bin/oref0-get-ns-entries.js",
     "peb-urchin-status": "./bin/peb-urchin-status.sh",
     "wifi": "./bin/oref0-tail-wifi.sh"
   },
@@ -94,9 +100,10 @@
   "dependencies": {
     "json": "^9.0.6",
     "json-stable-stringify": "^1.0.1",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "moment-timezone": "0.5.23",
+    "network": "^0.4.1",
     "request": "^2.88.0",
     "share2nightscout-bridge": "^0.2.1",
     "yargs": "^13.2.2"

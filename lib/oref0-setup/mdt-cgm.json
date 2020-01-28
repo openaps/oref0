@@ -101,5 +101,13 @@
       "json_default": "True"
     },
     "name": "nightscout/glucose.json"
+  },
+  {
+    "//": "May be run directly by the user (mentioned in docs)",
+    "type": "alias",
+    "first-upload": {
+      "command": "! bash -c \"cat nightscout/glucose.json | json 1 > nightscout/recent-missing-entries.json && openaps report invoke nightscout/uploaded-entries.json\""
+    },
+    "name": "first-upload"
   }
 ]
