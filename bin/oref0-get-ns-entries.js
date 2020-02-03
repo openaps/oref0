@@ -49,7 +49,6 @@ if (!module.parent) {
   }
 
   var nsurl = params._.slice(1, 2).pop();
-  if (nsurl && nsurl.charAt(nsurl.length - 1) == "/") nsurl = nsurl.substr(0, nsurl.length - 1); // remove trailing slash if it exists
 
   var apisecret = params._.slice(2, 3).pop();
   var hours = Number(params._.slice(3, 4).pop());
@@ -63,6 +62,8 @@ if (!module.parent) {
     usage();
     process.exit(1);
   }
+  // remove trailing slash if it exists
+  if (nsurl && nsurl.charAt(nsurl.length - 1) == "/") nsurl = nsurl.substr(0, nsurl.length - 1);
 
   if (apisecret != null && !apisecret.startsWith("token=") && apisecret.length != 40) {
     var shasum = crypto.createHash('sha1');
