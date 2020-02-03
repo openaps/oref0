@@ -87,6 +87,9 @@ function main {
         jq '. | .duration=.duration-5 | { rate: .rate, duration: .duration, temp: "absolute" }' temp_basal.json > temp_basal.json.new
         mv temp_basal.json.new temp_basal.json
     fi
+    if ! [ -s temp_basal.json ]; then
+        echo '{"rate": 0, "duration": 0, "temp": "absolute"}' > temp_basal.json
+    fi
     #cat temp_basal.json | jq -c
 
 
