@@ -92,8 +92,13 @@ function glucose_fresh {
 }
 
 function find_valid_ns_glucose {
-    # TODO: use jq for this if possible
-    cat cgm/ns-glucose.json | json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"
+    dir_name=~/test_data/find-glucose$(date +"%Y-%m-%d-%T")
+    echo dir_name = $dir_name
+    mkdir -p $dir_name
+    cp cgm/ns-glucose.json  $dir_name
+    date --iso-8601=seconds >  $dir_name/date_string
+
+    run_remote_command 'json -f cgm/ns-glucose.json -c "minAgo=(new Date()-new Date(this.dateString))/60/1000; return minAgo < 10 && minAgo > -5 && this.glucose > 38"'
 }
 
 function ns_temptargets {
@@ -201,10 +206,15 @@ function upload_ns_status {
 # ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --uploader monitor/edison-battery.json > upload/ns-status.json
 # first parameter - ns_status file name
 function format_ns_status {
+    dir_name=~/test_data/ns-status$(date +"%Y-%m-%d-%T")
+    echo dir_name = $dir_name
+    mkdir -p $dir_name
+    cp  monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json preferences.json   monitor/edison-battery.json $dir_name
+    
     if [ -s monitor/edison-battery.json ]; then
-        ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json --uploader monitor/edison-battery.json > upload/$1
+        run_remote_command 'ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json --uploader monitor/edison-battery.json' > upload/$1
     else
-        ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json > upload/$1
+        run_remote_command 'ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json' > upload/$1
     fi
 }
 
@@ -212,7 +222,12 @@ function format_ns_status {
 function upload_recent_treatments {
     #echo Uploading treatments
     format_latest_nightscout_treatments || die "Couldn't format latest NS treatments"
-    if test $(json -f upload/latest-treatments.json -a created_at eventType | wc -l ) -gt 0; then
+
+    dir_name=~/test_data/json_jq$(date +"%Y-%m-%d-%T")
+    mkdir -p $dir_name
+    cp upload/latest-treatments.json  $dir_name
+
+    if test $(jq -r '.[] |.created_at + " " + .eventType' upload/latest-treatments.json | wc -l ) -gt 0; then
         ns-upload $NIGHTSCOUT_HOST $API_SECRET treatments.json upload/latest-treatments.json | colorize_json || die "Couldn't upload latest treatments to NS"
     else
         echo "No new treatments to upload"
