@@ -1051,6 +1051,8 @@ if prompt_yn "" N; then
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
 
     echo "Adding OpenAPS log shortcuts"
+    # Make sure that .bash_profile exists first, then call script to add the log shortcuts
+    touch "$HOME/.bash_profile"
     oref0-log-shortcuts --add-to-profile="$HOME/.bash_profile"
 
     # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
@@ -1116,6 +1118,7 @@ if prompt_yn "" N; then
         fi
         systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
+        test "$directory" != "/$HOME/myopenaps" && (echo You are using a non-standard openaps directory. For the statusmenu to work correctly you need to set the openapsDir variable in index.js)
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
