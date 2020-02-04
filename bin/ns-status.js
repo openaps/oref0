@@ -142,7 +142,8 @@ if (!module.parent) {
                 battery: safeRequire(cwd + battery_input),
                 reservoir: safeRequire(cwd + reservoir_input),
                 status: requireWithTimestamp(cwd + status_input)
-            }
+            },
+            created_at: new Date()
         };
 
         if (mmtune_input) {
