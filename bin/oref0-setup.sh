@@ -1051,7 +1051,7 @@ if prompt_yn "" N; then
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
 
     echo "Adding OpenAPS log shortcuts"
-    oref0-log-shortcuts --add-to-profile="$HOME/.bash_profile"
+    oref0-log-shortcuts
 
     # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
     #echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile
