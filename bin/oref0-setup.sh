@@ -1062,6 +1062,9 @@ if prompt_yn "" N; then
 
     #Moved this out of the conditional, so that x12 models will work with smb loops
     sudo apt-get -y install bc ntpdate bash-completion || die "Couldn't install bc etc."
+    # now required on all platforms for shared-node
+    echo "Installing socat and ntp..."
+    apt-get install -y socat ntp
     cd $directory || die "Can't cd $directory"
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
 
@@ -1119,8 +1122,6 @@ if prompt_yn "" N; then
         sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
         egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
-        echo "Installing socat and ntp..."
-        apt-get install -y socat ntp
         echo "Installing pi-buttons..."
         systemctl stop pi-buttons
         cd $HOME/src && git clone git://github.com/bnielsen1965/pi-buttons.git
