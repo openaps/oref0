@@ -474,7 +474,6 @@ EOT
     cat >profile.json <<EOT
 {
    "A52_risk_enable": false,
-   "adv_target_adjustments": false,
    "allowSMB_with_high_temptarget": false,
    "autosens_max": 1.2,
    "autosens_min": 0.8,
@@ -579,7 +578,6 @@ EOT
     cat >pumpprofile.json <<EOT
 {
    "A52_risk_enable": false,
-   "adv_target_adjustments": false,
    "allowSMB_with_high_temptarget": false,
    "autosens_max": 1.2,
    "autosens_min": 0.8,
