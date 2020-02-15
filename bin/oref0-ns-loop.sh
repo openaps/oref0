@@ -93,7 +93,6 @@ function glucose_fresh {
 
 function find_valid_ns_glucose {
     dir_name=~/test_data/find-glucose$(date +"%Y-%m-%d-%T")
-    echo dir_name = $dir_name
     mkdir -p $dir_name
     cp cgm/ns-glucose.json  $dir_name
     date --iso-8601=seconds >  $dir_name/date_string
