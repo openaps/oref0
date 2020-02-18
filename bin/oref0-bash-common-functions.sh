@@ -16,7 +16,8 @@ function run_remote_command () {
     #cat $out_file
     jq -j .err $out_file >&2
     jq -j .stdout $out_file 
-    return_val=$( jq -r .return_val $out_file) 
+    return_val=$( jq -r .return_val $out_file)
+    rm $out_file
     return $(( return_val ))
 }
 
