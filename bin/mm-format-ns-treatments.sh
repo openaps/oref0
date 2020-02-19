@@ -19,9 +19,6 @@ EOT
 model=$(jq -r . $MODEL)
 
 
-dir_name=~/test_data/normalize-temps$(date +"%Y-%m-%d-%T")
-mkdir -p $dir_name
-cp  $HISTORY  $dir_name
 run_remote_command "oref0-normalize-temps $HISTORY" \
   | jq '[ .[]
     | .medtronic = ( [ "mm://openaps/'$self'/", ( . | if ._type then ._type else .eventType end ) ] | join("") )
