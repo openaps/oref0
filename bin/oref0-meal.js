@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 /*
   oref0 meal data tool
@@ -21,8 +22,8 @@
 
 var generate = require('../lib/meal');
 
-if (!module.parent) {
-    var argv = require('yargs')
+var oref0_meal = function oref0_calculate_iob(argv_params) {  
+	var argv = require('yargs')(argv_params)
       .usage('$0 <pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [<carbhistory.json>]')
       // error and show help if some other args given
       .strict(true)
@@ -53,8 +54,8 @@ if (!module.parent) {
     try {
         pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
     } catch (e) {
-        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse pumphistory data" }');
-        return console.error("Could not parse pumphistory data: ", e);
+        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse pumphistory data" }'); //??
+        return console.error("Could not parse pumphistory data: ", e); //???
     }
 
     try {
@@ -127,6 +128,16 @@ if (!module.parent) {
         recentCarbs.reason = "not enough glucose data to calculate carb absorption";
     }
 
-    console.log(JSON.stringify(recentCarbs));
+    return JSON.stringify(recentCarbs);
 }
 
+if (!module.parent) {
+   // remove the first parameter.
+   var command = process.argv;
+   command.shift();
+   command.shift();
+   var result = oref0_meal(command)
+   console.log(result);
+}
+
+exports = module.exports = oref0_meal

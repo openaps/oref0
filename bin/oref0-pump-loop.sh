@@ -597,7 +597,12 @@ function refresh_pumphistory_and_meal {
     try_return invoke_pumphistory_etc || return 1
     try_return invoke_reservoir_etc || return 1
     echo -n "meal.json "
-    if ! retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new ; then
+    
+    dir_name=~/test_data/oref0-meal$(date +"%Y-%m-%d-%H%M")
+    echo dir_name = $dir_name
+    mkdir -p $dir_name
+    cp monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json $dir_name
+    if ! retry_return run_remote_command 'oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json' > monitor/meal.json.new ; then
         echo; echo "Couldn't calculate COB"
         return 1
     fi

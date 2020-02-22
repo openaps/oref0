@@ -6,6 +6,7 @@ var os = require("os");
 var ns_status = require("./ns-status");
 var oref0_normalize_temps = require("./oref0-normalize-temps");
 var oref0_calculate_iob = require("./oref0-calculate-iob");
+var oref0_meal = require("./oref0-meal");
 var fs = require('fs');
 var requireUtils = require('../lib/require-utils');
 
@@ -108,10 +109,18 @@ function serverListen() {
                     result = addNewlToResult(result);
                 } catch (err) {
                     return_val = 1;
-                    console.log('exception when parsing oref0-normalize-temps ', err);
+                    console.log('exception when parsing oref0-calculate-iob ', err);
                 }
-            } 
-            else if (command[0] == 'ping') {
+            }  else if (command[0] == 'oref0-meal') {
+                command.shift();
+                try {
+                    result = oref0_meal(command);
+                    result = addNewlToResult(result);
+                } catch (err) {
+                    return_val = 1;
+                    console.log('exception when parsing oref0-meal ', err);
+                }
+            } else if (command[0] == 'ping') {
                 result = 'pong';
             } else if (command[0] == 'json') {
                 // remove the first parameter.
