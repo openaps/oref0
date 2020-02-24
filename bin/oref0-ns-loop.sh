@@ -171,6 +171,7 @@ function upload {
 
 # grep -q iob monitor/iob.json && find enact/ -mmin -5 -size +5c | grep -q suggested.json && openaps format-ns-status && grep -q iob upload/ns-status.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json
 function upload_ns_status {
+    set -o pipefail
     #echo Uploading devicestatus
     grep -q iob monitor/iob.json || die "IOB not found"
     # set the timestamp on enact/suggested.json to match the deliverAt time
@@ -180,17 +181,30 @@ function upload_ns_status {
         ls -la enact/suggested.json | awk '{print $6,$7,$8}'
         return 1
     fi
-    format_ns_status && grep -q iob upload/ns-status.json || die "Couldn't generate ns-status.json"
-    ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json upload/ns-status.json | colorize_json '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' || die "Couldn't upload devicestatus to NS"
+    ns_status_file_name=ns-status$(date +"%Y-%m-%d-%T").json
+    format_ns_status $ns_status_file_name && grep -q iob upload/$ns_status_file_name || die "Couldn't generate ns-status.json"
+    # Delete files older than 24 hours.
+    find upload -maxdepth 1 -mmin +1440 -type f -name "ns-status*.json" -delete
+    # Upload the files one by one according to their order.
+    ls upload/ns-status*.json | while read -r file_name ; do
+        if ! grep -q iob $file_name ; then
+            #echo deleteing file $file_name
+            rm $file_name
+            continue
+        fi
+        ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json $file_name | colorize_json '.[0].openaps.suggested | {BG: .bg, IOB: .IOB, rate: .rate, duration: .duration, units: .units}' || die "Couldn't upload devicestatus to NS"
+        rm $file_name
+    done
 }
 
 #ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json > upload/ns-status.json
 # ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --uploader monitor/edison-battery.json > upload/ns-status.json
+# first parameter - ns_status file name
 function format_ns_status {
     if [ -s monitor/edison-battery.json ]; then
-        ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json --uploader monitor/edison-battery.json > upload/ns-status.json
+        ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json --uploader monitor/edison-battery.json > upload/$1
     else
-        ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json > upload/ns-status.json
+        ns-status monitor/clock-zoned.json monitor/iob.json enact/suggested.json enact/enacted.json monitor/battery.json monitor/reservoir.json monitor/status.json --preferences preferences.json > upload/$1
     fi
 }
 
