@@ -156,6 +156,7 @@ if ! [[ -z "$NIGHTSCOUT_HOST" ]]; then
     # download profile.json from Nightscout profile.json endpoint, and also copy over to pumpprofile.json
     ~/src/oref0/bin/get_profile.py --nightscout $NIGHTSCOUT_HOST display --format openaps 2>/dev/null > profile.json.new
     ls -la profile.json.new
+    grep bg profile.json.new
     if jq -e .dia profile.json.new; then
         jq -rs 'reduce .[] as $item ({}; . * $item)' profile.json profile.json.new | jq '.sens = .isfProfile.sensitivities[0].sensitivity' > profile.json.new.merged
         ls -la profile.json.new.merged
@@ -167,6 +168,7 @@ if ! [[ -z "$NIGHTSCOUT_HOST" ]]; then
     else
         echo Bad profile.json.new from get_profile.py
     fi
+    grep bg profile.json
 
     # download preferences.json from Nightscout devicestatus.json endpoint and overwrite profile.json with it
     for i in $(seq 0 10); do
@@ -198,10 +200,12 @@ fi
 
 # read a --preferences file to override the one from nightscout (for testing impact of different preferences)
 if [[ -e $preferences ]]; then
+    cat $preferences
     jq -s '.[0] + .[1]' profile.json $preferences > profile.json.new
     if jq -e .max_iob profile.json.new; then
         mv profile.json.new profile.json
         echo Successfully merged $preferences into profile.json
+        grep target_bg profile.json
     else
         echo Unable to merge $preferences into profile.json
     fi
@@ -254,6 +258,8 @@ if ! [[ -z "$autotunelog" ]]; then
 fi
 
 if ! [[ -z "$NIGHTSCOUT_HOST" ]]; then
+    # sleep for 10s to allow multiple parallel runs to start up before loading up the CPUs
+    sleep 10
     echo oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE | tee -a $DIR/commands.log
     oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE | grep "dev: " | awk '{print $13 "," $20}' | while IFS=',' read dev carbs; do
         ~/src/oref0/bin/oref0-simulator.sh $dev 0 $carbs $DIR
