@@ -1089,12 +1089,16 @@ if prompt_yn "" N; then
     if [[ -f $HOME/.profile ]]; then
       sed --in-place '/.*API_SECRET.*/d' $HOME/.profile
       sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.profile
+      sed --in-place '/.*MEDTRONIC_PUMP_ID.*/d' $HOME/.profile
+      sed --in-place '/.*MEDTRONIC_FREQUENCY.*/d' $HOME/.profile
     fi
 
     # Delete old copies of variables before replacing them
     sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.bash_profile
     sed --in-place '/.*API_SECRET.*/d' $HOME/.bash_profile
     sed --in-place '/.*DEXCOM_CGM_RECV_ID*/d' $HOME/.bash_profile
+    sed --in-place '/.*MEDTRONIC_PUMP_ID.*/d' $HOME/.bash_profile
+    sed --in-place '/.*MEDTRONIC_FREQUENCY.*/d' $HOME/.bash_profile
     #sed --in-place '/.*DEXCOM_CGM_TX_ID*/d' $HOME/.bash_profile
 
     # Then append the variables
@@ -1104,9 +1108,11 @@ if prompt_yn "" N; then
     echo "export API_SECRET" >> $HOME/.bash_profile
     echo DEXCOM_CGM_RECV_ID="$BLE_SERIAL" >> $HOME/.bash_profile
     echo "export DEXCOM_CGM_RECV_ID" >> $HOME/.bash_profile
+    echo MEDTRONIC_PUMP_ID="$serial" >> $HOME/.bash_profile
+    echo MEDTRONIC_FREQUENCY='`cat $HOME/myopenaps/monitor/medtronic_frequency.ini`' >> $HOME/.bash_profile
+    
     #echo DEXCOM_CGM_TX_ID="$DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     #echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
-    echo
 
     #Turn on i2c, install pi-buttons, and openaps-menu for hardware that has a screen and buttons (so far, only Explorer HAT and Radiofruit Bonnet)
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &> /dev/null || [[ "$hardwaretype" =~ "explorer-hat" ]] || [[ "$hardwaretype" =~ "radiofruit" ]]; then
