@@ -7,6 +7,7 @@ var ns_status = require("./ns-status");
 var oref0_normalize_temps = require("./oref0-normalize-temps");
 var oref0_calculate_iob = require("./oref0-calculate-iob");
 var oref0_meal = require("./oref0-meal");
+var oref0_get_profile = require("./oref0-get-profile");
 var fs = require('fs');
 var requireUtils = require('../lib/require-utils');
 
@@ -119,6 +120,15 @@ function serverListen() {
                 } catch (err) {
                     return_val = 1;
                     console.log('exception when parsing oref0-meal ', err);
+                }
+            } else if (command[0] == 'oref0-get-profile') {
+                command.shift();
+                try {
+                    result = oref0_get_profile(command);
+                    result = addNewlToResult(result);
+                } catch (err) {
+                    return_val = 1;
+                    console.log('exception when parsing oref0-get-profile ', err);
                 }
             } else if (command[0] == 'ping') {
                 result = 'pong';
