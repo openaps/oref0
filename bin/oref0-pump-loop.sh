@@ -684,7 +684,13 @@ function get_settings {
     fi
 
     # generate settings/pumpprofile.json without autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
+
+    dir_name=~/test_data/oref0-get-profile-pump$(date +"%Y-%m-%d-%H%M")
+    #echo dir_name = $dir_name
+    mkdir -p $dir_name
+    cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json $dir_name
+    
+    run_remote_command 'oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json' 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     if [ -s settings/pumpprofile.json.new ] && jq -e .current_basal settings/pumpprofile.json.new >&4; then
         mv settings/pumpprofile.json.new settings/pumpprofile.json
         echo -n "Pump profile refreshed; "
@@ -693,7 +699,12 @@ function get_settings {
         ls -lart settings/pumpprofile.json.new
     fi
     # generate settings/profile.json.new with autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
+    dir_name=~/test_data/oref0-get-profile-pump-auto$(date +"%Y-%m-%d-%H%M")
+    #echo dir_name = $dir_name
+    mkdir -p $dir_name
+    cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json settings/autotune.json $dir_name
+
+    run_remote_command 'oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json' | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
     if [ -s settings/profile.json.new ] && jq -e .current_basal settings/profile.json.new >&4; then
         mv settings/profile.json.new settings/profile.json
         echo -n "Settings refreshed; "

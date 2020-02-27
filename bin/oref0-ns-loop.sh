@@ -110,7 +110,13 @@ function ns_temptargets {
     jq -s '.[0] + .[1]|unique|sort_by(.created_at)|reverse' settings/ns-temptargets.json settings/local-temptargets.json > settings/temptargets.json
     echo -n "Temptargets merged: "
     cat settings/temptargets.json | colorize_json '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || die "Couldn't refresh profile"
+
+    dir_name=~/test_data/oref0-get-profile-ns$(date +"%Y-%m-%d-%H%M")
+    echo dir_name = $dir_name
+    mkdir -p $dir_name
+    cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json $dir_name
+
+    run_remote_command 'oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json' | jq . > settings/profile.json.new || die "Couldn't refresh profile"
     if cat settings/profile.json.new | jq . | grep -q basal; then
         mv settings/profile.json.new settings/profile.json
     else
