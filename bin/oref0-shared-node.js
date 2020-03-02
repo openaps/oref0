@@ -8,6 +8,7 @@ var oref0_normalize_temps = require("./oref0-normalize-temps");
 var oref0_calculate_iob = require("./oref0-calculate-iob");
 var oref0_meal = require("./oref0-meal");
 var oref0_get_profile = require("./oref0-get-profile");
+var oref0_get_ns_entries = require("./oref0-get-ns-entries");
 var fs = require('fs');
 var requireUtils = require('../lib/require-utils');
 
@@ -83,6 +84,7 @@ function serverListen() {
             var return_val = 0;
 
             console.log('command = ', command);
+            var async_command = false;
 
             if (command[0] == 'ns-status') {
                 // remove the first parameter.
@@ -130,6 +132,29 @@ function serverListen() {
                     return_val = 1;
                     console.log('exception when parsing oref0-get-profile ', err);
                 }
+            } else if (command[0] == 'oref0-get-ns-entries') {
+                async_command = true;
+
+                var final_result = createRetVal('', 0);
+                function print_callback(final_result) {
+                    try {
+                        final_result.stdout = addNewlToResult(final_result.stdout);
+                        final_result.err = addNewlToResult(final_result.err);
+                        s.write(JSON.stringify(final_result));
+                        s.end();
+                    } catch (err) {
+                        return_val = 1;
+                        console.log('exception in print_callback ', err);
+                    }
+                }
+                command.shift();
+                try {
+                    result = oref0_get_ns_entries(command, print_callback, final_result);
+                    result = addNewlToResult(result);
+                } catch (err) {
+                    return_val = 1;
+                    console.log('exception when parsing oref0-get-profile ', err);
+                }
             } else if (command[0] == 'ping') {
                 result = 'pong';
             } else if (command[0] == 'json') {
@@ -146,8 +171,10 @@ function serverListen() {
                 console.error('Unknown command = ', command);
                 return_val = 1;
             }
-            s.write(JSON.stringify(createRetVal(result, return_val)));
-            s.end();
+            if(!async_command) {
+            	s.write(JSON.stringify(createRetVal(result, return_val)));
+            	s.end();
+            }
         });
     });
 }

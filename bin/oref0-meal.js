@@ -22,7 +22,7 @@
 
 var generate = require('../lib/meal');
 
-var oref0_meal = function oref0_calculate_iob(argv_params) {  
+var oref0_meal = function oref0_meal(argv_params) {  
 	var argv = require('yargs')(argv_params)
       .usage('$0 <pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [<carbhistory.json>]')
       // error and show help if some other args given
