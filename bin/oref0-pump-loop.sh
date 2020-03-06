@@ -685,7 +685,7 @@ function get_settings {
 
     # generate settings/pumpprofile.json without autotune
 
-    dir_name=~/test_data/oref0-get-profile-pump$(date +"%Y-%m-%d-%H%M")
+    dir_name=~/test_data/oref0-get-profile$(date +"%Y-%m-%d-%H%M")-pump
     #echo dir_name = $dir_name
     mkdir -p $dir_name
     cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json $dir_name
@@ -699,7 +699,7 @@ function get_settings {
         ls -lart settings/pumpprofile.json.new
     fi
     # generate settings/profile.json.new with autotune
-    dir_name=~/test_data/oref0-get-profile-pump-auto$(date +"%Y-%m-%d-%H%M")
+    dir_name=~/test_data/oref0-get-profile$(date +"%Y-%m-%d-%H%M")-pump-auto
     #echo dir_name = $dir_name
     mkdir -p $dir_name
     cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json settings/autotune.json $dir_name

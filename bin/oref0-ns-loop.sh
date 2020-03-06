@@ -56,11 +56,11 @@ function get_ns_bg {
         || ! jq . cgm/ns-glucose-24h.json | grep -c glucose | jq -e '. > 36' >/dev/null; then
         #nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -24hours > cgm/ns-glucose-24h.json
         cp cgm/ns-glucose-24h.json cgm/ns-glucose-24h-temp.json
-        run_remote_command 'oref0-get-ns-entries cgm/ns-glucose-24h-temp.json $NIGHTSCOUT_HOST $API_SECRET 24' 2>&1 >cgm/ns-glucose-24h.json
+        run_remote_command "oref0-get-ns-entries cgm/ns-glucose-24h-temp.json $NIGHTSCOUT_HOST $API_SECRET 24" 2>&1 >cgm/ns-glucose-24h.json
     fi
     #nightscout ns $NIGHTSCOUT_HOST $API_SECRET oref0_glucose_since -1hour > cgm/ns-glucose-1h.json
     cp cgm/ns-glucose-1h.json cgm/ns-glucose-1h-temp.json
-    run_remote_command 'oref0-get-ns-entries cgm/ns-glucose-1h-temp.json $NIGHTSCOUT_HOST $API_SECRET 1' 2>&1 >cgm/ns-glucose-1h.json
+    run_remote_command "oref0-get-ns-entries cgm/ns-glucose-1h-temp.json $NIGHTSCOUT_HOST $API_SECRET 1" 2>&1 >cgm/ns-glucose-1h.json
 
     jq -s '.[0] + .[1]|unique|sort_by(.date)|reverse' cgm/ns-glucose-24h.json cgm/ns-glucose-1h.json > cgm/ns-glucose.json
     glucose_fresh # update timestamp on cgm/ns-glucose.json
@@ -111,10 +111,10 @@ function ns_temptargets {
     echo -n "Temptargets merged: "
     cat settings/temptargets.json | colorize_json '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
 
-    dir_name=~/test_data/oref0-get-profile-ns$(date +"%Y-%m-%d-%H%M")
+    dir_name=~/test_data/oref0-get-profile$(date +"%Y-%m-%d-%H%M")-ns
     echo dir_name = $dir_name
     mkdir -p $dir_name
-    cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json $dir_name
+    cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json settings/autotune.json $dir_name
 
     run_remote_command 'oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json' | jq . > settings/profile.json.new || die "Couldn't refresh profile"
     if cat settings/profile.json.new | jq . | grep -q basal; then
