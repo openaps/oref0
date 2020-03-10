@@ -26,6 +26,10 @@ var request = require('request');
 var _ = require('lodash');
 var fs = require('fs');
 var network = require('network');
+var shared_node = require('./oref0-shared-node-utils');
+var console_error = shared_node.console_error;
+var console_log = shared_node.console_log;
+var initFinalResults = shared_node.initFinalResults;
 
 var oref0_get_ns_engtires = function oref0_get_ns_engtires(argv_params, print_callback, final_result) {  
   var safe_errors = ['ECONNREFUSED', 'ESOCKETTIMEDOUT', 'ETIMEDOUT'];
@@ -224,26 +228,9 @@ function print_callback(final_result) {
     console.error(final_result.err);
 }
 
-function console_error(final_result, ...theArgs) {
-    if(final_result.err.length > 0) {
-        final_result.err += '\n';
-    }
-    final_result.err += theArgs.join(' ');
-}
-
-function console_log(final_result, ...theArgs) {
-    if(final_result.stdout.length > 0) {
-        final_result.stdout += '\n';
-    }
-    final_result.stdout += theArgs.join(' ');
-}
 
 if (!module.parent) {
-    var final_result = {
-        stdout: ''
-        , err: ''
-        , return_val : 0
-    };
+    var final_result = initFinalResults();
     
     // remove the first parameter.
     var command = process.argv;
