@@ -125,9 +125,9 @@ function serverListen() {
             }  else if (command[0] == 'oref0-meal') {
                 command.shift();
                 try {
-                    result = oref0_meal(command);
-                    result = addNewlToResult(result);
-                    final_result = createRetVal(result, 0);
+                    result = oref0_meal(final_result, command);
+                    final_result.stdout = addNewlToResult(final_result.stdout); // put them both in a new function ????????????
+                    final_result.err = addNewlToResult(final_result.err);
                 } catch (err) {
                     final_result.return_val = 1;
                     console.log('exception when parsing oref0-meal ', err);
