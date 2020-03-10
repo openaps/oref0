@@ -9,7 +9,7 @@ function console_both(final_result, theArgs) {
         if (typeof theArgs[i] != 'object') {
             final_result += theArgs[i];
         } else {
-            final_result += JSON.stringify(theArgs[i], null, ' ');
+            final_result += JSON.stringify(theArgs[i]);
         }
         if(i != len -1 ) {
              final_result += ' ';
