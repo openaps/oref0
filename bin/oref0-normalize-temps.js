@@ -15,7 +15,7 @@
 */
 
 var find_insulin = require('../lib/temps');
-var find_bolus = require('../lib/bolus');
+var reduce_boluses = require('../lib/bolus');
 var describe_pump = require('../lib/pump');
 var fs = require('fs');
 
@@ -23,16 +23,17 @@ var fs = require('fs');
   
 var oref0_normalize_temps = function oref0_normalize_temps(argv_params) {  
   var argv = require('yargs')(argv_params)
-    .usage('$0 <pumphistory.json>')
-    .demand(1)
+    .usage('$0 <pumphistory.json> <>')
+    .demand(2)
     // error and show help if some other args given
     .strict(true)
     .help('help');
 
   var params = argv.argv;
   var iob_input = params._[0];
+  var iobFileName = params._[1];
 
-  if (params._.length > 1) {
+  if (params._.length > 2) {
     argv.showHelp();
     return console.error('Too many arguments');
   }
@@ -47,7 +48,7 @@ var oref0_normalize_temps = function oref0_normalize_temps(argv_params) {
   var inputs = {
     history: all_data
   };
-  var treatments = find_insulin(find_bolus(inputs.history));
+  var treatments = find_insulin(reduce_boluses(inputs.history, iobFileName));
   treatments = describe_pump(treatments);
   // treatments.sort(function (a, b) { return a.date > b.date });
 
