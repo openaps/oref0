@@ -1045,7 +1045,7 @@ if prompt_yn "" N; then
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
         sudo pip install --default-timeout=1000 libpebble2
-        sudo pip install --default-timeout=1000 --user git+git://github.com/mddub/pancreabble.git
+        sudo pip install -U --default-timeout=1000 --user git+git://github.com/mddub/pancreabble.git
         oref0-bluetoothup
         sudo rfcomm bind hci0 $BT_PEB
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/pancreabble.json
