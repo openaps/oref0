@@ -105,10 +105,13 @@ def switch_oref_status(new_status):
 
 
 def set_bolusing(new_status):
-    status_json = json.load(open(os.path.join(myopenaps_dir + "monitor/status.json")))
-    status_json["bolusing"] = new_status
-    with open(os.path.join(myopenaps_dir + "monitor/status.json"), "w") as status_file:
-        status_file.write(json.dumps(status_json, indent=2))
+    try:
+        status_json = json.load(open(os.path.join(myopenaps_dir + "monitor/status.json")))
+        status_json["bolusing"] = new_status
+        with open(os.path.join(myopenaps_dir + "monitor/status.json"), "w") as status_file:
+            status_file.write(json.dumps(status_json, indent=2))
+    except ValueError:
+        pass
 
 
 class Command:
