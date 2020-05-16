@@ -6,10 +6,38 @@ from flask_cors import CORS
 from datetime import datetime
 import pytz
 
+import json
+import subprocess
+import re
+from time import sleep
+from functools import wraps
+
+from dateutil import parser
+from threading import Thread
+
+import configparser
+
+
 app = Flask(__name__)
 CORS(app)
-myopenaps_dir = "/root/myopenaps/"
-    
+
+try:
+    myopenaps_dir = os.environ['OPENAPS_DIR']
+except KeyError:
+    myopenaps_dir = "/root/myopenaps/"
+
+
+config = configparser.ConfigParser()
+
+config.read(os.path.join(myopenaps_dir + "ns.ini"))
+config.read(os.path.join(myopenaps_dir + "pump.ini"))
+
+NS_URL = config['device "ns"']['args'].split(' ')[1]
+NS_TOKEN = config['device "ns"']['args'].split(' ')[2]
+MEDTRONIC_PUMP_ID = config['device "pump"']['serial']
+MEDTRONIC_FREQUENCY = None
+
+
 def getip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -22,12 +50,101 @@ def getip():
         s.close()
     return IP
 
+def check_authorization(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if request.headers.get("Authorization", None) != NS_TOKEN:
+            return '', 401
+        return f(*args, **kwargs)
+    return wrapper
+
+def read_medtronic_frequency():
+    global MEDTRONIC_FREQUENCY
+    try:
+        mmtune_data = json.load(open(os.path.join(myopenaps_dir + "monitor/mmtune.json")))
+        if mmtune_data["usedDefault"]:
+            MEDTRONIC_FREQUENCY = "868.4" if config['device "pump"'] == "WW" else "916.55"
+        else:
+            MEDTRONIC_FREQUENCY= str(mmtune_data["setFreq"])
+    except IOError:
+        MEDTRONIC_FREQUENCY = "868.4" if config['device "pump"'] == "WW" else "916.55"
+
+def kill_oref():
+    os.system("killall-g oref0-cron-every-minute")
+
+
+def with_oref_disable(foo):
+    def wrapped(*args, **kwargs):
+        last_status = read_oref_status()
+        if last_status:
+            switch_oref_status(False)
+        kill_oref()
+        result = foo(*args, **kwargs)
+        if last_status:
+            switch_oref_status(True)
+        return result
+
+    return wrapped
+
+def read_oref_status():
+    return json.load(open(os.path.join(myopenaps_dir + "oref0.json")))["OREF0_CAN_RUN"]
+
+
+def switch_oref_status(new_status):
+    config_data = json.load(open(os.path.join(myopenaps_dir + "oref0.json")))
+
+    config_data["OREF0_CAN_RUN"] = new_status
+
+    with open(os.path.join(myopenaps_dir + "oref0.json"), "w") as config_file:
+        config_file.write(json.dumps(config_data, indent=2))
+
+    if not new_status:
+        kill_oref()
+
+
+def set_bolusing(new_status):
+    status_json = json.load(open(os.path.join(myopenaps_dir + "monitor/status.json")))
+    status_json["bolusing"] = new_status
+    with open(os.path.join(myopenaps_dir + "monitor/status.json"), "w") as status_file:
+        status_file.write(json.dumps(status_json, indent=2))
+
+
+class Command:
+    def __init__(self, cmd, timeout=15):
+        self.cmd = cmd
+        self.process = None
+        self.timeout = timeout
+        self.timeout_exit = False
+        self.stdout = None
+        self.stderr = None
+        self.return_code = None
+
+    def run(self):
+        self.process = subprocess.Popen(" ".join(self.cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
+                                        cwd=myopenaps_dir, env={"MEDTRONIC_PUMP_ID": MEDTRONIC_PUMP_ID, "MEDTRONIC_FREQUENCY": MEDTRONIC_FREQUENCY})
+
+        for _ in range(self.timeout * 100):
+            sleep(.01)
+            if self.process.poll() is not None:
+                self.return_code = self.process.returncode
+                break
+        else:
+            self.timeout_exit = True
+            self.process.kill()
+
+        self.stdout, self.stderr = self.process.communicate()
+    
+    def execute(self):
+        self.run()
+
+        if self.timeout_exit:
+            return json.dumps({"result": {"stdout": "", "stderr": "TimeOutException"}, "is_error": True}), True
+        
+        return json.dumps({"result": {"stdout": self.stdout, "stderr": self.stderr}, "is_error": self.return_code != 0}), self.return_code != 0
+
+
 @app.route("/")
 def index():
-    try:
-      myopenaps_dir = os.environ['OPENAPS_DIR']
-    except KeyError:
-        myopenaps_dir = "/root/myopenaps/"
     data=dict()
     try:
         error_text = "getHost"
@@ -103,7 +220,6 @@ def system():
     data['ip'] = getip() 
     return jsonify(data) 
 
-
 @app.route("/profile")
 def profile():
     json_url = os.path.join(myopenaps_dir + "settings/profile.json")
@@ -145,6 +261,213 @@ def temp_basal():
     json_url = os.path.join(myopenaps_dir + "monitor/temp_basal.json")
     data = json.load(open(json_url))
     return jsonify(data)
+
+@app.route("/pump_serial")
+def get_serial():
+    return json.dumps({"serial": MEDTRONIC_PUMP_ID})
+
+@app.route("/reservoir")
+def oref_reservoir():
+    return open(os.path.join(myopenaps_dir + "monitor/reservoir.json")).read()
+
+@app.route("/nightscout")
+@check_authorization
+def get_nightscout():
+    return json.dumps({"url": NS_URL, "api_hash": NS_TOKEN})
+
+@app.route("/carbs")
+def oref_carbs():
+    return open(os.path.join(myopenaps_dir + "settings/carbhistory.json")).read()
+
+
+@app.route("/status")
+def status():
+    return open(os.path.join(myopenaps_dir + "monitor/status.json")).read()
+
+
+@app.route("/settings")
+def oref_settings():
+    return open(os.path.join(myopenaps_dir + "settings/settings.json")).read()
+
+
+@app.route("/clock")
+def oref_clock():
+    return open(os.path.join(myopenaps_dir + "monitor/clock-zoned.json")).read()
+
+
+@app.route("/append_local_temptarget")
+def oref_append_local_temptarget():
+    try:
+        target = int(float(request.args.get("target")))
+        duration = int(request.args.get("duration"))
+    except (KeyError, ValueError):
+        return '', 400
+    try:
+        if request.args.get("start_time") != None:
+            parser.parse(request.args.get("start_time"))
+            start_time = request.args.get("start_time")
+        else:
+            start_time = None
+    except (KeyError, ValueError):
+        start_time = None
+
+    args = ["oref0-append-local-temptarget", str(target), str(duration)]
+    if start_time:
+        args.append(start_time)
+    return Command(args, 15).execute()[0]
+
+
+@app.route("/preferences", methods=['GET', 'POST'])
+@check_authorization
+def preferences():
+    if request.method == "GET":
+        return open(os.path.join(myopenaps_dir + "preferences.json")).read()
+    elif request.method == "POST":
+        json_content = request.get_json(force=True)
+        with open(os.path.join(myopenaps_dir + "preferences.json"), 'w') as preferences_file:
+            preferences_file.write(json.dumps(json_content, indent=2))
+        return '', 200
+
+
+@app.route("/autotune_recommendations")
+def autotune_recommendations():
+    Command(['oref0-autotune-recommends-report', myopenaps_dir], 15).execute()
+    return open(os.path.join(myopenaps_dir + "autotune/autotune_recommendations.log")).read()
+
+
+@app.route("/enter_bolus")
+@check_authorization
+def enter_bolus():
+    try:
+        units = float(request.args.get("units"))
+    except (KeyError, ValueError):
+        return '', 400
+
+    with open(os.path.join(myopenaps_dir + "enter_bolus.json"), 'w') as enter_bolus_file:
+        enter_bolus_file.write("{ \"units\": %s }" % units)
+
+    kill_oref()
+
+    read_medtronic_frequency()
+
+    result, is_error = Command(["mdt", "bolus", "enter_bolus.json"], 15).execute()
+    os.remove(os.path.join(myopenaps_dir + "enter_bolus.json"))
+
+    if not is_error:
+        set_bolusing(True)
+    return result
+
+@app.route("/press_keys", methods=['POST'])
+@check_authorization
+def press_keys():
+    try:
+        keys = request.get_json(force=True)["keys"]
+    except KeyError:
+        return '', 400
+
+    for key in keys:
+        if key not in ["esc", "act", "up", "down", "b"]:
+            return '', 400
+
+    input_file_url = os.path.join(myopenaps_dir + "buttons.json")
+
+    with open(input_file_url, 'w') as buttons_file:
+        buttons_file.write(json.dumps({"keys": keys}))
+
+    kill_oref()
+
+    read_medtronic_frequency()
+
+    result, _ = Command(["mdt", "button", "buttons.json"], 15).execute()
+
+    os.remove(input_file_url)
+
+    return result
+
+@app.route("/set_temp_basal")
+@check_authorization
+def set_temp_basal():
+    try:
+        temp = request.args.get("temp")
+        rate = float(request.args.get("rate"))
+        duration = int(request.args.get("duration"))
+    except (KeyError, ValueError):
+        return '', 400
+    if temp not in ["percent", "absolute"] or duration % 30 != 0:
+        return '', 400
+
+    rate = round(rate, 1)
+    with open(os.path.join(myopenaps_dir + "set_temp_basal.json"), 'w') as temp_basal_file:
+        temp_basal_file.write(
+            '{ "temp": "{temp}", "rate": "{rate}", "duration": "{duration}" }'.format(
+                    temp=temp, rate=rate, duration=duration))
+
+    kill_oref()
+
+    read_medtronic_frequency()
+
+    result, _ = Command(["mdt", "set_temp_basal", "set_temp_basal.json"], 15).execute()
+    os.remove(os.path.join(myopenaps_dir + "set_temp_basal.json"))
+
+    return result
+
+@app.route("/suspend_pump")
+@check_authorization
+def suspend_pump():
+    kill_oref()
+
+    read_medtronic_frequency()
+
+    result, is_error = Command(["mdt", "suspend"], 15).execute()
+    if not is_error:
+        status_json = json.load(open(os.path.join(myopenaps_dir + "monitor/status.json")))
+        status_json["suspended"] = True
+        with open(os.path.join(myopenaps_dir + "monitor/status.json"), "w") as status_file:
+            status_file.write(json.dumps(status_json, indent=2))
+
+    return result
+
+@app.route("/resume_pump")
+@check_authorization
+def resume_pump():
+    kill_oref()
+
+    read_medtronic_frequency()
+
+    result, is_error = Command(["mdt", "resume"], 15).execute()
+
+    if not is_error:
+        status_json = json.load(open(os.path.join(myopenaps_dir + "monitor/status.json")))
+        status_json["suspended"] = False
+        with open(os.path.join(myopenaps_dir + "monitor/status.json"), "w") as status_file:
+            status_file.write(json.dumps(status_json, indent=2))
+
+    return result
+
+
+@app.route("/oref_enabled")
+def oref_enabled():
+    return json.dumps(read_oref_status())
+
+@app.route("/oref_enable")
+@check_authorization
+def oref_enable():
+    switch_oref_status(True)
+    return '', 200
+
+@app.route("/oref_disable")
+@check_authorization
+def oref_disable():
+    switch_oref_status(False)
+    return '', 200
+
+
+@app.route("/reboot")
+@check_authorization
+def reboot():
+    Thread(target=lambda: os.system("sleep 1; reboot")).start()
+    return '', 200
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
