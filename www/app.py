@@ -71,38 +71,19 @@ def read_medtronic_frequency():
     except IOError:
         MEDTRONIC_FREQUENCY = "868.4" if config['device "pump"']['radio_locale'] == "WW" else "916.55"
 
-def kill_oref():
-    os.system("killall-g oref0-cron-every-minute")
-
-
-def with_oref_disable(foo):
-    def wrapped(*args, **kwargs):
-        last_status = read_oref_status()
-        if last_status:
-            switch_oref_status(False)
-        kill_oref()
-        result = foo(*args, **kwargs)
-        if last_status:
-            switch_oref_status(True)
-        return result
-
-    return wrapped
-
 def read_oref_status():
     return json.load(open(os.path.join(myopenaps_dir + "oref0.json")))["OREF0_CAN_RUN"]
 
-
-def switch_oref_status(new_status):
+def switch_oref_status(oref_enabled):
     config_data = json.load(open(os.path.join(myopenaps_dir + "oref0.json")))
 
-    config_data["OREF0_CAN_RUN"] = new_status
+    config_data["OREF0_CAN_RUN"] = oref_enabled
 
     with open(os.path.join(myopenaps_dir + "oref0.json"), "w") as config_file:
         config_file.write(json.dumps(config_data, indent=2))
 
-    if not new_status:
-        kill_oref()
-
+    if not oref_enabled:
+        os.system("killall-g oref0-cron-every-minute")
 
 def set_bolusing(new_status):
     try:
@@ -139,8 +120,19 @@ class Command:
 
         self.stdout, self.stderr = self.process.communicate()
     
-    def execute(self):
+    def execute(self, need_disable_oref=False):
+        if self.cmd[0] == "mdt":
+            read_medtronic_frequency()
+
+        oref_enabled = read_oref_status()
+
+        if oref_enabled and need_disable_oref:
+            switch_oref_status(False)
+
         self.run()
+
+        if oref_enable and need_disable_oref:
+            switch_oref_status(True)
 
         if self.timeout_exit:
             return json.dumps({"result": {"stdout": "", "stderr": "TimeOutException"}, "is_error": True}), True
@@ -351,11 +343,7 @@ def enter_bolus():
     with open(os.path.join(myopenaps_dir + "enter_bolus.json"), 'w') as enter_bolus_file:
         enter_bolus_file.write("{ \"units\": %s }" % units)
 
-    kill_oref()
-
-    read_medtronic_frequency()
-
-    result, is_error = Command(["mdt", "bolus", "enter_bolus.json"], 30).execute()
+    result, is_error = Command(["mdt", "bolus", "enter_bolus.json"], 30).execute(need_disable_oref=True)
     os.remove(os.path.join(myopenaps_dir + "enter_bolus.json"))
 
     if not is_error:
@@ -379,11 +367,7 @@ def press_keys():
     with open(input_file_url, 'w') as buttons_file:
         buttons_file.write(json.dumps({"keys": keys}))
 
-    kill_oref()
-
-    read_medtronic_frequency()
-
-    result, _ = Command(["mdt", "button", "buttons.json"], 30).execute()
+    result, _ = Command(["mdt", "button", "buttons.json"], 30).execute(need_disable_oref=True)
 
     os.remove(input_file_url)
 
@@ -407,11 +391,7 @@ def set_temp_basal():
             '{ "temp": "{temp}", "rate": "{rate}", "duration": "{duration}" }'.format(
                     temp=temp, rate=rate, duration=duration))
 
-    kill_oref()
-
-    read_medtronic_frequency()
-
-    result, _ = Command(["mdt", "set_temp_basal", "set_temp_basal.json"], 30).execute()
+    result, _ = Command(["mdt", "set_temp_basal", "set_temp_basal.json"], 30).execute(need_disable_oref=True)
     os.remove(os.path.join(myopenaps_dir + "set_temp_basal.json"))
 
     return result
@@ -419,11 +399,7 @@ def set_temp_basal():
 @app.route("/suspend_pump")
 @check_authorization
 def suspend_pump():
-    kill_oref()
-
-    read_medtronic_frequency()
-
-    result, is_error = Command(["mdt", "suspend"], 30).execute()
+    result, is_error = Command(["mdt", "suspend"], 30).execute(need_disable_oref=True)
     if not is_error:
         status_json = json.load(open(os.path.join(myopenaps_dir + "monitor/status.json")))
         status_json["suspended"] = True
@@ -435,11 +411,7 @@ def suspend_pump():
 @app.route("/resume_pump")
 @check_authorization
 def resume_pump():
-    kill_oref()
-
-    read_medtronic_frequency()
-
-    result, is_error = Command(["mdt", "resume"], 30).execute()
+    result, is_error = Command(["mdt", "resume"], 30).execute(need_disable_oref=True)
 
     if not is_error:
         status_json = json.load(open(os.path.join(myopenaps_dir + "monitor/status.json")))
