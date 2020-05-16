@@ -37,7 +37,7 @@ NS_TOKEN = config['device "ns"']['args'].split(' ')[2]
 MEDTRONIC_PUMP_ID = config['device "pump"']['serial']
 MEDTRONIC_FREQUENCY = None
 
-CHECK_AUTHORIZATION = False
+AUTHORIZATION_ENABLED = json.load(open(os.path.join(myopenaps_dir + "flask_server.json")))["AUTHORIZATION_ENABLED"]
 
 
 def getip():
@@ -55,7 +55,7 @@ def getip():
 def check_authorization(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if CHECK_AUTHORIZATION and request.headers.get("Authorization", None) != NS_TOKEN:
+        if AUTHORIZATION_ENABLED and request.headers.get("Authorization", None) != NS_TOKEN:
             return '', 401
         return f(*args, **kwargs)
     return wrapper

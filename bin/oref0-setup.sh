@@ -1238,8 +1238,9 @@ if prompt_yn "" N; then
     copy_go_binaries
     move_mmtune
 
-    # create oref0.json
+    # create oref0.json and flask.json
     echo "{ \"OREF0_CAN_RUN\": true }" > "$directory/oref0.json"
+    echo "{ \"AUTHORIZATION_ENABLED\": true }" > "$directory/flask_server.json"
 
     # clear any extraneous input before prompting
     while(read -r -t 0.1); do true; done
