@@ -350,7 +350,7 @@ def enter_bolus():
 
     read_medtronic_frequency()
 
-    result, is_error = Command(["mdt", "bolus", "enter_bolus.json"], 15).execute()
+    result, is_error = Command(["mdt", "bolus", "enter_bolus.json"], 30).execute()
     os.remove(os.path.join(myopenaps_dir + "enter_bolus.json"))
 
     if not is_error:
@@ -378,7 +378,7 @@ def press_keys():
 
     read_medtronic_frequency()
 
-    result, _ = Command(["mdt", "button", "buttons.json"], 15).execute()
+    result, _ = Command(["mdt", "button", "buttons.json"], 30).execute()
 
     os.remove(input_file_url)
 
@@ -406,7 +406,7 @@ def set_temp_basal():
 
     read_medtronic_frequency()
 
-    result, _ = Command(["mdt", "set_temp_basal", "set_temp_basal.json"], 15).execute()
+    result, _ = Command(["mdt", "set_temp_basal", "set_temp_basal.json"], 30).execute()
     os.remove(os.path.join(myopenaps_dir + "set_temp_basal.json"))
 
     return result
@@ -418,7 +418,7 @@ def suspend_pump():
 
     read_medtronic_frequency()
 
-    result, is_error = Command(["mdt", "suspend"], 15).execute()
+    result, is_error = Command(["mdt", "suspend"], 30).execute()
     if not is_error:
         status_json = json.load(open(os.path.join(myopenaps_dir + "monitor/status.json")))
         status_json["suspended"] = True
@@ -434,7 +434,7 @@ def resume_pump():
 
     read_medtronic_frequency()
 
-    result, is_error = Command(["mdt", "resume"], 15).execute()
+    result, is_error = Command(["mdt", "resume"], 30).execute()
 
     if not is_error:
         status_json = json.load(open(os.path.join(myopenaps_dir + "monitor/status.json")))
