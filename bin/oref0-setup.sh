@@ -1270,7 +1270,7 @@ if prompt_yn "" N; then
         add_to_crontab \
             "oref0-cron-every-minute" \
             '* * * * *' \
-            "cat $directory/oref0.json | jq '.OREF0_CAN_RUN' | grep -q 'true' && oref0-cron-every-minute"
+            "cd $directory && cat oref0.json | jq '.OREF0_CAN_RUN' | grep -q 'true' && oref0-cron-every-minute"
         add_to_crontab \
             "oref0-cron-post-reboot" \
             '@reboot' \
