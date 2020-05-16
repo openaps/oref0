@@ -65,11 +65,11 @@ def read_medtronic_frequency():
     try:
         mmtune_data = json.load(open(os.path.join(myopenaps_dir + "monitor/mmtune.json")))
         if mmtune_data["usedDefault"]:
-            MEDTRONIC_FREQUENCY = "868.4" if config['device "pump"'] == "WW" else "916.55"
+            MEDTRONIC_FREQUENCY = "868.4" if config['device "pump"']['radio_locale'] == "WW" else "916.55"
         else:
             MEDTRONIC_FREQUENCY= str(mmtune_data["setFreq"])
     except IOError:
-        MEDTRONIC_FREQUENCY = "868.4" if config['device "pump"'] == "WW" else "916.55"
+        MEDTRONIC_FREQUENCY = "868.4" if config['device "pump"']['radio_locale'] == "WW" else "916.55"
 
 def kill_oref():
     os.system("killall-g oref0-cron-every-minute")
