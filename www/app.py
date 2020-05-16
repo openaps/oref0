@@ -37,6 +37,8 @@ NS_TOKEN = config['device "ns"']['args'].split(' ')[2]
 MEDTRONIC_PUMP_ID = config['device "pump"']['serial']
 MEDTRONIC_FREQUENCY = None
 
+CHECK_AUTHORIZATION = False
+
 
 def getip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -53,7 +55,7 @@ def getip():
 def check_authorization(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if request.headers.get("Authorization", None) != NS_TOKEN:
+        if CHECK_AUTHORIZATION and request.headers.get("Authorization", None) != NS_TOKEN:
             return '', 401
         return f(*args, **kwargs)
     return wrapper
