@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 /*
   Determine Basal
@@ -16,10 +17,10 @@
 */
 
 var basal = require('../lib/profile/basal');
-var detect = require('../lib/determine-basal/autosens');
+var detectSensitivity = require('../lib/determine-basal/autosens');
 
 if (!module.parent) {
-    var detectsensitivity = init();
+    //var detectsensitivity = init(); // I don't see where this variable is used, so deleted it.
 
     var argv = require('yargs')
         .usage("$0 <glucose.json> <pumphistory.json> <profile.json> <readings_per_run> [outputfile.json]")
@@ -135,16 +136,16 @@ if (!module.parent) {
     var ratioArray = [];
     do {
         detection_inputs.deviations = 96;
-        detect(detection_inputs);
+        var result = detectSensitivity(detection_inputs);
         for(i=0; i<readings_per_run; i++) {
             detection_inputs.glucose_data.shift();
         }
-        console.error(ratio, newisf, detection_inputs.glucose_data[0].dateString);
+        console.error(result.ratio, result.newisf, detection_inputs.glucose_data[0].dateString);
 
         var obj = {
             "dateString": detection_inputs.glucose_data[0].dateString,
-            "sensitivityRatio": ratio,
-            "ISF": newisf
+            "sensitivityRatio": result.ratio,
+            "ISF": result.newisf
         }
         ratioArray.unshift(obj);
         if (output_file) {
