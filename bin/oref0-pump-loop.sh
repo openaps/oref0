@@ -321,6 +321,10 @@ function determine_basal {
 
     update_glucose_noise
 
+    dir_name=~/test_data/determine-basal/$(date +"%Y-%m-%d-%H%M")
+    mkdir -p $dir_name
+    cp  monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json settings/autosens.json monitor/meal.json monitor/reservoir.json settings/model.json $dir_name
+    
     if ( grep -q 12 settings/model.json ); then
       oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json --auto-sens settings/autosens.json --meal monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
@@ -597,6 +601,11 @@ function refresh_pumphistory_and_meal {
     try_return invoke_pumphistory_etc || return 1
     try_return invoke_reservoir_etc || return 1
     echo -n "meal.json "
+    
+    dir_name=~/test_data/oref0-meal/$(date +"%Y-%m-%d-%H%M")
+    mkdir -p $dir_name
+    cp monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json $dir_name
+    
     if ! retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new ; then
         echo; echo "Couldn't calculate COB"
         return 1
@@ -624,6 +633,10 @@ function check_cp_meal {
 }
 
 function calculate_iob {
+    dir_name=~/test_data/oref0-calculate-iob/$(date +"%Y-%m-%d-%H%M")
+    mkdir -p $dir_name
+    cp  monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json $dir_name
+
     oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json.new || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
     [ -s monitor/iob.json.new ] && jq -e .[0].iob monitor/iob.json.new >&3 && cp monitor/iob.json.new monitor/iob.json || { echo; echo "Couldn't copy IOB"; fail "$@"; }
 }
@@ -673,6 +686,10 @@ function get_settings {
         return 1
     fi
 
+    dir_name=~/test_data/oref0-get-profile-pump/$(date +"%Y-%m-%d-%H%M")
+    mkdir -p $dir_name
+    cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json $dir_name
+
     # generate settings/pumpprofile.json without autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     if [ -s settings/pumpprofile.json.new ] && jq -e .current_basal settings/pumpprofile.json.new >&4; then
@@ -682,6 +699,11 @@ function get_settings {
         echo "Invalid pumpprofile.json.new after refresh"
         ls -lart settings/pumpprofile.json.new
     fi
+    
+    dir_name=~/test_data/oref0-get-profile-pump-auto/$(date +"%Y-%m-%d-%H%M")
+    mkdir -p $dir_name
+    cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json settings/autotune.json $dir_name
+    
     # generate settings/profile.json.new with autotune
     oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
     if [ -s settings/profile.json.new ] && jq -e .current_basal settings/profile.json.new >&4; then

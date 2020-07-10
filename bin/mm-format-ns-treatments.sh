@@ -17,9 +17,10 @@ EOT
 
 # | json -e "this.type = 'mm://openaps/$self'" \
 model=$(jq -r . $MODEL)
-dir_name=~/test_data/normalize-temps$(date +"%Y-%m-%d-%H%M")
+dir_name=~/test_data/normalize-temps/$(date +"%Y-%m-%d-%H%M")
 mkdir -p $dir_name
-cp  $HISTORY  monitor/iob.json $dir_name
+cp  $HISTORY $dir_name/pumphistory.json
+cp  monitor/iob.json $dir_name
 
 run_remote_command "oref0-normalize-temps $HISTORY monitor/iob.json" \
   | jq '[ .[]
