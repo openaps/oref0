@@ -3,6 +3,7 @@
 
 var os = require("os");
 var fs = require('fs');
+var moment = require("moment");
 
 var requireUtils = require('../lib/require-utils');
 var requireWithTimestamp = requireUtils.requireWithTimestamp;
@@ -129,6 +130,7 @@ var ns_status = function ns_status(argv_params) {
         if (iobArray && iobArray.length) {
             iob = iobArray[0];
             iob.timestamp = iob.time;
+            iob.mills = moment(iob.time).valueOf();
             delete iob.time;
         }
 
@@ -139,6 +141,14 @@ var ns_status = function ns_status(argv_params) {
           } else {
             delete enacted.predBGs;
           }
+        }
+
+        if (enacted && enacted.timestamp) {
+          enacted.mills = moment(enacted.timestamp).valueOf();
+        }
+
+        if (suggested && suggested.timestamp) {
+          suggested.mills = moment(suggested.timestamp).valueOf();
         }
 
         var status = {
