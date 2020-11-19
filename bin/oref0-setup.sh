@@ -703,7 +703,7 @@ if prompt_yn "" N; then
     rm -rf $directory/.git
     echo Removed any existing git
     echo "Uninstalling parsedatetime, reinstalling correct version"
-    pip uninstall -y parsedatetime && pip install -I parsedatetime===2.5
+    pip uninstall -y parsedatetime && pip install -I parsedatetime==2.5
     # TODO: delete this after openaps 0.2.2 release
     echo Checking openaps 0.2.2 installation with --nogit support
     if ! openaps --version 2>&1 | egrep "0.[2-9].[2-9]"; then
