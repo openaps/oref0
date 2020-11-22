@@ -990,6 +990,7 @@ if prompt_yn "" N; then
 
     sudo pip install --default-timeout=1000 flask flask-restful  || die "Can't add xdrip cgm - error installing flask packages"
     sudo pip install --default-timeout=1000 -U flask-cors
+    sudo pip install --default-timeout=1000 -U python-dateutil
 
     # xdrip CGM (xDripAPS), also gets installed when using xdrip-js
     if [[ ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "xdrip-js" ]]; then
@@ -1046,7 +1047,7 @@ if prompt_yn "" N; then
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
         sudo pip install --default-timeout=1000 libpebble2
-        sudo pip install --default-timeout=1000 --user git+git://github.com/mddub/pancreabble.git
+        sudo pip install -U --default-timeout=1000 --user git+git://github.com/mddub/pancreabble.git
         oref0-bluetoothup
         sudo rfcomm bind hci0 $BT_PEB
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/pancreabble.json
@@ -1238,6 +1239,10 @@ if prompt_yn "" N; then
     copy_go_binaries
     move_mmtune
 
+    # create oref0.json and flask.json
+    echo "{ \"OREF0_CAN_RUN\": true }" > "$directory/oref0.json"
+    echo "{ \"AUTHORIZATION_ENABLED\": true }" > "$directory/flask_server.json"
+
     # clear any extraneous input before prompting
     while(read -r -t 0.1); do true; done
 
@@ -1267,7 +1272,7 @@ if prompt_yn "" N; then
         add_to_crontab \
             "oref0-cron-every-minute" \
             '* * * * *' \
-            "cd $directory && oref0-cron-every-minute"
+            "cd $directory && cat oref0.json | jq '.OREF0_CAN_RUN' | grep -q 'true' && oref0-cron-every-minute"
         add_to_crontab \
             "oref0-cron-post-reboot" \
             '@reboot' \
