@@ -745,7 +745,7 @@ if prompt_yn "" N; then
         (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
     else
         echo -n "Cloning oref0: "
-        (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
+        (cd $HOME/src && git clone https://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
     fi
 
     # Make sure jq version >1.5 is installed
