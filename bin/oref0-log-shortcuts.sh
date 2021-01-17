@@ -33,7 +33,7 @@ function do_aliases ()
     alias cat-pref="cd ${myopenaps} && cat preferences.json"
     alias edit-pref="cd ${myopenaps} && nano preferences.json"
     alias cat-wifi="cat /etc/wpa_supplicant/wpa_supplicant.conf"
-    alias edit-wifi="vi /etc/wpa_supplicant/wpa_supplicant.conf"
+    alias edit-wifi="nano /etc/wpa_supplicant/wpa_supplicant.conf"
     alias cat-runagain="cd ${myopenaps} && cat oref0-runagain.sh"
     alias edit-runagain="cd ${myopenaps} && nano oref0-runagain.sh"
     alias cat-autotune="cd ${myopenaps}/autotune && cat autotune_recommendations.log"
