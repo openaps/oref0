@@ -114,6 +114,9 @@ case $i in
     ;;
     -npm=*|--npm_install=*)
     npm_option="${i#*=}"
+    ;;
+    --hotspot=*)
+    hotspot_option="${i#*=}"
     shift
     ;;
     *)
@@ -471,6 +474,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
+    if prompt_yn "Do you want to be able to set up a local-only wifi hotspot for offline monitoring?" N; then
+        HOTSPOT=true
+    else
+        HOTSPOT=false
+    fi
 
     if [[ ! -z $BT_PEB ]]; then
         prompt_and_validate BT_PEB "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip" validate_bt_peb
@@ -626,6 +634,9 @@ fi
 if [[ ! -z "$radiotags" ]]; then
     echo -n " --radiotags='$radiotags'" | tee -a $OREF0_RUNAGAIN
 fi
+if [[ ! -z "$hotspot_option" ]]; then
+    echo -n " --hotspot='$hotspot_option'" | tee -a $OREF0_RUNAGAIN
+fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
@@ -691,7 +702,8 @@ if prompt_yn "" N; then
     echo Removing any existing git in $directory/.git
     rm -rf $directory/.git
     echo Removed any existing git
-
+    echo "Uninstalling parsedatetime, reinstalling correct version"
+    pip uninstall -y parsedatetime && pip install -I parsedatetime==2.5
     # TODO: delete this after openaps 0.2.2 release
     echo Checking openaps 0.2.2 installation with --nogit support
     if ! openaps --version 2>&1 | egrep "0.[2-9].[2-9]"; then
@@ -913,33 +925,37 @@ if prompt_yn "" N; then
         else
             echo bluez version ${bluetoothdversion} already installed
         fi
-        echo Installing prerequisites and configs for local-only hotspot
-        apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
-        test ! -f  /etc/dnsmasq.conf.bak && mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
-        cp $HOME/src/oref0/headless/dnsmasq.conf /etc/dnsmasq.conf || die "Couldn't copy dnsmasq.conf"
-        test ! -f  /etc/hostapd/hostapd.conf.bak && mv /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.bak
-        cp $HOME/src/oref0/headless/hostapd.conf /etc/hostapd/hostapd.conf || die "Couldn't copy hostapd.conf"
-        sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
-        cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
-        cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
-        if [ ! -z "$BT_MAC" ]; then
-          printf 'Checking for the bnep0 interface in the interfaces.client file and adding if missing...'
-          # Make sure the bnep0 interface is in the /etc/networking/interface
-          (grep -qa bnep0 /etc/network/interfaces.client && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces.client && printf 'added.\n') 
-        fi
-        #Stop automatic startup of hostapd & dnsmasq
-        update-rc.d -f hostapd remove
-        update-rc.d -f dnsmasq remove
-        # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
-        sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}/" /etc/hostapd/hostapd.conf
-        # Add Commands to /etc/rc.local
-        # Interrupt Kernel Messages
-        if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
-          sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
-        fi
-        # Add to /etc/rc.local to check if in hotspot mode and turn back to client mode during bootup
-        if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
-          sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
+        if [[ ${hotspot_option,,} =~ "true" ]]; then
+            echo Installing prerequisites and configs for local-only hotspot
+            apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
+            test ! -f  /etc/dnsmasq.conf.bak && mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+            cp $HOME/src/oref0/headless/dnsmasq.conf /etc/dnsmasq.conf || die "Couldn't copy dnsmasq.conf"
+            test ! -f  /etc/hostapd/hostapd.conf.bak && mv /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.bak
+            cp $HOME/src/oref0/headless/hostapd.conf /etc/hostapd/hostapd.conf || die "Couldn't copy hostapd.conf"
+            sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
+            cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
+            cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
+            if [ ! -z "$BT_MAC" ]; then
+                printf 'Checking for the bnep0 interface in the interfaces.client file and adding if missing...'
+                # Make sure the bnep0 interface is in the /etc/networking/interface
+                (grep -qa bnep0 /etc/network/interfaces.client && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces.client && printf 'added.\n')
+            fi
+            #Stop automatic startup of hostapd & dnsmasq
+            update-rc.d -f hostapd remove
+            update-rc.d -f dnsmasq remove
+            # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
+            sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}/" /etc/hostapd/hostapd.conf
+            # Add Commands to /etc/rc.local
+            # Interrupt Kernel Messages
+            if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
+                sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
+            fi
+            # Add to /etc/rc.local to check if in hotspot mode and turn back to client mode during bootup
+            if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
+                sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
+            fi
+        else
+            echo Skipping local-only hotspot
         fi
     fi
 
@@ -1047,10 +1063,15 @@ if prompt_yn "" N; then
 
     #Moved this out of the conditional, so that x12 models will work with smb loops
     sudo apt-get -y install bc ntpdate bash-completion || die "Couldn't install bc etc."
+    # now required on all platforms for shared-node
+    echo "Installing socat and ntp..."
+    apt-get install -y socat ntp
     cd $directory || die "Can't cd $directory"
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
 
     echo "Adding OpenAPS log shortcuts"
+    # Make sure that .bash_profile exists first, then call script to add the log shortcuts
+    touch "$HOME/.bash_profile"
     oref0-log-shortcuts --add-to-profile="$HOME/.bash_profile"
 
     # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
@@ -1072,12 +1093,16 @@ if prompt_yn "" N; then
     if [[ -f $HOME/.profile ]]; then
       sed --in-place '/.*API_SECRET.*/d' $HOME/.profile
       sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.profile
+      sed --in-place '/.*MEDTRONIC_PUMP_ID.*/d' $HOME/.profile
+      sed --in-place '/.*MEDTRONIC_FREQUENCY.*/d' $HOME/.profile
     fi
 
     # Delete old copies of variables before replacing them
     sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.bash_profile
     sed --in-place '/.*API_SECRET.*/d' $HOME/.bash_profile
     sed --in-place '/.*DEXCOM_CGM_RECV_ID*/d' $HOME/.bash_profile
+    sed --in-place '/.*MEDTRONIC_PUMP_ID.*/d' $HOME/.bash_profile
+    sed --in-place '/.*MEDTRONIC_FREQUENCY.*/d' $HOME/.bash_profile
     #sed --in-place '/.*DEXCOM_CGM_TX_ID*/d' $HOME/.bash_profile
 
     # Then append the variables
@@ -1087,9 +1112,11 @@ if prompt_yn "" N; then
     echo "export API_SECRET" >> $HOME/.bash_profile
     echo DEXCOM_CGM_RECV_ID="$BLE_SERIAL" >> $HOME/.bash_profile
     echo "export DEXCOM_CGM_RECV_ID" >> $HOME/.bash_profile
+    echo MEDTRONIC_PUMP_ID="$serial" >> $HOME/.bash_profile
+    echo MEDTRONIC_FREQUENCY='`cat $HOME/myopenaps/monitor/medtronic_frequency.ini`' >> $HOME/.bash_profile
+    
     #echo DEXCOM_CGM_TX_ID="$DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     #echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
-    echo
 
     #Turn on i2c, install pi-buttons, and openaps-menu for hardware that has a screen and buttons (so far, only Explorer HAT and Radiofruit Bonnet)
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &> /dev/null || [[ "$hardwaretype" =~ "explorer-hat" ]] || [[ "$hardwaretype" =~ "radiofruit" ]]; then
@@ -1102,8 +1129,6 @@ if prompt_yn "" N; then
         sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
         egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
-        echo "Installing socat and ntp..."
-        apt-get install -y socat ntp
         echo "Installing pi-buttons..."
         systemctl stop pi-buttons
         cd $HOME/src && git clone git://github.com/bnielsen1965/pi-buttons.git
@@ -1116,6 +1141,7 @@ if prompt_yn "" N; then
         fi
         systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
+        test "$directory" != "/$HOME/myopenaps" && (echo You are using a non-standard openaps directory. For the statusmenu to work correctly you need to set the openapsDir variable in index.js)
         cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu

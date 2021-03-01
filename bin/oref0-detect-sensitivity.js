@@ -77,10 +77,16 @@ if (!module.parent) {
             }
         }
 
+        // TODO: add support for a proper --retrospective flag if anything besides oref0-simulator needs this
+        var retrospective = false;
         var temptarget_data = { };
         if (typeof temptarget_input !== 'undefined') {
             try {
-                temptarget_data = JSON.parse(fs.readFileSync(temptarget_input, 'utf8'));
+                if (temptarget_input == "retrospective") {
+                    retrospective = true;
+                } else {
+                    temptarget_data = JSON.parse(fs.readFileSync(temptarget_input, 'utf8'));
+                }
             } catch (e) {
                 console.error("Warning: could not parse "+temptarget_input);
             }
@@ -101,6 +107,7 @@ if (!module.parent) {
         , glucose_data: glucose_data
         , basalprofile: basalprofile
         , temptargets: temptarget_data
+        , retrospective: retrospective
         //, clock: clock_data
     };
     console.error("Calculating sensitivity using 8h of non-exluded data");
