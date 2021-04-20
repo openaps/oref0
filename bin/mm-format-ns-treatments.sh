@@ -17,9 +17,12 @@ EOT
 
 # | json -e "this.type = 'mm://openaps/$self'" \
 model=$(jq -r . $MODEL)
+dir_name=~/test_data/normalize-temps/$(date +"%Y-%m-%d-%H%M")
+mkdir -p $dir_name
+cp  $HISTORY $dir_name/pumphistory.json
+cp  monitor/iob.json $dir_name
 
-
-run_remote_command "oref0-normalize-temps $HISTORY" \
+run_remote_command "oref0-normalize-temps $HISTORY monitor/iob.json" \
   | jq '[ .[]
     | .medtronic = ( [ "mm://openaps/'$self'/", ( . | if ._type then ._type else .eventType end ) ] | join("") )
     | .created_at = if .created_at then .created_at else .timestamp end

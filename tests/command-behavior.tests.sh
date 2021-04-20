@@ -385,7 +385,7 @@ test-meal () {
 
 test-normalize-temps () {
     # Run normalize-temps and capture output
-    ../bin/oref0-normalize-temps.js pumphistory_zoned.json 2>stderr_output 1>stdout_output
+    ../bin/oref0-normalize-temps.js pumphistory_zoned.json monitor/iob.json 2>stderr_output 1>stdout_output
 
     # Make sure stderr output doesn't have anything
     ERROR_LINE_COUNT=$( cat stderr_output | wc -l )
