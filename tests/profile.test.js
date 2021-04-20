@@ -43,17 +43,6 @@ describe('Profile', function ( ) {
         profile.carb_ratio.should.equal(20);
     });
 
-    it('should should honour wide_bg_target_range', function () {
-        var profile = require('../lib/profile')(_.merge({}, baseInputs, {wide_bg_target_range: true}));
-        profile.max_iob.should.equal(0);
-        profile.dia.should.equal(3);
-        profile.sens.should.equal(100);
-        profile.current_basal.should.equal(1);
-        profile.max_bg.should.equal(100);
-        profile.min_bg.should.equal(100);
-        profile.carb_ratio.should.equal(20);
-    });
-
 
     var currentTime = new Date();
     var creationDate = new Date(currentTime.getTime() - (5 * 60 * 1000));

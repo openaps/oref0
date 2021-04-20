@@ -49,7 +49,6 @@ if (!module.parent) {
   }
 
   var nsurl = params._.slice(1, 2).pop();
-  if (nsurl && nsurl.charAt(nsurl.length - 1) == "/") nsurl = nsurl.substr(0, nsurl.length - 1); // remove trailing slash if it exists
 
   var apisecret = params._.slice(2, 3).pop();
   var hours = Number(params._.slice(3, 4).pop());
@@ -63,8 +62,10 @@ if (!module.parent) {
     usage();
     process.exit(1);
   }
+  // remove trailing slash if it exists
+  if (nsurl && nsurl.charAt(nsurl.length - 1) == "/") nsurl = nsurl.substr(0, nsurl.length - 1);
 
-  if (apisecret.length != 40) {
+  if (apisecret != null && !apisecret.startsWith("token=") && apisecret.length != 40) {
     var shasum = crypto.createHash('sha1');
     shasum.update(apisecret);
     apisecret = shasum.digest('hex');
@@ -155,18 +156,24 @@ if (!module.parent) {
 
   function loadFromNightscoutWithDate(lastDate, glucosedata) {
 
-    var headers = {
-      'api-secret': apisecret
-    };
+    // append the token secret to the end of the ns url, or add it to the headers if token based authentication is not used
+    var headers = {} ;
+    var tokenAuth = "";
+    if (apisecret.startsWith("token=")) {
+      tokenAuth = "&" + apisecret;
+    } else { 
+      headers = { 'api-secret': apisecret };
+    }
 
     if (!_.isNil(lastDate)) {
       headers["If-Modified-Since"] = lastDate.toISOString();
     }
 
-    var uri = nsurl + '/api/v1/entries/sgv.json?count=' + records;
+    var uri = nsurl + '/api/v1/entries/sgv.json?count=' + records + tokenAuth;
     var options = {
       uri: uri
       , json: true
+      , timeout: 90000
       , headers: headers
     };
 

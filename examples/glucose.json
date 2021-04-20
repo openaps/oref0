@@ -1,7 +1,7 @@
 [
   {
     "date": 1527924300000,
-    "dateString": "2018-06-02T00:25:00-07:00",
+    "dateString": "2018-06-02T00:25:00-0700",
     "sgv": 101,
     "device": "fakecgm",
     "type": "sgv",
@@ -9,7 +9,7 @@
   },
   {
     "date": 1527924000000,
-    "dateString": "2018-06-02T00:20:00-07:00",
+    "dateString": "2018-06-02T00:20:00-0700",
     "sgv": 102,
     "device": "fakecgm",
     "type": "sgv",
@@ -17,7 +17,7 @@
   },
   {
     "date": 1527923700000,
-    "dateString": "2018-06-02T00:15:00-07:00",
+    "dateString": "2018-06-02T00:15:00-0700",
     "sgv": 105,
     "device": "fakecgm",
     "type": "sgv",
@@ -25,7 +25,7 @@
   },
   {
     "date": 1527923400000,
-    "dateString": "2018-06-02T00:10:00-07:00",
+    "dateString": "2018-06-02T00:10:00-0700",
     "sgv": 105,
     "device": "fakecgm",
     "type": "sgv",
@@ -33,7 +33,7 @@
   },
   {
     "date": 1527923100000,
-    "dateString": "2018-06-02T00:05:00-07:00",
+    "dateString": "2018-06-02T00:05:00-0700",
     "sgv": 102,
     "device": "fakecgm",
     "type": "sgv",
@@ -41,7 +41,7 @@
   },
   {
     "date": 1527922800000,
-    "dateString": "2018-06-02T00:00:00-07:00",
+    "dateString": "2018-06-02T00:00:00-0700",
     "sgv": 100,
     "device": "fakecgm",
     "type": "sgv",

@@ -24,10 +24,10 @@
     "upload/urchin-data.json": {
       "use": "format_urchin_data",
       "reporter": "JSON",
-      "cgm_clock": "monitor/clock.json",
+      "cgm_clock": "monitor/clock-zoned.json",
       "action": "add",
       "device": "pbbl",
-      "glucose_history": "monitor/glucose-unzoned.json",
+      "glucose_history": "monitor/glucose.json",
       "status_text": "",
       "status_json": "upload/urchin-status.json"
     }
