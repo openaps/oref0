@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+'use strict';
 /*
   Insulin On Board (IOB) calculations.
 
@@ -19,13 +19,16 @@
 */
 
 var generate = require('../lib/iob');
+var fs = require('fs');
 function usage ( ) {
     console.log('usage: ', process.argv.slice(0, 2), '<pumphistory-zoned.json> <profile.json> <clock-zoned.json> [autosens.json] [pumphistory-24h-zoned.json]');
 
 }
 
-if (!module.parent) {
-  var argv = require('yargs')
+
+
+var oref0_calculate_iob = function oref0_calculate_iob(argv_params) {  
+  var argv = require('yargs')(argv_params)
     .usage("$0 <pumphistory-zoned.json> <profile.json> <clock-zoned.json> [<autosens.json>] [<pumphistory-24h-zoned.json>]")
     .strict(true)
     .help('help');
@@ -46,21 +49,21 @@ if (!module.parent) {
   var pumphistory_24_input = inputs[4];
 
   var cwd = process.cwd();
-  var pumphistory_data = require(cwd + '/' + pumphistory_input);
-  var profile_data = require(cwd + '/' + profile_input);
-  var clock_data = require(cwd + '/' + clock_input);
+  var pumphistory_data = JSON.parse(fs.readFileSync(cwd + '/' + pumphistory_input));
+  var profile_data = JSON.parse(fs.readFileSync(cwd + '/' + profile_input));
+  var clock_data = JSON.parse(fs.readFileSync(cwd + '/' + clock_input));
 
   var autosens_data = null;
   if (autosens_input) {
     try {
-        autosens_data = require(cwd + '/' + autosens_input);
+        autosens_data = JSON.parse(fs.readFileSync(cwd + '/' + autosens_input));
     } catch (e) {}
     //console.error(autosens_input, JSON.stringify(autosens_data));
   }
   var pumphistory_24_data = null;
   if (pumphistory_24_input) {
     try {
-        pumphistory_24_data = require(cwd + '/' + pumphistory_24_input);
+        pumphistory_24_data = JSON.parse(fs.readFileSync(cwd + '/' + pumphistory_24_input));
     } catch (e) {}
   }
 
@@ -77,6 +80,16 @@ if (!module.parent) {
   }
 
   var iob = generate(inputs);
-  console.log(JSON.stringify(iob));
+  return(JSON.stringify(iob));
 }
 
+if (!module.parent) {
+   // remove the first parameter.
+   var command = process.argv;
+   command.shift();
+   command.shift();
+   var result = oref0_calculate_iob(command)
+   console.log(result);
+}
+
+exports = module.exports = oref0_calculate_iob

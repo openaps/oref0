@@ -5,8 +5,16 @@
 var os = require("os");
 var ns_status = require("./ns-status");
 var oref0_normalize_temps = require("./oref0-normalize-temps");
+var oref0_calculate_iob = require("./oref0-calculate-iob");
+var oref0_meal = require("./oref0-meal");
+var oref0_get_profile = require("./oref0-get-profile");
+var oref0_get_ns_entries = require("./oref0-get-ns-entries");
 var fs = require('fs');
 var requireUtils = require('../lib/require-utils');
+var shared_node_utils = require('./oref0-shared-node-utils');
+var console_error = shared_node_utils.console_error;
+var console_log = shared_node_utils.console_log;
+var initFinalResults = shared_node_utils.initFinalResults;
 
 function createRetVal(stdout, return_val) {
     var returnObj = {
@@ -76,10 +84,11 @@ function serverListen() {
 
             command = command.map(s => s.trim());
 
-            var result = 'unknown command';
-            var return_val = 0;
+            var result = 'unknown command\n';
 
             console.log('command = ', command);
+            var async_command = false;
+            var final_result = initFinalResults();
 
             if (command[0] == 'ns-status') {
                 // remove the first parameter.
@@ -87,37 +96,99 @@ function serverListen() {
                 try {
                     result = ns_status(command);
                     result = addNewlToResult(result);
+                    final_result = createRetVal(result, 0);
                 } catch (err) {
-                    return_val = 1;
+                    final_result.return_val = 1;
                     console.log('exception when parsing ns_status ', err);
+                    console_err(final_result, 'exception when parsing ns_status ', err);
                 }
             } else if (command[0] == 'oref0-normalize-temps') {
                 command.shift();
                 try {
                     result = oref0_normalize_temps(command);
                     result = addNewlToResult(result);
+                    final_result = createRetVal(result, 0);
                 } catch (err) {
-                    return_val = 1;
+                    final_result.return_val = 1;
                     console.log('exception when parsing oref0-normalize-temps ', err);
+                }
+            } else if (command[0] == 'oref0-calculate-iob') {
+                command.shift();
+                try {
+                    result = oref0_calculate_iob(command);
+                    result = addNewlToResult(result);
+                    final_result = createRetVal(result, 0);
+                } catch (err) {
+                    final_result.return_val = 1;
+                    console.log('exception when parsing oref0-calculate-iob ', err);
+                }
+            }  else if (command[0] == 'oref0-meal') {
+                command.shift();
+                try {
+                    result = oref0_meal(final_result, command);
+                    final_result.stdout = addNewlToResult(final_result.stdout); // put them both in a new function ????????????
+                    final_result.err = addNewlToResult(final_result.err);
+                } catch (err) {
+                    final_result.return_val = 1;
+                    console.log('exception when parsing oref0-meal ', err);
+                }
+            } else if (command[0] == 'oref0-get-profile') {
+                command.shift();
+                try {
+                    oref0_get_profile(final_result, command);
+                    final_result.stdout = addNewlToResult(final_result.stdout); // put them both in a new function ????????????
+                    final_result.err = addNewlToResult(final_result.err);
+                } catch (err) {
+                    final_result.return_val = 1;
+                    console.log('exception when parsing oref0-get-profile ', err);
+                }
+            } else if (command[0] == 'oref0-get-ns-entries') {
+                async_command = true;
+
+                var final_result = initFinalResults();
+                function print_callback(final_result) {
+                    try {
+                        final_result.stdout = addNewlToResult(final_result.stdout); // put them both in a new function ????????????
+                        final_result.err = addNewlToResult(final_result.err);
+                        s.write(JSON.stringify(final_result));
+                        s.end();
+                    } catch (err) {
+                        // I assume here that error happens when handeling the socket, so not trying to close it
+                        console.log('exception in print_callback ', err);
+                    }
+                }
+                command.shift();
+                try {
+                    result = oref0_get_ns_entries(command, print_callback, final_result);
+                    result = addNewlToResult(result);
+                } catch (err) {
+                    final_result.return_val = 1;
+                    console.log('exception when parsing oref0-get-profile ', err);
                 }
             } else if (command[0] == 'ping') {
                 result = 'pong';
+                final_result = createRetVal(result, 0);
             } else if (command[0] == 'json') {
                 // remove the first parameter.
                 command.shift();
                 try {
+                    var return_val;
                     [result, return_val] = jsonWrapper(command);
                     result = addNewlToResult(result);
+                    final_result = createRetVal(result, return_val);
                 } catch (err) {
-                    return_val = 1;
+                    final_result.return_val = 1;
                     console.log('exception when running json_wrarpper ', err);
                 }
             } else {
                 console.error('Unknown command = ', command);
-                return_val = 1;
+                console_error(final_result, 'Unknown command = ', command);
+                final_result.return_val = 1;
             }
-            s.write(JSON.stringify(createRetVal(result, return_val)));
-            s.end();
+            if(!async_command) {
+                s.write(JSON.stringify(final_result));
+                s.end();
+            }
         });
     });
 }
@@ -145,7 +216,7 @@ function addNewlToResult(result) {
     if (result === undefined) {
         // This preserves the oref0_normalize_temps behavior.
         result = ""
-    } else {
+    } else if (result.length != 0) {
         result += "\n";
     }
     return result;
