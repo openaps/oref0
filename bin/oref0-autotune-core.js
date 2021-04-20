@@ -5,7 +5,7 @@
 
   Uses the output of oref0-autotune-prep.js
 
-  Calculates adjustments to basal schedule, ISF, and CSF 
+  Calculates adjustments to basal schedule, ISF, and CSF
 
   Released under MIT license. See the accompanying LICENSE.txt file for
   full terms and conditions
@@ -19,13 +19,17 @@
   THE SOFTWARE.
 
 */
-
 var autotune = require('../lib/autotune');
 var stringify = require('json-stable-stringify');
 
 if (!module.parent) {
     var argv = require('yargs')
-        .usage("$0 <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>")
+        .usage("$0 <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json> [--output-file=<output_file.json>]")
+        .option('output-file', {
+          alias: 'o',
+          describe: 'File to write output',
+          default: null,
+        })
         .demand(3)
         .strict(true)
         .help('help');
@@ -65,6 +69,10 @@ if (!module.parent) {
     };
 
     var autotune_output = autotune(inputs);
-    console.log(stringify(autotune_output, { space: '   '}));
+    if (params["output-file"]) {
+      fs.writeFileSync(params["output-file"], stringify(autotune_output, {space: '   '}));
+    } else {
+      console.log(stringify(autotune_output, { space: '   '}));
+    }
 }
 
