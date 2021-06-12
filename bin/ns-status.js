@@ -2,10 +2,12 @@
 'use strict';
 
 var os = require("os");
+var fs = require('fs');
+var moment = require("moment");
 
 var requireUtils = require('../lib/require-utils');
-var safeRequire = requireUtils.safeRequire;
 var requireWithTimestamp = requireUtils.requireWithTimestamp;
+var safeLoadFile = requireUtils.safeLoadFile;
 
 /*
   Prepare Status info to for upload to Nightscout
@@ -23,7 +25,7 @@ var requireWithTimestamp = requireUtils.requireWithTimestamp;
 
 */
 
-function mmtuneStatus (status) {
+function mmtuneStatus (status, cwd, mmtune_input) {
     var mmtune = requireWithTimestamp(cwd + mmtune_input);
     if (mmtune) {
         if (mmtune.scanDetails && mmtune.scanDetails.length) {
@@ -35,7 +37,7 @@ function mmtuneStatus (status) {
     }
 }
 
-function preferencesStatus (status) {
+function preferencesStatus (status, cwd ,preferences_input) {
     var preferences = requireWithTimestamp(cwd + preferences_input);
     if (preferences) {
       status.preferences = preferences;
@@ -47,8 +49,8 @@ function preferencesStatus (status) {
     }
 }
 
-function uploaderStatus (status) {
-    var uploader = require(cwd + uploader_input);
+function uploaderStatus (status, cwd, uploader_input) {
+    var uploader = JSON.parse(fs.readFileSync(cwd + uploader_input, 'utf8'));
     if (uploader) {
         if (typeof uploader === 'number') {
             status.uploader = {
@@ -60,9 +62,12 @@ function uploaderStatus (status) {
     }
 }
 
-if (!module.parent) {
 
-    var argv = require('yargs')
+
+
+var ns_status = function ns_status(argv_params) {
+
+    var argv = require('yargs')(argv_params)
         .usage("$0 <clock.json> <iob.json> <suggested.json> <enacted.json> <battery.json> <reservoir.json> <status.json> [--uploader uploader.json] [mmtune.json] [--preferences preferences.json]")
         .option('preferences', {
             alias: 'p',
@@ -77,10 +82,16 @@ if (!module.parent) {
             default: false
         })
         .strict(true)
+        .fail(function (msg, err, yargs) {
+            if (err) {
+                return console.error('Error found', err);
+            }
+            return console.error('Parsing of command arguments failed', msg)
+            })
         .help('help');
-
     var params = argv.argv;
     var inputs = params._;
+ 
     var clock_input = inputs[0];
     var iob_input = inputs[1];
     var suggested_input = inputs[2];
@@ -94,9 +105,11 @@ if (!module.parent) {
 
     if (inputs.length < 7 || inputs.length > 8) {
         argv.showHelp();
-        process.exit(1);
+        return;
     }
 
+    // TODO: For some reason the following line does not work (../package.json ia not found).
+    //var pjson = JSON.parse(fs.readFileSync('../package.json', 'utf8'));
     var pjson = require('../package.json');
 
     var cwd = process.cwd() + '/';
@@ -117,6 +130,7 @@ if (!module.parent) {
         if (iobArray && iobArray.length) {
             iob = iobArray[0];
             iob.timestamp = iob.time;
+            iob.mills = moment(iob.time).valueOf();
             delete iob.time;
         }
 
@@ -129,6 +143,14 @@ if (!module.parent) {
           }
         }
 
+        if (enacted && enacted.timestamp) {
+          enacted.mills = moment(enacted.timestamp).valueOf();
+        }
+
+        if (suggested && suggested.timestamp) {
+          suggested.mills = moment(suggested.timestamp).valueOf();
+        }
+
         var status = {
             device: 'openaps://' + os.hostname(),
             openaps: {
@@ -138,27 +160,41 @@ if (!module.parent) {
                 version: pjson.version
             },
             pump: {
-                clock: safeRequire(cwd + clock_input),
-                battery: safeRequire(cwd + battery_input),
-                reservoir: safeRequire(cwd + reservoir_input),
+                clock: safeLoadFile(cwd + clock_input),
+                battery: safeLoadFile(cwd + battery_input),
+                reservoir: safeLoadFile(cwd + reservoir_input),
                 status: requireWithTimestamp(cwd + status_input)
-            }
+            },
+            created_at: new Date()
         };
 
         if (mmtune_input) {
-            mmtuneStatus(status);
+            mmtuneStatus(status, cwd, mmtune_input);
         }
 
         if (preferences_input) {
-            preferencesStatus(status);
+            preferencesStatus(status, cwd ,preferences_input);
         }
 
         if (uploader_input) {
-            uploaderStatus(status);
+            uploaderStatus(status, cwd, uploader_input);
         }
 
-        console.log(JSON.stringify(status));
+        return JSON.stringify(status);
     } catch (e) {
         return console.error("Could not parse input data: ", e);
     }
 }
+
+if (!module.parent) {
+    // remove the first parameter.
+    var command = process.argv;
+    command.shift();
+    command.shift();
+    var result = ns_status(command);
+    if(result !== undefined) {
+        console.log(result);
+    }
+}
+
+exports = module.exports = ns_status

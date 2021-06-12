@@ -103,6 +103,7 @@ main() {
 function run_script() {
   file=$1
 
+  wait_for_silence $upto10s
   echo "Running plugin script ($file)... "
   timeout 60 $file
   echo "Completed plugin script ($file). "
@@ -317,6 +318,9 @@ function smb_suggest {
 
 function determine_basal {
     cat monitor/meal.json
+
+    update_glucose_noise
+
     if ( grep -q 12 settings/model.json ); then
       oref0-determine-basal monitor/iob.json monitor/temp_basal.json monitor/glucose.json settings/profile.json --auto-sens settings/autosens.json --meal monitor/meal.json --reservoir monitor/reservoir.json > enact/smb-suggested.json
     else
@@ -519,7 +523,13 @@ function if_mdt_get_bg {
 
 # helper function for if_mdt_get_bg
 function mdt_get_bg {
-        oref0-mdt-update 2>&1 | tee -a /var/log/openaps/cgm-loop.log >&3
+        if oref0-mdt-update 2>&1 | tee -a /var/log/openaps/cgm-loop.log >&3; then
+            return 0
+        else
+            # if Enlite data retrieval fails, run smb_reservoir_before function to see if time needs to be reset
+            smb_reservoir_before
+            return 1
+        fi
 }
 
 # make sure we can talk to the pump and get a valid model number
@@ -630,26 +640,6 @@ function invoke_reservoir_etc {
     check_battery 2>&3 >&4 || return 1
 }
 
-# Calculate new suggested temp basal and enact it
-function enact {
-    rm enact/suggested.json
-    determine_basal && if (cat enact/suggested.json && grep -q duration enact/suggested.json); then (
-        rm enact/enacted.json
-        ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) 2>&3 >&4
-        grep -q duration enact/enacted.json || ( mdt settempbasal enact/suggested.json && jq '.  + {"received": true}' enact/suggested.json > enact/enacted.json ) ) 2>&1 | egrep -v "^  |subg_rfspy|handler"
-    fi
-    grep incorrectly enact/suggested.json && oref0-set-system-clock 2>&3
-    echo -n "enact/enacted.json: " && cat enact/enacted.json | colorize_json
-}
-
-# refresh pumphistory_24h if it's more than 5m old
-function refresh_old_pumphistory {
-    (file_is_recent monitor/pumphistory-24h-zoned.json 5 100 \
-     && echo -n "Pumphistory-24h less than 5m old. ") \
-    || ( echo -n "Old pumphistory-24h, waiting for $upto30s seconds of silence: " && wait_for_silence $upto30s \
-        && read_pumphistory )
-}
-
 # refresh settings/profile if it's more than 1h old
 function refresh_old_profile {
     file_is_recent_and_min_size settings/profile.json 60 && echo -n "Profile less than 60m old; " \
@@ -700,57 +690,6 @@ function get_settings {
     else
         echo "Invalid profile.json.new after refresh"
         ls -lart settings/profile.json.new
-    fi
-}
-
-function refresh_smb_temp_and_enact {
-    # set mtime of monitor/glucose.json to the time of its most recent glucose value
-    setglucosetimestamp
-    # only smb_enact_temp if we haven't successfully completed a pump_loop recently
-    # (no point in enacting a temp that's going to get changed after we see our last SMB)
-    if (jq '. | select(.duration > 20)' monitor/temp_basal.json | grep -q duration); then
-        echo -n "Temp duration >20m. "
-    elif ( find /tmp/ -mmin +10 | grep -q /tmp/pump_loop_completed ); then
-        echo "pump_loop_completed more than 10m ago: setting temp before refreshing pumphistory. "
-        smb_enact_temp
-    else
-        echo -n "pump_loop_completed less than 10m ago. "
-    fi
-}
-
-function refresh_temp_and_enact {
-    # set mtime of monitor/glucose.json to the time of its most recent glucose value
-    setglucosetimestamp
-    # TODO: use pump_loop_completed logic as in refresh_smb_temp_and_enact
-    if ( (find monitor/ -newer monitor/temp_basal.json | grep -q glucose.json && echo -n "glucose.json newer than temp_basal.json. " ) \
-        || (! file_is_recent_and_min_size monitor/temp_basal.json && echo "temp_basal.json more than 5m old. ")); then
-            echo -n Temp refresh
-            retry_fail invoke_temp_etc
-            echo ed
-            oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json || { echo "Couldn't calculate IOB"; fail "$@"; }
-            if (jq '. | select(.duration < 27)' monitor/temp_basal.json | grep -q duration); then
-                enact; else echo Temp duration 27m or more
-            fi
-    else
-        echo -n "temp_basal.json less than 5m old. "
-    fi
-}
-
-function invoke_temp_etc {
-    check_clock 2>&3 >&4 || return 1
-    check_tempbasal 2>&3 >&4 || return 1
-    calculate_iob
-}
-
-function refresh_pumphistory_and_enact {
-    # set mtime of monitor/glucose.json to the time of its most recent glucose value
-    setglucosetimestamp
-    if ((find monitor/ -newer monitor/pumphistory-24h-zoned.json | grep -q glucose.json && echo -n "glucose.json newer than pumphistory. ") \
-        || (find enact/ -newer monitor/pumphistory-24h-zoned.json | grep -q enacted.json && echo -n "enacted.json newer than pumphistory. ") \
-        || ((! file_is_recent monitor/pumphistory-zoned.json || ! find monitor/ -mmin +0 | grep -q pumphistory-zoned) && echo -n "pumphistory more than 5m old. ") ); then
-            { echo -n ": " && refresh_pumphistory_and_meal && enact; }
-    else
-        echo Pumphistory less than 5m old
     fi
 }
 
@@ -826,7 +765,7 @@ function setglucosetimestamp {
 function check_reservoir() {
   set -o pipefail
   mdt reservoir 2>&3 | tee monitor/reservoir.json && nonl < monitor/reservoir.json \
-    && egrep -q [0-9] monitor/reservoir.json
+    && egrep -q "[0-9]" monitor/reservoir.json
 }
 function check_model() {
   set -o pipefail
@@ -909,6 +848,14 @@ function compare_with_fullhistory() {
     cp monitor/full-pumphistory-24h-zoned.json monitor/full-pumphistory-24h-zoned.json.$timestamp
     cp monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned.json.$timestamp
   fi
+}
+
+function update_glucose_noise() {
+    if check_pref_bool .calc_glucose_noise false; then
+      echo "Recalculating glucose noise measurement"
+      oref0-calculate-glucose-noise monitor/glucose.json > monitor/glucose.json.new
+      mv monitor/glucose.json.new monitor/glucose.json
+    fi
 }
 
 function valid_pump_settings() {
