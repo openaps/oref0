@@ -1,3 +1,8 @@
+#javeincludes
+dist/
+webpack.config.js
+
+
 bower_components/
 node_modules/
 
