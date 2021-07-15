@@ -1,11 +1,12 @@
 #javeincludes
 dist/
 webpack.config.js
+Change source code in Oref0.rtf
+package-lock.json
 
 
 bower_components/
 node_modules/
-
 
 bundle/bundle.out.js
 
@@ -26,7 +27,5 @@ coverage/
 
 npm-debug.log
 bin/__pycache__
-
-package-lock.json
 
 *.pyc
