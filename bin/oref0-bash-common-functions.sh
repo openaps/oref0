@@ -504,8 +504,9 @@ set_pref_json () {
 
 # Usage: set_pref_string <preference-name> <string-value>
 set_pref_string () {
-    # TODO: Escape quotes and backslashes
-    set_pref_json "$1" "\"$2\""
+    # Escape quotes and backslashes
+    local ESCAPED_VALUE="$(echo "$2" |sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')"
+    set_pref_json "$1" "\"$ESCAPED_VALUE\""
 }
 
 dedupe_path() {
