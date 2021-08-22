@@ -41,10 +41,14 @@ def get_profiles(nightscout, token):
     """
     Get profiles available in nightscout
     """
+    # Create the URL
     r_url = nightscout + "/api/v1/profile.json"
+    # If token is not None, add it to the URL
     if token is not None:
         r_url = r_url + "?" + token
+    # Make the request
     r = requests.get(r_url)
+    # Return the json
     return r.json()
 
 
@@ -52,54 +56,92 @@ def get_current_profile(nightscout, token, profile_name):
     """
     Try to get the active profile
     """
+    # Create the URL
     r_url = nightscout + "/api/v1/profile.json"
+    # If token is not None, add it to the URL
     if token is not None:
         r_url = r_url + "?" + token
+    # Make the request
     p_list = requests.get(r_url).json()
+    # Log the profile list
     logging.debug("profile list: %s", p_list)
+    # Get the default profile
     default_profile = p_list[0]["defaultProfile"]
+    # If profile_name is None, try to get the active profile
     if profile_name is None:
+        # Create the URL
         p_url = (
             nightscout +
             "/api/v1/treatments.json?find[eventType][$eq]=Profile Switch&count=1"
         )
+        # If token is not None, add it to the URL
         if token is not None:
             p_url = p_url + "?" + token
+        # Make the request
         p_switch = requests.get(p_url).json()
+        # Log the profile switch
         logging.debug("p_switch: %s", p_switch)
+        # If p_switch is not empty
         if p_switch:
+            # Try to get the profile from the profile switch
             try:
+                # Load the profile switch json
                 sw_prof = json.loads(p_switch[0]["profileJson"])
+                # Log the profile switch json
                 logging.debug("sw_prof: %s", sw_prof)
+                # If sw_prof is not empty
                 if sw_prof:
+                    # Set the profile to the profile switch json
                     profile = sw_prof
+                    # Set the profile name to the profile switch name
                     profile["name"] = p_switch[0]["profile"]
+                    # If the profile timezone is not empty
                     if profile["timezone"] is not None:
+                        # Return the profile
                         return profile
+                    # Otherwise
                     else:
+                        # Set the profile timezone to the default profile timezone
                         profile["timezone"] = default_profile["timezone"]
+                        # Return the profile
                         return profile
+            # If there is a KeyError
             except KeyError:
+                # Log the default profile
                 logging.debug("default profile: %s", default_profile)
+                # Set the profile timezone to the default profile timezone
                 profile["timezone"] = p_list[0]["store"][default_profile]["timezone"]
+                # Return the profile
                 return profile
 #                sys.exit(
 #                    """Latest 'Profile Switch' event doesn't contain profile, """ +
 #                    """please specify profile name to use with --name flag.""")
+        # Set the profile name to the default profile name
         p_list[0]["store"][default_profile]["name"] = default_profile
+        # Try to get the units from the default profile
         try:
+            # If the default profile units is not empty
             if not p_list[0]["store"][default_profile]["units"]:
                 p_list[0]["store"][default_profile]["units"] = p_list[0][
                     "units"]
         except KeyError:
+            # Set the units to the default profile units
             p_list[0]["store"][profile_name]["units"] = p_list[0]["units"]
+        # Return the default profile
         return p_list[0]["store"][default_profile]
+    # Set the profile name to the profile name
     p_list[0]["store"][profile_name]["name"] = profile_name
+    # Try to get the units from the profile name
     try:
+        # If the profile name units is not empty
         if not p_list[0]["store"][profile_name]["units"]:
+            # Set the units to the profile name units
             p_list[0]["store"][profile_name]["units"] = p_list[0]["units"]
+    # If there is a KeyError
     except KeyError:
+        # Set the units to the profile name units
         p_list[0]["store"][profile_name]["units"] = p_list[0]["units"]
+    # Return the profile name
     return p_list[0]["store"][profile_name]
 
 
@@ -107,10 +149,15 @@ def profiles(nightscout, token):
     """
     print list of profiles available in nightscout
     """
+    # Get the profiles
     p_list = get_profiles(nightscout, token)
+    # Get the default profile
     default_profile = p_list[0]["defaultProfile"]
+    # Get the list of profiles
     profile_list = p_list[0]["store"].keys()
+    # Print the default profile
     print("Default profile: {}".format(default_profile))
+    # Print the available profiles
     print("Available profiles:")
     for profile in profile_list:
         print("\t" + profile)
@@ -120,13 +167,17 @@ def display(nightscout, token, profile_name, profile_format):
     """
     Display contents of a profile, in requested format
     """
+    # Get the profile
     profile = get_current_profile(nightscout, token, profile_name)
+    # If the profile format is nightscout, display the profile
     if profile_format == "nightscout":
         # display_nightscout(p_list, profile_name)
         logging.debug("Displaying profile {}".format(profile["name"]))
         print(json.dumps(profile, indent=4))
+    # If the profile format is text, display the profile
     elif profile_format == "text":
         display_text(profile)
+    # Otherwise, display the profile in OpenAPS format
     else:
         print(json.dumps(ns_to_oaps(profile), indent=4))
 
@@ -135,6 +186,7 @@ def write(nightscout, token, profile_name, directory):
     """
     Write profile in OpenAPS format to a directory
     """
+    # Get the current profile
     profile = ns_to_oaps(get_current_profile(nightscout, token, profile_name))
     logging.debug("Checking for directory: %s", directory)
     if not os.path.isdir(directory):
@@ -143,21 +195,33 @@ def write(nightscout, token, profile_name, directory):
     # Check whether there's already a profile file with settings we don't have
     for profile_file in PROFILE_FILES:
         try:
+            # Open the file for reading
             with open(os.path.join(directory, profile_file), 'r') as p:
+                # Load the json
                 old_profile = json.loads(p.read())
+                # For each key in the old profile
                 for key in old_profile.keys():
+                    # Check whether we have that key
                     logging.debug("Checking key %s from profile file %s", key,
                                   profile_file)
+                    # If we don't have that key
                     if key not in PROFILE_KEYS:
+                        # Log an error
                         logging.error(
                             "Existing profile file %s contains key %s we wouldn't set!",
                             profile_file, key)
+                        # And exit
                         sys.exit(
                             "Existing profile contains a key we wouldn't set!")
+        # If there's no file
         except IOError:
+            # Don't do anything
             pass
+    # For each profile file
     for profile_file in PROFILE_FILES:
+        # Open the file for writing
         with open(os.path.join(directory, profile_file), 'w') as f:
+            # Write the json
             f.write(json.dumps(profile, indent=4))
 
 
@@ -165,10 +229,12 @@ def normalize_entry(entry):
     """
     Clean up an entry before further processing
     """
+    # Try to get the timeAsSeconds value
     try:
         if entry["timeAsSeconds"]:
             pass
     except KeyError:
+        # Get the time value
         entry_time = datetime.strptime(entry["time"], "%H:%M")
         entry[
             "timeAsSeconds"] = 3600 * entry_time.hour + 60 * entry_time.minute
@@ -176,13 +242,19 @@ def normalize_entry(entry):
         if entry["time"]:
             pass
     except KeyError:
+        # Get the timeAsSeconds value
         entry_hour = int(entry['timeAsSeconds'] / 3600)
+        # Get the timeAsSeconds value
         entry_minute = int(entry['timeAsSeconds'] % 60)
+        # Convert the timeAsSeconds to time
         entry["time"] = str(entry_hour).rjust(
             2, '0') + ":" + str(entry_minute).rjust(2, '0')
 
+    # Set the start value to the time value
     entry["start"] = entry["time"] + ":00"
+    # Set the minutes value to the timeAsSeconds value divided by 60
     entry["minutes"] = int(entry["timeAsSeconds"]) / 60
+    # Return the entry
     return entry
 
 
@@ -190,6 +262,7 @@ def ns_to_oaps(ns_profile):
     """
     Convert nightscout profile to OpenAPS format
     """
+    # Create a dict to store the OpenAPS profile
     oaps_profile = {}
     # XXX If addint any new entries, make sure to update PROFILE_KEYS at the top
     # Not represented in nightscout
@@ -318,7 +391,9 @@ def display_nightscout(profile_data, profile_name):
     """
     Display profile the way it comes from nightscout
     """
+    # Print a message
     print("Displaying profile {}".format(profile_name))
+    # Pretty print the json
     print(json.dumps(profile_data[0]["store"][profile_name], indent=4))
 
 
