@@ -83,9 +83,6 @@ def get_current_profile(nightscout, token, profile_name):
                 logging.debug("default profile: %s", default_profile)
                 profile["timezone"] = p_list[0]["store"][default_profile]["timezone"]
                 return profile
-#                sys.exit(
-#                    """Latest 'Profile Switch' event doesn't contain profile, """ +
-#                    """please specify profile name to use with --name flag.""")
         p_list[0]["store"][default_profile]["name"] = default_profile
         try:
             if not p_list[0]["store"][default_profile]["units"]:
@@ -103,11 +100,15 @@ def get_current_profile(nightscout, token, profile_name):
     return p_list[0]["store"][profile_name]
 
 
-def profiles(nightscout, token):
+def profiles(nightscout, token, file):
     """
-    print list of profiles available in nightscout
+    print list of profiles available in --nightscout or --file
     """
-    p_list = get_profiles(nightscout, token)
+    if file is not None:
+        with open(file, 'r') as f:
+            p_list = json.loads(f.read())
+    else:
+        p_list = get_profiles(nightscout, token)
     default_profile = p_list[0]["defaultProfile"]
     profile_list = p_list[0]["store"].keys()
     print("Default profile: {}".format(default_profile))
@@ -115,14 +116,17 @@ def profiles(nightscout, token):
     for profile in profile_list:
         print("\t" + profile)
 
-
-def display(nightscout, token, profile_name, profile_format):
+def display(nightscout, token, profile_name, profile_format, file):
     """
-    Display contents of a profile, in requested format
+    Display contents of a profile (from --nightscout or --file), in requested format
     """
+    if file is not None:
+        with open(file, 'r') as f:
+            p_list = json.loads(f.read())
+    else:
+        p_list = get_profiles(nightscout, token)
     profile = get_current_profile(nightscout, token, profile_name)
     if profile_format == "nightscout":
-        # display_nightscout(p_list, profile_name)
         logging.debug("Displaying profile {}".format(profile["name"]))
         print(json.dumps(profile, indent=4))
     elif profile_format == "text":
@@ -130,12 +134,16 @@ def display(nightscout, token, profile_name, profile_format):
     else:
         print(json.dumps(ns_to_oaps(profile), indent=4))
 
-
-def write(nightscout, token, profile_name, directory):
+def write(nightscout, token, profile_name, directory, file):
     """
-    Write profile in OpenAPS format to a directory
+    Write profile (from either --nightscout or --file) in OpenAPS format to a directory
     """
-    profile = ns_to_oaps(get_current_profile(nightscout, token, profile_name))
+    if file is not None:
+        with open(file, 'r') as f:
+            p_list = json.loads(f.read())
+    else:
+        p_list = get_profiles(nightscout, token)
+    profile = get_current_profile(nightscout, token, profile_name)
     logging.debug("Checking for directory: %s", directory)
     if not os.path.isdir(directory):
         sys.exit(
@@ -159,7 +167,6 @@ def write(nightscout, token, profile_name, directory):
     for profile_file in PROFILE_FILES:
         with open(os.path.join(directory, profile_file), 'w') as f:
             f.write(json.dumps(profile, indent=4))
-
 
 def normalize_entry(entry):
     """
@@ -383,18 +390,25 @@ def display_text(p_data):
     #times_table.add_rows(times_list)
     #print(times_table.draw() + "\n")
 
-
+# support either --nightscout or --file (reading in the profile from a file).
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Get nightscout profile.")
     parser.add_argument(
         "--nightscout",
         help="Nightscout URL",
-        required=True,
+        required=False,
         nargs="?",
         const="http://127.0.0.1:1337",
         default="http://127.0.0.1:1337",
     )
     parser.add_argument("--token", help="Authenticaton token")
+    parser.add_argument(
+        "--file",
+        help="File containing nightscout profile",
+        required=False,
+        nargs="?",
+        default=None,
+    )
 
     subparsers = parser.add_subparsers(help="Sub-command to run",
                                        dest="subparser")
@@ -428,7 +442,5 @@ if __name__ == "__main__":
 
     logging.debug(vars(parser.parse_args()))
 
-    # https://stackoverflow.com/questions/4575747/get-selected-subcommand-with-argparse/44948406#44948406
-    # I have no idea what it does, but it seems to do the trick
     kwargs = vars(parser.parse_args())
     globals()[kwargs.pop("subparser")](**kwargs)
