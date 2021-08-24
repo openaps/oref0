@@ -41,6 +41,10 @@ case $i in
     NIGHTSCOUT_HOST="${i#*=}"
     shift # past argument=value
     ;;
+    -ds=*|--devicestatus=*)
+    DEVICESTATUS="${i#*=}"
+    shift # past argument=value
+    ;;
     -s=*|--start-date=*)
     START_DATE="${i#*=}"
     START_DATE=`mydate --date="$START_DATE" +%Y-%m-%d`
@@ -119,11 +123,54 @@ done
 # remove any trailing / from NIGHTSCOUT_HOST
 NIGHTSCOUT_HOST=$(echo $NIGHTSCOUT_HOST | sed 's/\/$//g')
 
-if [[ -z "$NIGHTSCOUT_HOST" ]] && [[ -z "$autotunelog" ]]; then
+# verify that the file specified by the DEVICESTATUS argument exists
+if [[ -n $DEVICESTATUS ]]; then
+    echo foo
+    if [[ ! -f $DEVICESTATUS ]]; then
+        echo "ERROR: $DEVICESTATUS does not exist"
+        exit 1
+    fi
+fi
+
+# remove any .gz from the end of DEVICESTATUS
+DEVICESTATUS=$(echo $DEVICESTATUS | sed 's/\.gz$//g')
+
+# create PROFILE, ENTRIES, and TREATMENTS variables by replacing "devicestatus" in DEVICESTATUS with
+# each of "profile", "entries", and "treatments"
+if [[ -n $DEVICESTATUS ]]; then
+    PROFILE=$(echo $DEVICESTATUS | sed 's/devicestatus/profile/g')
+    ENTRIES=$(echo $DEVICESTATUS | sed 's/devicestatus/entries/g')
+    TREATMENTS=$(echo $DEVICESTATUS | sed 's/devicestatus/treatments/g')
+fi
+
+function absolutepath { echo $(cd $(dirname $1); pwd)/$(basename $1); }
+
+# for each of those variables:
+# if a .gz version of the file exists, gunzip it
+# make sure the file specified in the variable exists
+# if it doesn't, exit with an error
+for var in DEVICESTATUS PROFILE ENTRIES TREATMENTS; do
+    if [[ -n ${!var} ]]; then
+        echo ${!var}
+        if [[ -f ${!var}.gz ]]; then
+            gunzip ${!var}.gz
+        fi
+        if [[ ! -f ${!var} ]]; then
+            echo "ERROR: ${!var} does not exist"
+            exit 1
+        fi
+        eval "$var=$(absolutepath ${!var})"
+		echo ${!var}
+    fi
+done
+
+if [[ -z "$DEVICESTATUS" ]] && [[ -z "$NIGHTSCOUT_HOST" ]] && [[ -z "$autotunelog" ]]; then
     # nightscout mode: download data from Nightscout
     echo "Usage: NS mode: $0 [--dir=/tmp/oref0-simulator] --ns-host=https://mynightscout.herokuapp.com [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--preferences=/path/to/preferences.json] [--autosens-override=/path/to/autosens-override.json]"
     # file mode: for backtesting from autotune.*.log files specified on the command-line via glob, as an alternative to NS
     echo "Usage: file mode: $0 [--dir=/tmp/oref0-simulator] /path/to/autotune*.log [--profile=/path/to/profile.json] [--preferences=/path/to/preferences.json] [--autosens-override=/path/to/autosens-override.json]"
+    # data commons mode: process data from the OpenAPS / Nightscout data commons on Open Humans
+    echo "Usage: data commons mode: $0 [--dir=/tmp/oref0-simulator] --devicestatus=/path/to/participant/direct-sharing-31/devicestatus_*_to_YYYY-MM-DD.json.gz"
     exit 1
 fi
 if [[ -z "$START_DATE" ]]; then
@@ -151,10 +198,22 @@ oref0-simulator init $DIR
 cd $DIR
 mkdir -p autotune
 
+# data commons mode:
+if [[ -n "$DEVICESTATUS" ]]; then
+    # If $PROFILE is a .gz file, gunzip it and update the variable to remove the .gz
+    if [[ "$PROFILE" == *.gz ]]; then
+        gunzip $PROFILE
+        PROFILE=$(echo $PROFILE | sed 's/.gz$//g')
+    fi
+    echo "~/src/oref0/bin/get_profile.py --file $PROFILE display --format openaps 2>/dev/null > profile.json.new"
+    ~/src/oref0/bin/get_profile.py --file $PROFILE display --format openaps 2>/dev/null > profile.json.new
+fi
 # nightscout mode: download data from Nightscout
-if ! [[ -z "$NIGHTSCOUT_HOST" ]]; then
+if [[ -n "$NIGHTSCOUT_HOST" ]]; then
     # download profile.json from Nightscout profile.json endpoint, and also copy over to pumpprofile.json
     ~/src/oref0/bin/get_profile.py --nightscout $NIGHTSCOUT_HOST display --format openaps 2>/dev/null > profile.json.new
+fi
+if [[ -n "$NIGHTSCOUT_HOST" ]] || [[ -n "$DEVICESTATUS" ]]; then
     ls -la profile.json.new
     grep bg profile.json.new
     if jq -e .dia profile.json.new; then
@@ -170,21 +229,24 @@ if ! [[ -z "$NIGHTSCOUT_HOST" ]]; then
     fi
     grep bg profile.json
 
-    # download preferences.json from Nightscout devicestatus.json endpoint and overwrite profile.json with it
-    for i in $(seq 0 10); do
-        curl $NIGHTSCOUT_HOST/api/v1/devicestatus.json | jq .[$i].preferences > preferences.json.new
-        if jq -e .max_iob preferences.json.new; then
-            mv preferences.json.new preferences.json
-            jq -s '.[0] + .[1]' profile.json preferences.json > profile.json.new
-            if jq -e .max_iob profile.json.new; then
-                mv profile.json.new profile.json
-                echo Successfully merged preferences.json into profile.json
-                break
-            else
-                echo Bad profile.json.new from preferences.json merge attempt $1
+# TODO: make this work for data commons mode when preferences exists in devicestatus, and otherwise fall back to default
+    if [[ -n "$NIGHTSCOUT_HOST" ]]; then
+        # download preferences.json from Nightscout devicestatus.json endpoint and overwrite profile.json with it
+        for i in $(seq 0 10); do
+            curl $NIGHTSCOUT_HOST/api/v1/devicestatus.json | jq .[$i].preferences > preferences.json.new
+            if jq -e .max_iob preferences.json.new; then
+                mv preferences.json.new preferences.json
+                jq -s '.[0] + .[1]' profile.json preferences.json > profile.json.new
+                if jq -e .max_iob profile.json.new; then
+                    mv profile.json.new profile.json
+                    echo Successfully merged preferences.json into profile.json
+                    break
+                else
+                    echo Bad profile.json.new from preferences.json merge attempt $1
+                fi
             fi
-        fi
-    done
+        done
+    fi
 fi
 
 # read a --profile file (overriding NS profile if it exists)
@@ -257,6 +319,7 @@ if ! [[ -z "$autotunelog" ]]; then
     exit 0
 fi
 
+# nightscout mode
 if ! [[ -z "$NIGHTSCOUT_HOST" ]]; then
     # sleep for 10s to allow multiple parallel runs to start up before loading up the CPUs
     sleep 10
@@ -267,5 +330,11 @@ if ! [[ -z "$NIGHTSCOUT_HOST" ]]; then
     exit 0
 fi
 
+# data commons mode
+if [[ -n $DEVICESTATUS ]]; then
+
+    echo TODO: figure out what to do next in data commons mode
+    exit 1
+fi
 echo Error: neither autotunelog nor NIGHTSCOUT_HOST set
 exit 1
