@@ -47,17 +47,18 @@ def get_profiles(nightscout, token):
     r = requests.get(r_url)
     return r.json()
 
-
-def get_current_profile(nightscout, token, profile_name):
+def get_current_profile(nightscout, token, profile_name, file):
     """
-    Try to get the active profile
+    Try to get the active profile from either --nightscout or --file
     """
-    r_url = nightscout + "/api/v1/profile.json"
-    if token is not None:
-        r_url = r_url + "?" + token
-    p_list = requests.get(r_url).json()
-    logging.debug("profile list: %s", p_list)
+    if file is not None:
+        with open(file, 'r') as f:
+            p_list = json.loads(f.read())
+    else:
+        p_list = get_profiles(nightscout, token)
     default_profile = p_list[0]["defaultProfile"]
+    if file is not None:
+        profile_name = "Default"
     if profile_name is None:
         p_url = (
             nightscout +
@@ -99,7 +100,6 @@ def get_current_profile(nightscout, token, profile_name):
         p_list[0]["store"][profile_name]["units"] = p_list[0]["units"]
     return p_list[0]["store"][profile_name]
 
-
 def profiles(nightscout, token, file):
     """
     print list of profiles available in --nightscout or --file
@@ -125,8 +125,9 @@ def display(nightscout, token, profile_name, profile_format, file):
             p_list = json.loads(f.read())
     else:
         p_list = get_profiles(nightscout, token)
-    profile = get_current_profile(nightscout, token, profile_name)
+    profile = get_current_profile(nightscout, token, profile_name, file)
     if profile_format == "nightscout":
+        # display_nightscout(p_list, profile_name)
         logging.debug("Displaying profile {}".format(profile["name"]))
         print(json.dumps(profile, indent=4))
     elif profile_format == "text":
@@ -143,7 +144,7 @@ def write(nightscout, token, profile_name, directory, file):
             p_list = json.loads(f.read())
     else:
         p_list = get_profiles(nightscout, token)
-    profile = get_current_profile(nightscout, token, profile_name)
+    profile = get_current_profile(nightscout, token, profile_name, file)
     logging.debug("Checking for directory: %s", directory)
     if not os.path.isdir(directory):
         sys.exit(
@@ -198,7 +199,7 @@ def ns_to_oaps(ns_profile):
     Convert nightscout profile to OpenAPS format
     """
     oaps_profile = {}
-    # XXX If addint any new entries, make sure to update PROFILE_KEYS at the top
+    # XXX If adding any new entries, make sure to update PROFILE_KEYS at the top
     # Not represented in nightscout
     oaps_profile["min_5m_carbimpact"] = 8.0
     oaps_profile["autosens_min"] = 0.7
