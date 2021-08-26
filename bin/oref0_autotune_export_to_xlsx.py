@@ -28,20 +28,57 @@ import datetime
 import argparse
 import re
 
+
+
 def parseDateAndRun(filename):
+    """Parse date and run from filename
+    
+    Parses the date and run from a filename.
+    
+    Args:
+        filename (str): Filename (required)
+    
+    Returns:
+        tuple: (date, run)
+    """
+
     m=re.match( r'profile.(?P<run>.*).(?P<date>20[0-9][0-9]-[01][0-9]-[0-3][0-9]).json', filename)
     if m:
          return (m.group('date'), m.group('run'))
     else: # not found
         return ('-','-')
 
+
+
 def calc_minutes(timestr):
+    """Returns the number of minutes from midnight. Seconds are ignored
+    
+    Args:
+        timestr (str): Time string in HH:MM format (required)
+    
+    Returns:
+        int: Number of minutes from midnight
+    """
+
     # returns the number of minutes from midnight. seconds are ignored
     # based on http://stackoverflow.com/questions/10663720/converting-a-time-string-to-seconds-in-python
     ftr = [60,1,0] # ignore seconds, count minutes, and use 60 minutes per hour
     return sum([a*b for a,b in zip(ftr, map(int,timestr.split(':')))])
 
+
+
 def expandProfile(l, valueField, offsetField):
+    """Expand a profile to cover the full day
+    
+    Args:
+        l (list): Profile list (required)
+        valueField (str): Value field (required)
+        offsetField (str): Offset field (required)
+    
+    Returns:
+        list: Expanded profile
+    """
+
     r=[]
     minutes=0
     value=l[0][valueField]
@@ -63,7 +100,22 @@ def expandProfile(l, valueField, offsetField):
     # return the expanded profile
     return r
 
+
+
 def writeExcelHeader(ws, date_format, headerFormat):
+    """Write header to Excel worksheet
+    
+    Writes the header to the Excel worksheet.
+    
+    Args:
+        ws (xlsxwriter.worksheet.Worksheet): Excel worksheet (required)
+        date_format (xlsxwriter.format.Format): Excel date format (required)
+        headerFormat (xlsxwriter.format.Format): Excel header format (required)
+    
+    Returns:
+        None
+    """
+
     ws.write_string(0,0, 'Filename', headerFormat)
     ws.write_string(0,1, 'Date', headerFormat)
     ws.write_string(0,2, 'Run', headerFormat)
@@ -74,7 +126,23 @@ def writeExcelHeader(ws, date_format, headerFormat):
             ws.write_datetime(0, col, dt, date_format)
             col=col+1
 
+
+
 def write_excel_profile(worksheet, row, expandedList, excel_number_format):
+    """Write profile to Excel worksheet
+    
+    Writes a profile to an Excel worksheet.
+    
+    Args:
+        worksheet (xlsxwriter.worksheet.Worksheet): Excel worksheet (required)
+        row (int): Row number (required)
+        expandedList (list): List of expanded profile entries (required)
+        excel_number_format (xlsxwriter.format.Format): Excel number format (required)
+    
+    Returns:
+        None
+    """
+
     worksheet.write_string(row, 0, filename)
     date, run = parseDateAndRun(filename)
     worksheet.write_string(row, 1, date)
@@ -84,7 +152,20 @@ def write_excel_profile(worksheet, row, expandedList, excel_number_format):
         worksheet.write_number(row, col, expandedList[i], excel_number_format)
         col=col+1
 
+
+
 def excel_init_workbook(workbook):
+    """Initialize the Excel workbook
+    
+    Initializes the Excel workbook, and returns the worksheet objects for the basal and isf profiles.
+    
+    Args:
+        workbook (xlsxwriter.Workbook): Workbook object (required)
+    
+    Returns:
+        (xlsxwriter.Worksheet, xlsxwriter.Worksheet): Worksheet objects for basal and isf profiles
+    """
+
     #see http://xlsxwriter.readthedocs.io/format.html#format for documentation on the Excel format's
     excel_hour_format = workbook.add_format({'num_format': 'hh:mm', 'bold': True, 'font_color': 'black'})
     excel_2decimals_format = workbook.add_format({'num_format': '0.00', 'font_size': '16'})

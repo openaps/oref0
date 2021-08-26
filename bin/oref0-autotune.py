@@ -38,7 +38,20 @@ EXPORT_EXCEL = None
 TERMINAL_LOGGING = True
 RECOMMENDS_REPORT = True
 
+
+
 def get_input_arguments():
+    """Get command line arguments
+    
+    Gets the command line arguments, and then returns them to main.
+    
+    Args:
+        None
+    
+    Returns:
+        args (argparse.Namespace): Namespace object containing all of the command line arguments
+    """
+
     parser = argparse.ArgumentParser(description='Autotune')
     
     # Required
@@ -82,7 +95,20 @@ def get_input_arguments():
     
     return parser.parse_args()
 
+
+
 def assign_args_to_variables(args):
+    """Assign arguments to variables
+    
+    Takes the arguments passed to the script and assigns them to variables.
+    
+    Args:
+        args (argparse.Namespace): Arguments passed to the script
+    
+    Returns:
+        None
+    """
+
     # TODO: Input checking.
     
     global DIR, NIGHTSCOUT_HOST, START_DATE, END_DATE, NUMBER_OF_RUNS, \
@@ -108,13 +134,39 @@ def assign_args_to_variables(args):
     if args.log is not None:
         RECOMMENDS_REPORT = args.logs
 
+
+
 def get_nightscout_profile(nightscout_host):
+    """Get Nightscout profile from Nightscout host
+    
+    Gets the Nightscout profile from the Nightscout host, and then saves it to the autotune directory.
+    
+    Args:
+        nightscout_host (str): Nightscout URL (required)
+    
+    Returns:
+        None
+    """
+
     #TODO: Add ability to use API secret for Nightscout.
     res = requests.get(nightscout_host + '/api/v1/profile.json')
     with open(os.path.join(autotune_directory, 'nightscout.profile.json'), 'w') as f:  # noqa: F821
         f.write(res.text)
 
+
+
 def get_openaps_profile(directory):
+    """Get the current profile from openaps
+    
+    Copies the current profile from openaps into the autotune directory.
+    
+    Args:
+        directory (str): Path to autotune directory (required)
+    
+    Returns:
+        None
+    """
+
     shutil.copy(os.path.join(directory, 'settings', 'pumpprofile.json'), os.path.join(directory, 'autotune', 'profile.pump.json'))
     
     # If a previous valid settings/autotune.json exists, use that; otherwise start from settings/profile.json
@@ -139,7 +191,23 @@ def get_openaps_profile(directory):
     #TODO: Do the correct copying here.
     # cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json'])
 
+
+
 def get_nightscout_carb_and_insulin_treatments(nightscout_host, start_date, end_date, directory):
+    """Grab treatments.json from Nightscout
+    
+    Gets the treatments.json file from Nightscout, and saves it to the autotune directory.
+    
+    Args:
+        nightscout_host (str): Nightscout URL (required)
+        start_date (datetime): Start date (required)
+        end_date (datetime): End date (required)
+        directory (str): Autotune directory (required)
+    
+    Returns:
+        None
+    """
+
     logging.info('Grabbing NIGHTSCOUT treatments.json for date range: {0} to {1}'.format(start_date, end_date))
     # TODO: What does 'T20:00-05:00' mean?
     output_file_name = os.path.join(directory, 'autotune', 'ns-treatments.json')
@@ -151,7 +219,23 @@ def get_nightscout_carb_and_insulin_treatments(nightscout_host, start_date, end_
     with open(output_file_name, 'w') as f:
         f.write(res.text.encode('utf-8'))
 
+
+
 def get_nightscout_bg_entries(nightscout_host, start_date, end_date, directory):
+    """Grab entries/sgv.json from nightscout for date range
+    
+    Gets the entries/sgv.json from nightscout for the specified date range.
+    
+    Args:
+        nightscout_host (str): Nightscout URL (required)
+        start_date (datetime): Start date (required)
+        end_date (datetime): End date (required)
+        directory (str): Directory to save files to (required)
+    
+    Returns:
+        None
+    """
+
     logging.info('Grabbing NIGHTSCOUT enries/sgv.json for date range: {0} to {1}'.format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
     date_list = [start_date + datetime.timedelta(days=x) for x in range(0, (end_date - start_date).days)]
 
@@ -163,7 +247,23 @@ def get_nightscout_bg_entries(nightscout_host, start_date, end_date, directory):
         with open(os.path.join(directory, 'autotune', 'ns-entries.{date}.json'.format(date=date.strftime("%Y-%m-%d"))), 'w') as f:
             f.write(res.text.encode('utf-8'))
 
+
+
 def run_autotune(start_date, end_date, number_of_runs, directory):
+    """Run autotune for a given number of runs
+    
+    Runs autotune for a given number of runs, for a given date range.
+    
+    Args:
+        start_date (datetime): Start date of date range (required)
+        end_date (datetime): End date of date range (required)
+        number_of_runs (int): Number of runs (required)
+        directory (str): Directory to store autotune files (required)
+    
+    Returns:
+        None
+    """
+
     date_list = [start_date + datetime.timedelta(days=x) for x in range(0, (end_date - start_date).days)]
     autotune_directory = os.path.join(directory, 'autotune')
     for run_number in range(1, number_of_runs + 1):
@@ -210,11 +310,39 @@ def run_autotune(start_date, end_date, number_of_runs, directory):
             shutil.copy(os.path.join(autotune_directory, 'newprofile.{run_number}.{date}.json'.format(run_number=run_number, date=date.strftime("%Y-%m-%d"))),
                         os.path.join(autotune_directory, 'profile.json'))
 
+
+
 def export_to_excel(output_directory, output_excel_filename):
+    """Export autotune data to Excel
+    
+    Exports autotune data to Excel.
+    
+    Args:
+        output_directory (str): Output directory (required)
+        output_excel_filename (str): Output Excel filename (required)
+    
+    Returns:
+        None
+    """
+
     autotune_export_to_xlsx = 'oref0-autotune-export-to-xlsx --dir {0} --output {1}'.format(output_directory, output_excel_filename)
     call(autotune_export_to_xlsx, shell=True)
 
+
+
 def create_summary_report_and_display_results(output_directory):
+    """Create a summary report and display the results
+    
+    Creates a summary report of the autotune results, and then displays the results
+    to the terminal.
+    
+    Args:
+        output_directory (str): Output directory (required)
+    
+    Returns:
+        None
+    """
+
     print()
     print("Autotune pump profile recommendations:")
     print("---------------------------------------------------------")

@@ -21,13 +21,39 @@ token_dict={}
 token_dict["exp"]=-1
 auth_headers={}
 
+
+
 def init(args):
+    """Initialize logging
+    
+    Sets up logging, and sets the log level based on the verbose flag.
+    
+    Args:
+        args (argparse.Namespace): Arguments passed to the script
+    
+    Returns:
+        None
+    """
+
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format='%(asctime)s %(levelname)s %(message)s')
     else:
         logging.basicConfig(level=logging.INFO, stream=sys.stdout, format='%(asctime)s %(levelname)s %(message)s')
 
+
+
 def parse_ns_ini(filename):
+    """Parse Nightscout ini file
+    
+    Parses the Nightscout ini file, and sets the global variables nightscout_host, api_secret, and token_secret.
+    
+    Args:
+        filename (str): Nightscout ini file (required)
+    
+    Returns:
+        None
+    """
+
     global nightscout_host, api_secret, token_secret
     logging.debug("Parsing %s" % filename)
     config = configparser.ConfigParser()
@@ -64,7 +90,19 @@ def parse_ns_ini(filename):
         sys.exit(1)
 
 
+
 def get_nightscout_authorization_token():
+    """Get Nightscout authorization token
+    
+    Gets an authorization token from Nightscout.
+    
+    Args:
+        None
+    
+    Returns:
+        None
+    """
+
     global nightscout_host, token_secret, token_dict, auth_headers
     logging.debug("get_nightscout_authorization_token")
     try:
@@ -85,12 +123,38 @@ def get_nightscout_authorization_token():
         sys.exit(1)
 
 
+
 def startup_checks(args):
+    """Perform startup checks
+    
+    Checks for the existence of the nightscout.ini file, and then checks
+    the nightscout host and token.
+    
+    Args:
+        args (argparse.Namespace): Arguments passed to the script
+    
+    Returns:
+        None
+    """
+
     parse_ns_ini(args.nsini)
     logging.info("Nightscout host: %s" % nightscout_host)
     get_nightscout_authorization_token()
 
+
+
 def check_permissions():
+    """Check if the token has the required permissions
+    
+    Checks if the token has the required permissions to use the API.
+    
+    Args:
+        None
+    
+    Returns:
+        None
+    """
+
     global token_dict
     pg=token_dict['permissionGroups'][0]
     if pg==["*"]: # admin role

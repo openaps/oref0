@@ -37,10 +37,20 @@ PROFILE_KEYS = [
 TIMED_ENTRIES = ['carbratio', 'sens', 'basal', 'target_low', 'target_high']
 
 
+
 def get_profiles(nightscout, token):
+    """Get profiles available in nightscout
+    
+    Gets profiles from nightscout, and returns them as a list of dictionaries.
+    
+    Args:
+        nightscout (str): Nightscout URL (required)
+        token (str): Nightscout token (optional)
+    
+    Returns:
+        list: A list of dictionaries, each containing a profile.
     """
-    Get profiles available in nightscout
-    """
+
     r_url = nightscout + "/api/v1/profile.json"
     if token is not None:
         r_url = r_url + "?" + token
@@ -48,10 +58,21 @@ def get_profiles(nightscout, token):
     return r.json()
 
 
+
 def get_current_profile(nightscout, token, profile_name):
+    """Try to get the active profile
+    
+    Gets the active profile from nightscout, and then returns it.
+    
+    Args:
+        nightscout (str): Nightscout URL (required)
+        token (str): Nightscout token (optional)
+        profile_name (str): Profile name (optional)
+    
+    Returns:
+        dict: Profile
     """
-    Try to get the active profile
-    """
+
     r_url = nightscout + "/api/v1/profile.json"
     if token is not None:
         r_url = r_url + "?" + token
@@ -103,10 +124,21 @@ def get_current_profile(nightscout, token, profile_name):
     return p_list[0]["store"][profile_name]
 
 
+
 def profiles(nightscout, token):
+    """Print list of profiles available in nightscout
+    
+    Gets profiles from nightscout, prints the default profile, and then
+    prints a list of all available profiles.
+    
+    Args:
+        nightscout (str): Nightscout URL (required)
+        token (str): Nightscout token (optional)
+    
+    Returns:
+        None
     """
-    print list of profiles available in nightscout
-    """
+
     p_list = get_profiles(nightscout, token)
     default_profile = p_list[0]["defaultProfile"]
     profile_list = p_list[0]["store"].keys()
@@ -116,10 +148,22 @@ def profiles(nightscout, token):
         print("\t" + profile)
 
 
+
 def display(nightscout, token, profile_name, profile_format):
+    """Display contents of a profile, in requested format
+    
+    Gets the profile from nightscout, and then displays it in the requested format.
+    
+    Args:
+        nightscout (str): Nightscout URL (required)
+        token (str): Nightscout token (optional)
+        profile_name (str): Profile name (optional)
+        profile_format (str): Profile format (optional)
+    
+    Returns:
+        None
     """
-    Display contents of a profile, in requested format
-    """
+
     profile = get_current_profile(nightscout, token, profile_name)
     if profile_format == "nightscout":
         # display_nightscout(p_list, profile_name)
@@ -131,10 +175,22 @@ def display(nightscout, token, profile_name, profile_format):
         print(json.dumps(ns_to_oaps(profile), indent=4))
 
 
+
 def write(nightscout, token, profile_name, directory):
+    """Write profile in OpenAPS format to a directory
+    
+    Gets the profile from nightscout, and then writes it to the requested directory.
+    
+    Args:
+        nightscout (str): Nightscout URL (required)
+        token (str): Nightscout token (optional)
+        profile_name (str): Profile name (optional)
+        directory (str): Directory to write profile files to (required)
+    
+    Returns:
+        None
     """
-    Write profile in OpenAPS format to a directory
-    """
+
     profile = ns_to_oaps(get_current_profile(nightscout, token, profile_name))
     logging.debug("Checking for directory: %s", directory)
     if not os.path.isdir(directory):
@@ -161,10 +217,17 @@ def write(nightscout, token, profile_name, directory):
             f.write(json.dumps(profile, indent=4))
 
 
+
 def normalize_entry(entry):
+    """Clean up an entry before further processing
+    
+    Args:
+        entry (dict): A single profile entry
+    
+    Returns:
+        None
     """
-    Clean up an entry before further processing
-    """
+
     try:
         if entry["timeAsSeconds"]:
             pass
@@ -186,10 +249,19 @@ def normalize_entry(entry):
     return entry
 
 
+
 def ns_to_oaps(ns_profile):
+    """Convert nightscout profile to OpenAPS format
+    
+    Converts a nightscout profile to an OpenAPS profile.
+    
+    Args:
+        ns_profile (dict): Nightscout profile (required)
+    
+    Returns:
+        dict: OpenAPS profile
     """
-    Convert nightscout profile to OpenAPS format
-    """
+
     oaps_profile = {}
     # XXX If addint any new entries, make sure to update PROFILE_KEYS at the top
     # Not represented in nightscout
@@ -314,18 +386,33 @@ def ns_to_oaps(ns_profile):
     return sorted_profile
 
 
+
 def display_nightscout(profile_data, profile_name):
+    """Display profile the way it comes from nightscout
+    
+    Args:
+        profile_data (dict): Profile data (required)
+        profile_name (str): Profile name (required)
+    
+    Returns:
+        None
     """
-    Display profile the way it comes from nightscout
-    """
+
     print("Displaying profile {}".format(profile_name))
     print(json.dumps(profile_data[0]["store"][profile_name], indent=4))
 
 
+
 def display_text(p_data):
+    """Display profile in text format
+    
+    Args:
+        p_data (dict): Profile data (required)
+    
+    Returns:
+        None
     """
-    Display profile in text format
-    """
+
     # p_data = profile_data[0]["store"][profile_name]
     logging.debug("Data keys: %s", p_data.keys())
 
