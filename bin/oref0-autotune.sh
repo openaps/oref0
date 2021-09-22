@@ -248,7 +248,7 @@ do
             cp profile.pump.json profile.json
             exit
         else
-            die "Could not run oref0-autotune-core autotune.$i.json profile.json profile.pump.json"
+            die "Could not run oref0-autotune-core autotune.$i.json profile.json profile.pump.json. Make sure Nightscout contains BG-values for the selected date range, Autotune(Web) does not work without BG-values. See documentation on the how-to check http://nightscout.github.io/nightscout/reports/#day-to-day ."
         fi
     else
         # Copy tuned profile produced by autotune to profile.json for use with next day of data
