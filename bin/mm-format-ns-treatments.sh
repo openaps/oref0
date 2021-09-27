@@ -31,7 +31,7 @@ run_remote_command "oref0-normalize-temps $HISTORY" \
     | .enteredBy = "openaps://medtronic/'$model'"
     | if .glucose and (.glucoseType | not) and .glucose > 0 then .glucoseType = .enteredBy else . end
     | if ._type == "Rewind" and "'$rewind_indicates_cartridge_change'" == "true" then .eventType = "Insulin Change" else . end
-    | if ._type == "Prime" and "'$prime_indicates_pump_site_change'" == "true" then .eventType = "Site Change" else . end
+    | if ._type == "Prime" and .type == "fixed" and "'$prime_indicates_pump_site_change'" == "true" then .eventType = "Site Change" else . end
     | if ._type == "Battery" and "'$battery_indicates_battery_change'" == "true" then .eventType = "Pump Battery Change" else . end
     | .eventType = if .eventType then .eventType else "Note" end
     | if ._type == "AlarmSensor" and .alarm_description then .notes = .alarm_description else . end
