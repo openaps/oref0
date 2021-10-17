@@ -103,8 +103,7 @@ if (!module.parent) {
     try {
         var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
     } catch (e) {
-        console.error("Warning: could not parse "+glucose_input);
-        return console.error("Warning: could not parse "+glucose_input", e);
+        return console.error("Warning: could not parse "+glucose_input, e);
     }
 
     var carb_data = { };
