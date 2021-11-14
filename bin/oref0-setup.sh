@@ -292,6 +292,47 @@ function move_mmtune () {
     fi
 }
 
+function install_or_upgrade_nodejs () {
+    # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
+    if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' >/dev/null; then
+        echo Installing node 8
+        # Use nodesource setup script to add nodesource repository to sources.list.d
+        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
+        # Install nodejs and npm from nodesource
+        sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
+    fi
+
+    # Check that the nodejs you have installed is not broken. In particular, we're
+    # checking for a problem with nodejs binaries that are present in the apt-get
+    # repo for RaspiOS builds from mid-2021 and earlier, where the node interpreter
+    # works, but has a 10x slower startup than expected (~30s on Pi Zero W
+    # hardware, as opposed to ~3s using a statically-linked binary of the same
+    # binary sourced from nvm).
+    sudo apt-get install -y time
+    NODE_EXECUTION_TIME="$(\time --format %e node -e 'true' 2>&1)"
+    if [ 1 -eq "$(echo "$NODE_EXECUTION_TIME > 10" |bc)" ]; then
+        echo "Your installed nodejs ($(node --version)) is very slow to start (took ${NODE_EXECUTION_TIME}s)"
+        echo "This is a known problem with certain versions of Raspberry Pi OS."
+
+        if prompt_yn "Install a new nodejs version using nvm?" Y; then
+            echo "Installing nvm and using it to replace the system-provided nodejs"
+    
+            # Download nvm
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+            # Run nvm, adding its aliases to this shell
+            source ~/.nvm/nvm.sh
+            # Use nvm to install nodejs
+            nvm install 10.24.1
+            # Symlink node into /usr/local/bin, where it will shadow /usr/bin/node
+            ln -s ~/.nvm/versions/node/v10.24.1/bin/node /usr/local/bin/node
+
+            NEW_NODE_EXECUTION_TIME="$(\time --format %e node -e 'true' 2>&1)"
+            echo "New nodejs took ${NEW_NODE_EXECUTION_TIME}s to start"
+        fi
+    else
+        echo "Your installed nodejs version is OK."
+    fi
+}
 
 if ! validate_cgm "${CGM}"; then
     DIR="" # to force a Usage prompt
@@ -689,14 +730,7 @@ if prompt_yn "" N; then
     echo Running apt-get autoclean
     sudo apt-get autoclean
 
-    # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
-    if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
-        echo Installing node 8
-        # Use nodesource setup script to add nodesource repository to sources.list.d
-        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
-        # Install nodejs and npm from nodesource
-        sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
-    fi
+    install_or_upgrade_nodejs
 
     # Attempting to remove git to make install --nogit by default for existing users
     echo Removing any existing git in $directory/.git
