@@ -13,7 +13,7 @@ assert_cwd_contains_ini
 # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
 if is_edison; then
     BATTERY_VOLTAGE="$(sudo ~/src/EdisonVoltage/voltage json batteryVoltage battery | jq .batteryVoltage)"
-    echo "Battery level is $BATTERY_VOLTAGE."
+    echo "Battery voltage is $BATTERY_VOLTAGE."
     BATTERY_CUTOFF=$(get_pref_float .edison_battery_shutdown_voltage 3050)
     if (( "$BATTERY_VOLTAGE" <= "$BATTERY_CUTOFF" )); then
         echo "Critically low battery! Shutting down."
@@ -25,7 +25,7 @@ fi
 if is_pi; then
     BATTERY_PERCENT="$(sudo ~/src/openaps-menu/scripts/getvoltage.sh | tee ~/myopenaps/monitor/edison-battery.json | jq .battery)"
     BATTERY_CUTOFF=$(get_pref_float .pi_battery_shutdown_percent 2)
-    echo "Battery level is $BATTERY_PERCENT"
+    echo "Battery level is $BATTERY_PERCENT percent"
     if (( "$BATTERY_PERCENT" < "$BATTERY_CUTOFF" )); then
         echo "Critically low battery! Shutting down."
         sudo shutdown -h now
