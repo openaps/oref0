@@ -599,7 +599,7 @@ function refresh_pumphistory_and_meal {
     echo -n "meal.json "
     
     dir_name=~/test_data/oref0-meal$(date +"%Y-%m-%d-%H%M")
-    echo dir_name = $dir_name
+    #echo dir_name = $dir_name
     mkdir -p $dir_name
     cp monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json $dir_name
     if ! retry_return run_remote_command 'oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json' > monitor/meal.json.new ; then
@@ -630,7 +630,7 @@ function check_cp_meal {
 
 function calculate_iob {
     dir_name=~/test_data/oref0-calculate-iob$(date +"%Y-%m-%d-%H%M")
-    echo dir_name = $dir_name
+    #echo dir_name = $dir_name
     mkdir -p $dir_name
     cp  monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json $dir_name
 
