@@ -783,7 +783,7 @@ if prompt_yn "" N; then
         )
     else
         echo -n "Cloning oref0: "
-        (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
+        (cd $HOME/src && git clone https://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
     fi
 
     # Make sure jq version >1.5 is installed
@@ -1069,7 +1069,7 @@ if prompt_yn "" N; then
             echo "EdisonVoltage already installed"
         else
             echo "Installing EdisonVoltage"
-            cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+            cd $HOME/src && git clone -b master https://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
             cd $HOME/src/EdisonVoltage
             make voltage
         fi
@@ -1084,7 +1084,7 @@ if prompt_yn "" N; then
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
         sudo pip install --default-timeout=1000 libpebble2
-        sudo pip install --default-timeout=1000 --user git+git://github.com/mddub/pancreabble.git
+        sudo pip install --default-timeout=1000 --user git+https://github.com/mddub/pancreabble.git
         oref0-bluetoothup
         sudo rfcomm bind hci0 $BT_PEB
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/pancreabble.json
@@ -1169,7 +1169,7 @@ if prompt_yn "" N; then
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
         echo "Installing pi-buttons..."
         systemctl stop pi-buttons
-        cd $HOME/src && git clone git://github.com/bnielsen1965/pi-buttons.git
+        cd $HOME/src && git clone https://github.com/bnielsen1965/pi-buttons.git
         echo "Make and install pi-buttons..."
         cd pi-buttons
         cd src && make && sudo make install && sudo make install_service
@@ -1180,7 +1180,7 @@ if prompt_yn "" N; then
         systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
         test "$directory" != "/$HOME/myopenaps" && (echo You are using a non-standard openaps directory. For the statusmenu to work correctly you need to set the openapsDir variable in index.js)
-        cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+        cd $HOME/src && git clone https://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     fi
