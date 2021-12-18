@@ -112,7 +112,7 @@ function ns_temptargets {
     cat settings/temptargets.json | colorize_json '.[0] | { target: .targetBottom, duration: .duration, start: .created_at }'
 
     dir_name=~/test_data/oref0-get-profile$(date +"%Y-%m-%d-%H%M")-ns
-    echo dir_name = $dir_name
+    #echo dir_name = $dir_name
     mkdir -p $dir_name
     cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json settings/autotune.json $dir_name
 
@@ -131,7 +131,7 @@ function ns_meal_carbs {
     cat monitor/carbhistory.json.new | jq .[0].carbs | egrep -q [0-9] && mv monitor/carbhistory.json.new monitor/carbhistory.json
     
     dir_name=~/test_data/oref0-meal$(date +"%Y-%m-%d-%H%M")
-    echo dir_name = $dir_name
+    #echo dir_name = $dir_name
     mkdir -p $dir_name
     cp monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json $dir_name
     
