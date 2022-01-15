@@ -191,7 +191,7 @@ fi
 #   call with this event that will read out in human language the additional carbs and other
 #   vital facts. It will leave a voice mail if not answered.
 
-if [[ "$MAKER_KEY" != "null" ]] && cat $FILE | egrep "add'l"; then
+if ! [ -z "$MAKER_KEY" ] && [[ "$MAKER_KEY" != "null" ]] && cat $FILE | egrep "add'l"; then
   if file_is_recent monitor/ifttt-sent 60; then
      echo "carbsReq=${carbsReq} but last IFTTT event sent less than 60 minutes ago."
   else
