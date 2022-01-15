@@ -91,7 +91,7 @@ fi
         #echo $snooze
         #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) monitor/pushover-sent
-        ls -la monitor/pushover-sent | awk '{print $8 $9}'
+        ls -la monitor/pushover-sent | awk '{print $8,$9}'
     fi
 #}
 
@@ -137,11 +137,10 @@ if [ "${pushoverGlances}" == "null" -o "${pushoverGlances}" == "false" ]; then
     echo "pushoverGlances not enabled in preferences.json"
 else
   # if pushoverGlances is a number instead of just true, use it to set the minutes allowed between glances
-  # syntax from https://stackoverflow.com/a/808740
-  if [ -n "${pushoverGlances}" ] && [ "${pushoverGlances}" -eq "${pushoverGlances}" ] 2>/dev/null; then
+  if [[ "${pushoverGlances}" =~ '^[0-9]+$'  ]]; then
     glanceDelay=${pushoverGlances}
   else
-    glaceDelay=10
+    glanceDelay=10
   fi
   GLANCES="monitor/last_glance"
   GLUCOSE="monitor/glucose.json"
@@ -154,7 +153,7 @@ else
         #echo $snooze
         #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) $GLANCES
-        ls -la $GLANCES | awk '{print $8 $9}'
+        ls -la $GLANCES | awk '{print $8,$9}'
   fi
 
   if test `find $GLANCES -mmin +$glanceDelay` || cat $FILE | egrep "add'l"
