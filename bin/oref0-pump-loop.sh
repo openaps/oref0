@@ -69,7 +69,7 @@ main() {
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
             # run pushover immediately after completing loop for more timely carbsReq notifications without race conditions
-            $(dirname $0)/oref0-pushover.sh
+            oref0-pushover
             # before each of these (optional) refresh checks, make sure we don't have fresh glucose data
             # if we do, then skip the optional checks to finish up this loop and start the next one
             if ! glucose-fresh; then
