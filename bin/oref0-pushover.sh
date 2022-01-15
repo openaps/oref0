@@ -101,11 +101,11 @@ elif ! file_is_recent "$FILE"; then
     echo "$FILE more than 5 minutes old"
     exit
 elif ! cat $FILE | egrep "add'l|maxBolus"; then
-    echo "No additional carbs or bolus required."
+    echo -n "No additional carbs or bolus required. "
 elif [[ $ONLYFOR =~ "carb" ]] && ! cat $FILE | egrep "add'l"; then
-    echo "No additional carbs required."   
+    echo -n "No additional carbs required. "
 elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus"; then
-    echo "No additional insulin required."
+    echo -n "No additional insulin required. "
 else
     curl -s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"carbsReq"}' | tee /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json
     echo
