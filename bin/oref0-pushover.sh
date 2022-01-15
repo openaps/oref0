@@ -145,37 +145,34 @@ else
 
   if test `find $GLANCES -mmin +10`
   then
-    enactTime=$(ls -l  --time-style=+"%l:%M" ${FILE} | awk '{printf ($6)}')
-    
+    curTime=$(ls -l  --time-style=+"%l:%M" ${FILE} | awk '{printf ($6)}')
+
     lastDirection=`jq -M '.[0] .direction' $GLUCOSE`
     lastDirection="${lastDirection%\"}"
     lastDirection="${lastDirection#\"}"
 
+    rate=`jq -M '.rate' monitor/temp_basal.json`
+    duration=`jq -M '.duration' monitor/temp_basal.json`
     #echo lastDirection=$lastDirection
 
     if [ "${lastDirection}" == "SingleUp" ]; then
-      direction="+"
+      direction="^"
     elif [ "${lastDirection}" == "FortyFiveUp" ]; then
-      direction="++"
+      direction="/"
     elif [ "${lastDirection}" == "DoubleUp" ]; then
-      direction="+++"
+      direction="++"
     elif [ "${lastDirection}" == "SingleDown" ]; then
-      direction="-"
+      direction="v"
     elif [ "${lastDirection}" == "FortyFiveDown" ]; then
-      direction="--"
-    elif [ "${lastDirection}" == "DoubleDown" ]; then
-      direction="---"
-    else
-      direction="" # default for NONE or Flat
+      direction='\'
+    elif [ "${lastDirection}" == "DoubleDown" ]; then                                                                                        direction="--"                                                                                                                       else                                                                                                                                     direction="->" # default for NONE or Flat
     fi
-
-    if [ test cat $FILE | egrep "add'l" ]; then
-      subtext="cr ${carbsReq}g"
-    else
-      subtext="e${enactTime}"
+                                                                                                                                           title="${bgNow} ${direction}        @ ${curTime}"
+    text="COB ${cob}, IOB ${iob}"
+    if cat $FILE | egrep "add'l"; then
+      carbsMsg="carbsReq ${carbsReq}g "
     fi
-    text="${bgNow}${direction}"
-    title="cob ${cob}, iob ${iob}"
+    subtext="$carbsMsg${rate}U*${duration}m"
 
 #    echo "pushover glance text=${text}  subtext=${subtext}  delta=${delta} title=${title}  battery percent=${battery}"
     curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json
