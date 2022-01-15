@@ -25,7 +25,7 @@ main() {
         fi
     fi
 
-    pushover_snooze
+    #pushover_snooze
     ns_temptargets || die "ns_temptargets failed"
     ns_meal_carbs || echo "ns_meal_carbs failed"
     battery_status
