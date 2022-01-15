@@ -91,7 +91,7 @@ fi
         #echo $snooze
         #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) monitor/pushover-sent
-        ls -la monitor/pushover-sent
+        ls -la monitor/pushover-sent | awk '{print $8 $9}'
     fi
 #}
 
@@ -136,21 +136,26 @@ pushoverGlances=$(get_prefs_json | jq -M '.pushoverGlances')
 if [ "${pushoverGlances}" == "null" -o "${pushoverGlances}" == "false" ]; then
     echo "pushoverGlances not enabled in preferences.json"
 else
+  if ${pushoverGlances} > 1; then
+    glanceDelay=${pushoverGlances}
+  else
+    glaceDelay=10
+  fi
   GLANCES="monitor/last_glance"
   GLUCOSE="monitor/glucose.json"
   if [ ! -f $GLANCES ]; then
-    # First time through it will get created older than 10 minutes so it'll fire
-    touch $GLANCES && touch -r $GLANCES -d '-11 mins' $GLANCES
+    # First time through it will get created 1h old so it'll fire
+    touch $GLANCES && touch -r $GLANCES -d '-60 mins' $GLANCES
   fi
 
-  if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="glance") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | noquotes | grep -v null); then
+  if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="glance") | select(.date>'$(date +%s -d "$glanceDelay minutes ago")')' | jq -s .[0].date | noquotes | grep -v null); then
         #echo $snooze
         #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) $GLANCES
-        ls -la $GLANCES
+        ls -la $GLANCES | awk '{print $8 $9}'
   fi
 
-  if test `find $GLANCES -mmin +10`
+  if test `find $GLANCES -mmin +$glanceDelay` || cat $FILE | egrep "add'l"
   then
     curTime=$(ls -l  --time-style=+"%l:%M" ${FILE} | awk '{printf ($6)}')
 
@@ -187,6 +192,8 @@ else
 #    echo "pushover glance text=${text}  subtext=${subtext}  delta=${delta} title=${title}  battery percent=${battery}"
     curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"glance"}' | tee /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json
     touch $GLANCES
+  else
+    echo -n "Pushover glance last updated less than $glanceDelay minutes ago. "
   fi
 fi
 
