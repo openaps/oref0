@@ -76,7 +76,7 @@ else
     PRIORITY_OPTIONS=""
 fi
 
-date
+#date
 
 #function pushover_snooze {
 # check Nightscout to see if another rig has already sent a carbsReq pushover recently
