@@ -78,6 +78,23 @@ fi
 
 date
 
+#function pushover_snooze {
+# check Nightscout to see if another rig has already sent a carbsReq pushover recently
+    URL=$NIGHTSCOUT_HOST/api/v1/devicestatus.json?count=100
+    if [[ "${API_SECRET}" =~ "token=" ]]; then
+        URL="${URL}&${API_SECRET}"
+    else
+        CURL_AUTH='-H api-secret:'${API_SECRET}
+    fi
+
+    if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | noquotes); then
+        #echo $snooze
+        #echo date -Is -d @$snooze; echo
+        touch -d $(date -Is -d @$snooze) monitor/pushover-sent
+        ls -la monitor/pushover-sent
+    fi
+#}
+
 if file_is_recent monitor/pushover-sent $SNOOZE; then
     echo "Last pushover sent less than $SNOOZE minutes ago."
 elif ! file_is_recent "$FILE"; then
