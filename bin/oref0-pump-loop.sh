@@ -72,8 +72,8 @@ main() {
             PUSHOVER_TOKEN="$(get_pref_string .pushover_token "")"
             PUSHOVER_USER="$(get_pref_string .pushover_user "")"
             if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
-                echo "Running pushover"
-                oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log &
+                echo "Running pushover."
+                oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER # 2>&1 >> /var/log/openaps/pushover.log &
             fi
 
             # before each of these (optional) refresh checks, make sure we don't have fresh glucose data
