@@ -78,6 +78,7 @@ main() {
             # before each of these (optional) refresh checks, make sure we don't have fresh glucose data
             # if we do, then skip the optional checks to finish up this loop and start the next one
             if ! glucose-fresh; then
+                wait_for_silence $upto10s
                 if onbattery; then
                     refresh_profile 30
                 else
