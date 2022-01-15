@@ -98,11 +98,11 @@ fi
 if ! file_is_recent "$FILE"; then
     echo "$FILE more than 5 minutes old"
     exit
-elif ! cat $FILE | egrep "add'l|maxBolus"; then
+elif ! cat $FILE | egrep "add'l|maxBolus" > /dev/null; then
     echo -n "No additional carbs or bolus required. "
-elif [[ $ONLYFOR =~ "carb" ]] && ! cat $FILE | egrep "add'l"; then
+elif [[ $ONLYFOR =~ "carb" ]] && ! cat $FILE | egrep "add'l" > /dev/null; then
     echo -n "No additional carbs required. "
-elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus"; then
+elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus" > /dev/null; then
     echo -n "No additional insulin required. "
 elif file_is_recent monitor/pushover-sent $SNOOZE; then
     echo -n "Last pushover sent less than $SNOOZE minutes ago. "
