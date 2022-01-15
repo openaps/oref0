@@ -180,7 +180,7 @@ else
                                                                                                                                            title="${bgNow} ${direction}        @ ${curTime}"
     text="IOB ${iob}, COB ${cob}"
     if cat $FILE | egrep "add'l"; then
-      carbsMsg="carbsReq ${carbsReq}g "
+      carbsMsg="${carbsReq}g req "
     fi
     subtext="$carbsMsg${rate}U/h ${duration}m"
 
