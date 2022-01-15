@@ -143,6 +143,13 @@ else
     touch $GLANCES && touch -r $GLANCES -d '-11 mins' $GLANCES
   fi
 
+  if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="glance") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | noquotes | grep -v null); then
+        #echo $snooze
+        #echo date -Is -d @$snooze; echo
+        touch -d $(date -Is -d @$snooze) $GLANCES
+        ls -la $GLANCES
+  fi
+
   if test `find $GLANCES -mmin +10`
   then
     curTime=$(ls -l  --time-style=+"%l:%M" ${FILE} | awk '{printf ($6)}')
@@ -178,7 +185,7 @@ else
     subtext="$carbsMsg${rate}U/h ${duration}m"
 
 #    echo "pushover glance text=${text}  subtext=${subtext}  delta=${delta} title=${title}  battery percent=${battery}"
-    curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json
+    curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"glance"}' | tee /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json
     touch $GLANCES
   fi
 fi
