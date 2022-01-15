@@ -156,19 +156,22 @@ else
     #echo lastDirection=$lastDirection
 
     if [ "${lastDirection}" == "SingleUp" ]; then
-      direction="^"
+      direction="↑"
     elif [ "${lastDirection}" == "FortyFiveUp" ]; then
-      direction="/"
+      direction="↗"
     elif [ "${lastDirection}" == "DoubleUp" ]; then
-      direction="++"
+      direction="↑↑"
     elif [ "${lastDirection}" == "SingleDown" ]; then
-      direction="v"
+      direction="↓"
     elif [ "${lastDirection}" == "FortyFiveDown" ]; then
-      direction='\'
-    elif [ "${lastDirection}" == "DoubleDown" ]; then                                                                                        direction="--"                                                                                                                       else                                                                                                                                     direction="->" # default for NONE or Flat
+      direction="↘"
+    elif [ "${lastDirection}" == "DoubleDown" ]; then
+      direction="↓↓"
+    else
+      direction="→" # default for NONE or Flat
     fi
                                                                                                                                            title="${bgNow} ${direction}        @ ${curTime}"
-    text="COB ${cob}, IOB ${iob}"
+    text="IOB ${iob}, COB ${cob}"
     if cat $FILE | egrep "add'l"; then
       carbsMsg="carbsReq ${carbsReq}g "
     fi
