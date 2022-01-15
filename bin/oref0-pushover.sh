@@ -87,8 +87,7 @@ date
         CURL_AUTH='-H api-secret:'${API_SECRET}
     fi
 
-    echo "curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | noquotes"
-    if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | noquotes); then
+    if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -es .[0].date | noquotes); then
         #echo $snooze
         echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) monitor/pushover-sent
