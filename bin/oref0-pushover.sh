@@ -137,7 +137,8 @@ if [ "${pushoverGlances}" == "null" -o "${pushoverGlances}" == "false" ]; then
     echo "pushoverGlances not enabled in preferences.json"
 else
   # if pushoverGlances is a number instead of just true, use it to set the minutes allowed between glances
-  if [[ "${pushoverGlances}" =~ '^[0-9]+$'  ]]; then
+  re='^[0-9]+$'
+  if [[ ${pushoverGlances} =~ $re  ]]; then
     glanceDelay=${pushoverGlances}
   else
     glanceDelay=10
