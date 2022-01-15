@@ -89,7 +89,7 @@ date
 
     if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | noquotes | grep -v null); then
         #echo $snooze
-        echo date -Is -d @$snooze; echo
+        #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) monitor/pushover-sent
         ls -la monitor/pushover-sent
     fi
