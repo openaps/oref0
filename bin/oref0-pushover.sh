@@ -175,7 +175,7 @@ else
     if cat $FILE | egrep "add'l"; then
       carbsMsg="carbsReq ${carbsReq}g "
     fi
-    subtext="$carbsMsg${rate}U*${duration}m"
+    subtext="$carbsMsg${rate}U/h ${duration}m"
 
 #    echo "pushover glance text=${text}  subtext=${subtext}  delta=${delta} title=${title}  battery percent=${battery}"
     curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json
