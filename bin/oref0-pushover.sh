@@ -123,6 +123,8 @@ source $HOME/.bash_profile
 key=${MAKER_KEY:-"null"}
 carbsReq=`jq .carbsReq ${FILE}`
 tick=`jq .tick ${FILE}`
+tick="${tick%\"}"
+tick="${tick#\"}"
 bgNow=`jq .bg ${FILE}`
 delta=`echo "${tick}" | tr -d +`
 delta="${delta%\"}"
