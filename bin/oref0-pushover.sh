@@ -184,7 +184,8 @@ else
     else
       direction="→" # default for NONE or Flat
     fi
-                                                                                                                                           title="${bgNow} ${direction}        @ ${curTime}"
+
+    title="${bgNow} ${direction} ${delta}    @ ${curTime}"
     text="IOB ${iob}, COB ${cob}"
     if cat $FILE | egrep "add'l" >/dev/null; then
       carbsMsg="${carbsReq}g req "
