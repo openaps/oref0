@@ -107,7 +107,7 @@ elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus" > /dev/null; 
 elif file_is_recent monitor/pushover-sent $SNOOZE; then
     echo -n "Last pushover sent less than $SNOOZE minutes ago. "
 else
-    curl -s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"carbsReq"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null
+    curl -s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"carbsReq"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null && echo "carbsReq pushover sent."
     echo
 fi
 
