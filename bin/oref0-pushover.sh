@@ -196,7 +196,8 @@ else
     curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json | jq .status| grep 1 >/dev/null && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"glance"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null && echo "Glance uploaded and snoozed"
     touch $GLANCES
   else
-    echo -n "Pushover glance last updated less than $glanceDelay minutes ago. "
+    echo -n "Pushover glance last updated less than $glanceDelay minutes ago @ "
+    ls -la $GLANCES | awk '{print $8}'
   fi
 fi
 
