@@ -134,7 +134,7 @@ function ns_temptargets {
 function ns_meal_carbs {
     #openaps report invoke monitor/carbhistory.json >/dev/null
     nightscout ns $NIGHTSCOUT_HOST $API_SECRET carb_history > monitor/carbhistory.json.new
-    cat monitor/carbhistory.json.new | jq .[0].carbs | egrep -q [0-9] && mv monitor/carbhistory.json.new monitor/carbhistory.json
+    cat monitor/carbhistory.json.new | jq .[0].carbs | egrep -q "[0-9]" && mv monitor/carbhistory.json.new monitor/carbhistory.json
     
     dir_name=~/test_data/oref0-meal$(date +"%Y-%m-%d-%H%M")
     #echo dir_name = $dir_name
