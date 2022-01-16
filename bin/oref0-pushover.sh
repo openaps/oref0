@@ -91,7 +91,7 @@ fi
         #echo $snooze
         #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) monitor/pushover-sent
-        ls -la monitor/pushover-sent | awk '{print $8,$9}'
+        #ls -la monitor/pushover-sent | awk '{print $8,$9}'
     fi
 #}
 
@@ -154,7 +154,7 @@ else
         #echo $snooze
         #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) $GLANCES
-        ls -la $GLANCES | awk '{print $8,$9}'
+        #ls -la $GLANCES | awk '{print $8,$9}'
   fi
 
   if test `find $GLANCES -mmin +$glanceDelay` || cat $FILE | egrep "add'l" >/dev/null
