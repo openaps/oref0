@@ -127,6 +127,7 @@ function ns_temptargets {
         mv settings/profile.json.new settings/profile.json
     else
         ls -la settings/profile.json.new
+        cat settings/profile.json.new | jq . | grep basal
         die "Invalid profile.json.new after refresh"
     fi
 }
