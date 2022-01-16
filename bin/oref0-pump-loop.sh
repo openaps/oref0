@@ -325,7 +325,7 @@ function smb_suggest {
 }
 
 function determine_basal {
-    cat monitor/meal.json
+    #cat monitor/meal.json
 
     update_glucose_noise
 
