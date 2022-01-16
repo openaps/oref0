@@ -99,9 +99,9 @@ if ! file_is_recent "$FILE"; then
     echo "$FILE more than 5 minutes old"
     exit
 elif ! cat $FILE | egrep "add'l|maxBolus" > /dev/null; then
-    echo -n "No additional carbs or bolus required. "
+    echo -n "No carbsReq. "
 elif [[ $ONLYFOR =~ "carb" ]] && ! cat $FILE | egrep "add'l" > /dev/null; then
-    echo -n "No additional carbs required. "
+    echo -n "No carbsReq. "
 elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus" > /dev/null; then
     echo -n "No additional insulin required. "
 elif file_is_recent monitor/pushover-sent $SNOOZE; then
