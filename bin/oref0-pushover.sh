@@ -157,7 +157,7 @@ else
         ls -la $GLANCES | awk '{print $8,$9}'
   fi
 
-  if test `find $GLANCES -mmin +$glanceDelay` || cat $FILE | egrep "add'l"
+  if test `find $GLANCES -mmin +$glanceDelay` || cat $FILE | egrep "add'l" >/dev/null
   then
     curTime=$(ls -l  --time-style=+"%l:%M" ${FILE} | awk '{printf ($6)}')
 
