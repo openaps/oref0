@@ -247,7 +247,7 @@ function format_latest_nightscout_treatments {
     latest_ns_treatment_time=$(latest_ns_treatment_time)
     historyfile=monitor/pumphistory-24h-zoned.json
     # TODO: remove this hack once we actually start parsing pump time change events
-    if [[ $latest_ns_treatment_time > $(date -u +"%Y-%m-%dT%H:%M:%S.000Z") ]]; then
+    if [[ $latest_ns_treatment_time > $(date -Is) ]]; then
         echo "Latest NS treatment time $latest_ns_treatment_time is 'in the future' / from a timezone east of here."
         latest_ns_treatment_time=$(date -Is -d "1 hour ago")
         echo "Uploading the last 10 treatments since $latest_ns_treatment_time"
