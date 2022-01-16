@@ -107,7 +107,7 @@ elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus" > /dev/null; 
 elif file_is_recent monitor/pushover-sent $SNOOZE; then
     echo -n "Last pushover sent less than $SNOOZE minutes ago. "
 else
-    curl -s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"carbsReq"}' | tee /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json
+    curl -s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"carbsReq"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null
     echo
 fi
 
@@ -192,7 +192,7 @@ else
     subtext="$carbsMsg${rate}U/h ${duration}m"
 
 #    echo "pushover glance text=${text}  subtext=${subtext}  delta=${delta} title=${title}  battery percent=${battery}"
-    curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json | jq .status| grep 1 >/dev/null && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"glance"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json && echo "Glance snooze uploaded"
+    curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json | jq .status| grep 1 >/dev/null && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"glance"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null && echo "Glance snooze uploaded"
     touch $GLANCES
   else
     echo -n "Pushover glance last updated less than $glanceDelay minutes ago. "
