@@ -123,12 +123,9 @@ function ns_temptargets {
     #cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json settings/autotune.json $dir_name
 
     run_remote_command 'oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json' | jq . > settings/profile.json.new || die "Couldn't refresh profile"
-    ls -la settings/profile.json.new
-    cat settings/profile.json.new | jq . | grep basal
     if cat settings/profile.json.new | jq . | grep basal > /dev/null; then
         mv settings/profile.json.new settings/profile.json
     else
-        ls -la settings/profile.json.new
         die "Invalid profile.json.new after refresh"
     fi
 }
