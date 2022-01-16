@@ -615,8 +615,8 @@ function refresh_pumphistory_and_meal {
         return 1
     fi
     try_return check_cp_meal || return 1
-    echo -n "refreshed: COB: "
-    cat monitor/meal.json | jq .mealCOB
+    echo -n "refreshed: "
+    cat monitor/meal.json | jq -cC .
 }
 
 function check_cp_meal {
