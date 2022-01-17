@@ -744,7 +744,7 @@ function onbattery {
 function wait_for_bg {
     if [ "$(get_pref_string .cgm '')" == "mdt" ]; then
         echo "MDT CGM configured; not waiting"
-    elif egrep -q "Warning:" enact/smb-suggested.json 2>&3; then
+    elif egrep -q "Warning:" enact/smb-suggested.json 2>&3 || egrep -q "Could not parse clock data" monitor/meal.json 2>&3; then
         echo "Retrying without waiting for new BG"
     elif egrep -q "Waiting [0](\.[0-9])?m ([0-6]?[0-9]s )?to microbolus again." enact/smb-suggested.json 2>&3; then
         echo "Retrying microbolus without waiting for new BG"
