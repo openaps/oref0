@@ -488,7 +488,7 @@ function refresh_after_bolus_or_enact {
 
 function unsuspend_if_no_temp {
     # If temp basal duration is zero, unsuspend pump
-    if (cat monitor/temp_basal.json | jq '. | select(.duration == 0)' | grep -q duration); then
+    if (cat monitor/temp_basal.json | jq '. | select(.duration == 0)' | grep duration); then
         if check_pref_bool .unsuspend_if_no_temp false; then
             echo Temp basal has ended: unsuspending pump
             mdt resume 2>&3
