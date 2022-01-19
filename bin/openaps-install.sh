@@ -59,8 +59,10 @@ apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true 
 # Install nvm and update to node 15.14.0 also update npm
 sudo curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
 source ~/.bashrc
-sudo nvm install 15.14.0
-sudo nvm alias default 15.14.0
+nvm install 15.14.0
+npm install -g n
+sudo n 15.14.0
+
 
 grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" > /etc/ssh/sshd_config
 
