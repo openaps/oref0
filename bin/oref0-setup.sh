@@ -746,6 +746,7 @@ if prompt_yn "" N; then
 
     echo Checking oref0 installation
     cd $HOME/src/oref0
+    nvm use 15.14.0
     if git branch | grep "* master"; then
         npm list -g --depth=0 | egrep oref0@0.6.[0] || (echo Installing latest oref0 package && npm install -g oref0)
     elif [[ ${npm_option,,} == "force" ]]; then
