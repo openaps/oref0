@@ -22,7 +22,7 @@ fi
 # install/upgrade to latest node 15
 
 nvm use 15.14.0
-nvm install 'lts/15.14' --reinstall-packages-from=current
+nvm install 'lts/*' --reinstall-packages-from=current
 nvpm install-latest-npm
 
 
