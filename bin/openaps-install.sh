@@ -57,10 +57,10 @@ apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true 
 #check if edison user exists before trying to add it to groups
 
 # Install nvm and update to node 15.14.0 also update npm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-source ~/.bashrc
-nvm install 15.14.0
-nvm alias default 15.14.0
+sudo curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+sudo source ~/.bashrc
+sudo nvm install 15.14.0
+sudo nvm alias default 15.14.0
 
 grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" > /etc/ssh/sshd_config
 
