@@ -14,7 +14,7 @@ apt-get install -y sudo
 sudo apt-get update
 sudo apt-get install -y git python python-dev python-software-properties python-numpy python-pip nodejs-legacy npm watchdog strace tcpdump screen acpid vim locate jq lm-sensors && \
 ( curl -s https://bootstrap.pypa.io/ez_setup.py | sudo python ) && \
-sudo npm install -g json && \
+npm install -g json && \
 sudo easy_install -ZU setuptools && \
 mkdir ~/src
 cd ~/src && \
@@ -45,9 +45,9 @@ cd ~/src && \
 test -d oref0 && \
 cd oref0 && \
 npm install && \
-sudo npm install -g && \
-sudo npm link && \
-sudo npm link oref0
+npm install -g && \
+npm link && \
+npm link oref0
 
 sudo openaps-install-udev-rules && \
 sudo activate-global-python-argcomplete && \
