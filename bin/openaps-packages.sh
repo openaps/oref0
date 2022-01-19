@@ -19,19 +19,9 @@ else
    sudo apt-get -y install jq || die "Couldn't install jq"
 fi
 
-# install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
-if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' &> /dev/null ; then
-        # nodesource doesn't support armv6
-        if ! arch | grep -e 'armv6' &> /dev/null ; then
-            sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
-            sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
-        else
-            sudo apt-get install -y nodejs npm || die "Couldn't install nodejs and npm"
-            npm install npm@latest -g || die "Couldn't update npm"
-        fi
-        ## You may also need development tools to build native addons:
-        ##sudo apt-get install gcc g++ make
-fi
+# install/upgrade to latest node 15
+nvm use node
+
 
 sudo pip install -U openaps || die "Couldn't install openaps toolkit"
 sudo pip install -U openaps-contrib || die "Couldn't install openaps-contrib"
