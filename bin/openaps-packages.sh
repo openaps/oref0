@@ -22,6 +22,7 @@ fi
 # install/upgrade to latest node 15
 echo installing up to date nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+source ~/.bashrc
 nvm install 15.14.0
 nvm install 'lts/*' --reinstall-packages-from=current
 nvpm install-latest-npm
