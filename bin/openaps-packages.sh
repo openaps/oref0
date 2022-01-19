@@ -19,16 +19,11 @@ else
    sudo apt-get -y install jq || die "Couldn't install jq"
 fi
 
-# install/upgrade to latest node 15
-echo switching to up to date node
-source ~/.bashrc
-nvm use 15.14.0
-
 
 sudo pip install -U openaps || die "Couldn't install openaps toolkit"
 sudo pip install -U openaps-contrib || die "Couldn't install openaps-contrib"
 sudo openaps-install-udev-rules || die "Couldn't run openaps-install-udev-rules"
 sudo activate-global-python-argcomplete || die "Couldn't run activate-global-python-argcomplete"
-sudo source ~/.bashrc && nvm use 15.14.0 && nvm install-latest-npm && npm install -g json || die "Couldn't install npm json"
+sudo npm install -g json || die "Couldn't install npm json"
 echo openaps installed
 openaps --version
