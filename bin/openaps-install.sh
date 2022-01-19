@@ -56,10 +56,11 @@ apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true 
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim python-pip locate ntpdate ntp
 #check if edison user exists before trying to add it to groups
 
-# Install nvm and update to node 15.14.0
+# Install nvm and update to node 15.14.0 also update npm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
 source ~/.bashrc
 nvm install 15.14.0
+nvm install-latest-npm
 
 grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" > /etc/ssh/sshd_config
 
