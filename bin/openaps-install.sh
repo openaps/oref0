@@ -60,8 +60,6 @@ apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true 
 sudo curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
 source ~/.bashrc
 nvm install 15.14.0
-sudo npm install -g n
-sudo -E env "PATH=$PATH" n 15.14.0
 
 
 grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" > /etc/ssh/sshd_config
