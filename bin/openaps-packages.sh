@@ -20,7 +20,8 @@ else
 fi
 
 # install/upgrade to latest node 15
-nvm use 15.14.0
+nvm install 15.14.0
+nvpm install-latest-npm
 
 
 sudo pip install -U openaps || die "Couldn't install openaps toolkit"
