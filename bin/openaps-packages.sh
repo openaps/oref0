@@ -25,7 +25,7 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
 source ~/.bashrc
 nvm install 15.14.0
 nvm install 'lts/*' --reinstall-packages-from=current
-nvpm install-latest-npm
+nvm install-latest-npm
 
 
 sudo pip install -U openaps || die "Couldn't install openaps toolkit"
