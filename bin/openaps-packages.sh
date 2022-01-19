@@ -20,7 +20,7 @@ else
 fi
 
 # install/upgrade to latest node 15
-
+echo installing up to date nvm
 nvm use 15.14.0
 nvm install 'lts/*' --reinstall-packages-from=current
 nvpm install-latest-npm
