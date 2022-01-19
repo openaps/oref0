@@ -696,7 +696,7 @@ if prompt_yn "" N; then
     # TODO: delete this after openaps 0.2.2 release
     echo Checking openaps 0.2.2 installation with --nogit support
     if ! openaps --version 2>&1 | egrep "0.[2-9].[2-9]"; then
-        echo Installing latest openaps w/ nogit && sudo pip install --default-timeout=1000 git+https://github.com/openaps/openaps.git@nogit || die "Couldn't install openaps w/ nogit"
+        echo Installing latest openaps w/ nogit && sudo pip install --default-timeout=1000 git+https://github.com/sharbi/openaps.git@nogit || die "Couldn't install openaps w/ nogit"
     fi
 
     #Make sure the directory is valid
@@ -734,7 +734,7 @@ if prompt_yn "" N; then
         (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
     else
         echo -n "Cloning oref0: "
-        (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
+        (cd $HOME/src && git clone git://github.com/sharbi/oref0.git) || die "Couldn't clone oref0"
     fi
 
     # Make sure jq version >1.5 is installed
