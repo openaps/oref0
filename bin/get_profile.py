@@ -21,6 +21,7 @@ import json
 import os.path
 import logging
 import sys
+import hashlib
 
 # External modules
 import requests
@@ -37,14 +38,21 @@ PROFILE_KEYS = [
 TIMED_ENTRIES = ['carbratio', 'sens', 'basal', 'target_low', 'target_high']
 
 
+def request_headers(token):
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
+    if token:
+        headers['api-secret'] = hashlib.sha1(token.encode('utf-8')).hexdigest()
+    return headers
+
 def get_profiles(nightscout, token):
     """
     Get profiles available in nightscout
     """
     r_url = nightscout + "/api/v1/profile.json"
-    if token is not None:
-        r_url = r_url + "?" + token
-    r = requests.get(r_url)
+    r = requests.get(r_url, headers=request_headers(token))
     return r.json()
 
 
@@ -53,9 +61,7 @@ def get_current_profile(nightscout, token, profile_name):
     Try to get the active profile
     """
     r_url = nightscout + "/api/v1/profile.json"
-    if token is not None:
-        r_url = r_url + "?" + token
-    p_list = requests.get(r_url).json()
+    p_list = requests.get(r_url, headers=request_headers(token)).json()
     logging.debug("profile list: %s", p_list)
     default_profile = p_list[0]["defaultProfile"]
     if profile_name is None:
@@ -63,9 +69,7 @@ def get_current_profile(nightscout, token, profile_name):
             nightscout +
             "/api/v1/treatments.json?find[eventType][$eq]=Profile Switch&count=1"
         )
-        if token is not None:
-            p_url = p_url + "?" + token
-        p_switch = requests.get(p_url).json()
+        p_switch = requests.get(p_url, headers=request_headers(token)).json()
         logging.debug("p_switch: %s", p_switch)
         if p_switch:
             try:
