@@ -30,26 +30,10 @@ performance and quality of your system lies solely with you.
 Additionally, this community of contributors believes in "paying it
 forward", and individuals who are implementing these tools are asked to
 contribute by asking questions, helping improve documentation, and
-contribute in other ways.
+contribute in other ways. We always need testers for various pieces of works-in-progress; please do ask if you would like to help but aren't sure where to get started. 
 
 Please submit issues and pull requests so that all users can share
-knowledge. If you're unfamiliar with GitHub and/or coding, [check out these other ways to get involved with OpenAPS.](https://openaps.gitbooks.io/building-an-open-artificial-pancreas-system/content/docs/Overview/contribute.html)
-
-For hacking on openaps, here are some tips to help your patches reach
-more people more quickly.  The `master` branch is special, it should
-be "production" ready code, tested and verified, and should match the
-contents available in pypi.  Basically that means the `master` branch
-is never touched directly, but rather we use a variety of other
-branches to do things, and then merge the work into the `master`
-branch.  Sometimes this is called
-[git flow](http://nvie.com/posts/a-successful-git-branching-model/).
-Here's few guidelines that might help:
-  
-  * target a `dev` branch for pull requests.  The latest updated
-    branch, especially any recently updated branch with `dev` in the
-    name.
-  * Avoid editing `master` branch.
-  * test changes
+knowledge. If you're unfamiliar with GitHub and/or coding, [check out these other ways to get involved with OpenAPS.](http://openaps.readthedocs.io/en/latest/docs/Give%20Back-Pay%20It%20Forward/contribute.html)
 
 See [OpenAPS.org](http://OpenAPS.org/) for background on the OpenAPS movement and project.
 

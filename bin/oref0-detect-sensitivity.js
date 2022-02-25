@@ -14,24 +14,28 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-
-var basal = require('oref0/lib/profile/basal');
-var get_iob = require('oref0/lib/iob');
-var detect = require('oref0/lib/determine-basal/autosens');
+var detectSensitivity = require('../lib/determine-basal/autosens');
 
 if (!module.parent) {
-    var detectsensitivity = init();
+    var argv = require('yargs')
+      .usage("$0 <glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json> [<carbhistory.json>] [<temptargets.json>]")
+      .strict(true)
+      .help('help');
 
-    var glucose_input = process.argv[2];
-    var pumphistory_input = process.argv[3];
-    var isf_input = process.argv[4]
-    var basalprofile_input = process.argv[5]
-    var profile_input = process.argv[6];
-    var carb_input = process.argv[7]
-    var temptarget_input = process.argv[8]
+    var params = argv.argv;
+    var inputs = params._;
 
-    if (!glucose_input || !pumphistory_input || !profile_input) {
-        console.error('usage: ', process.argv.slice(0, 2), '<glucose.json> <pumphistory.json> <insulin_sensitivities.json> <basal_profile.json> <profile.json> [carbhistory.json] [temptargets.json]');
+    var glucose_input = inputs[0];
+    var pumphistory_input = inputs[1];
+    var isf_input = inputs[2];
+    var basalprofile_input = inputs[3];
+    var profile_input = inputs[4];
+    var carb_input = inputs[5];
+    var temptarget_input = inputs[6];
+
+    if (inputs.length < 5 || inputs.length > 7) {
+        argv.showHelp();
+        console.error('Incorrect number of arguments');
         process.exit(1);
     }
     
@@ -51,7 +55,7 @@ if (!module.parent) {
 
         var isf_data = require(cwd + '/' + isf_input);
         if (isf_data.units !== 'mg/dL') {
-            if (isf_data.units == 'mmol/L') {
+            if (isf_data.units === 'mmol/L') {
                 for (var i = 0, len = isf_data.sensitivities.length; i < len; i++) {
                     isf_data.sensitivities[i].sensitivity = isf_data.sensitivities[i].sensitivity * 18;
                 }
@@ -65,7 +69,7 @@ if (!module.parent) {
         var basalprofile = require(cwd + '/' + basalprofile_input);
 
         var carb_data = { };
-        if (typeof carb_input != 'undefined') {
+        if (typeof carb_input !== 'undefined') {
             try {
                 carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
             } catch (e) {
@@ -73,10 +77,16 @@ if (!module.parent) {
             }
         }
 
+        // TODO: add support for a proper --retrospective flag if anything besides oref0-simulator needs this
+        var retrospective = false;
         var temptarget_data = { };
-        if (typeof temptarget_input != 'undefined') {
+        if (typeof temptarget_input !== 'undefined') {
             try {
-                temptarget_data = JSON.parse(fs.readFileSync(temptarget_input, 'utf8'));
+                if (temptarget_input == "retrospective") {
+                    retrospective = true;
+                } else {
+                    temptarget_data = JSON.parse(fs.readFileSync(temptarget_input, 'utf8'));
+                }
             } catch (e) {
                 console.error("Warning: could not parse "+temptarget_input);
             }
@@ -97,18 +107,19 @@ if (!module.parent) {
         , glucose_data: glucose_data
         , basalprofile: basalprofile
         , temptargets: temptarget_data
+        , retrospective: retrospective
         //, clock: clock_data
     };
     console.error("Calculating sensitivity using 8h of non-exluded data");
     detection_inputs.deviations = 96;
-    detect(detection_inputs);
-    ratio8h = ratio;
-    newisf8h = newisf;
+    var result = detectSensitivity(detection_inputs);
+    var ratio8h = result.ratio;
+    var newisf8h = result.newisf;
     console.error("Calculating sensitivity using all non-exluded data (up to 24h)");
     detection_inputs.deviations = 288;
-    detect(detection_inputs);
-    ratio24h = ratio;
-    newisf24h = newisf;
+    result = detectSensitivity(detection_inputs);
+    var ratio24h = result.ratio;
+    var newisf24h = result.newisf;
     if ( ratio8h < ratio24h ) {
         console.error("Using 8h autosens ratio of",ratio8h,"(ISF",newisf8h+")");
     } else {
@@ -122,51 +133,4 @@ if (!module.parent) {
 
 }
 
-function init() {
-
-    var detectsensitivity = {
-        name: 'detect-sensitivity'
-        , label: "OpenAPS Detect Sensitivity"
-    };
-
-    //detectsensitivity.getLastGlucose = require('../lib/glucose-get-last');
-    //detectsensitivity.detect_sensitivity = require('../lib/determine-basal/determine-basal');
-    return detectsensitivity;
-
-}
-module.exports = init;
-
-// From https://gist.github.com/IceCreamYou/6ffa1b18c4c8f6aeaad2
-// Returns the value at a given percentile in a sorted numeric array.
-// "Linear interpolation between closest ranks" method
-function percentile(arr, p) {
-    if (arr.length === 0) return 0;
-    if (typeof p !== 'number') throw new TypeError('p must be a number');
-    if (p <= 0) return arr[0];
-    if (p >= 1) return arr[arr.length - 1];
-
-    var index = arr.length * p,
-        lower = Math.floor(index),
-        upper = lower + 1,
-        weight = index % 1;
-
-    if (upper >= arr.length) return arr[lower];
-    return arr[lower] * (1 - weight) + arr[upper] * weight;
-}
-
-// Returns the percentile of the given value in a sorted numeric array.
-function percentRank(arr, v) {
-    if (typeof v !== 'number') throw new TypeError('v must be a number');
-    for (var i = 0, l = arr.length; i < l; i++) {
-        if (v <= arr[i]) {
-            while (i < l && v === arr[i]) i++;
-            if (i === 0) return 0;
-            if (v !== arr[i-1]) {
-                i += (v - arr[i-1]) / (arr[i] - arr[i-1]);
-            }
-            return i / l;
-        }
-    }
-    return 1;
-}
 

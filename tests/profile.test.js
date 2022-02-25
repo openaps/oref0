@@ -21,7 +21,7 @@ describe('Profile', function ( ) {
         ]
         , isf: {
             sensitivities: [
-                { offset: 0, i: 0, x: 0, start: '00:00:00', sensitivity: 100 }
+                { offset: 0, sensitivity: 100 }
             ]
         }
         , carbratio: {
@@ -34,17 +34,6 @@ describe('Profile', function ( ) {
 
     it('should should create a profile from inputs', function () {
         var profile = require('../lib/profile')(baseInputs);
-        profile.max_iob.should.equal(0);
-        profile.dia.should.equal(3);
-        profile.sens.should.equal(100);
-        profile.current_basal.should.equal(1);
-        profile.max_bg.should.equal(100);
-        profile.min_bg.should.equal(100);
-        profile.carb_ratio.should.equal(20);
-    });
-
-    it('should should honour wide_bg_target_range', function () {
-        var profile = require('../lib/profile')(_.merge({}, baseInputs, {wide_bg_target_range: true}));
         profile.max_iob.should.equal(0);
         profile.dia.should.equal(3);
         profile.sens.should.equal(100);

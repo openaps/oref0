@@ -1,5 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 (
+BRANCH=master
 dmesg -D
 echo Scanning for wifi networks:
 ifup wlan0
@@ -21,7 +22,7 @@ echo -e "\n/etc/network/interfaces:\n"
 cat interfaces
 cd /etc/wpa_supplicant/
 cp wpa_supplicant.conf wpa_supplicant.conf.$(date +%s).bak
-echo -e "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\nupdate_config=1\nnetwork={\n  ssid=\"$SSID\"\n  psk=\"$PSK\"\n}" > wpa_supplicant.conf
+echo -e "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\nnetwork={\n  ssid=\"$SSID\"\n  psk=\"$PSK\"\n}" > wpa_supplicant.conf
 echo -e "\n/etc/wpa_supplicant/wpa_supplicant.conf:\n"
 cat wpa_supplicant.conf
 echo -e "\nAttempting to bring up wlan0:\n"
@@ -29,6 +30,9 @@ ifdown wlan0; ifup wlan0
 sleep 10
 echo -ne "\nWifi SSID: "; iwgetid -r
 sleep 5
-curl https://raw.githubusercontent.com/openaps/oref0/master/bin/openaps-install.sh > /tmp/openaps-install.sh
-bash /tmp/openaps-install.sh
+echo "Press Enter to continue installing the current release (master) of oref0,"
+read -p "or enter the oref0 branch name to install." -r
+BRANCH=${REPLY:-master}
+curl https://raw.githubusercontent.com/openaps/oref0/$BRANCH/bin/openaps-install.sh > /tmp/openaps-install.sh
+bash /tmp/openaps-install.sh $BRANCH
 )

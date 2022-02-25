@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 /*
   Released under MIT license. See the accompanying LICENSE.txt file for
@@ -14,28 +15,32 @@
 
 */
 
-var find_insulin = require('oref0/lib/temps');
-var find_bolus = require('oref0/lib/bolus');
-var describe_pump = require('oref0/lib/pump');
-function usage ( ) {
-    console.log('usage: ', process.argv.slice(0, 2), '<pumphistory.json>');
-}
+var find_insulin = require('../lib/temps');
+var find_bolus = require('../lib/bolus');
+var describe_pump = require('../lib/pump');
+var fs = require('fs');
 
-if (!module.parent) {
-  var iob_input = process.argv[2];
 
-  if ([null, '--help', '-h', 'help'].indexOf(iob_input) > 0) {
-    usage( );
-    process.exit(0)
-  }
-  if (!iob_input) {
-    usage( )
-    process.exit(1);
+  
+var oref0_normalize_temps = function oref0_normalize_temps(argv_params) {  
+  var argv = require('yargs')(argv_params)
+    .usage('$0 <pumphistory.json>')
+    .demand(1)
+    // error and show help if some other args given
+    .strict(true)
+    .help('help');
+
+  var params = argv.argv;
+  var iob_input = params._[0];
+
+  if (params._.length > 1) {
+    argv.showHelp();
+    return console.error('Too many arguments');
   }
 
   var cwd = process.cwd()
   try {
-    var all_data = require(cwd + '/' + iob_input);
+    var all_data = JSON.parse(fs.readFileSync(cwd + '/' + iob_input));
   } catch (e) {
     return console.error("Could not parse pumphistory: ", e);
   }
@@ -48,6 +53,18 @@ if (!module.parent) {
   // treatments.sort(function (a, b) { return a.date > b.date });
 
 
-  console.log(JSON.stringify(treatments));
+  return JSON.stringify(treatments);
 }
 
+if (!module.parent) {
+   // remove the first parameter.
+   var command = process.argv;
+   command.shift();
+   command.shift();
+   var result = oref0_normalize_temps(command)
+   if(result !== undefined) {
+       console.log(result);
+   }
+}
+
+exports = module.exports = oref0_normalize_temps

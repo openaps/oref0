@@ -5,7 +5,7 @@
 
   Uses the output of oref0-autotune-prep.js
 
-  Calculates adjustments to basal schedule, ISF, and CSF 
+  Calculates adjustments to basal schedule, ISF, and CSF
 
   Released under MIT license. See the accompanying LICENSE.txt file for
   full terms and conditions
@@ -19,27 +19,27 @@
   THE SOFTWARE.
 
 */
-
-var autotune = require('oref0/lib/autotune');
+var autotune = require('../lib/autotune');
 var stringify = require('json-stable-stringify');
-function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>');
-}
 
 if (!module.parent) {
-    var prepped_glucose_input = process.argv[2];
-    if ([null, '--help', '-h', 'help'].indexOf(prepped_glucose_input) > 0) {
-      usage( );
-      process.exit(0)
-    }
-    var previous_autotune_input = process.argv[3];
-    var pumpprofile_input = process.argv[4];
+    var argv = require('yargs')
+        .usage("$0 <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json> [--output-file=<output_file.json>]")
+        .option('output-file', {
+          alias: 'o',
+          describe: 'File to write output',
+          default: null,
+        })
+        .demand(3)
+        .strict(true)
+        .help('help');
 
-    if (!prepped_glucose_input || !previous_autotune_input || !pumpprofile_input ) {
-        usage( );
-        console.log('{ "error": "Insufficient arguments" }');
-        process.exit(1);
-    }
+    var params = argv.argv;
+    var inputs = params._;
+
+    var prepped_glucose_input = inputs[0];
+    var previous_autotune_input = inputs[1];
+    var pumpprofile_input = inputs[2];
 
     var fs = require('fs');
     try {
@@ -51,13 +51,28 @@ if (!module.parent) {
         return console.error("Could not parse input data: ", e);
     }
 
-    var inputs = {
+    // Pump profile has an up to date copy of useCustomPeakTime from preferences
+    // If the preferences file has useCustomPeakTime use the previous autotune dia and PeakTime.
+    // Otherwise, use data from pump profile.
+    if (!pumpprofile_data.useCustomPeakTime) {
+      previous_autotune_data.dia = pumpprofile_data.dia;
+      previous_autotune_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
+    }
+
+    // Always keep the curve value up to date with what's in the user preferences
+    previous_autotune_data.curve = pumpprofile_data.curve;
+
+    inputs = {
         preppedGlucose: prepped_glucose_data
       , previousAutotune: previous_autotune_data
       , pumpProfile: pumpprofile_data
     };
 
     var autotune_output = autotune(inputs);
-    console.log(stringify(autotune_output, { space: '   '}));
+    if (params["output-file"]) {
+      fs.writeFileSync(params["output-file"], stringify(autotune_output, {space: '   '}));
+    } else {
+      console.log(stringify(autotune_output, { space: '   '}));
+    }
 }
 

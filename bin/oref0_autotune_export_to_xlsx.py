@@ -13,6 +13,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import print_function
 import json
 import glob, os, sys
 
@@ -20,7 +21,7 @@ import glob, os, sys
 try:
     import xlsxwriter
 except:
-    print "This software requires XlsxWriter package. Install it with 'sudo pip install XlsxWriter', see http://xlsxwriter.readthedocs.io/"
+    print("This software requires XlsxWriter package. Install it with 'sudo pip install XlsxWriter', see http://xlsxwriter.readthedocs.io/")
     sys.exit(1)
 
 import datetime
@@ -49,7 +50,7 @@ def expandProfile(l, valueField, offsetField):
         minutes1=calc_minutes(start1)
         offset1=l[i][offsetField]
         if minutes1!=offset1:
-            print "Error in JSON offSetField %s contains %s does not match start time %s (%d minutes). Please report this as a bug" % (offsetField, offset1, start1, minutes1) 
+            print("Error in JSON offSetField %s contains %s does not match start time %s (%d minutes). Please report this as a bug" % (offsetField, offset1, start1, minutes1))
             sys.exit(1)
         while (minutes<minutes1):
             r.append(value)
@@ -122,14 +123,14 @@ if __name__ == '__main__':
     # change to autotune directory
     os.chdir(args.dir)
 
-    print "Writing headers to Microsoft Excel file %s" % args.output
+    print("Writing headers to Microsoft Excel file %s" % args.output)
     workbook = xlsxwriter.Workbook(args.output)
     (worksheetBasal, worksheetIsf,excel_2decimals_format,excel_integer_format)=excel_init_workbook(workbook)
     row=1 # start on second row, row=0 is for headers
     filenamelist=glob.glob("profile.json")+glob.glob("profile.pump.json")+glob.glob("profile.[0-9].*.json")+glob.glob("profile.[0-9][0-9].*.json")
     for filename in filenamelist:
         f=open(filename, 'r')
-        print "Adding %s to Excel" % filename
+        print("Adding %s to Excel" % filename)
         j=json.load(f)
         basalProfile=j['basalprofile']
         isfProfile=j['isfProfile']['sensitivities']

@@ -1,0 +1,84 @@
+{
+  "carb_ratios": {
+    "schedule": [
+      {
+        "x": 0,
+        "i": 0,
+        "offset": 0,
+        "ratio": 10,
+        "r": 10,
+        "start": "00:00:00"
+      }
+    ],
+    "units": "grams"
+  },
+  "carb_ratio": 10,
+  "isfProfile": {
+    "first": 1,
+    "sensitivities": [
+      {
+        "endOffset": 1440,
+        "offset": 0,
+        "x": 0,
+        "sensitivity": 50,
+        "start": "00:00:00",
+        "i": 0
+      }
+    ],
+    "user_preferred_units": "mg/dL",
+    "units": "mg/dL"
+  },
+  "sens": 50,
+  "bg_targets": {
+    "first": 1,
+    "targets": [
+      {
+        "max_bg": 100,
+        "min_bg": 100,
+        "x": 0,
+        "offset": 0,
+        "low": 100,
+        "start": "00:00:00",
+        "high": 100,
+        "i": 0
+      }
+    ],
+    "user_preferred_units": "mg/dL",
+    "units": "mg/dL"
+  },
+  "max_bg": 100,
+  "min_bg": 100,
+  "out_units": "mg/dL",
+  "max_basal": 4,
+  "min_5m_carbimpact": 8,
+  "maxCOB": 120,
+  "max_iob": 6,
+  "max_daily_safety_multiplier": 4,
+  "current_basal_safety_multiplier": 5,
+  "autosens_max": 2,
+  "autosens_min": 0.5,
+  "remainingCarbsCap": 90,
+  "enableUAM": true,
+  "enableSMB_with_bolus": true,
+  "enableSMB_with_COB": true,
+  "enableSMB_with_temptarget": false,
+  "enableSMB_after_carbs": true,
+  "prime_indicates_pump_site_change": false,
+  "rewind_indicates_cartridge_change": false,
+  "battery_indicates_battery_change": false,
+  "maxSMBBasalMinutes": 75,
+  "curve": "rapid-acting",
+  "useCustomPeakTime": false,
+  "insulinPeakTime": 75,
+  "dia": 6,
+  "current_basal": 1.0,
+  "basalprofile": [
+    {
+      "minutes": 0,
+      "rate": 1.0,
+      "start": "00:00:00",
+      "i": 0
+    }
+  ],
+  "max_daily_basal": 1.0
+}

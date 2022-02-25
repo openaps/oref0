@@ -20,40 +20,48 @@
 
 */
 
-var generate = require('oref0/lib/autotune-prep');
-function usage ( ) {
-        console.error('usage: ', process.argv.slice(0, 2), '<pumphistory.json> <profile.json> <glucose.json> [pumpprofile.json] [carbhistory.json] [--categorize_uam_as_basal]');
-}
+var generate = require('../lib/autotune-prep');
+var _ = require('lodash');
+var moment = require('moment');
 
 if (!module.parent) {
-    var pumphistory_input = process.argv[2];
-    if ([null, '--help', '-h', 'help'].indexOf(pumphistory_input) > 0) {
-      usage( );
-      process.exit(0);
-    }
-    var profile_input = process.argv[3];
-    var glucose_input = process.argv[4];
-    var pumpprofile_input = process.argv[5];
-    var carb_input = process.argv[6];
-    var categorize_uam_as_basal_arg = process.argv[7];
 
-    var categorize_uam_as_basal = false;
+    var argv = require('yargs')
+        .usage("$0 <pumphistory.json> <profile.json> <glucose.json> <pumpprofile.json> [<carbhistory.json>] [--categorize_uam_as_basal] [--tune-insulin-curve] [--output-file=<output_file.json>]")
+        .option('categorize_uam_as_basal', {
+            alias: 'u',
+            boolean: true,
+            describe: "Categorize UAM as basal",
+            default: false
+        })
+        .option('tune-insulin-curve', {
+            alias: 'i',
+            boolean: true,
+            describe: "Tune peak time and end time",
+            default: false
+        })
+        .option('output-file', {
+            alias: 'o',
+            describe: 'Output file to write output',
+            default: null,
+        })
+        .strict(true)
+        .help('help');
 
-    if ( !pumphistory_input || !profile_input || !glucose_input ) {
-        usage( );
+    var params = argv.argv;
+    var inputs = params._;
+
+    if (inputs.length < 4 || inputs.length > 5) {
+        argv.showHelp();
         console.log('{ "error": "Insufficient arguments" }');
         process.exit(1);
     }
 
-    if (carb_input === '--categorize_uam_as_basal') {
-        categorize_uam_as_basal = true;
-        carb_input = undefined;
-    } else if (categorize_uam_as_basal_arg === '--categorize_uam_as_basal') {
-        categorize_uam_as_basal = true;
-    } else if (typeof categorize_uam_as_basal_arg !== 'undefined') {
-        usage( );
-        process.exit(1);
-    }
+    var pumphistory_input = inputs[0];
+    var profile_input = inputs[1];
+    var glucose_input = inputs[2];
+    var pumpprofile_input = inputs[3];
+    var carb_input = inputs[4];
 
     var fs = require('fs');
     try {
@@ -63,9 +71,8 @@ if (!module.parent) {
         console.log('{ "error": "Could not parse input data" }');
         return console.error("Could not parse input data: ", e);
     }
-
     var pumpprofile_data = { };
-    if (typeof pumpprofile_input != 'undefined') {
+    if (typeof pumpprofile_input !== 'undefined') {
         try {
             pumpprofile_data = JSON.parse(fs.readFileSync(pumpprofile_input, 'utf8'));
         } catch (e) {
@@ -74,8 +81,8 @@ if (!module.parent) {
     }
 
     // disallow impossibly low carbRatios due to bad decoding
-    if ( typeof(profile_data.carb_ratio) == 'undefined' || profile_data.carb_ratio < 2 ) {
-        if ( typeof(pumpprofile_data.carb_ratio) == 'undefined' || pumpprofile_data.carb_ratio < 2 ) {
+    if ( typeof(profile_data.carb_ratio) === 'undefined' || profile_data.carb_ratio < 2 ) {
+        if ( typeof(pumpprofile_data.carb_ratio) === 'undefined' || pumpprofile_data.carb_ratio < 2 ) {
             console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratios ' + profile_data.carb_ratio + ' and ' + pumpprofile_data.carb_ratio + ' out of bounds" }');
             return console.error("Error: carb_ratios " + profile_data.carb_ratio + ' and ' + pumpprofile_data.carb_ratio + " out of bounds");
         } else {
@@ -83,14 +90,28 @@ if (!module.parent) {
         }
     }
 
+    // get insulin curve from pump profile that is maintained
+    profile_data.curve = pumpprofile_data.curve;
+
+    // Pump profile has an up to date copy of useCustomPeakTime from preferences
+    // If the preferences file has useCustomPeakTime use the previous autotune dia and PeakTime.
+    // Otherwise, use data from pump profile.
+    if (!pumpprofile_data.useCustomPeakTime) {
+      profile_data.dia = pumpprofile_data.dia;
+      profile_data.insulinPeakTime = pumpprofile_data.insulinPeakTime;
+    }
+
+    // Always keep the curve value up to date with what's in the user preferences
+    profile_data.curve = pumpprofile_data.curve;
+
     try {
         var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
     } catch (e) {
-        console.error("Warning: could not parse "+glucose_input);
+        return console.error("Warning: could not parse "+glucose_input, e);
     }
 
     var carb_data = { };
-    if (typeof carb_input != 'undefined') {
+    if (typeof carb_input !== 'undefined') {
         try {
             carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
         } catch (e) {
@@ -98,16 +119,24 @@ if (!module.parent) {
         }
     }
 
-    var inputs = {
-        history: pumphistory_data
+    // Have to sort history - NS sort doesn't account for different zulu and local timestamps
+    pumphistory_data = _.orderBy(pumphistory_data, [function (o) { return moment(o.created_at).valueOf(); }], ['desc']);
+
+    inputs = {
+      history: pumphistory_data
     , profile: profile_data
     , pumpprofile: pumpprofile_data
     , carbs: carb_data
     , glucose: glucose_data
-    , categorize_uam_as_basal: categorize_uam_as_basal
+    , categorize_uam_as_basal: params.categorize_uam_as_basal
+    , tune_insulin_curve: params['tune-insulin-curve']
     };
 
     var prepped_glucose = generate(inputs);
-    console.log(JSON.stringify(prepped_glucose));
+    if (params['output-file']) {
+        fs.writeFileSync(params['output-file'], JSON.stringify(prepped_glucose))
+    } else {
+        console.log(JSON.stringify(prepped_glucose));
+    }
 }
 
