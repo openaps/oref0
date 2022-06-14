@@ -25,7 +25,7 @@ main() {
         fi
     fi
 
-    pushover_snooze
+    #pushover_snooze
     ns_temptargets || die "ns_temptargets failed"
     ns_meal_carbs || echo "ns_meal_carbs failed"
     battery_status
@@ -73,7 +73,7 @@ function get_ns_bg {
     # if ns-glucose.json data is <10m old, no more than 5m in the future, and valid (>38),
     # copy cgm/ns-glucose.json over to cgm/glucose.json if it's newer
     valid_glucose=$(find_valid_ns_glucose)
-    if echo $valid_glucose | grep -q glucose; then
+    if echo $valid_glucose | grep glucose >/dev/null; then
         echo Found recent valid BG:
         echo $valid_glucose | colorize_json '.[0] | { glucose: .glucose, dateString: .dateString }'
         cp -pu cgm/ns-glucose.json cgm/glucose.json
@@ -104,7 +104,7 @@ function find_valid_ns_glucose {
 function ns_temptargets {
     #openaps report invoke settings/temptargets.json settings/profile.json >/dev/null
     nightscout ns $NIGHTSCOUT_HOST $API_SECRET temp_targets > settings/ns-temptargets.json.new
-    cat settings/ns-temptargets.json.new | jq .[0].duration | egrep -q [0-9] && mv settings/ns-temptargets.json.new settings/ns-temptargets.json
+    cat settings/ns-temptargets.json.new | jq .[0].duration | egrep "[0-9]" >/dev/null && mv settings/ns-temptargets.json.new settings/ns-temptargets.json
     # TODO: merge local-temptargets.json with ns-temptargets.json
     #openaps report invoke settings/ns-temptargets.json settings/profile.json
     echo -n "Latest NS temptargets: "
@@ -119,11 +119,11 @@ function ns_temptargets {
 
     dir_name=~/test_data/oref0-get-profile$(date +"%Y-%m-%d-%H%M")-ns
     #echo dir_name = $dir_name
-    mkdir -p $dir_name
+    # mkdir -p $dir_name
     #cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json settings/autotune.json $dir_name
 
     run_remote_command 'oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json' | jq . > settings/profile.json.new || die "Couldn't refresh profile"
-    if cat settings/profile.json.new | jq . | grep -q basal; then
+    if cat settings/profile.json.new | jq . | grep basal > /dev/null; then
         mv settings/profile.json.new settings/profile.json
     else
         die "Invalid profile.json.new after refresh"
@@ -134,11 +134,11 @@ function ns_temptargets {
 function ns_meal_carbs {
     #openaps report invoke monitor/carbhistory.json >/dev/null
     nightscout ns $NIGHTSCOUT_HOST $API_SECRET carb_history > monitor/carbhistory.json.new
-    cat monitor/carbhistory.json.new | jq .[0].carbs | egrep -q [0-9] && mv monitor/carbhistory.json.new monitor/carbhistory.json
+    cat monitor/carbhistory.json.new | jq .[0].carbs | egrep "[0-9]" >/dev/null && mv monitor/carbhistory.json.new monitor/carbhistory.json
     
     dir_name=~/test_data/oref0-meal$(date +"%Y-%m-%d-%H%M")
     #echo dir_name = $dir_name
-    mkdir -p $dir_name
+    # mkdir -p $dir_name
     #cp monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json $dir_name
     
     
@@ -191,7 +191,7 @@ function upload {
 function upload_ns_status {
     set -o pipefail
     #echo Uploading devicestatus
-    grep -q iob monitor/iob.json || die "IOB not found"
+    grep iob monitor/iob.json >/dev/null || die "IOB not found"
     # set the timestamp on enact/suggested.json to match the deliverAt time
     touch -d $(cat enact/suggested.json | jq .deliverAt | sed 's/"//g') enact/suggested.json
     if ! file_is_recent_and_min_size enact/suggested.json 10; then
@@ -200,12 +200,12 @@ function upload_ns_status {
         return 1
     fi
     ns_status_file_name=ns-status$(date +"%Y-%m-%d-%T").json
-    format_ns_status $ns_status_file_name && grep -q iob upload/$ns_status_file_name || die "Couldn't generate ns-status.json"
+    format_ns_status $ns_status_file_name && grep iob upload/$ns_status_file_name >/dev/null || die "Couldn't generate ns-status.json"
     # Delete files older than 24 hours.
     find upload -maxdepth 1 -mmin +1440 -type f -name "ns-status*.json" -delete
     # Upload the files one by one according to their order.
     ls upload/ns-status*.json | while read -r file_name ; do
-        if ! grep -q iob $file_name ; then
+        if ! grep iob $file_name >/dev/null ; then
             #echo deleteing file $file_name
             rm $file_name
             continue
@@ -239,7 +239,7 @@ function upload_recent_treatments {
 }
 
 function latest_ns_treatment_time {
-    nightscout latest-openaps-treatment $NIGHTSCOUT_HOST $API_SECRET | jq -r .created_at
+    date -Is -d $(nightscout latest-openaps-treatment $NIGHTSCOUT_HOST $API_SECRET | jq -r .created_at)
 }
 
 #nightscout cull-latest-openaps-treatments monitor/pumphistory-zoned.json settings/model.json $(openaps latest-ns-treatment-time) > upload/latest-treatments.json
