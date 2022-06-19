@@ -114,6 +114,9 @@ case $i in
     ;;
     -npm=*|--npm_install=*)
     npm_option="${i#*=}"
+    ;;
+    --hotspot=*)
+    hotspot_option="${i#*=}"
     shift
     ;;
     *)
@@ -289,6 +292,47 @@ function move_mmtune () {
     fi
 }
 
+function install_or_upgrade_nodejs () {
+    # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
+    if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' >/dev/null; then
+        echo Installing node 8
+        # Use nodesource setup script to add nodesource repository to sources.list.d
+        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
+        # Install nodejs and npm from nodesource
+        sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
+    fi
+
+    # Check that the nodejs you have installed is not broken. In particular, we're
+    # checking for a problem with nodejs binaries that are present in the apt-get
+    # repo for RaspiOS builds from mid-2021 and earlier, where the node interpreter
+    # works, but has a 10x slower startup than expected (~30s on Pi Zero W
+    # hardware, as opposed to ~3s using a statically-linked binary of the same
+    # binary sourced from nvm).
+    sudo apt-get install -y time
+    NODE_EXECUTION_TIME="$(\time --format %e node -e 'true' 2>&1)"
+    if [ 1 -eq "$(echo "$NODE_EXECUTION_TIME > 10" |bc)" ]; then
+        echo "Your installed nodejs ($(node --version)) is very slow to start (took ${NODE_EXECUTION_TIME}s)"
+        echo "This is a known problem with certain versions of Raspberry Pi OS."
+
+        if prompt_yn "Install a new nodejs version using nvm?" Y; then
+            echo "Installing nvm and using it to replace the system-provided nodejs"
+    
+            # Download nvm
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+            # Run nvm, adding its aliases to this shell
+            source ~/.nvm/nvm.sh
+            # Use nvm to install nodejs
+            nvm install 10.24.1
+            # Symlink node into /usr/local/bin, where it will shadow /usr/bin/node
+            ln -s ~/.nvm/versions/node/v10.24.1/bin/node /usr/local/bin/node
+
+            NEW_NODE_EXECUTION_TIME="$(\time --format %e node -e 'true' 2>&1)"
+            echo "New nodejs took ${NEW_NODE_EXECUTION_TIME}s to start"
+        fi
+    else
+        echo "Your installed nodejs version is OK."
+    fi
+}
 
 if ! validate_cgm "${CGM}"; then
     DIR="" # to force a Usage prompt
@@ -317,7 +361,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo "G6-upload: will use and upload BGs from a plugged in G5/G6 touchscreen receiver to Nightscout"
     echo "MDT: will use and upload BGs from an Enlite sensor paired to your pump"
     echo "xdrip: will work with an xDrip receiver app on your Android phone"
-    echo "xdrip-js: will work directly with a Dexcom G5 transmitter and will upload to Nightscout"
+    echo "xdrip-js: will work directly with a Dexcom G5/G6 transmitter and will upload to Nightscout"
     echo "Note: no matter which option you choose, CGM data will also be downloaded from NS when available."
     echo
     prompt_and_validate CGM "What kind of CGM would you like to configure?:" validate_cgm
@@ -446,7 +490,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
     echo
     if [[ ! -z $NIGHTSCOUT_HOST ]]; then
         echo "Starting with oref 0.5.0 you can use token based authentication to Nightscout. This makes it possible to deny anonymous access to your Nightscout instance. It's more secure than using your API_SECRET, but must first be configured in Nightscout."
-        if prompt_yn "Do you want to use token based authentication?" N; then
+        if prompt_yn "Do you want to use token based authentication? (Enter 'N' to provide your Nightscout secret instead)" N; then
             prompt_and_validate REPLY "What Nightscout access token (i.e. subjectname-hashof16characters) do you want to use for this rig?" validate_nightscout_token
             API_SECRET="token=${REPLY}"
             echocolor "Ok, $API_SECRET it is."
@@ -471,6 +515,11 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echo
     fi
 
+    if prompt_yn "Do you want to be able to set up a local-only wifi hotspot for offline monitoring?" N; then
+        HOTSPOT=true
+    else
+        HOTSPOT=false
+    fi
 
     if [[ ! -z $BT_PEB ]]; then
         prompt_and_validate BT_PEB "For Pancreabble enter Pebble mac id (i.e. AA:BB:CC:DD:EE:FF) hit enter to skip" validate_bt_peb
@@ -626,6 +675,9 @@ fi
 if [[ ! -z "$radiotags" ]]; then
     echo -n " --radiotags='$radiotags'" | tee -a $OREF0_RUNAGAIN
 fi
+if [[ ! -z "$hotspot_option" ]]; then
+    echo -n " --hotspot='$hotspot_option'" | tee -a $OREF0_RUNAGAIN
+fi
 echo; echo | tee -a $OREF0_RUNAGAIN
 chmod 755 $OREF0_RUNAGAIN
 
@@ -678,20 +730,14 @@ if prompt_yn "" N; then
     echo Running apt-get autoclean
     sudo apt-get autoclean
 
-    # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
-    if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' ; then
-        echo Installing node 8
-        # Use nodesource setup script to add nodesource repository to sources.list.d
-        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
-        # Install nodejs and npm from nodesource
-        sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
-    fi
+    install_or_upgrade_nodejs
 
     # Attempting to remove git to make install --nogit by default for existing users
     echo Removing any existing git in $directory/.git
     rm -rf $directory/.git
     echo Removed any existing git
-
+    echo "Uninstalling parsedatetime, reinstalling correct version"
+    pip uninstall -y parsedatetime && pip install -I parsedatetime==2.5
     # TODO: delete this after openaps 0.2.2 release
     echo Checking openaps 0.2.2 installation with --nogit support
     if ! openaps --version 2>&1 | egrep "0.[2-9].[2-9]"; then
@@ -730,10 +776,14 @@ if prompt_yn "" N; then
     mkdir -p $HOME/src/
     if [ -d "$HOME/src/oref0/" ]; then
         echo "$HOME/src/oref0/ already exists; pulling latest"
-        (cd $HOME/src/oref0 && git fetch && git pull) || die "Couldn't pull latest oref0"
+        (cd $HOME/src/oref0 && git fetch && git pull) || (
+            if ! prompt_yn "Couldn't pull latest oref0. Continue anyways?"; then
+                die "Failed to update oref0."
+            fi
+        )
     else
         echo -n "Cloning oref0: "
-        (cd $HOME/src && git clone git://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
+        (cd $HOME/src && git clone https://github.com/openaps/oref0.git) || die "Couldn't clone oref0"
     fi
 
     # Make sure jq version >1.5 is installed
@@ -913,33 +963,37 @@ if prompt_yn "" N; then
         else
             echo bluez version ${bluetoothdversion} already installed
         fi
-        echo Installing prerequisites and configs for local-only hotspot
-        apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
-        test ! -f  /etc/dnsmasq.conf.bak && mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
-        cp $HOME/src/oref0/headless/dnsmasq.conf /etc/dnsmasq.conf || die "Couldn't copy dnsmasq.conf"
-        test ! -f  /etc/hostapd/hostapd.conf.bak && mv /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.bak
-        cp $HOME/src/oref0/headless/hostapd.conf /etc/hostapd/hostapd.conf || die "Couldn't copy hostapd.conf"
-        sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
-        cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
-        cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
-        if [ ! -z "$BT_MAC" ]; then
-          printf 'Checking for the bnep0 interface in the interfaces.client file and adding if missing...'
-          # Make sure the bnep0 interface is in the /etc/networking/interface
-          (grep -qa bnep0 /etc/network/interfaces.client && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces.client && printf 'added.\n') 
-        fi
-        #Stop automatic startup of hostapd & dnsmasq
-        update-rc.d -f hostapd remove
-        update-rc.d -f dnsmasq remove
-        # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
-        sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}/" /etc/hostapd/hostapd.conf
-        # Add Commands to /etc/rc.local
-        # Interrupt Kernel Messages
-        if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
-          sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
-        fi
-        # Add to /etc/rc.local to check if in hotspot mode and turn back to client mode during bootup
-        if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
-          sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
+        if [[ ${hotspot_option,,} =~ "true" ]]; then
+            echo Installing prerequisites and configs for local-only hotspot
+            apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
+            test ! -f  /etc/dnsmasq.conf.bak && mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+            cp $HOME/src/oref0/headless/dnsmasq.conf /etc/dnsmasq.conf || die "Couldn't copy dnsmasq.conf"
+            test ! -f  /etc/hostapd/hostapd.conf.bak && mv /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.bak
+            cp $HOME/src/oref0/headless/hostapd.conf /etc/hostapd/hostapd.conf || die "Couldn't copy hostapd.conf"
+            sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
+            cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
+            cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
+            if [ ! -z "$BT_MAC" ]; then
+                printf 'Checking for the bnep0 interface in the interfaces.client file and adding if missing...'
+                # Make sure the bnep0 interface is in the /etc/networking/interface
+                (grep -qa bnep0 /etc/network/interfaces.client && printf 'skipped.\n') || (printf '\n%s\n\n' "iface bnep0 inet dhcp" >> /etc/network/interfaces.client && printf 'added.\n')
+            fi
+            #Stop automatic startup of hostapd & dnsmasq
+            update-rc.d -f hostapd remove
+            update-rc.d -f dnsmasq remove
+            # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
+            sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}/" /etc/hostapd/hostapd.conf
+            # Add Commands to /etc/rc.local
+            # Interrupt Kernel Messages
+            if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
+                sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
+            fi
+            # Add to /etc/rc.local to check if in hotspot mode and turn back to client mode during bootup
+            if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
+                sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
+            fi
+        else
+            echo Skipping local-only hotspot
         fi
     fi
 
@@ -992,6 +1046,7 @@ if prompt_yn "" N; then
         cd $HOME/src/Logger            
         sudo apt-get install -y bluez-tools
         sudo npm run global-install
+        cgm-transmitter $DEXCOM_CGM_TX_ID
         touch /tmp/reboot-required
     fi
 
@@ -1014,7 +1069,7 @@ if prompt_yn "" N; then
             echo "EdisonVoltage already installed"
         else
             echo "Installing EdisonVoltage"
-            cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+            cd $HOME/src && git clone -b master https://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
             cd $HOME/src/EdisonVoltage
             make voltage
         fi
@@ -1029,7 +1084,7 @@ if prompt_yn "" N; then
     echo Checking for BT Pebble Mac
     if [[ ! -z "$BT_PEB" ]]; then
         sudo pip install --default-timeout=1000 libpebble2
-        sudo pip install --default-timeout=1000 --user git+git://github.com/mddub/pancreabble.git
+        sudo pip install --default-timeout=1000 --user git+https://github.com/mddub/pancreabble.git
         oref0-bluetoothup
         sudo rfcomm bind hci0 $BT_PEB
         do_openaps_import $HOME/src/oref0/lib/oref0-setup/pancreabble.json
@@ -1046,10 +1101,15 @@ if prompt_yn "" N; then
 
     #Moved this out of the conditional, so that x12 models will work with smb loops
     sudo apt-get -y install bc ntpdate bash-completion || die "Couldn't install bc etc."
+    # now required on all platforms for shared-node
+    echo "Installing socat and ntp..."
+    apt-get install -y socat ntp
     cd $directory || die "Can't cd $directory"
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
 
     echo "Adding OpenAPS log shortcuts"
+    # Make sure that .bash_profile exists first, then call script to add the log shortcuts
+    touch "$HOME/.bash_profile"
     oref0-log-shortcuts --add-to-profile="$HOME/.bash_profile"
 
     # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
@@ -1071,12 +1131,16 @@ if prompt_yn "" N; then
     if [[ -f $HOME/.profile ]]; then
       sed --in-place '/.*API_SECRET.*/d' $HOME/.profile
       sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.profile
+      sed --in-place '/.*MEDTRONIC_PUMP_ID.*/d' $HOME/.profile
+      sed --in-place '/.*MEDTRONIC_FREQUENCY.*/d' $HOME/.profile
     fi
 
     # Delete old copies of variables before replacing them
     sed --in-place '/.*NIGHTSCOUT_HOST.*/d' $HOME/.bash_profile
     sed --in-place '/.*API_SECRET.*/d' $HOME/.bash_profile
     sed --in-place '/.*DEXCOM_CGM_RECV_ID*/d' $HOME/.bash_profile
+    sed --in-place '/.*MEDTRONIC_PUMP_ID.*/d' $HOME/.bash_profile
+    sed --in-place '/.*MEDTRONIC_FREQUENCY.*/d' $HOME/.bash_profile
     #sed --in-place '/.*DEXCOM_CGM_TX_ID*/d' $HOME/.bash_profile
 
     # Then append the variables
@@ -1086,9 +1150,11 @@ if prompt_yn "" N; then
     echo "export API_SECRET" >> $HOME/.bash_profile
     echo DEXCOM_CGM_RECV_ID="$BLE_SERIAL" >> $HOME/.bash_profile
     echo "export DEXCOM_CGM_RECV_ID" >> $HOME/.bash_profile
+    echo MEDTRONIC_PUMP_ID="$serial" >> $HOME/.bash_profile
+    echo MEDTRONIC_FREQUENCY='`cat $HOME/myopenaps/monitor/medtronic_frequency.ini`' >> $HOME/.bash_profile
+    
     #echo DEXCOM_CGM_TX_ID="$DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
     #echo "export DEXCOM_CGM_TX_ID" >> $HOME/.bash_profile
-    echo
 
     #Turn on i2c, install pi-buttons, and openaps-menu for hardware that has a screen and buttons (so far, only Explorer HAT and Radiofruit Bonnet)
     if grep -qa "Explorer HAT" /proc/device-tree/hat/product &> /dev/null || [[ "$hardwaretype" =~ "explorer-hat" ]] || [[ "$hardwaretype" =~ "radiofruit" ]]; then
@@ -1101,11 +1167,9 @@ if prompt_yn "" N; then
         sed -i.bak -e "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/" /boot/config.txt
         egrep "^dtparam=i2c1=on" /boot/config.txt || echo "dtparam=i2c1=on,i2c1_baudrate=400000" >> /boot/config.txt
         echo "i2c-dev" > /etc/modules-load.d/i2c.conf
-        echo "Installing socat and ntp..."
-        apt-get install -y socat ntp
         echo "Installing pi-buttons..."
         systemctl stop pi-buttons
-        cd $HOME/src && git clone git://github.com/bnielsen1965/pi-buttons.git
+        cd $HOME/src && git clone https://github.com/bnielsen1965/pi-buttons.git
         echo "Make and install pi-buttons..."
         cd pi-buttons
         cd src && make && sudo make install && sudo make install_service
@@ -1115,7 +1179,8 @@ if prompt_yn "" N; then
         fi
         systemctl enable pi-buttons && systemctl restart pi-buttons
         echo "Installing openaps-menu..."
-        cd $HOME/src && git clone git://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
+        test "$directory" != "/$HOME/myopenaps" && (echo You are using a non-standard openaps directory. For the statusmenu to work correctly you need to set the openapsDir variable in index.js)
+        cd $HOME/src && git clone https://github.com/openaps/openaps-menu.git || (cd openaps-menu && git checkout master && git pull)
         cd $HOME/src/openaps-menu && sudo npm install
         cp $HOME/src/openaps-menu/openaps-menu.service /etc/systemd/system/ && systemctl enable openaps-menu
     fi

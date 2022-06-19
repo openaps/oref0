@@ -42,6 +42,8 @@ if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /de
     echo "Acquire::Check-Valid-Until false;" | tee -a /etc/apt/apt.conf.d/10-nocheckvalid
     # Replace apt sources.list with archive.debian.org locations
     echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
+    echo "Please consider upgrading your rig to Jubilinux 0.3.0 (Debian Stretch)!"
+    echo "Jubilinux 0.2.0, based on Debian Jessie, is no longer receiving security or software updates!"
 fi
 
 #Workaround for Jubilinux to install nodejs/npm from nodesource
@@ -56,7 +58,7 @@ apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true 
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim python-pip locate ntpdate ntp
 #check if edison user exists before trying to add it to groups
 
-grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" > /etc/ssh/sshd_config
+grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
 
 if  getent passwd edison > /dev/null; then
   echo "Adding edison to sudo users"
@@ -71,7 +73,7 @@ sed -i "s/daily/hourly/g" /etc/logrotate.conf
 sed -i "s/#compress/compress/g" /etc/logrotate.conf
 
 curl -s https://raw.githubusercontent.com/openaps/oref0/$BRANCH/bin/openaps-packages.sh | bash -
-mkdir -p ~/src; cd ~/src && ls -d oref0 && (cd oref0 && git checkout $BRANCH && git pull) || git clone git://github.com/openaps/oref0.git
+mkdir -p ~/src; cd ~/src && ls -d oref0 && (cd oref0 && git checkout $BRANCH && git pull) || git clone https://github.com/openaps/oref0.git
 echo "Press Enter to run oref0-setup with the current release ($BRANCH branch) of oref0,"
 read -p "or press ctrl-c to cancel. " -r
 cd && ~/src/oref0/bin/oref0-setup.sh

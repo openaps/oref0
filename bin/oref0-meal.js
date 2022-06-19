@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 /*
   oref0 meal data tool
@@ -20,9 +21,14 @@
 */
 
 var generate = require('../lib/meal');
+var shared_node_utils = require('./oref0-shared-node-utils');
+var console_error = shared_node_utils.console_error;
+var console_log = shared_node_utils.console_log;
+var process_exit = shared_node_utils.process_exit;
+var initFinalResults = shared_node_utils.initFinalResults;
 
-if (!module.parent) {
-    var argv = require('yargs')
+var oref0_meal = function oref0_meal(final_result, argv_params) {  
+	var argv = require('yargs')(argv_params)
       .usage('$0 <pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [<carbhistory.json>]')
       // error and show help if some other args given
       .strict(true)
@@ -40,8 +46,9 @@ if (!module.parent) {
 
     if (inputs.length < 5 || inputs.length > 6) {
         argv.showHelp();
-        console.log('{ "carbs": 0, "reason": "Insufficient arguments" }');
-        process.exit(1);
+        console_log(final_result, '{ "carbs": 0, "reason": "Insufficient arguments" }');
+        process_exit(1);
+        return;
     }
 
     var fs = require('fs');
@@ -53,41 +60,41 @@ if (!module.parent) {
     try {
         pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
     } catch (e) {
-        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse pumphistory data" }');
-        return console.error("Could not parse pumphistory data: ", e);
+        console_log(final_result, '{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse pumphistory data" }'); //??
+        return console_error(final_result, "Could not parse pumphistory data: ", e);
     }
 
     try {
         profile_data = JSON.parse(fs.readFileSync(profile_input, 'utf8'));
     } catch (e) {
-        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse profile data" }');
-        return console.error("Could not parse profile data: ", e);
+        console_log(final_result, '{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse profile data" }');
+        return console_error(final_result, "Could not parse profile data: ", e);
     }
 
     try {
         clock_data = JSON.parse(fs.readFileSync(clock_input, 'utf8'));
     } catch (e) {
-        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse clock data" }');
-        return console.error("Could not parse clock data: ", e);
+        console_log(final_result, '{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse clock data" }');
+        return console_error(final_result, "Could not parse clock data: ", e);
     }
 
     try {
         basalprofile_data = JSON.parse(fs.readFileSync(basalprofile_input, 'utf8'));
     } catch (e) {
-        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse basalprofile data" }');
-        return console.error("Could not parse basalprofile data: ", e);
+        console_log(final_result, '{ "carbs": 0, "mealCOB": 0, "reason": "Could not parse basalprofile data" }');
+        return console_error(final_result, "Could not parse basalprofile data: ", e);
     }
 
     // disallow impossibly low carbRatios due to bad decoding
     if ( typeof(profile_data.carb_ratio) === 'undefined' || profile_data.carb_ratio < 3 ) {
-        console.log('{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratio ' + profile_data.carb_ratio + ' out of bounds" }');
-        return console.error("Error: carb_ratio " + profile_data.carb_ratio + " out of bounds");
+        console_log(final_result, '{ "carbs": 0, "mealCOB": 0, "reason": "carb_ratio ' + profile_data.carb_ratio + ' out of bounds" }');
+        return console_error(final_result, "Error: carb_ratio " + profile_data.carb_ratio + " out of bounds");
     }
 
     try {
         var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
     } catch (e) {
-        console.error("Warning: could not parse "+glucose_input);
+        console_error(final_result, "Warning: could not parse "+glucose_input);
     }
 
     var carb_data = { };
@@ -95,19 +102,19 @@ if (!module.parent) {
         try {
             carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
         } catch (e) {
-            console.error("Warning: could not parse "+carb_input);
+            console_error(final_result, "Warning: could not parse "+carb_input);
         }
     }
 
     if (typeof basalprofile_data[0] === 'undefined') {
-        return console.error("Error: bad basalprofile_data:" + basalprofile_data);
+        return console_error(final_result, "Error: bad basalprofile_data:" + basalprofile_data);
     }
     if (typeof basalprofile_data[0].glucose !== 'undefined') {
-      console.error("Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
-      var temp = carb_data;
-      carb_data = glucose_data;
-      glucose_data = basalprofile_data;
-      basalprofile_data = temp;
+        console_error(final_result, "Warning: Argument order has changed: please update your oref0-meal device and meal.json report to place carbhistory.json after basalprofile.json");
+        var temp = carb_data;
+        carb_data = glucose_data;
+        glucose_data = basalprofile_data;
+        basalprofile_data = temp;
     }
 
     inputs = {
@@ -122,11 +129,26 @@ if (!module.parent) {
     var recentCarbs = generate(inputs);
 
     if (glucose_data.length < 36) {
-        console.error("Not enough glucose data to calculate carb absorption; found:", glucose_data.length);
+        console_error(final_result, "Not enough glucose data to calculate carb absorption; found:", glucose_data.length);
         recentCarbs.mealCOB = 0;
         recentCarbs.reason = "not enough glucose data to calculate carb absorption";
     }
 
-    console.log(JSON.stringify(recentCarbs));
+    console_log(final_result, recentCarbs);
 }
 
+if (!module.parent) {
+    var final_result = initFinalResults();
+    // remove the first parameter.
+    var command = process.argv;
+    command.shift();
+    command.shift();
+    oref0_meal(final_result, command);
+    console.log(final_result.stdout);
+    if(final_result.err.length > 0) {
+        console.error(final_result.err);
+    }
+    process.exit(final_result.return_val);
+}
+
+exports = module.exports = oref0_meal

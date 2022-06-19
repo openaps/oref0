@@ -237,7 +237,7 @@ ns)
         |  openaps use ${ZONE} select --date dateString --current now --gaps - ${FILE}  | jq .
     ;;
     latest-entries-time)
-      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST entries.json 'find[type]=sgv'  | jq .[0])
+      PREVIOUS_TIME=$(ns-get host $NIGHTSCOUT_HOST entries.json 'find[type][$eq]=sgv'  | jq .[0])
       test -z "${PREVIOUS_TIME}" && echo -n 0 || echo $PREVIOUS_TIME | jq .dateString
       exit 0
     ;;

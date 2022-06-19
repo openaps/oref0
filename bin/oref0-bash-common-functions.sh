@@ -8,6 +8,45 @@ self=$(basename $0)
 
 PREFERENCES_FILE="preferences.json"
 
+function run_remote_command () {
+    set -o pipefail
+    out_file=$( mktemp /tmp/shared_node.XXXXXXXXXXXX)
+    #echo $out_file
+    echo -n $1 |socat -t90 - UNIX-CONNECT:/tmp/oaps_shared_node > $out_file || return 1
+    #cat $out_file
+    jq -j .err $out_file >&2
+    jq -j .stdout $out_file 
+    return_val=$( jq -r .return_val $out_file)
+    rm $out_file
+    return $(( return_val ))
+}
+
+function start_share_node_if_needed() {
+    # First check if node is alive
+    output="$(echo ping |socat -t90 - UNIX-CONNECT:/tmp/oaps_shared_node)"
+    echo $output
+    if [ "$output" = '{"err":"","stdout":"pong","return_val":0}' ]; then
+        echo shared node is alive
+        return 0
+    fi
+    echo 'killing node so it will restart later'
+        node_pid="$(ps -ef | grep node | grep oref0-shared-node.js | grep -v grep | awk '{print $2 }')"
+    echo $node_pid
+    kill -9 $node_pid
+    # Node should start automaticly by oref0-shared-node-loop
+    # Waiting 90 seconds for it to start
+    for i in {1..90}
+    do
+       sleep 1
+       output="$(echo ping |socat -t90 - UNIX-CONNECT:/tmp/oaps_shared_node)"
+       echo $output
+       if [ "$output" = '{"err":"","stdout":"pong","return_val":0}' ]; then
+           echo shared node is alive
+           return 0
+       fi
+    done
+    die Waiting for shared node failed 
+}
 
 function overtemp {
     # check for CPU temperature above 85°C
@@ -503,7 +542,7 @@ function wait_for_silence {
         echo -n .
         # returns true if it hears pump comms, false otherwise
         if ! listen -t $waitfor's' 2>&4 ; then
-            echo "No interfering pump comms detected from other rigs (this is a good thing!)"
+            echo " All clear."
             echo -n "Continuing oref0-pump-loop at "; date
             return 0
         else

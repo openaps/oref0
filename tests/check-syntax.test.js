@@ -93,6 +93,7 @@ describe("Syntax checks", function() {
         var type = getFileFormat(file);
         if(type !== "unknown") {
             it(file, function() {
+                this.timeout(4000);
                 checkFile(file, type);
             });
         }

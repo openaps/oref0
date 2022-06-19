@@ -14,7 +14,7 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-var detect = require('../lib/determine-basal/autosens');
+var detectSensitivity = require('../lib/determine-basal/autosens');
 
 if (!module.parent) {
     var argv = require('yargs')
@@ -77,10 +77,16 @@ if (!module.parent) {
             }
         }
 
+        // TODO: add support for a proper --retrospective flag if anything besides oref0-simulator needs this
+        var retrospective = false;
         var temptarget_data = { };
         if (typeof temptarget_input !== 'undefined') {
             try {
-                temptarget_data = JSON.parse(fs.readFileSync(temptarget_input, 'utf8'));
+                if (temptarget_input == "retrospective") {
+                    retrospective = true;
+                } else {
+                    temptarget_data = JSON.parse(fs.readFileSync(temptarget_input, 'utf8'));
+                }
             } catch (e) {
                 console.error("Warning: could not parse "+temptarget_input);
             }
@@ -101,18 +107,19 @@ if (!module.parent) {
         , glucose_data: glucose_data
         , basalprofile: basalprofile
         , temptargets: temptarget_data
+        , retrospective: retrospective
         //, clock: clock_data
     };
     console.error("Calculating sensitivity using 8h of non-exluded data");
     detection_inputs.deviations = 96;
-    detect(detection_inputs);
-    var ratio8h = ratio;
-    var newisf8h = newisf;
+    var result = detectSensitivity(detection_inputs);
+    var ratio8h = result.ratio;
+    var newisf8h = result.newisf;
     console.error("Calculating sensitivity using all non-exluded data (up to 24h)");
     detection_inputs.deviations = 288;
-    detect(detection_inputs);
-    var ratio24h = ratio;
-    var newisf24h = newisf;
+    result = detectSensitivity(detection_inputs);
+    var ratio24h = result.ratio;
+    var newisf24h = result.newisf;
     if ( ratio8h < ratio24h ) {
         console.error("Using 8h autosens ratio of",ratio8h,"(ISF",newisf8h+")");
     } else {
