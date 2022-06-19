@@ -76,21 +76,38 @@ else
     PRIORITY_OPTIONS=""
 fi
 
-date
+#date
 
-if file_is_recent monitor/pushover-sent $SNOOZE; then
-    echo "Last pushover sent less than $SNOOZE minutes ago."
-elif ! file_is_recent "$FILE"; then
+#function pushover_snooze {
+# check Nightscout to see if another rig has already sent a carbsReq pushover recently
+    URL=$NIGHTSCOUT_HOST/api/v1/devicestatus.json?count=100
+    if [[ "${API_SECRET}" =~ "token=" ]]; then
+        URL="${URL}&${API_SECRET}"
+    else
+        CURL_AUTH='-H api-secret:'${API_SECRET}
+    fi
+
+    if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | noquotes | grep -v null); then
+        #echo $snooze
+        #echo date -Is -d @$snooze; echo
+        touch -d $(date -Is -d @$snooze) monitor/pushover-sent
+        #ls -la monitor/pushover-sent | awk '{print $8,$9}'
+    fi
+#}
+
+if ! file_is_recent "$FILE"; then
     echo "$FILE more than 5 minutes old"
     exit
-elif ! cat $FILE | egrep "add'l|maxBolus"; then
-    echo "No additional carbs or bolus required."
-elif [[ $ONLYFOR =~ "carb" ]] && ! cat $FILE | egrep "add'l"; then
-    echo "No additional carbs required."   
-elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus"; then
-    echo "No additional insulin required."
+elif ! cat $FILE | egrep "add'l|maxBolus" > /dev/null; then
+    echo -n "No carbsReq. "
+elif [[ $ONLYFOR =~ "carb" ]] && ! cat $FILE | egrep "add'l" > /dev/null; then
+    echo -n "No carbsReq. "
+elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus" > /dev/null; then
+    echo -n "No additional insulin required. "
+elif file_is_recent monitor/pushover-sent $SNOOZE; then
+    echo -n "Last pushover sent less than $SNOOZE minutes ago. "
 else
-    curl -s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json && touch monitor/pushover-sent && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"carbsReq"}' | tee /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json
+    curl -s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json | jq .status| grep 1 >/dev/null && touch monitor/pushover-sent && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"carbsReq"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null && echo "carbsReq pushover sent."
     echo
 fi
 
@@ -106,6 +123,8 @@ source $HOME/.bash_profile
 key=${MAKER_KEY:-"null"}
 carbsReq=`jq .carbsReq ${FILE}`
 tick=`jq .tick ${FILE}`
+tick="${tick%\"}"
+tick="${tick#\"}"
 bgNow=`jq .bg ${FILE}`
 delta=`echo "${tick}" | tr -d +`
 delta="${delta%\"}"
@@ -119,50 +138,68 @@ pushoverGlances=$(get_prefs_json | jq -M '.pushoverGlances')
 if [ "${pushoverGlances}" == "null" -o "${pushoverGlances}" == "false" ]; then
     echo "pushoverGlances not enabled in preferences.json"
 else
+  # if pushoverGlances is a number instead of just true, use it to set the minutes allowed between glances
+  re='^[0-9]+$'
+  if [[ ${pushoverGlances} =~ $re  ]]; then
+    glanceDelay=${pushoverGlances}
+  else
+    glanceDelay=10
+  fi
   GLANCES="monitor/last_glance"
   GLUCOSE="monitor/glucose.json"
   if [ ! -f $GLANCES ]; then
-    # First time through it will get created older than 10 minutes so it'll fire
-    touch $GLANCES && touch -r $GLANCES -d '-11 mins' $GLANCES
+    # First time through it will get created 1h old so it'll fire
+    touch $GLANCES && touch -r $GLANCES -d '-60 mins' $GLANCES
   fi
 
-  if test `find $GLANCES -mmin +10`
+  if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="glance") | select(.date>'$(date +%s -d "$glanceDelay minutes ago")')' | jq -s .[0].date | noquotes | grep -v null); then
+        #echo $snooze
+        #echo date -Is -d @$snooze; echo
+        touch -d $(date -Is -d @$snooze) $GLANCES
+        #ls -la $GLANCES | awk '{print $8,$9}'
+  fi
+
+  if test `find $GLANCES -mmin +$glanceDelay` || cat $FILE | egrep "add'l" >/dev/null
   then
-    enactTime=$(ls -l  --time-style=+"%l:%M" ${FILE} | awk '{printf ($6)}')
-    
+    curTime=$(ls -l  --time-style=+"%l:%M" ${FILE} | awk '{printf ($6)}')
+
     lastDirection=`jq -M '.[0] .direction' $GLUCOSE`
     lastDirection="${lastDirection%\"}"
     lastDirection="${lastDirection#\"}"
 
+    rate=`jq -M '.rate' monitor/temp_basal.json`
+    duration=`jq -M '.duration' monitor/temp_basal.json`
     #echo lastDirection=$lastDirection
 
     if [ "${lastDirection}" == "SingleUp" ]; then
-      direction="+"
+      direction="↑"
     elif [ "${lastDirection}" == "FortyFiveUp" ]; then
-      direction="++"
+      direction="↗"
     elif [ "${lastDirection}" == "DoubleUp" ]; then
-      direction="+++"
+      direction="↑↑"
     elif [ "${lastDirection}" == "SingleDown" ]; then
-      direction="-"
+      direction="↓"
     elif [ "${lastDirection}" == "FortyFiveDown" ]; then
-      direction="--"
+      direction="↘"
     elif [ "${lastDirection}" == "DoubleDown" ]; then
-      direction="---"
+      direction="↓↓"
     else
-      direction="" # default for NONE or Flat
+      direction="→" # default for NONE or Flat
     fi
 
-    if [ test cat $FILE | egrep "add'l" ]; then
-      subtext="cr ${carbsReq}g"
-    else
-      subtext="e${enactTime}"
+    title="${bgNow} ${tick} ${direction}      @ ${curTime}"
+    text="IOB ${iob}, COB ${cob}"
+    if cat $FILE | egrep "add'l" >/dev/null; then
+      carbsMsg="${carbsReq}g req "
     fi
-    text="${bgNow}${direction}"
-    title="cob ${cob}, iob ${iob}"
+    subtext="$carbsMsg${rate}U/h ${duration}m"
 
 #    echo "pushover glance text=${text}  subtext=${subtext}  delta=${delta} title=${title}  battery percent=${battery}"
-    curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json
+    curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json | jq .status| grep 1 >/dev/null && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"glance"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null && echo "Glance uploaded and snoozed"
     touch $GLANCES
+  else
+    echo -n "Pushover glance last updated less than $glanceDelay minutes ago @ "
+    ls -la $GLANCES | awk '{print $8}'
   fi
 fi
 
@@ -174,7 +211,7 @@ fi
 #   call with this event that will read out in human language the additional carbs and other
 #   vital facts. It will leave a voice mail if not answered.
 
-if [[ "$MAKER_KEY" != "null" ]] && cat $FILE | egrep "add'l"; then
+if ! [ -z "$MAKER_KEY" ] && [[ "$MAKER_KEY" != "null" ]] && cat $FILE | egrep "add'l"; then
   if file_is_recent monitor/ifttt-sent 60; then
      echo "carbsReq=${carbsReq} but last IFTTT event sent less than 60 minutes ago."
   else

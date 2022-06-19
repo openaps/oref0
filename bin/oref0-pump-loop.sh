@@ -68,9 +68,17 @@ main() {
                 fi
             fi
             touch /tmp/pump_loop_completed -r /tmp/pump_loop_enacted
+            # run pushover immediately after completing loop for more timely carbsReq notifications without race conditions
+            PUSHOVER_TOKEN="$(get_pref_string .pushover_token "")"
+            PUSHOVER_USER="$(get_pref_string .pushover_user "")"
+            if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
+                oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER # 2>&1 >> /var/log/openaps/pushover.log &
+            fi
+
             # before each of these (optional) refresh checks, make sure we don't have fresh glucose data
             # if we do, then skip the optional checks to finish up this loop and start the next one
             if ! glucose-fresh; then
+                wait_for_silence $upto10s
                 if onbattery; then
                     refresh_profile 30
                 else
@@ -317,7 +325,7 @@ function smb_suggest {
 }
 
 function determine_basal {
-    cat monitor/meal.json
+    #cat monitor/meal.json
 
     update_glucose_noise
 
@@ -480,7 +488,7 @@ function refresh_after_bolus_or_enact {
 
 function unsuspend_if_no_temp {
     # If temp basal duration is zero, unsuspend pump
-    if (cat monitor/temp_basal.json | jq '. | select(.duration == 0)' | grep -q duration); then
+    if (cat monitor/temp_basal.json | jq '. | select(.duration == 0)' | grep duration); then
         if check_pref_bool .unsuspend_if_no_temp false; then
             echo Temp basal has ended: unsuspending pump
             mdt resume 2>&3
@@ -597,13 +605,18 @@ function refresh_pumphistory_and_meal {
     try_return invoke_pumphistory_etc || return 1
     try_return invoke_reservoir_etc || return 1
     echo -n "meal.json "
-    if ! retry_return oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json > monitor/meal.json.new ; then
+    
+    dir_name=~/test_data/oref0-meal$(date +"%Y-%m-%d-%H%M")
+    #echo dir_name = $dir_name
+    # mkdir -p $dir_name
+    #cp monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json $dir_name
+    if ! retry_return run_remote_command 'oref0-meal monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json monitor/glucose.json settings/basal_profile.json monitor/carbhistory.json' > monitor/meal.json.new ; then
         echo; echo "Couldn't calculate COB"
         return 1
     fi
     try_return check_cp_meal || return 1
     echo -n "refreshed: "
-    cat monitor/meal.json
+    cat monitor/meal.json | jq -cC .
 }
 
 function check_cp_meal {
@@ -624,7 +637,12 @@ function check_cp_meal {
 }
 
 function calculate_iob {
-    oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json > monitor/iob.json.new || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
+    dir_name=~/test_data/oref0-calculate-iob$(date +"%Y-%m-%d-%H%M")
+    #echo dir_name = $dir_name
+    # mkdir -p $dir_name
+    #cp  monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json $dir_name
+
+    run_remote_command 'oref0-calculate-iob monitor/pumphistory-24h-zoned.json settings/profile.json monitor/clock-zoned.json settings/autosens.json' > monitor/iob.json.new || { echo; echo "Couldn't calculate IOB"; fail "$@"; }
     [ -s monitor/iob.json.new ] && jq -e .[0].iob monitor/iob.json.new >&3 && cp monitor/iob.json.new monitor/iob.json || { echo; echo "Couldn't copy IOB"; fail "$@"; }
 }
 
@@ -674,7 +692,13 @@ function get_settings {
     fi
 
     # generate settings/pumpprofile.json without autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
+
+    #dir_name=~/test_data/oref0-get-profile$(date +"%Y-%m-%d-%H%M")-pump
+    #echo dir_name = $dir_name
+    # mkdir -p $dir_name
+    #cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json $dir_name
+    
+    run_remote_command 'oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json' 2>&3 | jq . > settings/pumpprofile.json.new || { echo "Couldn't refresh pumpprofile"; fail "$@"; }
     if [ -s settings/pumpprofile.json.new ] && jq -e .current_basal settings/pumpprofile.json.new >&4; then
         mv settings/pumpprofile.json.new settings/pumpprofile.json
         echo -n "Pump profile refreshed; "
@@ -683,7 +707,12 @@ function get_settings {
         ls -lart settings/pumpprofile.json.new
     fi
     # generate settings/profile.json.new with autotune
-    oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
+    dir_name=~/test_data/oref0-get-profile$(date +"%Y-%m-%d-%H%M")-pump-auto
+    #echo dir_name = $dir_name
+    # mkdir -p $dir_name
+    #cp  settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json settings/model.json settings/autotune.json $dir_name
+
+    run_remote_command 'oref0-get-profile settings/settings.json settings/bg_targets.json settings/insulin_sensitivities.json settings/basal_profile.json preferences.json settings/carb_ratios.json settings/temptargets.json --model=settings/model.json --autotune settings/autotune.json' | jq . > settings/profile.json.new || { echo "Couldn't refresh profile"; fail "$@"; }
     if [ -s settings/profile.json.new ] && jq -e .current_basal settings/profile.json.new >&4; then
         mv settings/profile.json.new settings/profile.json
         echo -n "Settings refreshed; "
@@ -715,7 +744,7 @@ function onbattery {
 function wait_for_bg {
     if [ "$(get_pref_string .cgm '')" == "mdt" ]; then
         echo "MDT CGM configured; not waiting"
-    elif egrep -q "Warning:" enact/smb-suggested.json 2>&3; then
+    elif egrep -q "Warning:" enact/smb-suggested.json 2>&3 || egrep -q "Could not parse clock data" monitor/meal.json 2>&3; then
         echo "Retrying without waiting for new BG"
     elif egrep -q "Waiting [0](\.[0-9])?m ([0-6]?[0-9]s )?to microbolus again." enact/smb-suggested.json 2>&3; then
         echo "Retrying microbolus without waiting for new BG"

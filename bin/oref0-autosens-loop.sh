@@ -33,11 +33,11 @@ function completed_recently {
 # openaps use detect-sensitivity shell monitor/glucose.json settings/pumphistory-24h-zoned.json settings/insulin_sensitivities.json settings/basal_profile.json settings/profile.json monitor/carbhistory.json settings/temptargets.json
 function autosens {
     # only run autosens if pumphistory-24h is newer than autosens
-    if find monitor/ -newer settings/autosens.json | grep -q pumphistory-24h-zoned.json \
-        || find settings/ -size -5c | grep -q autosens.json \
-        || ! find settings/ | grep -q autosens \
+    if find monitor/ -newer settings/autosens.json | grep pumphistory-24h-zoned.json \
+        || find settings/ -size -5c | grep autosens.json \
+        || ! find settings/ | grep autosens \
         || ! find settings/autosens.json >/dev/null; then
-        if oref0-detect-sensitivity monitor/glucose.json monitor/pumphistory-24h-zoned.json settings/insulin_sensitivities.json settings/basal_profile.json settings/profile.json monitor/carbhistory.json settings/temptargets.json > settings/autosens.json.new && cat settings/autosens.json.new | jq .ratio | grep -q [0-9]; then
+        if oref0-detect-sensitivity monitor/glucose.json monitor/pumphistory-24h-zoned.json settings/insulin_sensitivities.json settings/basal_profile.json settings/profile.json monitor/carbhistory.json settings/temptargets.json > settings/autosens.json.new && cat settings/autosens.json.new | jq .ratio | grep "[0-9]"; then
             mv settings/autosens.json.new settings/autosens.json
             echo -n "Autosens refreshed: "
         else

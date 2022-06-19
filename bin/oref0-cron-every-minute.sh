@@ -129,7 +129,7 @@ if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
 fi
 
 if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
-    oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log &
+    #oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER 2>&1 >> /var/log/openaps/pushover.log &
 fi
 
 # if disk has less than 10MB free, delete something and logrotate
