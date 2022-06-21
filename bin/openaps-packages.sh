@@ -30,15 +30,17 @@ else
    sudo apt-get -y install jq || die "Couldn't install jq"
 fi
 
-# Install/upgrade to latest version of node (v10) using apt if neither node 8 nor node 10+ LTS are installed
-if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' &> /dev/null ; then
-   if getent passwd edison; then
-     # Only on the Edison, use nodesource setup script to add nodesource repository to sources.list.d, then install nodejs (npm is a part of the package)
-     curl -sL https://deb.nodesource.com/setup_8.x | bash -
-     sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
-   else
-     sudo apt-get install -y nodejs npm || die "Couldn't install nodejs and npm"
-   fi
+# Install node using n if there is not an installed version of node >=8,<=19
+# Edge case: This is not likely to work as expected if there *is* a version of node installed, but it is outside of the specified version constraints
+if ! node --version | grep -e 'v[89]\.' -e 'v1\d\.' &> /dev/null ; then
+   echo "Installing node via n..." # For context why we don't install using apt or nvm, see https://github.com/openaps/oref0/pull/1419
+   curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o n
+   # Install the latest compatible version of node
+   sudo bash n current
+   # Delete the local n binary used to boostrap the install
+   rm n
+   # Install n globally
+   sudo npm install -g n
    
    # Upgrade to the latest supported version of npm for the current node version
    sudo npm upgrade -g npm|| die "Couldn't update npm"
