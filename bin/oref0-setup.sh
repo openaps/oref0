@@ -295,7 +295,7 @@ function move_mmtune () {
 function check_nodejs_timing () {
     # Redundant check that node is installed
     # It is installed as part of openaps-packages.sh
-    if ! node --version | grep -e 'v[89]\.' -e 'v1\d\.' &> /dev/null ; then
+    if ! node --version | grep -q -e 'v[89]\.' -e 'v1[[:digit:]]\.'; then
         die "No version of node (>=8,<=19) was found, which is an unexpected error (node installation should have been handled by previous installation steps)"
     fi
 
