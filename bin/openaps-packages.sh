@@ -30,9 +30,6 @@ if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' &> /dev/null ; then
    else
      sudo apt-get install -y nodejs npm || die "Couldn't install nodejs and npm"
    fi
-   
-   # Upgrade npm to the latest version using its self-updater
-   sudo npm install npm@latest -g || die "Couldn't update npm"
 
    ## You may also need development tools to build native addons:
    ## sudo apt-get install gcc g++ make
