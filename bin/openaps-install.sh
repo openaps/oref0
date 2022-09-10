@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-BRANCH=${1:-master}
+BRANCH=${1:-dev}
 read -p "Enter your rig's new hostname (this will be your rig's "name" in the future, so make sure to write it down): " -r
 myrighostname=$REPLY
 echo $myrighostname > /etc/hostname
