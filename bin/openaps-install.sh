@@ -46,13 +46,6 @@ if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /de
     echo "Jubilinux 0.2.0, based on Debian Jessie, is no longer receiving security or software updates!"
 fi
 
-#Workaround for Jubilinux to install nodejs/npm from nodesource
-if getent passwd edison &> /dev/null; then
-    #Use nodesource setup script to add nodesource repository to sources.list.d
-    curl -sL https://deb.nodesource.com/setup_8.x | bash -
-fi
-
-#dpkg -P nodejs nodejs-dev
 # TODO: remove the `-o Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim locate ntpdate ntp
