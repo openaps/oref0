@@ -288,7 +288,7 @@ function move_mmtune () {
     if [ -f /usr/local/bin/mmtune ]; then
       mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't move mmtune to Go-mmtune"
     else
-      die "Couldn't move_mmtune() because /usr/local/bin/mmtune exists"
+      echo "Couldn't move_mmtune() because /usr/local/bin/mmtune exists"
     fi
 }
 
@@ -815,11 +815,11 @@ if prompt_yn "" N; then
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
-        npm list -g --depth=0 | egrep oref0@0.6.[0] || (echo Installing latest oref0 package && sudo npm install -g oref0)
+        npm list -g --depth=0 | egrep oref0@0.7.[0] || (echo Installing latest oref0 package && sudo npm install -g oref0)
     elif [[ ${npm_option,,} == "force" ]]; then
         echo Forcing install of latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install
     else
-        npm list -g --depth=0 | egrep oref0@0.6.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+        npm list -g --depth=0 | egrep oref0@0.7.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
 
     cd $directory || die "Can't cd $directory"
@@ -1210,7 +1210,7 @@ if prompt_yn "" N; then
     # Install Golang
     mkdir -p $HOME/go
     source $HOME/.bash_profile
-    golangversion=1.12.5
+    golangversion=1.19.1
     if go version | grep go${golangversion}.; then
         echo Go already installed
     else
@@ -1267,7 +1267,9 @@ if prompt_yn "" N; then
         esac
 
         #Build Go binaries
-        go get -u -v -tags "$radiotags" github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+        #go get -u -v -tags "$radiotags" github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+        go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/mdt@latest || die "Couldn't go get medtronic mdt"
+        go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/pumphistory@latest || die "Couldn't go get medtronic mdt"
         ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
     else
         #TODO: write validate_ttyport and support non-SPI ports
