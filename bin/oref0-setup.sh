@@ -1234,7 +1234,7 @@ if prompt_yn "" N; then
         sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
         echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
         echo 'export GOPATH' >> $HOME/.bash_profile
-        echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+        echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin:/root/go/bin/' >> $HOME/.bash_profile
         sed --in-place '/.*export PATH*/d' $HOME/.bash_profile
         echo 'export PATH' >> $HOME/.bash_profile
     fi
