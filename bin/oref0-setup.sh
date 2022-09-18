@@ -286,7 +286,7 @@ function copy_go_binaries () {
 function move_mmtune () {
     request_stop_local_binary Go-mmtune
     if [ -f /root/go/bin/mmtune ]; then
-      ln -s /root/go/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't move mmtune to Go-mmtune"
+      ln -s /root/go/bin/mmtune /usr/local/bin/Go-mmtune
     else
       echo "Couldn't move_mmtune()"
     fi
