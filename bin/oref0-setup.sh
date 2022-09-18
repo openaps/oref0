@@ -1269,7 +1269,7 @@ if prompt_yn "" N; then
         #Build Go binaries
         #go get -u -v -tags "$radiotags" github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
         go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/...@latest || die "Couldn't go get medtronic"
-        ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
+        ln -sf /root/go/pkg/mod/github.com/ecc1/medtronic@v0.0.0-20210712211734-b8431dc5211b/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
     else
         #TODO: write validate_ttyport and support non-SPI ports
         die "Unsupported ttyport. Exiting."
