@@ -285,8 +285,10 @@ function copy_go_binaries () {
 
 function move_mmtune () {
     request_stop_local_binary Go-mmtune
-    if [ -f /usr/local/bin/oref0-mmtune ]; then
-      ln -s /usr/local/bin/oref0-mmtune /usr/local/bin/Go-mmtune || die "Couldn't symlink oref0-mmtune to Go-mmtune"
+    if [ -f /usr/local/bin/mmtune ]; then
+      mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't move mmtune to Go-mmtune"
+    else
+      echo "Couldn't move_mmtune() because /usr/local/bin/mmtune exists"
     fi
 }
 
