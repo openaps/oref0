@@ -1271,6 +1271,10 @@ if prompt_yn "" N; then
         go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/mdt@latest || die "Couldn't go get medtronic mdt"
         go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/mmtune@latest || die "Couldn't go get medtronic mmtune"
         go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/pumphistory@latest || die "Couldn't go get medtronic pumphistory"
+        go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/fakemeter@latest || die "Couldn't go get medtronic fakemeter"
+        go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/setbasals@latest || die "Couldn't go get medtronic setbasals"
+        go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/listen@latest || die "Couldn't go get medtronic listen"
+        go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/sniff@latest || die "Couldn't go get medtronic sniff"
         ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
     else
         #TODO: write validate_ttyport and support non-SPI ports
