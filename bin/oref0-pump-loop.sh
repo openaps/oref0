@@ -169,7 +169,8 @@ function fail {
         refresh_after_bolus_or_enact
         echo "Incomplete oref0-pump-loop (pump suspended) at $(date)"
     else
-        # retry preflight; if successful, refresh pumphistory, else mmtune
+        # wait upto45s and retry preflight; if successful, refresh pumphistory, else mmtune
+        wait_for_silence $upto45s
         if retry_fail preflight; then
             pumphistory_daily_refresh
         else
