@@ -171,7 +171,7 @@ function fail {
     else
         # wait upto45s and retry preflight; if successful, refresh pumphistory, else mmtune
         wait_for_silence $upto45s
-        if retry_fail preflight; then
+        if retry_return preflight; then
             pumphistory_daily_refresh
         else
             maybe_mmtune
