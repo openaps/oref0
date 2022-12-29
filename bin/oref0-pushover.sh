@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 
 source $(dirname $0)/oref0-bash-common-functions.sh || (echo "ERROR: Failed to run oref0-bash-common-functions.sh. Is oref0 correctly installed?"; exit 1)
 
@@ -87,7 +87,7 @@ fi
         CURL_AUTH='-H api-secret:'${API_SECRET}
     fi
 
-    if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | noquotes | grep -v null); then
+    if snooze=$(curl --compressed -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="carbsReq") | select(.date>'$(date +%s -d "10 minutes ago")')' | jq -s .[0].date | noquotes | grep -v null); then
         #echo $snooze
         #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) monitor/pushover-sent
@@ -107,7 +107,7 @@ elif [[ $ONLYFOR =~ "insulin" ]] && ! cat $FILE | egrep "maxBolus" > /dev/null; 
 elif file_is_recent monitor/pushover-sent $SNOOZE; then
     echo -n "Last pushover sent less than $SNOOZE minutes ago. "
 else
-    curl -s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json | jq .status| grep 1 >/dev/null && touch monitor/pushover-sent && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"carbsReq"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null && echo "carbsReq pushover sent."
+    curl ---compressed s -F token=$TOKEN -F user=$USER $SOUND_OPTION -F priority=$PRIORITY $PRIORITY_OPTIONS -F "message=$(jq -c "{bg, tick, carbsReq, insulinReq, reason}|del(.[] | nulls)" $FILE) - $(hostname)" https://api.pushover.net/1/messages.json | jq .status| grep 1 >/dev/null && touch monitor/pushover-sent && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"carbsReq"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null && echo "carbsReq pushover sent."
     echo
 fi
 
@@ -152,7 +152,7 @@ else
     touch $GLANCES && touch -r $GLANCES -d '-60 mins' $GLANCES
   fi
 
-  if snooze=$(curl -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="glance") | select(.date>'$(date +%s -d "$glanceDelay minutes ago")')' | jq -s .[0].date | noquotes | grep -v null); then
+  if snooze=$(curl --compressed -s ${CURL_AUTH} ${URL} | jq '.[] | select(.snooze=="glance") | select(.date>'$(date +%s -d "$glanceDelay minutes ago")')' | jq -s .[0].date | noquotes | grep -v null); then
         #echo $snooze
         #echo date -Is -d @$snooze; echo
         touch -d $(date -Is -d @$snooze) $GLANCES
@@ -195,7 +195,7 @@ else
     subtext="$carbsMsg${rate}U/h ${duration}m"
 
 #    echo "pushover glance text=${text}  subtext=${subtext}  delta=${delta} title=${title}  battery percent=${battery}"
-    curl -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json | jq .status| grep 1 >/dev/null && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"glance"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null && echo "Glance uploaded and snoozed"
+    curl --compressed -s -F "token=$TOKEN" -F "user=$USER" -F "text=${text}" -F "subtext=${subtext}" -F "count=$bgNow" -F "percent=${battery}" -F "title=${title}"   https://api.pushover.net/1/glances.json | jq .status| grep 1 >/dev/null && echo '{"date":'$(epochtime_now)',"device":"openaps://'$(hostname)'","snooze":"glance"}' > /tmp/snooze.json && ns-upload $NIGHTSCOUT_HOST $API_SECRET devicestatus.json /tmp/snooze.json >/dev/null && echo "Glance uploaded and snoozed"
     touch $GLANCES
   else
     echo -n "Pushover glance last updated less than $glanceDelay minutes ago @ "
@@ -223,7 +223,7 @@ if ! [ -z "$MAKER_KEY" ] && [[ "$MAKER_KEY" != "null" ]] && cat $FILE | egrep "a
 
      echo $values > $ifttt
 
-     curl --request POST \
+     curl --compressed --request POST \
      --header 'Content-Type: application/json' \
      -d @$ifttt  \
      https://maker.ifttt.com/trigger/carbs-required/with/key/${key} && touch monitor/ifttt-sent
