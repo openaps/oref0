@@ -37,22 +37,6 @@ fi
 dpkg-reconfigure tzdata
 
 
-# TODO: remove the `-o Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
-apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
-apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim locate ntpdate ntp
-#check if edison user exists before trying to add it to groups
-
-grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
-
-if  getent passwd edison > /dev/null; then
-  echo "Adding edison to sudo users"
-  adduser edison sudo
-  echo "Adding edison to dialout users"
-  adduser edison dialout
- # else
-  # echo "User edison does not exist. Apparently, you are runnning a non-edison setup."
-fi
-
 # Upgrading from Jessie/Stretch to Buster
 if grep -E 'jessie|stretch' /etc/os-release > /dev/null; then
     # Add the GPG keys
@@ -76,6 +60,22 @@ if grep -E 'jessie|stretch' /etc/os-release > /dev/null; then
     DEBIAN_FRONTEND=noninteractive apt-get clean
 
     echo "System upgraded to Debian Buster."
+fi
+
+# TODO: remove the `-o Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
+apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
+apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim locate ntpdate ntp
+#check if edison user exists before trying to add it to groups
+
+grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
+
+if  getent passwd edison > /dev/null; then
+  echo "Adding edison to sudo users"
+  adduser edison sudo
+  echo "Adding edison to dialout users"
+  adduser edison dialout
+ # else
+  # echo "User edison does not exist. Apparently, you are runnning a non-edison setup."
 fi
 
 
