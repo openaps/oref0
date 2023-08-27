@@ -50,6 +50,9 @@ dpkg-reconfigure tzdata
 
 # Upgrading from Jessie/Stretch to Buster
 if grep -E 'jessie|stretch' /etc/os-release > /dev/null; then
+    # Stop hostapd so it doesn't kill ssh
+    systemctl stop hostapd
+
     # Add the GPG keys
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 112695A0E562B32A 54404762BBB6E853 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517 6ED0E7B82643E131
 
