@@ -36,15 +36,6 @@ fi
 # set timezone
 dpkg-reconfigure tzdata
 
-# Workaround for Jubilinux v0.2.0 (Debian Jessie) migration to LTS
-if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /dev/null; then
-    # Disable valid-until check for archived Debian repos (expired certs)
-    echo "Acquire::Check-Valid-Until false;" | tee -a /etc/apt/apt.conf.d/10-nocheckvalid
-    # Replace apt sources.list with archive.debian.org locations
-    echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
-    echo "Please consider upgrading your rig to Jubilinux 0.3.0 (Debian Stretch)!"
-    echo "Jubilinux 0.2.0, based on Debian Jessie, is no longer receiving security or software updates!"
-fi
 
 # TODO: remove the `-o Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
@@ -61,6 +52,32 @@ if  getent passwd edison > /dev/null; then
  # else
   # echo "User edison does not exist. Apparently, you are runnning a non-edison setup."
 fi
+
+# Upgrading from Jessie/Stretch to Buster
+if grep -E 'jessie|stretch' /etc/os-release > /dev/null; then
+    # Add the GPG keys
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 112695A0E562B32A 54404762BBB6E853 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517 6ED0E7B82643E131
+
+    # Update sources.list for Buster
+    echo 'deb http://deb.debian.org/debian/ buster main' > /etc/apt/sources.list
+    echo '#deb-src http://deb.debian.org/debian/ buster main' >> /etc/apt/sources.list
+    echo 'deb http://security.debian.org/debian-security buster/updates main' >> /etc/apt/sources.list
+    echo '#deb-src http://security.debian.org/debian-security buster/updates main' >> /etc/apt/sources.list
+    echo 'deb http://deb.debian.org/debian/ buster-updates main' >> /etc/apt/sources.list
+    echo '#deb-src http://deb.debian.org/debian/ buster-updates main' >> /etc/apt/sources.list
+
+    # Update and upgrade packages
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" && \
+    DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
+
+    # Clean up
+    DEBIAN_FRONTEND=noninteractive apt-get autoremove -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get clean
+
+    echo "System upgraded to Debian Buster."
+fi
+
 
 sed -i "s/daily/hourly/g" /etc/logrotate.conf
 sed -i "s/#compress/compress/g" /etc/logrotate.conf
