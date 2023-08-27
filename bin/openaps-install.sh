@@ -33,6 +33,17 @@ if test -f /etc/os-release && grep -q Raspbian /etc/os-release && test -f /boot/
     unset passwdPrompt
 fi
 
+grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
+
+if  getent passwd edison > /dev/null; then
+  echo "Adding edison to sudo users"
+  adduser edison sudo
+  echo "Adding edison to dialout users"
+  adduser edison dialout
+ # else
+  # echo "User edison does not exist. Apparently, you are runnning a non-edison setup."
+fi
+
 # set timezone
 dpkg-reconfigure tzdata
 
@@ -66,17 +77,6 @@ fi
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim locate ntpdate ntp
 #check if edison user exists before trying to add it to groups
-
-grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
-
-if  getent passwd edison > /dev/null; then
-  echo "Adding edison to sudo users"
-  adduser edison sudo
-  echo "Adding edison to dialout users"
-  adduser edison dialout
- # else
-  # echo "User edison does not exist. Apparently, you are runnning a non-edison setup."
-fi
 
 
 sed -i "s/daily/hourly/g" /etc/logrotate.conf
