@@ -56,9 +56,8 @@ if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 9 (stretch)"' &> /d
     echo "deb http://archive.debian.org/debian-security stretch/updates main contrib non-free" >> /etc/apt/sources.list
 fi
 
-# TODO: remove the `-o Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
-apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
-apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim locate ntpdate ntp
+apt-get update && apt-get -o Dpkg::Options::="--force-confdef" -y dist-upgrade && apt-get -y autoremove
+apt-get update && apt-get install -y sudo strace tcpdump screen acpid vim locate ntpdate ntp
 #check if edison user exists before trying to add it to groups
 
 grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
