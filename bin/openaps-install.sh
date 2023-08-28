@@ -46,6 +46,16 @@ if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /de
     echo "Jubilinux 0.2.0, based on Debian Jessie, is no longer receiving security or software updates!"
 fi
 
+# Workaround for Debian Stretch migration to LTS
+if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 9 (stretch)"' &> /dev/null; then
+    # Disable valid-until check for archived Debian repos (expired certs)
+    echo "Acquire::Check-Valid-Until false;" | tee -a /etc/apt/apt.conf.d/10-nocheckvalid
+    # Replace apt sources.list with archive.debian.org locations
+    echo "deb http://archive.debian.org/debian/ stretch main contrib non-free" > /etc/apt/sources.list
+    echo "deb http://archive.debian.org/debian/ stretch-proposed-updates main contrib non-free" >> /etc/apt/sources.list
+    echo "deb http://archive.debian.org/debian-security stretch/updates main contrib non-free" >> /etc/apt/sources.list
+fi
+
 # TODO: remove the `-o Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
 apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim locate ntpdate ntp
