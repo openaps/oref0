@@ -1126,10 +1126,11 @@ if prompt_yn "" N; then
     cd $directory || die "Can't cd $directory"
     do_openaps_import $HOME/src/oref0/lib/oref0-setup/supermicrobolus.json
 
-    echo "Adding OpenAPS log shortcuts"
     # Make sure that .bash_profile exists first, then call script to add the log shortcuts
     touch "$HOME/.bash_profile"
-    oref0-log-shortcuts --add-to-profile="$HOME/.bash_profile"
+    
+    echo "Adding OpenAPS log shortcuts"
+    oref0-log-shortcuts
 
     # Append NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile so that openaps commands can be executed from the command line
     #echo Add NIGHTSCOUT_HOST and API_SECRET to $HOME/.bash_profile

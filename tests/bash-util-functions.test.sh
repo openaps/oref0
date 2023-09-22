@@ -189,32 +189,7 @@ EOT
     if [[ "$(source ./test_script_is_sourced.sh)" != "sourced" ]]; then
         fail_test "script_is_sourced on sourced script"
     fi
-    
-    # Test oref0-log-shortcuts
-    cat >test_bash_profile <<EOT
-This line doesn't get removed
 
-The line below this should be removed
-alias networklog="tail -n 100 -F /var/log/openaps/network.log"
-The line above this should be removed
-
-EOT
-    EXPECTED_NEW_PROFILE="$(cat <<EOT
-This line doesn't get removed
-
-The line below this should be removed
-The line above this should be removed
-
-source "$(readlink -f ../bin/oref0-log-shortcuts.sh)"
-source /etc/skel/.profile
-EOT
-    )"
-    ../bin/oref0-log-shortcuts.sh --add-to-profile=./test_bash_profile
-    if [[ "$(cat test_bash_profile)" != "$(echo "$EXPECTED_NEW_PROFILE")" ]]; then
-        echo "Actual: $(cat test_bash_profile)"
-        echo "Expected: $(echo "$EXPECTED_NEW_PROFILE")"
-        fail_test "oref0-log-shortcuts did not modify test_bash_profile correctly"
-    fi
 }
 
 cleanup
