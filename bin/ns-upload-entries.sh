@@ -28,7 +28,7 @@ fi
 
 # requires API_SECRET and NIGHTSCOUT_HOST to be set in calling environment (i.e. in crontab)
 (
-curl -m 30 -s -X POST --data-binary @${ENTRIES} \
+curl --compressed -m 30 -s -X POST --data-binary @${ENTRIES} \
   ${API_SECRET_HEADER}  -H "content-type: application/json" \
   ${REST_ENDPOINT}
 ) && ( test -n "${OUTPUT}" && touch ${OUTPUT} ; logger "Uploaded ${ENTRIES} to ${NIGHTSCOUT_HOST}" ) || logger "Unable to upload to ${NIGHTSCOUT_HOST}"

@@ -285,21 +285,18 @@ function copy_go_binaries () {
 
 function move_mmtune () {
     request_stop_local_binary Go-mmtune
-    if [ -f /usr/local/bin/mmtune ]; then
-      mv /usr/local/bin/mmtune /usr/local/bin/Go-mmtune || die "Couldn't move mmtune to Go-mmtune"
+    if [ -f /root/go/bin/mmtune ]; then
+      ln -s /root/go/bin/mmtune /usr/local/bin/Go-mmtune
     else
-      die "Couldn't move_mmtune() because /usr/local/bin/mmtune exists"
+      echo "Couldn't move_mmtune()"
     fi
 }
 
-function install_or_upgrade_nodejs () {
-    # install/upgrade to latest node 8 if neither node 8 nor node 10+ LTS are installed
-    if ! nodejs --version | grep -e 'v8\.' -e 'v1[02468]\.' >/dev/null; then
-        echo Installing node 8
-        # Use nodesource setup script to add nodesource repository to sources.list.d
-        sudo bash -c "curl -sL https://deb.nodesource.com/setup_8.x | bash -" || die "Couldn't setup node 8"
-        # Install nodejs and npm from nodesource
-        sudo apt-get install -y nodejs=8.* || die "Couldn't install nodejs"
+function check_nodejs_timing () {
+    # Redundant check that node is installed
+    # It is installed as part of openaps-packages.sh
+    if ! node --version | grep -q -e 'v[89]\.' -e 'v1[[:digit:]]\.'; then
+        die "No version of node (>=8,<=19) was found, which is an unexpected error (node installation should have been handled by previous installation steps)"
     fi
 
     # Check that the nodejs you have installed is not broken. In particular, we're
@@ -314,17 +311,39 @@ function install_or_upgrade_nodejs () {
         echo "Your installed nodejs ($(node --version)) is very slow to start (took ${NODE_EXECUTION_TIME}s)"
         echo "This is a known problem with certain versions of Raspberry Pi OS."
 
-        if prompt_yn "Install a new nodejs version using nvm?" Y; then
-            echo "Installing nvm and using it to replace the system-provided nodejs"
-    
-            # Download nvm
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-            # Run nvm, adding its aliases to this shell
-            source ~/.nvm/nvm.sh
-            # Use nvm to install nodejs
-            nvm install 10.24.1
-            # Symlink node into /usr/local/bin, where it will shadow /usr/bin/node
-            ln -s ~/.nvm/versions/node/v10.24.1/bin/node /usr/local/bin/node
+        if prompt_yn "Confirm installation of replacement nodejs/npm versions?" Y; then
+            echo "Attempting to uninstall current nodejs/npm versions (apt-get remove)"
+            sudo apt-get -y remove nodejs npm
+            if [[ -n $NVM_DIR ]]; then
+                echo "Removing nvm ($NVM_DIR)..."
+                echo "(you may wish to optionally remove the nvm-related lines that still exist in ~/.bashrc; this script won't do it for you)"
+                rm -rf "$NVM_DIR"
+            fi
+
+            # Check that there node and npm are no longer available. If they are, warn the user.
+            nodePath=$(command -v node)
+            npmPath=$(command -v npm)
+            if [[ -e "$nodePath" ]]; then
+                echo "Note: A 'node' binary (located at '$nodePath') still exists and may interfere with the new installation of node"
+            fi
+            if [[ -e "$npmPath" ]]; then
+                echo "Note: A 'npm' binary (located at '$npmPath') still exists and may interfere with the new installation of npm"
+            fi
+
+            if [[ ! $(command -v n) ]]; then
+                echo "n already exists on the system, using it to install a new version of node..."
+                sudo n current
+            else
+                echo "Installing n and using it to replace the system-provided nodejs"
+                echo "Installing node via n..."
+                curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o n
+                # Install the latest version of node that is supported on this platform
+                sudo bash n current
+                # Delete the local n binary used to boostrap the install
+                rm n
+                # Install n globally
+                sudo npm install -g n
+            fi
 
             NEW_NODE_EXECUTION_TIME="$(\time --format %e node -e 'true' 2>&1)"
             echo "New nodejs took ${NEW_NODE_EXECUTION_TIME}s to start"
@@ -730,7 +749,7 @@ if prompt_yn "" N; then
     echo Running apt-get autoclean
     sudo apt-get autoclean
 
-    install_or_upgrade_nodejs
+    check_nodejs_timing
 
     # Attempting to remove git to make install --nogit by default for existing users
     echo Removing any existing git in $directory/.git
@@ -796,11 +815,11 @@ if prompt_yn "" N; then
     echo Checking oref0 installation
     cd $HOME/src/oref0
     if git branch | grep "* master"; then
-        npm list -g --depth=0 | egrep oref0@0.6.[0] || (echo Installing latest oref0 package && sudo npm install -g oref0)
+        npm list -g --depth=0 | egrep oref0@0.7.[0] || (echo Installing latest oref0 package && sudo npm install -g oref0)
     elif [[ ${npm_option,,} == "force" ]]; then
         echo Forcing install of latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install
     else
-        npm list -g --depth=0 | egrep oref0@0.6.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
+        npm list -g --depth=0 | egrep oref0@0.7.[1-9] || (echo Installing latest oref0 from $HOME/src/oref0/ && cd $HOME/src/oref0/ && npm run global-install)
     fi
 
     cd $directory || die "Can't cd $directory"
@@ -1191,7 +1210,7 @@ if prompt_yn "" N; then
     # Install Golang
     mkdir -p $HOME/go
     source $HOME/.bash_profile
-    golangversion=1.12.5
+    golangversion=1.19.1
     if go version | grep go${golangversion}.; then
         echo Go already installed
     else
@@ -1200,6 +1219,8 @@ if prompt_yn "" N; then
         echo "Installing Golang..."
         if uname -m | grep armv; then
             cd /tmp && wget -c https://storage.googleapis.com/golang/go${golangversion}.linux-armv6l.tar.gz && tar -C /usr/local -xzvf /tmp/go${golangversion}.linux-armv6l.tar.gz
+        elif uname -m | grep aarch64; then
+            cd /tmp && wget -c https://storage.googleapis.com/golang/go${golangversion}.linux-arm64.tar.gz && tar -C /usr/local -xzvf /tmp/go${golangversion}.linux-arm64.tar.gz
         elif uname -m | grep i686; then
             cd /tmp && wget -c https://dl.google.com/go/go${golangversion}.linux-386.tar.gz && tar -C /usr/local -xzvf /tmp/go${golangversion}.linux-386.tar.gz
         fi
@@ -1213,7 +1234,7 @@ if prompt_yn "" N; then
         sed --in-place '/.*GOPATH*/d' $HOME/.bash_profile
         echo 'GOPATH=$HOME/go' >> $HOME/.bash_profile
         echo 'export GOPATH' >> $HOME/.bash_profile
-        echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bash_profile
+        echo 'PATH=$PATH:/usr/local/go/bin:$GOROOT/bin:$GOPATH/bin:/root/go/bin/' >> $HOME/.bash_profile
         sed --in-place '/.*export PATH*/d' $HOME/.bash_profile
         echo 'export PATH' >> $HOME/.bash_profile
     fi
@@ -1246,8 +1267,14 @@ if prompt_yn "" N; then
         esac
 
         #Build Go binaries
-        go get -u -v -tags "$radiotags" github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
-        ln -sf $HOME/go/src/github.com/ecc1/medtronic/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
+        #go get -u -v -tags "$radiotags" github.com/ecc1/medtronic/... || die "Couldn't go get medtronic"
+        go install -v -tags "$radiotags" github.com/ecc1/medtronic/cmd/...@latest || die "Couldn't go get medtronic"
+        #ln -sf /root/go/pkg/mod/github.com/ecc1/medtronic@v0.0.0-20210712211734-b8431dc5211b/cmd/pumphistory/openaps.jq $directory/ || die "Couldn't softlink openaps.jq"
+        if [[ -f $directory/openaps.jq ]]; then
+            ls -la $directory/openaps.jq
+        else
+            cd $directory && wget https://raw.githubusercontent.com/ecc1/medtronic/master/cmd/pumphistory/openaps.jq || die "Couldn't wget openaps.jq"
+        fi
     else
         #TODO: write validate_ttyport and support non-SPI ports
         die "Unsupported ttyport. Exiting."
