@@ -100,7 +100,6 @@ def check_permissions():
 
     if pg==["*"]: # admin role
         logging.warning("The use of the admin role for token based authentication is not recommended, see https://openaps.readthedocs.io/en/master/docs/walkthrough/phase-1/nightscout-setup.md#switching-from-api_secret-to-token-based-authentication-for-your-rig")
-        missing = []
     else:
         for perm in ["api:treatments:read", "api:treatments:create", "api:treatments:read", "api:treatments:create", "api:devicestatus:read", "api:devicestatus:create"]:
             logging.debug("Checking %s" % perm)
