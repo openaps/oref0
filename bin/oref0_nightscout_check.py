@@ -92,7 +92,11 @@ def startup_checks(args):
 
 def check_permissions():
     global token_dict
-    pg=token_dict['permissionGroups'][0]
+    pg=[]
+
+    for perm_group in token_dict['permissionGroups']:
+        pg.extend(perm_group)
+
     if pg==["*"]: # admin role
         logging.warning("The use of the admin role for token based authentication is not recommended, see https://openaps.readthedocs.io/en/master/docs/walkthrough/phase-1/nightscout-setup.md#switching-from-api_secret-to-token-based-authentication-for-your-rig")
     else:
@@ -100,13 +104,14 @@ def check_permissions():
         for perm in ["api:treatments:read", "api:treatments:create", "api:treatments:read", "api:treatments:create", "api:devicestatus:read", "api:devicestatus:create"]:
             logging.debug("Checking %s" % perm)
             if perm not in pg:
-              missing.append(perm)
+                missing.append(perm)
 
         if len(missing)>0:
-           logging.error("The following permissions are missing in Nightscout: %s" % missing)
-           logging.error("Please follow instructions at https://openaps.readthedocs.io/en/master/docs/walkthrough/phase-1/nightscout-setup.md#switching-from-api_secret-to-token-based-authentication-for-your-rig")
-           sys.exit(1)
-        logging.info("All permissions in Nightscout are ok")
+            logging.error("The following permissions are missing in Nightscout: %s" % missing)
+            logging.error("Please follow instructions at https://openaps.readthedocs.io/en/master/docs/walkthrough/phase-1/nightscout-setup.md#switching-from-api_secret-to-token-based-authentication-for-your-rig")
+            sys.exit(1)
+
+    logging.info("All permissions in Nightscout are ok")
 
 
 if __name__ == '__main__':
