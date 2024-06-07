@@ -12,7 +12,7 @@ apt-get install -y sudo
 sudo apt-get update && sudo apt-get -y upgrade
 ## Debian Bullseye (Raspberry Pi OS 64bit, etc) is python3 by default and does not support python2-pip.
 if ! cat /etc/os-release | grep bullseye >& /dev/null; then
-   sudo apt-get install -y git python python-dev software-properties-common python-numpy python3-pip watchdog strace tcpdump screen acpid vim locate lm-sensors || die "Couldn't install packages"
+   sudo apt-get install -y git python python-dev software-properties-common python-numpy python3-pip libdbus-1-3 libdbus-1-dev libglib2.0-dev watchdog strace tcpdump screen acpid vim locate lm-sensors || die "Couldn't install packages"
 else
    # Bullseye based OS. Get PIP2 from pypa and pip-install python packages rather than using the py3 ones from apt
    # Also, install python-is-python2, to override the distro default of linking python to python3
@@ -53,6 +53,7 @@ fi
 sudo pip install setuptools -U # no need to die if this fails
 sudo pip install -U --default-timeout=1000 git+https://github.com/openaps/openaps.git || die "Couldn't install openaps toolkit"
 sudo pip install -U openaps-contrib || die "Couldn't install openaps-contrib"
+sudo pip install -U dbus-python
 sudo openaps-install-udev-rules || die "Couldn't run openaps-install-udev-rules"
 sudo activate-global-python-argcomplete || die "Couldn't run activate-global-python-argcomplete"
 sudo npm install -g json || die "Couldn't install npm json"
