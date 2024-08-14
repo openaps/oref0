@@ -5,7 +5,7 @@ var os = require("os");
 var fs = require('fs');
 var moment = require("moment");
 
-var requireUtils = require('../lib/require-utils');
+var requireUtils = require('../dist/require-utils');
 var requireWithTimestamp = requireUtils.requireWithTimestamp;
 var safeLoadFile = requireUtils.safeLoadFile;
 
@@ -91,7 +91,7 @@ var ns_status = function ns_status(argv_params) {
         .help('help');
     var params = argv.argv;
     var inputs = params._;
- 
+
     var clock_input = inputs[0];
     var iob_input = inputs[1];
     var suggested_input = inputs[2];

@@ -16,7 +16,7 @@
 
 */
 
-var generate = require('../lib/calc-glucose-stats').updateGlucoseStats;
+var generate = require('../dist/calc-glucose-stats').updateGlucoseStats;
 
 function usage ( ) {
     console.log('usage: ', process.argv.slice(0, 2), '<glucose.json>');

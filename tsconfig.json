@@ -1,0 +1,40 @@
+{
+    "compilerOptions": {
+        "module": "CommonJS",
+        "outDir": "dist",
+        "target": "ES2015",
+        "allowJs": true,
+        "checkJs": false,
+        "composite": false,
+        "declaration": false,
+        "declarationMap": false,
+        "sourceMap": false,
+        "inlineSourceMap": false,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "inlineSources": false,
+        "isolatedModules": true,
+        "moduleResolution": "Node",
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedIndexedAccess": false,
+        "noPropertyAccessFromIndexSignature": true,
+        "preserveWatchOutput": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "exactOptionalPropertyTypes": true,
+        "stripInternal": true,
+        "importHelpers": true,
+        "resolveJsonModule": true
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "include": [
+        "bin/",
+        "lib/",
+        "tests/",
+    ]
+}

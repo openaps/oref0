@@ -16,5 +16,5 @@ verify_installed socat
 verify_installed ntp
 
 if [ ! -e /usr/local/bin/oref0-shared-node-loop ] ; then 
-    ln -s ../lib/node_modules/oref0/bin/oref0-shared-node-loop.sh /usr/local/bin/oref0-shared-node-loop 
+    ln -s ../dist/node_modules/oref0/bin/oref0-shared-node-loop.sh /usr/local/bin/oref0-shared-node-loop 
 fi

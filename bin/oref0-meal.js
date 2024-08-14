@@ -20,14 +20,14 @@
 
 */
 
-var generate = require('../lib/meal');
-var shared_node_utils = require('./oref0-shared-node-utils');
+var generate = require('../dist/meal').default;
+var shared_node_utils = require('../dist/bin/utils');
 var console_error = shared_node_utils.console_error;
 var console_log = shared_node_utils.console_log;
 var process_exit = shared_node_utils.process_exit;
 var initFinalResults = shared_node_utils.initFinalResults;
 
-var oref0_meal = function oref0_meal(final_result, argv_params) {  
+var oref0_meal = function oref0_meal(final_result, argv_params) {
 	var argv = require('yargs')(argv_params)
       .usage('$0 <pumphistory.json> <profile.json> <clock.json> <glucose.json> <basalprofile.json> [<carbhistory.json>]')
       // error and show help if some other args given
@@ -56,7 +56,7 @@ var oref0_meal = function oref0_meal(final_result, argv_params) {
     var profile_data;
     var clock_data;
     var basalprofile_data;
-  
+
     try {
         pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
     } catch (e) {
@@ -97,7 +97,7 @@ var oref0_meal = function oref0_meal(final_result, argv_params) {
         console_error(final_result, "Warning: could not parse "+glucose_input);
     }
 
-    var carb_data = { };
+    var carb_data = [];
     if (typeof carb_input !== 'undefined') {
         try {
             carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));

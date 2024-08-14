@@ -14,7 +14,7 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-var detectSensitivity = require('../lib/determine-basal/autosens');
+var detectSensitivity = require('../dist/determine-basal/autosens').default;
 
 if (!module.parent) {
     var argv = require('yargs')
@@ -38,7 +38,7 @@ if (!module.parent) {
         console.error('Incorrect number of arguments');
         process.exit(1);
     }
-    
+
     var fs = require('fs');
     try {
         var cwd = process.cwd();
@@ -68,7 +68,7 @@ if (!module.parent) {
         }
         var basalprofile = require(cwd + '/' + basalprofile_input);
 
-        var carb_data = { };
+        var carb_data = [];
         if (typeof carb_input !== 'undefined') {
             try {
                 carb_data = JSON.parse(fs.readFileSync(carb_input, 'utf8'));
@@ -79,7 +79,7 @@ if (!module.parent) {
 
         // TODO: add support for a proper --retrospective flag if anything besides oref0-simulator needs this
         var retrospective = false;
-        var temptarget_data = { };
+        var temptarget_data = [];
         if (typeof temptarget_input !== 'undefined') {
             try {
                 if (temptarget_input == "retrospective") {

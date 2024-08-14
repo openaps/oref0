@@ -16,8 +16,8 @@
   THE SOFTWARE.
 */
 
-var basal = require('../lib/profile/basal');
-var detectSensitivity = require('../lib/determine-basal/autosens');
+var basal = require('../dist/profile/basal').default;
+var detectSensitivity = require('../dist/determine-basal/autosens').default;
 
 if (!module.parent) {
     //var detectsensitivity = init(); // I don't see where this variable is used, so deleted it.

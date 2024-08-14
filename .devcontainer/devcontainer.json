@@ -1,0 +1,20 @@
+{
+    "name": "oref0",
+    "dockerComposeFile": [
+        "../docker-compose.yml",
+        "docker-compose.yml"
+    ],
+    "service": "node",
+    "workspaceFolder": "/app",
+    "features": {},
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "Orta.vscode-jest",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "rvest.vs-code-prettier-eslint"
+            ]
+        }
+    }
+}

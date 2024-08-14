@@ -26,12 +26,12 @@ var request = require('request');
 var _ = require('lodash');
 var fs = require('fs');
 var network = require('network');
-var shared_node = require('./oref0-shared-node-utils');
+var shared_node = require('../dist/bin/utils');
 var console_error = shared_node.console_error;
 var console_log = shared_node.console_log;
 var initFinalResults = shared_node.initFinalResults;
 
-var oref0_get_ns_engtires = function oref0_get_ns_engtires(argv_params, print_callback, final_result) {  
+var oref0_get_ns_engtires = function oref0_get_ns_engtires(argv_params, print_callback, final_result) {
   var safe_errors = ['ECONNREFUSED', 'ESOCKETTIMEDOUT', 'ETIMEDOUT'];
   var log_errors = true;
 
@@ -126,7 +126,7 @@ var oref0_get_ns_engtires = function oref0_get_ns_engtires(argv_params, print_ca
       } else {
           print_callback(final_result);
       }
-      
+
     });
 
     return false;
@@ -172,7 +172,7 @@ var oref0_get_ns_engtires = function oref0_get_ns_engtires(argv_params, print_ca
     var tokenAuth = "";
     if (apisecret.startsWith("token=")) {
       tokenAuth = "&" + apisecret;
-    } else { 
+    } else {
       headers = { 'api-secret': apisecret };
     }
 
@@ -233,7 +233,7 @@ function print_callback(final_result) {
 
 if (!module.parent) {
     var final_result = initFinalResults();
-    
+
     // remove the first parameter.
     var command = process.argv;
     command.shift();

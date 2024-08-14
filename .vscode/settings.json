@@ -1,0 +1,19 @@
+{
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "files.autoSave": "onFocusChange",
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "editor.formatOnType": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "eslint.format.enable": true,
+    "prettier.enable": false,
+    "jest.coverageFormatter": "GutterFormatter",
+    "search.exclude": {
+        "dist/": true
+    }
+}

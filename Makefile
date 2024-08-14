@@ -8,7 +8,7 @@ all: test
 report:
 	# report results to community
 test:
-	./node_modules/.bin/mocha -c ${TESTS}
+	npm test
 
 travis:
 	${ISTANBUL} cover ${MOCHA} --include-all-sources true --report lcovonly -- -R tap ${TESTS}

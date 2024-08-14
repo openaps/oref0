@@ -18,7 +18,7 @@
 
 */
 
-var generate = require('../lib/iob');
+var generate = require('../dist/iob').default;
 var fs = require('fs');
 function usage ( ) {
     console.log('usage: ', process.argv.slice(0, 2), '<pumphistory-zoned.json> <profile.json> <clock-zoned.json> [autosens.json] [pumphistory-24h-zoned.json]');
@@ -27,7 +27,7 @@ function usage ( ) {
 
 
 
-var oref0_calculate_iob = function oref0_calculate_iob(argv_params) {  
+var oref0_calculate_iob = function oref0_calculate_iob(argv_params) {
   var argv = require('yargs')(argv_params)
     .usage("$0 <pumphistory-zoned.json> <profile.json> <clock-zoned.json> [<autosens.json>] [<pumphistory-24h-zoned.json>]")
     .strict(true)

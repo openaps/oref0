@@ -1,0 +1,7 @@
+services:
+    node:
+        build:
+            context: ./docker/node
+        working_dir: '/app'
+        volumes:
+            - ./:/app

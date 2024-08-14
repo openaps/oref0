@@ -37,3 +37,29 @@ knowledge. If you're unfamiliar with GitHub and/or coding, [check out these othe
 
 See [OpenAPS.org](http://OpenAPS.org/) for background on the OpenAPS movement and project.
 
+## Using VSCode devcontainer (with docker)
+
+This is the recommanded way in order to develop in a standard development environment without installing dependencies in your host system.
+
+[VSCode](https://code.visualstudio.com) should automatically recognize the [devcontainer](https://code.visualstudio.com/docs/devcontainers/containers) setup, building the image for development environment.
+
+The default container timezone is `Europe/Rome`.  
+This allows to test dates timezone logic.
+
+### Setup
+
+Install dependencies and compile typescript files.
+
+```
+$ npm install && npm run build
+```
+
+## Build with docker
+
+If you just need to build the library, you can use docker compose:
+
+```
+$ docker compose run --rm node sh -c "npm install && npm run build"
+```
+
+The output directory of `lib/*` will be `dist/`.

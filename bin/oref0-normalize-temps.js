@@ -15,14 +15,14 @@
 
 */
 
-var find_insulin = require('../lib/temps');
-var find_bolus = require('../lib/bolus');
-var describe_pump = require('../lib/pump');
+var find_insulin = require('../dist/temps').default;
+var find_bolus = require('../dist/bolus').default;
+var describe_pump = require('../dist/pump').default;
 var fs = require('fs');
 
 
-  
-var oref0_normalize_temps = function oref0_normalize_temps(argv_params) {  
+
+var oref0_normalize_temps = function oref0_normalize_temps(argv_params) {
   var argv = require('yargs')(argv_params)
     .usage('$0 <pumphistory.json>')
     .demand(1)

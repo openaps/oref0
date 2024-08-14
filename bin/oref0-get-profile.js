@@ -18,8 +18,8 @@
 */
 
 var fs = require('fs');
-var generate = require('../lib/profile/');
-var shared_node_utils = require('./oref0-shared-node-utils');
+var generate = require('../dist/profile/').default;
+var shared_node_utils = require('../dist/bin/utils');
 var console_error = shared_node_utils.console_error;
 var console_log = shared_node_utils.console_log;
 var process_exit = shared_node_utils.process_exit;
@@ -32,9 +32,9 @@ function exportDefaults (final_result) {
 
 function updatePreferences (final_result, prefs) {
 	var defaults = generate.displayedDefaults(final_result);
-	
+
 	// check for any displayedDefaults missing from current prefs and add from defaults
-	
+
     for (var pref in defaults) {
       if (defaults.hasOwnProperty(pref) && !prefs.hasOwnProperty(pref)) {
         prefs[pref] = defaults[pref];
@@ -44,7 +44,7 @@ function updatePreferences (final_result, prefs) {
     console_log(final_result, JSON.stringify(prefs, null, '\t'));
 }
 
-var oref0_get_profile = function oref0_get_profile(final_result, argv_params) {  
+var oref0_get_profile = function oref0_get_profile(final_result, argv_params) {
     var argv = require('yargs')(argv_params)
       .usage("$0 <pump_settings.json> <bg_targets.json> <insulin_sensitivities.json> <basal_profile.json> [<preferences.json>] [<carb_ratios.json>] [<temptargets.json>] [--model <model.json>] [--autotune <autotune.json>] [--exportDefaults] [--updatePreferences <preferences.json>]")
       .option('model', {
@@ -122,7 +122,7 @@ var oref0_get_profile = function oref0_get_profile(final_result, argv_params) {
             return;
         }
     }
-    
+
     var isf_data = JSON.parse(fs.readFileSync(cwd + '/' + isf_input));
     if (isf_data.units !== 'mg/dL') {
         if (isf_data.units === 'mmol/L') {
@@ -144,7 +144,7 @@ var oref0_get_profile = function oref0_get_profile(final_result, argv_params) {
         preferences = JSON.parse(fs.readFileSync(cwd + '/' + preferences_input));
     }
 
-    var model_data = { }
+    var model_data = undefined
     if (params.model) {
       try {
         var model_string = fs.readFileSync(model_input, 'utf8');
@@ -171,7 +171,7 @@ var oref0_get_profile = function oref0_get_profile(final_result, argv_params) {
       }
     }
 
-    var carbratio_data = { };
+    var carbratio_data = undefined;
     //console.log("carbratio_input",carbratio_input);
     if (typeof carbratio_input !== 'undefined') {
         try {
@@ -200,11 +200,11 @@ var oref0_get_profile = function oref0_get_profile(final_result, argv_params) {
           });
           console_log(final_result, JSON.stringify(errors));
           process_exit(final_result, 1);
-          
+
           return;
         }
     }
-    var temptargets_data = { };
+    var temptargets_data = [];
     if (typeof temptargets_input !== 'undefined') {
         try {
             temptargets_data = JSON.parse(fs.readFileSync(temptargets_input, 'utf8'));

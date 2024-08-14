@@ -21,7 +21,7 @@ ret=$?
 rc=$((rc|ret))
 #echo $rc
 if ! [ ${ret} -eq 0 ]; then
-    for jsonfile in $(find ${myloc}/.. -name '*.json'); do
+    for jsonfile in $jsonfiles; do
         realfile=$(readlink -f ${jsonfile})
         output=$(jq . ${jsonfile} 2>&1)
         ret=$?

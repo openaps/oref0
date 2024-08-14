@@ -1,0 +1,2 @@
+- check code for `Array.sort()`. We should do it in a non-mutable way
+- activate test-autotune-prep in command-behavior.tests.sh

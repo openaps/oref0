@@ -10,8 +10,8 @@ var oref0_meal = require("./oref0-meal");
 var oref0_get_profile = require("./oref0-get-profile");
 var oref0_get_ns_entries = require("./oref0-get-ns-entries");
 var fs = require('fs');
-var requireUtils = require('../lib/require-utils');
-var shared_node_utils = require('./oref0-shared-node-utils');
+var requireUtils = require('../dist/require-utils');
+var shared_node_utils = require('../dist/bin/utils');
 var console_error = shared_node_utils.console_error;
 var console_log = shared_node_utils.console_log;
 var initFinalResults = shared_node_utils.initFinalResults;
@@ -67,7 +67,7 @@ function serverListen() {
             console.log('read data', data.toString());
             var command = data.toString().split(' ');
 
-            // Split by space except for inside quotes 
+            // Split by space except for inside quotes
             // (https://stackoverflow.com/questions/16261635/javascript-split-string-by-space-but-ignore-space-in-quotes-notice-not-to-spli)
             var command = data.toString().match(/\\?.|^$/g).reduce((p, c) => {
                 if (c === '"') {
@@ -258,7 +258,7 @@ function jsonWrapper(argv_params) {
     if (!params.filtering_code) {
         return [console.error('Error: No filtering_code'), 1];
     }
-    
+
     var data = requireUtils.safeLoadFile(params.input_file);
     if (!data) {
         // file is empty. For this files json returns nothing
@@ -270,7 +270,7 @@ function jsonWrapper(argv_params) {
         console.error('Error: data is not an array.')
         return ["", 1];
     }
-    
+
     var condFuncs = funcWithReturnFromSnippet(params.filtering_code);
     var filtered = [];
     for (var i = 0; i < data.length; i++) {
