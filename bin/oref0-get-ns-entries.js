@@ -180,12 +180,14 @@ var oref0_get_ns_engtires = function oref0_get_ns_engtires(argv_params, print_ca
       headers["If-Modified-Since"] = lastDate.toISOString();
     }
 
+    headers["User-Agent"] = 'openaps';
     var uri = nsurl + '/api/v1/entries/sgv.json?count=' + records + tokenAuth;
     var options = {
       uri: uri
       , json: true
       , timeout: 90000
       , headers: headers
+      , gzip : true
     };
 
     request(options, function(error, res, data) {

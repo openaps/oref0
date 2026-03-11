@@ -1,7 +1,30 @@
 #!/usr/bin/env bash
 set -e
 
-BRANCH=${1:-master}
+configure_archived_debian_repos() {
+    if grep 'PRETTY_NAME="Debian GNU/Linux 9 (stretch)"' /etc/os-release >/dev/null 2>&1; then
+        cat >/etc/apt/apt.conf.d/99stretch-archive <<'EOF'
+Acquire::Check-Valid-Until "false";
+Acquire::AllowInsecureRepositories "true";
+Acquire::AllowDowngradeToInsecureRepositories "true";
+APT::Get::AllowUnauthenticated "true";
+EOF
+        cat >/etc/apt/sources.list <<'EOF'
+deb [trusted=yes] http://archive.debian.org/debian stretch main contrib non-free
+deb [trusted=yes] http://archive.debian.org/debian-security stretch/updates main contrib non-free
+EOF
+        if [ -d /etc/apt/sources.list.d ]; then
+            find /etc/apt/sources.list.d -type f -name '*.list' -exec sed -i \
+                -e '/deb\.debian\.org/d' \
+                -e '/security\.debian\.org/d' \
+                -e '/stretch-updates/d' \
+                -e '/stretch-proposed-updates/d' \
+                {} +
+        fi
+    fi
+}
+
+BRANCH=${1:-dev}
 read -p "Enter your rig's new hostname (this will be your rig's "name" in the future, so make sure to write it down): " -r
 myrighostname=$REPLY
 echo $myrighostname > /etc/hostname
@@ -46,16 +69,13 @@ if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /de
     echo "Jubilinux 0.2.0, based on Debian Jessie, is no longer receiving security or software updates!"
 fi
 
-#Workaround for Jubilinux to install nodejs/npm from nodesource
-if getent passwd edison &> /dev/null; then
-    #Use nodesource setup script to add nodesource repository to sources.list.d
-    curl -sL https://deb.nodesource.com/setup_8.x | bash -
+# Workaround for Debian Stretch migration to LTS
+if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 9 (stretch)"' &> /dev/null; then
+    configure_archived_debian_repos
 fi
 
-#dpkg -P nodejs nodejs-dev
-# TODO: remove the `-o Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
-apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
-apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim python-pip locate ntpdate ntp
+apt-get update && apt-get -o Dpkg::Options::="--force-confdef" -y dist-upgrade && apt-get -y autoremove
+apt-get update && apt-get install -y sudo strace tcpdump screen acpid vim locate ntpdate ntp
 #check if edison user exists before trying to add it to groups
 
 grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
@@ -73,7 +93,7 @@ sed -i "s/daily/hourly/g" /etc/logrotate.conf
 sed -i "s/#compress/compress/g" /etc/logrotate.conf
 
 curl -s https://raw.githubusercontent.com/openaps/oref0/$BRANCH/bin/openaps-packages.sh | bash -
-mkdir -p ~/src; cd ~/src && ls -d oref0 && (cd oref0 && git checkout $BRANCH && git pull) || git clone https://github.com/openaps/oref0.git
+mkdir -p ~/src; cd ~/src && ls -d oref0 && (cd oref0 && git checkout $BRANCH && git pull) || git clone https://github.com/openaps/oref0.git -b $BRANCH
 echo "Press Enter to run oref0-setup with the current release ($BRANCH branch) of oref0,"
 read -p "or press ctrl-c to cancel. " -r
 cd && ~/src/oref0/bin/oref0-setup.sh

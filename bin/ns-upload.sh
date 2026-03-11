@@ -38,13 +38,13 @@ fi
 if [[ "${API_SECRET,,}" =~ "token=" ]]; then
   REST_ENDPOINT="${REST_ENDPOINT}?${API_SECRET}"
     (test "$ENTRIES" != "-" && cat $ENTRIES || cat )| (
-    curl -m 30 -s -X POST --data-binary @- \
+    curl --compressed -m 30 -s -X POST --data-binary @- \
         -H "content-type: application/json" \
         $REST_ENDPOINT
     ) && ( test -n "$OUTPUT" && touch $OUTPUT ; logger "Uploaded $ENTRIES to $NIGHTSCOUT_HOST" ) || ( logger "Unable to upload to $NIGHTSCOUT_HOST"; exit 2 )
 else
     (test "$ENTRIES" != "-" && cat $ENTRIES || cat )| (
-    curl -m 30 -s -X POST --data-binary @- \
+    curl --compressed -m 30 -s -X POST --data-binary @- \
         -H "API-SECRET: $API_SECRET" \
         -H "content-type: application/json" \
         $REST_ENDPOINT
