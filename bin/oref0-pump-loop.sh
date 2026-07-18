@@ -924,16 +924,19 @@ function read_full_pumphistory() {
     echo " failed. "
     return 1
   }
-  UMASK_VALUE=$(umask)
-  printf -v CANDIDATE_MODE '%04o' "$((0666 & ~8#$UMASK_VALUE))"
-  chmod "$CANDIDATE_MODE" "$CANDIDATE" || {
+  chmod 0600 "$CANDIDATE" || {
     echo " failed. "
     rm -f "$CANDIDATE"
     return 1
   }
+  UMASK_VALUE=$(umask)
+  printf -v CANDIDATE_MODE '%04o' "$((0666 & ~8#$UMASK_VALUE))"
 
   if pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee "$CANDIDATE" 2>&3 >&4; then
-    if [ ! -d "$HISTORY_FILE" ] && mv -f "$CANDIDATE" "$HISTORY_FILE" && [ -f "$HISTORY_FILE" ]; then
+    if chmod "$CANDIDATE_MODE" "$CANDIDATE" \
+        && [ ! -d "$HISTORY_FILE" ] \
+        && mv -f "$CANDIDATE" "$HISTORY_FILE" \
+        && [ -f "$HISTORY_FILE" ]; then
       echo -n ed
       echo " through $(jq -r '.[0].timestamp' "$HISTORY_FILE")"
       return 0
