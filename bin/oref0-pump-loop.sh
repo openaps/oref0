@@ -855,7 +855,7 @@ function read_pumphistory() {
       # exit status 2 means we didn't find the topRecordId in the pump, we should request a full history refresh.
       exit_status=$?
       if [ $exit_status -eq 2 ]; then
-        read_full_pumphistory
+        read_full_pumphistory --replace-failed-incremental
       else
         try_fail mv monitor/pumphistory-24h-zoned-old.json monitor/pumphistory-24h-zoned.json
         echo " failed. Last record $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
@@ -910,16 +910,39 @@ function valid_pump_settings() {
 
 function read_full_pumphistory() {
   set -o pipefail
-  rm monitor/pumphistory-24h-zoned.json
-  echo -n "Full history refresh" \
-  && ((( pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee monitor/pumphistory-24h-zoned.json 2>&3 >&4 ) \
-      && echo -n ed) \
-     || (
-        echo " failed. "
-        rm monitor/pumphistory-24h-zoned.json
-        return 1
-        )) \
-  && echo " through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json)"
+  local HISTORY_FILE=monitor/pumphistory-24h-zoned.json
+  local CANDIDATE
+  local UMASK_VALUE
+  local CANDIDATE_MODE
+
+  if [ "${1:-}" = "--replace-failed-incremental" ]; then
+    rm -f "$HISTORY_FILE"
+  fi
+
+  echo -n "Full history refresh"
+  CANDIDATE=$(mktemp monitor/.pumphistory-24h-zoned.json.new.XXXXXX) || {
+    echo " failed. "
+    return 1
+  }
+  UMASK_VALUE=$(umask)
+  printf -v CANDIDATE_MODE '%04o' "$((0666 & ~8#$UMASK_VALUE))"
+  chmod "$CANDIDATE_MODE" "$CANDIDATE" || {
+    echo " failed. "
+    rm -f "$CANDIDATE"
+    return 1
+  }
+
+  if pumphistory -n 27 2>&3 | jq -f openaps.jq 2>&3 | tee "$CANDIDATE" 2>&3 >&4; then
+    if [ ! -d "$HISTORY_FILE" ] && mv -f "$CANDIDATE" "$HISTORY_FILE" && [ -f "$HISTORY_FILE" ]; then
+      echo -n ed
+      echo " through $(jq -r '.[0].timestamp' "$HISTORY_FILE")"
+      return 0
+    fi
+  fi
+
+  echo " failed. "
+  rm -f "$CANDIDATE"
+  return 1
 }
 function read_bg_targets() {
   set -o pipefail
