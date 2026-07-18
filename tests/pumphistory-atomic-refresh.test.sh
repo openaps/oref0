@@ -3,7 +3,8 @@
 set -u
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TEST_ROOT="$REPO_ROOT/pumphistory-atomic-refresh-test"
+TEST_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/pumphistory-atomic-refresh-test.XXXXXX") \
+    || exit 1
 
 fail_test() {
     printf '%s\n' "$*" >&2
@@ -105,6 +106,23 @@ test_restrictive_umask_is_preserved() (
     [ "$(file_mode monitor/pumphistory-24h-zoned.json)" = 600 ] \
         || fail_test "Refresh did not preserve umask-derived mode 0600"
     assert_no_candidate "Restrictive-umask refresh"
+)
+
+test_read_only_umask_is_applied_after_write() (
+    new_case read-only-umask
+    write_old_history
+    umask 0222
+
+    pumphistory() {
+        printf '%s\n' '[{"timestamp":"new","_type":"TempBasal"}]'
+    }
+
+    read_full_pumphistory > refresh.log \
+        || fail_test "Read-only-umask refresh returned failure"
+
+    [ "$(file_mode monitor/pumphistory-24h-zoned.json)" = 444 ] \
+        || fail_test "Refresh did not preserve umask-derived mode 0444"
+    assert_no_candidate "Read-only-umask refresh"
 )
 
 test_upstream_failure_preserves_history() (
@@ -300,6 +318,7 @@ mkdir -p "$TEST_ROOT"
 
 test_success_replaces_history || exit 1
 test_restrictive_umask_is_preserved || exit 1
+test_read_only_umask_is_applied_after_write || exit 1
 test_upstream_failure_preserves_history || exit 1
 test_jq_failure_preserves_history || exit 1
 test_rename_failure_preserves_history || exit 1
