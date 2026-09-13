@@ -1,0 +1,12 @@
+[Unit]
+Description=OpenAPS xDripJS BG sync
+After=network-online.target openaps-locald.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/root/src/oref0
+ExecStart=/usr/local/bin/openaps-locald-sync-xdripjs --config /root/myopenaps/openaps-locald.json
+NoNewPrivileges=true

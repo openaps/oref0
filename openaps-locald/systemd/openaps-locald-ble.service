@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenAPS local BLE transport
+After=bluetooth.service openaps-locald.service
+Requires=bluetooth.service openaps-locald.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/openaps-locald-ble --config /root/myopenaps/openaps-locald.json
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
