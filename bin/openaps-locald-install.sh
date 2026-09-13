@@ -10,6 +10,7 @@ PORT="${3:-8787}"
 AUTH_TOKEN="${4:-}"
 LOGGER_DIR="${OPENAPS_LOGGER_DIR:-/root/src/Logger}"
 ENABLE_AUTHORIZATION_PROVIDERS="${OPENAPS_LOCALD_ENABLE_AUTHORIZATION_PROVIDERS:-false}"
+ALLOW_INSECURE_HTTP_PROOF="${OPENAPS_LOCALD_ALLOW_INSECURE_HTTP_PROOF:-false}"
 
 CONFIG_FILE="${MYOPENAPS_DIR}/openaps-locald.json"
 UNIT_FILE="/etc/systemd/system/openaps-locald.service"
@@ -17,7 +18,7 @@ PACKAGE_DIR="/usr/local/src/oref0/openaps-locald"
 
 mkdir -p "${MYOPENAPS_DIR}"
 
-PYTHONPATH="${ROOT_DIR}/openaps-locald" CONFIG_FILE="${CONFIG_FILE}" MYOPENAPS_DIR="${MYOPENAPS_DIR}" HOST_BIND="${HOST}" PORT_BIND="${PORT}" AUTH_TOKEN="${AUTH_TOKEN}" ENABLE_AUTHORIZATION_PROVIDERS="${ENABLE_AUTHORIZATION_PROVIDERS}" python3 - <<'PY'
+PYTHONPATH="${ROOT_DIR}/openaps-locald" CONFIG_FILE="${CONFIG_FILE}" MYOPENAPS_DIR="${MYOPENAPS_DIR}" HOST_BIND="${HOST}" PORT_BIND="${PORT}" AUTH_TOKEN="${AUTH_TOKEN}" ENABLE_AUTHORIZATION_PROVIDERS="${ENABLE_AUTHORIZATION_PROVIDERS}" ALLOW_INSECURE_HTTP_PROOF="${ALLOW_INSECURE_HTTP_PROOF}" python3 - <<'PY'
 import json, os
 from openaps_locald.install_config import build_install_config
 
@@ -28,6 +29,9 @@ port = int(os.environ["PORT_BIND"])
 auth_token = os.environ.get("AUTH_TOKEN", "")
 enable_authorization_providers = os.environ.get(
     "ENABLE_AUTHORIZATION_PROVIDERS", "false"
+).lower() == "true"
+allow_insecure_http_proof = os.environ.get(
+    "ALLOW_INSECURE_HTTP_PROOF", "false"
 ).lower() == "true"
 config = {}
 if os.path.exists(path):
@@ -40,6 +44,8 @@ config = build_install_config(
     config, myopenaps_dir, host, port, auth_token,
     enable_authorization_providers=enable_authorization_providers,
 )
+if allow_insecure_http_proof:
+    config["allow_legacy_http_proof"] = True
 if auth_token:
     config["auth_token"] = auth_token
 admission_root = config["authorization_admission_dir"]
