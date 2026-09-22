@@ -1,0 +1,11 @@
+[Unit]
+Description=Run OpenAPS xDripJS BG sync every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=openaps-locald-sync-xdripjs.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target
