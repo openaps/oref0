@@ -253,6 +253,25 @@ class AdmissionRuntimeTests(unittest.TestCase):
         self.assertEqual(runtime.admission_availability()["state"], "active")
         self.assertIsNotNone(AdmissionStorage(paths[4]).load())
 
+    def test_authorization_runtime_retries_transient_policy_observation_failure(self):
+        f, client, _evidence, paths = self.fixture()
+        runtime = AuthorizationRuntime({"authorization_mode": "legacy",
+            "authorization_admission_dir": os.path.dirname(paths[0])}, enable_admission=True)
+        runtime.identity, runtime._proof_client = f.rig, client
+        self.addCleanup(runtime.close_proof_owner)
+        f.replies = [(503, b"")]
+        self.assertFalse(runtime._activate_admission_once())
+        self.assertEqual(runtime.admission_availability()["state"], "failed")
+        self.assertTrue(runtime._admission_retryable)
+        self.assertEqual(runtime.enrollment_components(), (None, None))
+        f.replies = [(200, b'{"check":true}')]
+        runtime.client = object()
+        runtime.reconcile_async = lambda: None
+        runtime._periodic_reconciliation_tick()
+        self.assertEqual(runtime.admission_availability()["state"], "active")
+        self.assertFalse(runtime._admission_retryable)
+        self.assertTrue(callable(runtime.enrollment_components()[0]))
+
     def test_authorization_runtime_malformed_anchor_is_sticky_without_network(self):
         f, client, _evidence, paths = self.fixture()
         AdmissionStorage(paths[4]).replace(b"{}", expecting=None)
@@ -264,6 +283,7 @@ class AdmissionRuntimeTests(unittest.TestCase):
         self.assertFalse(runtime._activate_admission_once())
         self.assertEqual(len(f.calls), before)
         self.assertEqual(runtime.admission_availability()["state"], "failed")
+        self.assertFalse(runtime._admission_retryable)
         self.assertIsNone(runtime.recovery_registry())
         self.assertFalse(runtime._activate_admission_once())
         self.assertEqual(len(f.calls), before)
@@ -309,7 +329,7 @@ class AdmissionRuntimeTests(unittest.TestCase):
         fixture.phone, fixture.rig, fixture.directory = f.phone, f.rig, f.directory
         return fixture.certificate(f.phone, 1).encode()
 
-    def test_activation_is_default_off_and_failure_stays_fail_closed(self):
+    def test_activation_is_default_off_and_transient_retry_stays_fail_closed(self):
         class Client:
             observations = 0
             def observe_enrollment_permissions(self):
@@ -333,7 +353,10 @@ class AdmissionRuntimeTests(unittest.TestCase):
         self.assertEqual(enabled.enrollment_components(), (None, None))
         self.assertIsNone(enabled.tls_stream_factory())
         self.assertFalse(enabled._activate_admission_once())
-        self.assertEqual(client.observations, 1)
+        self.assertEqual(client.observations, 2)
+        self.assertEqual(enabled._admission_activation_state, "failed")
+        self.assertEqual(enabled.enrollment_components(), (None, None))
+        self.assertIsNone(enabled.tls_stream_factory())
 
     def test_close_racing_observation_cancels_without_installing(self):
         entered, release = threading.Event(), threading.Event()
