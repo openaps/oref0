@@ -131,3 +131,25 @@ sudo OPENAPS_LOCALD_ENABLE_AUTHORIZATION_PROVIDERS=true \
 
 This option keeps secure-mode enforcement and BLE authentication requirements
 off, so existing legacy HTTP and BLE clients remain compatible.
+
+### BLE service recovery
+
+The local sync service starts its BLE transport, and the BLE transport starts
+its external advertiser. `PartOf` propagates planned restarts down this chain;
+`Wants` brings dependents back after automatic failure recovery or a subsequent
+start. The advertiser remains bound to BLE so it stops when GATT is unavailable.
+This prevents a sync/BLE restart from leaving an enabled advertiser stopped
+until reboot or manual intervention. Existing `advertise_enabled` configuration
+still controls whether the advertiser transmits.
+
+After installing updated units, run `systemctl daemon-reload`. Restarting
+`openaps-locald` should bring all three services back without separately starting
+BLE or advertising. No phone update or re-enrollment is required for this fix.
+
+On a systemd host, the following root-only integration check exercises startup,
+planned restarts, forced process failures, and stop/start recovery using isolated
+sleep processes. It does not run the daemon, access Bluetooth, or read rig data:
+
+```sh
+sudo python3 openaps-locald/tests/integration/check_systemd_recovery.py openaps-locald/systemd
+```

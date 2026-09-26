@@ -3,6 +3,8 @@ Description=OpenAPS local raw BLE advertiser
 After=bluetooth.service openaps-locald-ble.service
 Requires=bluetooth.service
 BindsTo=openaps-locald-ble.service
+# BindsTo stops advertising with BLE; PartOf also propagates planned restarts.
+PartOf=openaps-locald-ble.service
 
 [Service]
 Type=simple
