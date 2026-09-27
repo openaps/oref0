@@ -24,6 +24,7 @@ from urllib.parse import urlsplit
 
 
 STATE = "/run/oref0-ns-outage.json"
+LAST_RESULT = "/run/oref0-ns-outage-last.json"
 LOCK = "/run/lock/oref0-ns-outage.lock"
 CHAIN = "OREF0_NS_TEST"
 MAX_SECONDS = 15 * 60
@@ -116,17 +117,45 @@ def write_state(state):
     os.replace(temporary, STATE)
 
 
-def stop():
+def write_last_result(result):
+    temporary = LAST_RESULT + ".tmp"
+    with open(temporary, "w", encoding="utf-8") as handle:
+        json.dump(result, handle, sort_keys=True)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.chmod(temporary, 0o600)
+    os.replace(temporary, LAST_RESULT)
+
+
+def stop(myopenaps_dir="/root/myopenaps"):
     state = read_state()
     if state is None:
         print("Nightscout outage test: inactive")
         return
+    result = {"schema": "oref0.outage-observation.v1",
+              "mode": state.get("mode", "isolate"),
+              "started_at": state["started_at"], "ended_at": time.time(),
+              "evidence_available": False}
+    try:
+        result.update(loop_evidence(myopenaps_dir, state["started_at"]))
+        result.update(pump_history_evidence(myopenaps_dir, state["started_at"]))
+        result["evidence_available"] = True
+    except Exception:
+        # Evidence collection must never delay restoring the network.
+        pass
     remove_rules(state["families"])
     os.unlink(STATE)
     # A manually stopped test must not be interrupted later by its old timer.
     subprocess.run(["systemctl", "stop", state["unit"] + ".timer"],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    print("Nightscout outage test: stopped; rig network restored")
+    try:
+        write_last_result(result)
+    except OSError:
+        print("Nightscout outage test: evidence summary could not be saved", file=sys.stderr)
+    if state.get("mode") == "observe":
+        print("Nightscout outage observation: completed; no network changes")
+    else:
+        print("Nightscout outage test: stopped; rig network restored")
 
 
 def marker_time(path):
@@ -169,22 +198,24 @@ def pump_history_evidence(myopenaps_dir, started_at):
     if module is None:
         return result
     config = {"myopenaps_dir": myopenaps_dir}
-    summary = module.read_pumphistory_summary(config)
-    if not summary["available"]:
-        return result
-    result["pump_history_available"] = True
-    result["pump_history_updated"] = (marker_time(summary["source_path"]) or 0) > started_at
     threshold_ms = int(started_at * 1000)
-    for record in module.read_pumphistory_records(config, limit=None):
-        if not isinstance(record, dict):
+    # A valid but stale merged file must not hide a newer raw history file.
+    for path in module._candidate_paths(config):
+        records = module._read_json_array(path)
+        if records is None:
             continue
-        timestamp_ms = module._record_timestamp_millis(record)
-        if timestamp_ms is None or timestamp_ms <= threshold_ms:
-            continue
-        if record.get("_type") == "PumpResume":
-            result["pump_resume_new"] = True
-        elif record.get("_type") == "TempBasal":
-            result["temp_basal_new"] = True
+        result["pump_history_available"] = True
+        result["pump_history_updated"] |= (marker_time(path) or 0) > started_at
+        for record in records:
+            if not isinstance(record, dict):
+                continue
+            timestamp_ms = module._record_timestamp_millis(record)
+            if timestamp_ms is None or timestamp_ms <= threshold_ms:
+                continue
+            if record.get("_type") == "PumpResume":
+                result["pump_resume_new"] = True
+            elif record.get("_type") == "TempBasal":
+                result["temp_basal_new"] = True
     return result
 
 
@@ -209,14 +240,16 @@ def start(myopenaps_dir, seconds):
     script = os.path.realpath(__file__)
     unit = "oref0-ns-outage-restore-{}".format(uuid.uuid4().hex[:12])
     started_at = time.time()
-    state = {"started_at": started_at, "expires_at": started_at + seconds, "families": families,
+    state = {"mode": "isolate", "started_at": started_at,
+             "expires_at": started_at + seconds, "families": families,
              "unit": unit, "target_count": len(targets)}
     write_state(state)
     try:
         # Arm restoration before changing the firewall. Reboot also clears
         # transient iptables rules and the /run state.
         run(["systemd-run", "--unit=" + unit, "--on-active=" + str(seconds),
-             "--timer-property=AccuracySec=1s", script, "stop"])
+             "--timer-property=AccuracySec=1s", script, "stop",
+             "--myopenaps-dir", myopenaps_dir])
         for family in families:
             binary = firewall_for(family)
             run([binary, "-N", CHAIN])
@@ -236,6 +269,31 @@ def start(myopenaps_dir, seconds):
         seconds, len(targets)))
 
 
+def observe(myopenaps_dir, seconds):
+    """Record a real connectivity outage without modifying the firewall."""
+    if os.geteuid() != 0:
+        raise ValueError("Root is required")
+    if not 60 <= seconds <= MAX_SECONDS:
+        raise ValueError("Duration must be 60–900 seconds")
+    if read_state() is not None:
+        raise ValueError("An outage test is already active; stop it first")
+    script = os.path.realpath(__file__)
+    unit = "oref0-ns-outage-restore-{}".format(uuid.uuid4().hex[:12])
+    started_at = time.time()
+    write_state({"mode": "observe", "started_at": started_at,
+                 "expires_at": started_at + seconds, "families": [],
+                 "unit": unit, "target_count": 0})
+    try:
+        run(["systemd-run", "--unit=" + unit, "--on-active=" + str(seconds),
+             "--timer-property=AccuracySec=1s", script, "stop",
+             "--myopenaps-dir", myopenaps_dir])
+    except Exception:
+        os.unlink(STATE)
+        raise
+    print("Nightscout outage observation: active for {}s; no firewall changes; "
+          "automatic evidence snapshot armed".format(seconds))
+
+
 def status(myopenaps_dir):
     state = read_state()
     if state is None:
@@ -243,29 +301,49 @@ def status(myopenaps_dir):
         return
     remaining = max(0, int(state["expires_at"] - time.time()))
     if remaining == 0:
-        stop()
+        stop(myopenaps_dir)
         return
+    observing = state.get("mode") == "observe"
     intact = all(chain_exists(firewall_for(family)) and jump_exists(firewall_for(family))
-                 for family in state["families"])
+                 for family in state["families"]) if not observing else None
     evidence = loop_evidence(myopenaps_dir, state["started_at"])
     pump_evidence = pump_history_evidence(myopenaps_dir, state["started_at"])
-    try:
-        host, port = nightscout_endpoint(myopenaps_dir)
-        blocked = not any(can_connect(target, port) for target in targets_for(host, port))
-    except (OSError, ValueError, socket.gaierror):
-        blocked = False
-    print("Nightscout outage test: active; remaining={}s; rules={}; target_count={}; "
+    blocked = None
+    if not observing:
+        try:
+            host, port = nightscout_endpoint(myopenaps_dir)
+            blocked = not any(can_connect(target, port) for target in targets_for(host, port))
+        except (OSError, ValueError, socket.gaierror):
+            blocked = False
+    print("Nightscout outage test: active; mode={}; remaining={}s; rules={}; target_count={}; "
           "endpoint_blocked={}; glucose_new={}; suggested_new={}; loop_success_new={}; "
           "ordered_loop_candidate={}; pump_history_available={}; "
           "pump_history_updated={}; pump_resume_new={}; "
           "temp_basal_new={}".format(
-              remaining, "intact" if intact else "MISSING", state["target_count"],
+              state.get("mode", "isolate"), remaining,
+              "not-applicable" if observing else ("intact" if intact else "MISSING"),
+              state["target_count"],
               blocked,
               evidence["glucose_new"], evidence["suggested_new"],
               evidence["loop_success_new"], evidence["ordered_loop_candidate"],
               pump_evidence["pump_history_available"],
               pump_evidence["pump_history_updated"], pump_evidence["pump_resume_new"],
               pump_evidence["temp_basal_new"]))
+
+
+def last():
+    try:
+        with open(LAST_RESULT, encoding="utf-8") as handle:
+            result = json.load(handle)
+    except OSError:
+        print("Nightscout outage test: no saved observation")
+        return
+    fields = ("mode", "started_at", "ended_at", "evidence_available",
+              "glucose_new", "suggested_new", "loop_success_new",
+              "ordered_loop_candidate", "pump_history_available",
+              "pump_history_updated", "pump_resume_new", "temp_basal_new")
+    print("Nightscout outage last observation: " + "; ".join(
+        "{}={}".format(key, result.get(key, "unknown")) for key in fields))
 
 
 def plan(myopenaps_dir):
@@ -277,11 +355,11 @@ def plan(myopenaps_dir):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("plan", "start", "status", "stop"))
+    parser.add_argument("action", choices=("plan", "start", "observe", "status", "stop", "last"))
     parser.add_argument("--myopenaps-dir", default="/root/myopenaps")
     parser.add_argument("--seconds", type=int, default=600)
     args = parser.parse_args()
-    if args.action in ("start", "stop", "status") and os.geteuid() != 0:
+    if args.action in ("start", "observe", "stop", "status", "last") and os.geteuid() != 0:
         parser.error("root is required")
     try:
         if args.action == "plan":
@@ -292,8 +370,12 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX)
             if args.action == "start":
                 start(args.myopenaps_dir, args.seconds)
+            elif args.action == "observe":
+                observe(args.myopenaps_dir, args.seconds)
             elif args.action == "stop":
-                stop()
+                stop(args.myopenaps_dir)
+            elif args.action == "last":
+                last()
             else:
                 status(args.myopenaps_dir)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:

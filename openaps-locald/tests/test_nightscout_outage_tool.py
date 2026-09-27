@@ -47,6 +47,7 @@ class NightscoutOutageToolTests(unittest.TestCase):
     def test_expiry_cleanup_does_not_require_nightscout_config(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch.object(outage, "STATE", os.path.join(directory, "state.json")), \
+                 patch.object(outage, "LAST_RESULT", os.path.join(directory, "last.json")), \
                  patch.object(outage, "remove_rules") as remove, \
                  patch.object(outage.subprocess, "run"):
                 outage.write_state({"expires_at": 100, "families": [socket.AF_INET],
@@ -56,6 +57,40 @@ class NightscoutOutageToolTests(unittest.TestCase):
                     outage.status(directory)
                 remove.assert_called_once_with([socket.AF_INET])
                 self.assertFalse(os.path.exists(outage.STATE))
+                self.assertTrue(os.path.exists(outage.LAST_RESULT))
+
+    def test_observe_arms_snapshot_without_firewall_or_nightscout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            commands = []
+            with patch.object(outage, "STATE", os.path.join(directory, "state.json")), \
+                 patch.object(outage.os, "geteuid", return_value=0), \
+                 patch.object(outage, "nightscout_endpoint", side_effect=AssertionError), \
+                 patch.object(outage, "run", side_effect=lambda command: commands.append(command)):
+                outage.observe(directory, 120)
+                self.assertEqual(outage.read_state()["mode"], "observe")
+                self.assertEqual(len(commands), 1)
+                self.assertEqual(commands[0][0], "systemd-run")
+                self.assertEqual(commands[0][-2:], ["--myopenaps-dir", directory])
+
+    def test_observation_stop_saves_evidence_after_network_is_unavailable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(outage, "STATE", os.path.join(directory, "state.json")), \
+                 patch.object(outage, "LAST_RESULT", os.path.join(directory, "last.json")), \
+                 patch.object(outage, "remove_rules") as remove, \
+                 patch.object(outage.subprocess, "run"), \
+                 patch.object(outage, "loop_evidence", return_value={"ordered_loop_candidate": True}), \
+                 patch.object(outage, "pump_history_evidence", return_value={"temp_basal_new": True}):
+                outage.write_state({"mode": "observe", "started_at": 100,
+                                    "expires_at": 200, "families": [],
+                                    "unit": "synthetic", "target_count": 0})
+                outage.stop(directory)
+                remove.assert_called_once_with([])
+                self.assertFalse(os.path.exists(outage.STATE))
+                with open(outage.LAST_RESULT, encoding="utf-8") as handle:
+                    saved = json.load(handle)
+                self.assertTrue(saved["evidence_available"])
+                self.assertTrue(saved["ordered_loop_candidate"])
+                self.assertTrue(saved["temp_basal_new"])
 
     def test_loop_evidence_requires_new_markers(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -119,6 +154,23 @@ class NightscoutOutageToolTests(unittest.TestCase):
             evidence = outage.pump_history_evidence(directory, 100)
             self.assertFalse(evidence["pump_history_available"])
             self.assertFalse(evidence["temp_basal_new"])
+
+    def test_new_raw_pump_event_is_not_hidden_by_stale_merged_history(self):
+        with tempfile.TemporaryDirectory() as directory:
+            monitor = os.path.join(directory, "monitor")
+            os.makedirs(monitor)
+            merged = os.path.join(monitor, "pumphistory-merged.json")
+            raw = os.path.join(monitor, "pumphistory.json")
+            with open(merged, "w", encoding="utf-8") as handle:
+                json.dump([{"_type": "PumpSuspend", "dateString": "2026-01-01T00:00:00Z"}], handle)
+            with open(raw, "w", encoding="utf-8") as handle:
+                json.dump([{"_type": "TempBasal", "dateString": "2026-01-01T00:06:00Z"}], handle)
+            started_at = calendar.timegm(datetime.datetime(2026, 1, 1, 0, 3).timetuple())
+            os.utime(merged, (started_at - 60, started_at - 60))
+            os.utime(raw, (started_at + 240, started_at + 240))
+            evidence = outage.pump_history_evidence(directory, started_at)
+            self.assertTrue(evidence["pump_history_updated"])
+            self.assertTrue(evidence["temp_basal_new"])
 
     def test_failed_firewall_install_rolls_back_and_cancels_timer(self):
         with tempfile.TemporaryDirectory() as directory:

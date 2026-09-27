@@ -96,6 +96,21 @@ so a changed DNS answer or alternate proxy may make `endpoint_blocked=false`.
 Stop the test if the rig loses local connectivity, fresh BG, or expected loop
 progress. Do not use this to test loss of local Wi-Fi; that is a separate path.
 
+For a real hotspot-off test, arm observation while the rig is still reachable,
+then turn off its hotspot. `observe` makes no firewall changes. Its systemd
+timer records a privacy-limited summary in `/run` even if the rig remains
+disconnected; reconnect later and read `last`. The summary distinguishes
+missing pump history from a history with no new event, and reports whether a
+PumpResume or TempBasal event was recorded after observation began. It does not
+print insulin amounts or prove that every intended loop action occurred. The
+summary is lost on reboot.
+
+```sh
+ssh root@RIG_EXAMPLE '/usr/local/sbin/oref0-test-nightscout-outage observe --seconds 900'
+# Turn off the rig's hotspot after observation is armed; reconnect after the window.
+ssh root@RIG_EXAMPLE '/usr/local/sbin/oref0-test-nightscout-outage last'
+```
+
 From the oref0 checkout:
 
 ```sh
