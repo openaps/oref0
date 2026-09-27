@@ -86,8 +86,9 @@ ssh root@RIG_EXAMPLE '/usr/local/sbin/oref0-test-nightscout-outage stop'
 
 `status` reports whether the endpoint is blocked and whether a new glucose
 file, new suggested result, and new successful pump-loop marker appeared after
-the test began. Those are separate observations, not a claim that a therapy
-change was enacted. Inspect the rig's normal loop diagnostics and phone's
+the test began. `ordered_loop_candidate=true` requires them in that order;
+it is still not a claim that a therapy change was enacted. Inspect the rig's
+normal loop diagnostics and phone's
 secure-relay/acknowledgement evidence to establish the actual outcome. A
 Nightscout-only CGM source cannot supply new glucose during this test; arrange
 a local CGM collector first. The tool pins the addresses resolved at test start,

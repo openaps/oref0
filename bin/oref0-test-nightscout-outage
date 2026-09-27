@@ -141,7 +141,15 @@ def loop_evidence(myopenaps_dir, started_at):
         "suggested_new": os.path.join(myopenaps_dir, "enact", "suggested.json"),
         "loop_success_new": "/tmp/pump_loop_success",
     }
-    return {key: (marker_time(path) or 0) > started_at for key, path in paths.items()}
+    times = {key: marker_time(path) for key, path in paths.items()}
+    result = {key: (value or 0) > started_at for key, value in times.items()}
+    glucose = times["glucose_new"] or 0
+    suggested = times["suggested_new"] or 0
+    completed = times["loop_success_new"] or 0
+    result["ordered_loop_candidate"] = (
+        glucose > started_at and suggested >= glucose and completed >= suggested
+    )
+    return result
 
 
 def start(myopenaps_dir, seconds):
@@ -210,11 +218,12 @@ def status(myopenaps_dir):
     except (OSError, ValueError, socket.gaierror):
         blocked = False
     print("Nightscout outage test: active; remaining={}s; rules={}; target_count={}; "
-          "endpoint_blocked={}; glucose_new={}; suggested_new={}; loop_success_new={}".format(
+          "endpoint_blocked={}; glucose_new={}; suggested_new={}; loop_success_new={}; "
+          "ordered_loop_candidate={}".format(
               remaining, "intact" if intact else "MISSING", state["target_count"],
               blocked,
               evidence["glucose_new"], evidence["suggested_new"],
-              evidence["loop_success_new"]))
+              evidence["loop_success_new"], evidence["ordered_loop_candidate"]))
 
 
 def plan(myopenaps_dir):

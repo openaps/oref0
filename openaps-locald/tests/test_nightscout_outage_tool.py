@@ -71,6 +71,19 @@ class NightscoutOutageToolTests(unittest.TestCase):
             self.assertFalse(evidence["glucose_new"])
             self.assertTrue(evidence["suggested_new"])
             self.assertTrue(evidence["loop_success_new"])
+            self.assertFalse(evidence["ordered_loop_candidate"])
+
+    def test_ordered_loop_candidate_requires_fresh_glucose_first(self):
+        def times_for(glucose, suggested, completed):
+            return lambda path: (glucose if path.endswith("glucose.json") else
+                                 suggested if path.endswith("suggested.json") else completed)
+
+        with patch.object(outage, "marker_time", side_effect=times_for(101, 102, 103)):
+            evidence = outage.loop_evidence("/unused", 100)
+        self.assertTrue(evidence["ordered_loop_candidate"])
+        with patch.object(outage, "marker_time", side_effect=times_for(101, 100, 103)):
+            evidence = outage.loop_evidence("/unused", 100)
+        self.assertFalse(evidence["ordered_loop_candidate"])
 
     def test_failed_firewall_install_rolls_back_and_cancels_timer(self):
         with tempfile.TemporaryDirectory() as directory:
