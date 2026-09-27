@@ -5,7 +5,9 @@ socket and treats every byte after the HTTP Upgrade as opaque transport data.
 """
 from __future__ import print_function
 
+import base64
 import ipaddress
+import json
 import socket
 import time
 try:
@@ -16,6 +18,7 @@ except ImportError:
 
 MAX_UPGRADE_BYTES = 8192
 MAX_RELAY_READ_BYTES = 16384
+MAX_RECOVERY_PRELUDE_BYTES = 2048
 
 
 class BLETLSRelayError(Exception):
@@ -70,7 +73,8 @@ def _connect_numeric(host, port, family, timeout):
 class BLETLSRelay(object):
     """One terminal HTTP Upgrade followed by opaque bidirectional bytes."""
 
-    def __init__(self, origin, timeout=5.0, connector=None, monotonic=None):
+    def __init__(self, origin, timeout=5.0, connector=None, monotonic=None,
+                 recovery_prelude=None):
         self.host, self.port, self.authority, self.family = parse_loopback_origin(origin)
         if not isinstance(timeout, (int, float)) or timeout <= 0:
             raise BLETLSRelayError("invalid relay timeout")
@@ -80,6 +84,21 @@ class BLETLSRelay(object):
         self.connection = None
         self._incoming = b""
         self.closed = False
+        self.recovery_prelude = None
+        if recovery_prelude is not None:
+            if (not isinstance(recovery_prelude, bytes) or
+                    not 0 < len(recovery_prelude) <= MAX_RECOVERY_PRELUDE_BYTES):
+                raise BLETLSRelayError("invalid recovery prelude")
+            try:
+                fields = json.loads(recovery_prelude.decode("utf-8"))
+            except (UnicodeDecodeError, ValueError):
+                raise BLETLSRelayError("invalid recovery prelude")
+            if (not isinstance(fields, dict) or
+                    fields.get("schema") != "openaps.http-recovery-prelude.v1" or
+                    fields.get("method") != "GET" or
+                    fields.get("path") != "/v3/recovery"):
+                raise BLETLSRelayError("invalid recovery prelude")
+            self.recovery_prelude = recovery_prelude
 
     def open(self):
         if self.closed or self.connection is not None:
@@ -91,10 +110,17 @@ class BLETLSRelay(object):
                 connection.close()
                 raise BLETLSRelayError("relay is unavailable")
             self.connection = connection
-            request = (
-                "GET /v3/tls HTTP/1.1\r\nHost: %s\r\n"
-                "Connection: Upgrade\r\nUpgrade: openaps-tls/1\r\n\r\n"
-            ) % self.authority
+            if self.recovery_prelude is None:
+                request = (
+                    "GET /v3/tls HTTP/1.1\r\nHost: %s\r\n"
+                    "Connection: Upgrade\r\nUpgrade: openaps-tls/1\r\n\r\n"
+                ) % self.authority
+            else:
+                request = (
+                    "GET /v3/recovery HTTP/1.1\r\nHost: %s\r\n"
+                    "Connection: Upgrade\r\nUpgrade: openaps-recovery/1\r\n"
+                    "Content-Length: 0\r\nOpenAPS-Recovery: %s\r\n\r\n"
+                ) % (self.authority, base64.b64encode(self.recovery_prelude).decode("ascii"))
             connection.sendall(request.encode("ascii"))
             self._read_upgrade()
             return self
@@ -139,9 +165,10 @@ class BLETLSRelay(object):
             if not key or key in fields:
                 raise BLETLSRelayError("invalid relay upgrade")
             fields[key] = item
+        expected_upgrade = "openaps-recovery/1" if self.recovery_prelude is not None else "openaps-tls/1"
         if (set(fields) != set(("connection", "upgrade")) or
                 fields.get("connection") != "upgrade" or
-                fields.get("upgrade") != "openaps-tls/1" or
+                fields.get("upgrade") != expected_upgrade or
                 "content-length" in fields or "transfer-encoding" in fields):
             raise BLETLSRelayError("invalid relay upgrade")
         self.connection.settimeout(self.timeout)

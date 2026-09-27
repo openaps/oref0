@@ -12,6 +12,7 @@ from openaps_locald.ble_protocol import (
     encode_tls_relay_frame,
 )
 from openaps_locald.ble_server import BLUEZ_DEVICE_IFACE, RigBridge
+from openaps_locald import ble_server
 from openaps_locald.ble_tls_relay import BLETLSRelayError
 from openaps_locald.secure_mode import SecureModePolicy
 
@@ -26,10 +27,11 @@ class Runtime(object):
 
 
 class FakeRelay(object):
-    def __init__(self, origin, timeout, fail=False):
+    def __init__(self, origin, timeout, fail=False, recovery_prelude=None):
         self.origin = origin
         self.timeout = timeout
         self.fail = fail
+        self.recovery_prelude = recovery_prelude
         self.opened = False
         self.closed = False
         self.sent = []
@@ -66,13 +68,89 @@ class RelayFactory(object):
         self.fail = fail
         self.instances = []
 
-    def __call__(self, origin, timeout):
-        relay = FakeRelay(origin, timeout, self.fail)
+    def __call__(self, origin, timeout, recovery_prelude=None):
+        relay = FakeRelay(origin, timeout, self.fail, recovery_prelude)
         self.instances.append(relay)
         return relay
 
 
 class BLETLSGATTTests(unittest.TestCase):
+    def test_recovery_carrier_is_scoped_to_one_ble_connection(self):
+        factory = RelayFactory()
+        bridge = self.bridge(True, factory)
+        prelude = json.dumps({"schema": "openaps.http-recovery-prelude.v1",
+                              "method": "GET", "path": "/v3/recovery"}).encode("utf-8")
+        message = {"schema": ble_server.BLE_RECOVERY_CARRIER_SCHEMA,
+                   "request_id": "fixture-request",
+                   "prelude": base64.b64encode(prelude).decode("ascii")}
+        raw = json.dumps(message).encode("utf-8")
+        envelope = {"envelope_version": 1, "message_id": "fixture-request",
+                    "seq": 0, "total": 1, "encoding": "base64",
+                    "payload": base64.b64encode(raw).decode("ascii")}
+        ack = bridge.submit_ble_write(json.dumps(envelope).encode("utf-8"), "peer-a")
+        self.assertEqual(ack, {"schema": ble_server.BLE_RECOVERY_READY_SCHEMA,
+                               "request_id": "fixture-request"})
+        with self.assertRaisesRegex(BleProtocolError, "unavailable"):
+            bridge.submit_ble_write(json.dumps(envelope).encode("utf-8"), "peer-c")
+        bridge.submit_tls_relay_frame(encode_tls_relay_frame(b"hello"), "peer-b")
+        self.assertIsNone(factory.instances[0].recovery_prelude)
+        bridge.clear_connection_state("peer-b")
+        bridge.submit_tls_relay_frame(encode_tls_relay_frame(b"hello"), "peer-a")
+        self.assertEqual(factory.instances[1].recovery_prelude, prelude)
+        self.assertIsNone(bridge._recovery_preludes_by_connection.get("peer-a"))
+        bridge.clear_connection_state("peer-a")
+
+    def test_enrollment_carrier_uses_only_rig_loopback_and_returns_bounded_hint(self):
+        bridge = self.bridge(
+            secure_mode_provider=lambda: SecureModePolicy(SecureModePolicy.READY))
+        bridge.config["ble_require_auth"] = True
+        bridge.config["ble_auth_token"] = "fixture-token"
+        calls = []
+        original_urlopen = ble_server.urlopen
+
+        class Response(object):
+            def getcode(self):
+                return 202
+
+            def read(self, maximum):
+                self.maximum = maximum
+                return b""
+
+            def close(self):
+                pass
+
+        def fake_urlopen(request, timeout):
+            calls.append((request.get_full_url(), timeout))
+            return Response()
+
+        ble_server.urlopen = fake_urlopen
+        try:
+            message = {"schema": ble_server.BLE_ENROLLMENT_CARRIER_SCHEMA,
+                       "request_id": "request-placeholder", "route": "challenge",
+                       "payload": {"schema": "challenge-placeholder"}}
+            raw = json.dumps(message).encode("utf-8")
+            envelope = {"envelope_version": 1, "message_id": "request-placeholder",
+                        "seq": 0, "total": 1, "encoding": "base64",
+                        "payload": base64.b64encode(raw).decode("ascii")}
+            result = bridge.submit_ble_write(
+                json.dumps(envelope).encode("utf-8"), "connection-placeholder")
+            self.assertEqual(result["schema"], ble_server.BLE_ENROLLMENT_RESULT_SCHEMA)
+            self.assertEqual(result["status"], 202)
+            self.assertIsNone(result["body"])
+            self.assertEqual(calls, [("http://127.0.0.1:8787/v3/enrollment/challenge", 20)])
+            self.assertEqual(bridge.ack_for_connection("connection-placeholder"), result)
+        finally:
+            ble_server.urlopen = original_urlopen
+
+    def test_enrollment_carrier_rejects_non_loopback_origin(self):
+        bridge = self.bridge()
+        bridge.config["ble_http_base_url"] = "http://192.0.2.1:8787"
+        message = {"schema": ble_server.BLE_ENROLLMENT_CARRIER_SCHEMA,
+                   "request_id": "request-placeholder", "route": "challenge",
+                   "payload": {"schema": "challenge-placeholder"}}
+        with self.assertRaises(BleProtocolError):
+            bridge._submit_enrollment_carrier(message, len(json.dumps(message)), 1)
+
     def wait_for(self, predicate):
         deadline = time.time() + 1
         while time.time() < deadline:
@@ -109,6 +187,36 @@ class BLETLSGATTTests(unittest.TestCase):
                 "event_id": "legacy-placeholder",
             }).encode("utf-8"), "connection-a")
 
+    def test_secure_mode_allows_recovery_ack_read_but_blocks_event_ack(self):
+        bridge = self.bridge(
+            secure_mode_provider=lambda: SecureModePolicy(SecureModePolicy.READY))
+        connection = "connection-placeholder"
+        class AckRead(object):
+            def __init__(self, target):
+                self.bridge = target
+
+        harness = AckRead(bridge)
+        original_encoder = ble_server._bytes_to_dbus_array
+        ble_server._bytes_to_dbus_array = lambda data: bytes(bytearray(data))
+        try:
+            bridge.ack_for_connection = lambda _connection: {
+                "schema": ble_server.BLE_RECOVERY_READY_SCHEMA,
+                "request_id": "request-placeholder",
+            }
+            result = ble_server.AckCharacteristic._read_value(
+                harness, {"device": connection})
+            self.assertEqual(json.loads(result.decode("utf-8"))["schema"],
+                             ble_server.BLE_RECOVERY_READY_SCHEMA)
+            bridge.ack_for_connection = lambda _connection: {
+                "schema": "openaps.local.event_ack.v1",
+                "event_id": "event-placeholder",
+            }
+            with self.assertRaises(BleProtocolError):
+                ble_server.AckCharacteristic._read_value(
+                    harness, {"device": connection})
+        finally:
+            ble_server._bytes_to_dbus_array = original_encoder
+
     def test_secure_mode_provider_failure_fails_closed_and_disabled_preserves_legacy(self):
         unavailable = self.bridge(secure_mode_provider=lambda: None)
         with self.assertRaises(BleProtocolError):
@@ -141,6 +249,35 @@ class BLETLSGATTTests(unittest.TestCase):
             not bridge._tls_relays_by_connection["connection-a"].inbound.empty()))
         self.assertEqual(decode_tls_relay_frame(
             bridge.read_tls_relay_frame("connection-a")), second)
+
+    def test_inbound_tls_burst_backpressures_without_failing_session(self):
+        factory = RelayFactory()
+        bridge = self.bridge(True, factory)
+        bridge.submit_tls_relay_frame(encode_tls_relay_frame(b"hello"), "connection-a")
+        self.assertTrue(self.wait_for(lambda: factory.instances[0].opened))
+        relay = factory.instances[0]
+        relay.incoming.extend([bytes([index]) for index in range(40)])
+        session = bridge._tls_relays_by_connection["connection-a"]
+        self.assertTrue(self.wait_for(lambda: session.inbound.full()))
+        self.assertFalse(session.failed.is_set())
+        received = [decode_tls_relay_frame(bridge.read_tls_relay_frame_wait(
+            "connection-a", timeout=1)) for _index in range(40)]
+        self.assertEqual(received, [bytes([index]) for index in range(40)])
+        self.assertFalse(session.failed.is_set())
+        bridge.clear_connection_state("connection-a")
+        self.assertTrue(session.stopped.wait(1))
+
+    def test_full_inbound_queue_stops_on_ble_disconnect(self):
+        factory = RelayFactory()
+        bridge = self.bridge(True, factory)
+        bridge.submit_tls_relay_frame(encode_tls_relay_frame(b"hello"), "connection-a")
+        self.assertTrue(self.wait_for(lambda: factory.instances[0].opened))
+        factory.instances[0].incoming.extend([b"x"] * 40)
+        session = bridge._tls_relays_by_connection["connection-a"]
+        self.assertTrue(self.wait_for(lambda: session.inbound.full()))
+        bridge.clear_connection_state("connection-a")
+        self.assertTrue(session.stopped.wait(1))
+        self.assertFalse(session.failed.is_set())
 
     def test_frame_bounds_and_shape_fail_before_connect(self):
         factory = RelayFactory()

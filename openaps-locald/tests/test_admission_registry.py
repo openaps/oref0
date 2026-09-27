@@ -76,6 +76,27 @@ class AdmissionRegistryTests(unittest.TestCase):
             _snapshot(old, 0)
         self.assertEqual(_snapshot(replacement, 0)[1], f.phone.public_key_der)
 
+    def test_fresh_admission_replaces_missing_recovery_witness_after_restart(self):
+        f, registry, live, policy = self.fixture()
+        self.complete(f, registry, self.begin(f, registry))
+        scope = registry.scope
+        client = registry.client
+        candidates = registry.storage
+        committed = registry.committed_storage
+        lease = registry.policy
+        registry.invalidate()
+
+        restarted = AdmissionRegistry(client, f.rig, candidates, committed, scope,
+            LiveAdmissionContext(scope), lease,
+            lambda expected: self.assertEqual(expected, scope), clock=lambda: f.time)
+        self.addCleanup(restarted.invalidate)
+        with self.assertRaises(ChallengeError):
+            restarted.recovery_witness(f.phone.credential_id, f.phone.public_key_der)
+
+        self.complete(f, restarted, self.begin(f, restarted))
+        snapshot = restarted.snapshot(f.phone.credential_id, str(uuid.uuid4()))
+        self.assertEqual(_snapshot(snapshot, 0)[1], f.phone.public_key_der)
+
     def test_capacity_and_context_invalidation_deny_every_retained_snapshot(self):
         for mode in ("settings", "policy", "registry"):
             f, registry, live, policy = self.fixture(maximum=1)

@@ -3,8 +3,10 @@ from __future__ import print_function
 import hashlib
 import base64
 import json
+import os
 import sys
 import threading
+import traceback
 import socket
 import time
 import math
@@ -497,8 +499,23 @@ def make_handler(config, authorization_runtime=None, tls_stream_factory=None, en
                 self.end_headers()
                 self.wfile.flush()
                 adapter_owned = True
-                serve_recovery_socket(self.connection, stream)
-            except Exception:
+                outcome = serve_recovery_socket(self.connection, stream)
+                terminal = outcome if outcome in ("eof", "cancelled") else (
+                    "completed" if outcome is not None else "none")
+                engine = getattr(stream, "engine", None)
+                _api_log("authorization recovery terminal outcome=%s ready=%s responded=%s close_required=%s" % (
+                    terminal, bool(getattr(engine, "ready", False)),
+                    bool(getattr(engine, "responded", False)),
+                    bool(getattr(stream, "close_required", False))))
+            except Exception as exc:
+                frames = traceback.extract_tb(sys.exc_info()[2])
+                last = frames[-1] if frames else None
+                site = "%s:%d" % (os.path.basename(last.filename), last.lineno) if last else "unknown"
+                engine = getattr(stream, "engine", None)
+                _api_log("authorization recovery failed category=%s site=%s ready=%s responded=%s close_required=%s" % (
+                    type(exc).__name__, site, bool(getattr(engine, "ready", False)),
+                    bool(getattr(engine, "responded", False)),
+                    bool(getattr(stream, "close_required", False))))
                 if not upgraded:
                     self._send_json(503, {"error": "authorization_unavailable"})
             finally:

@@ -109,7 +109,7 @@ class NightscoutOutageToolTests(unittest.TestCase):
                     outage.start(directory, 120)
                 remove.assert_called_once_with([socket.AF_INET])
                 self.assertFalse(os.path.exists(state_path))
-                self.assertEqual(systemctl.call_args.args[0][:2], ["systemctl", "stop"])
+                self.assertEqual(systemctl.call_args[0][0][:2], ["systemctl", "stop"])
 
 
 if __name__ == "__main__":

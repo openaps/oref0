@@ -1,3 +1,5 @@
+import base64
+import json
 import socket
 import threading
 import unittest
@@ -85,6 +87,41 @@ class BLETLSRelayTests(unittest.TestCase):
             relay.open()
         self.assertTrue(relay.closed)
         self.assertIsNone(relay.connection)
+
+    def test_recovery_uses_only_loopback_with_bounded_signed_prelude(self):
+        prelude = json.dumps({
+            "schema": "openaps.http-recovery-prelude.v1",
+            "method": "GET", "path": "/v3/recovery",
+            "signature": "fixture-signature",
+        }, sort_keys=True).encode("utf-8")
+        fixture = Fixture([
+            b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\n"
+            b"Upgrade: openaps-recovery/1\r\n\r\nrecovery-hello",
+        ])
+        relay = BLETLSRelay(fixture.origin, recovery_prelude=prelude).open()
+        self.addCleanup(relay.close)
+        self.assertEqual(relay.receive(), b"recovery-hello")
+        self.assertEqual(fixture.request,
+            ("GET /v3/recovery HTTP/1.1\r\nHost: 127.0.0.1:%d\r\n"
+             "Connection: Upgrade\r\nUpgrade: openaps-recovery/1\r\n"
+             "Content-Length: 0\r\nOpenAPS-Recovery: %s\r\n\r\n" %
+             (fixture.port, base64.b64encode(prelude).decode("ascii"))).encode("ascii"))
+
+    def test_recovery_rejects_invalid_or_oversized_prelude(self):
+        for prelude in (b"", b"not-json", b"{" + b"x" * 2048,
+                        b'{"schema":"wrong","method":"GET","path":"/v3/recovery"}',
+                        b'{"schema":"openaps.http-recovery-prelude.v1",'
+                        b'"method":"POST","path":"/v3/recovery"}'):
+            with self.assertRaises(BLETLSRelayError):
+                BLETLSRelay("http://127.0.0.1:8787", recovery_prelude=prelude)
+
+    def test_recovery_does_not_accept_normal_tls_upgrade(self):
+        prelude = (b'{"schema":"openaps.http-recovery-prelude.v1",'
+                   b'"method":"GET","path":"/v3/recovery"}')
+        fixture = Fixture([b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\n"
+                           b"Upgrade: openaps-tls/1\r\n\r\n"])
+        with self.assertRaises(BLETLSRelayError):
+            BLETLSRelay(fixture.origin, recovery_prelude=prelude).open()
 
     def test_malformed_and_oversized_upgrade_fail_closed(self):
         malformed = Fixture([b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\n\r\n"])

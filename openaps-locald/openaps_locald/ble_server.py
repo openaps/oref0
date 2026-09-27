@@ -18,8 +18,9 @@ except ImportError:
     from Queue import Empty, Full, Queue
 try:
     from urllib.request import Request, urlopen
+    from urllib.error import HTTPError
 except ImportError:
-    from urllib2 import Request, urlopen
+    from urllib2 import Request, urlopen, HTTPError
 try:
     from urllib.parse import quote, urlparse
 except ImportError:
@@ -78,6 +79,17 @@ from .device_status import read_device_status_payload
 from .models import validate_event
 from .pump_history import read_pumphistory_payload
 from .secure_mode_runtime import SecureModeRouteOwner
+
+try:
+    _TEXT_TYPES = (basestring,)
+except NameError:
+    _TEXT_TYPES = (str,)
+
+
+BLE_ENROLLMENT_CARRIER_SCHEMA = "openaps.ble.enrollment-carrier.v1"
+BLE_ENROLLMENT_RESULT_SCHEMA = "openaps.ble.enrollment-result.v1"
+BLE_RECOVERY_CARRIER_SCHEMA = "openaps.ble.recovery-carrier.v1"
+BLE_RECOVERY_READY_SCHEMA = "openaps.ble.recovery-ready.v1"
 
 
 try:
@@ -677,17 +689,34 @@ class _BLETLSRelaySession(object):
                     if self.socket_receive_count <= 40:
                         _ble_log("authorization TLS relay socket rx count=%d bytes=%d" %
                                  (self.socket_receive_count, len(value)))
-                    try:
-                        self.inbound.put_nowait(value)
-                    except Full:
-                        raise BLETLSRelayError("relay inbound queue full")
+                    # The loopback TLS socket can produce a handshake flight
+                    # faster than ATT reads drain it. Keep the queue bounded,
+                    # but backpressure the socket instead of aborting a valid
+                    # secure session when that transient burst fills it.
+                    stalled_until = time.monotonic() + 30.0
+                    while not self.closed.is_set():
+                        try:
+                            self.inbound.put(value, timeout=0.1)
+                            break
+                        except Full:
+                            if time.monotonic() >= stalled_until:
+                                raise BLETLSRelayError("relay inbound queue stalled")
+                            continue
         except Exception as exc:
             if not self.closed.is_set():
-                # Keep the diagnostic bounded to an exception class.  Relay
-                # errors must never expose endpoint, credential, or clinical
-                # data through the BLE service journal.
-                _ble_log("authorization TLS relay failed category=%s" %
-                         type(exc).__name__)
+                # Fixed categories only: exception text from socket/TLS code
+                # may contain endpoints or other private values.
+                categories = {
+                    "relay inbound queue full": "inbound_queue_full",
+                    "relay inbound queue stalled": "inbound_queue_stalled",
+                    "relay outbound queue full": "outbound_queue_full",
+                    "relay closed": "socket_closed",
+                    "relay read failed": "socket_read_failed",
+                    "relay write failed": "socket_write_failed",
+                    "relay is unavailable": "socket_unavailable",
+                }
+                category = categories.get(str(exc), type(exc).__name__)
+                _ble_log("authorization TLS relay failed category=%s" % category)
                 self.failed.set()
         finally:
             self.relay.close()
@@ -743,6 +772,7 @@ class RigBridge(object):
         self._connection_generation_counter = 0
         self._authorization_ack_handoff = None
         self._tls_relays_by_connection = {}
+        self._recovery_preludes_by_connection = {}
         self._tls_relay_factory = tls_relay_factory or BLETLSRelay
         self._tls_relay_enabled = config.get("ble_authorization_tls_relay_enabled") is True
         # Preserve at least one slot in the HTTP owner's two-entry pending TLS
@@ -875,6 +905,7 @@ class RigBridge(object):
     def clear_connection_state(self, connection_id):
         with self._connection_state_lock:
             relay = self._tls_relays_by_connection.pop(connection_id, None)
+            self._recovery_preludes_by_connection.pop(connection_id, None)
         self._invalidate_connection_generation(connection_id)
         self.assembler.clear_connection(connection_id)
         self.authorization_sessions.invalidate_connection(connection_id)
@@ -896,10 +927,19 @@ class RigBridge(object):
             if len(self._tls_relays_by_connection) >= self._maximum_tls_relays:
                 raise BleProtocolError("BLE TLS relay busy")
             try:
-                transport = self._tls_relay_factory(
-                    self.config.get("ble_http_base_url") or "http://127.0.0.1:8787",
-                    timeout=min(5.0, max(0.1, float(
-                        self.config.get("ble_authorization_tls_relay_timeout") or 5.0))))
+                origin = self.config.get("ble_http_base_url") or "http://127.0.0.1:8787"
+                timeout = min(5.0, max(0.1, float(
+                    self.config.get("ble_authorization_tls_relay_timeout") or 5.0)))
+                pending = self._recovery_preludes_by_connection.pop(connection_id, None)
+                if pending is None:
+                    transport = self._tls_relay_factory(origin, timeout=timeout)
+                else:
+                    prelude, expected_generation, expires_at = pending
+                    if (expected_generation != generation or
+                            self.monotonic() >= expires_at):
+                        raise BLETLSRelayError("recovery carrier expired")
+                    transport = self._tls_relay_factory(
+                        origin, timeout=timeout, recovery_prelude=prelude)
             except Exception:
                 raise BleProtocolError("BLE TLS relay unavailable")
             relay = _BLETLSRelaySession(transport, generation)
@@ -1327,7 +1367,8 @@ class RigBridge(object):
             _ble_log("authorization ack published kind=auth")
         if (
             self.ack_characteristic is not None and
-            schema not in (AUTH_ACK_SCHEMA, SIGNED_ACK_SCHEMA)
+            schema not in (AUTH_ACK_SCHEMA, SIGNED_ACK_SCHEMA,
+                           BLE_ENROLLMENT_RESULT_SCHEMA, BLE_RECOVERY_READY_SCHEMA)
         ):
             try:
                 self.ack_characteristic._set_value(_json_bytes(ack))
@@ -1337,6 +1378,96 @@ class RigBridge(object):
 
     def submit_event(self, event):
         return self.post_event(event)
+
+    def _submit_enrollment_carrier(self, message, raw_size, total_chunks):
+        """Carry only proof hints over BLE to this rig's loopback owner.
+
+        The loopback endpoint performs its normal validation, rate limiting,
+        and Nightscout publication. Neither this ACK nor a loopback response
+        establishes admission; both sides still require proof readback.
+        """
+        if (raw_size > MAX_AUTH_MESSAGE_BYTES or total_chunks > 32 or
+                not isinstance(message, dict) or
+                set(message) != set(("schema", "request_id", "route", "payload")) or
+                message.get("schema") != BLE_ENROLLMENT_CARRIER_SCHEMA or
+                not isinstance(message.get("request_id"), _TEXT_TYPES) or
+                len(message["request_id"]) > 64 or
+                message.get("route") not in ("challenge", "reverse") or
+                not isinstance(message.get("payload"), dict)):
+            raise BleProtocolError("invalid BLE enrollment carrier")
+        base = urlparse(self.config.get("ble_http_base_url") or "http://127.0.0.1:8787")
+        if (base.scheme != "http" or base.hostname not in ("127.0.0.1", "::1") or
+                base.username is not None or base.password is not None or
+                base.path not in ("", "/") or base.query or base.fragment):
+            raise BleProtocolError("enrollment loopback unavailable")
+        route = "/v3/enrollment/" + message["route"]
+        body = _json_bytes(message["payload"])
+        if len(body) > 4096:
+            raise BleProtocolError("invalid BLE enrollment carrier")
+        request = Request(self._http_url(route), data=body,
+                          headers={"Content-Type": "application/json"})
+        try:
+            response = urlopen(request, timeout=20)
+        except HTTPError as error:
+            response = error
+        except Exception:
+            raise BleProtocolError("enrollment loopback unavailable")
+        try:
+            status = response.getcode()
+            result = response.read(1025)
+        finally:
+            response.close()
+        if len(result) > 1024 or status not in (200, 202, 400, 425, 429, 503):
+            raise BleProtocolError("invalid enrollment loopback response")
+        if result:
+            try:
+                result = json.loads(result.decode("utf-8"))
+            except Exception:
+                raise BleProtocolError("invalid enrollment loopback response")
+            if status != 200 or not isinstance(result, dict):
+                raise BleProtocolError("invalid enrollment loopback response")
+        else:
+            result = None
+        return {"schema": BLE_ENROLLMENT_RESULT_SCHEMA,
+                "request_id": message["request_id"],
+                "status": status, "body": result}
+
+    def _submit_recovery_carrier(self, message, raw_size, total_chunks,
+                                 connection_id, expected_generation):
+        """Prime one same-connection recovery relay; the local owner verifies the signature."""
+        if (not self._tls_relay_enabled or not connection_id or
+                raw_size > MAX_AUTH_MESSAGE_BYTES or total_chunks > 32 or
+                not isinstance(message, dict) or
+                set(message) != set(("schema", "request_id", "prelude")) or
+                message.get("schema") != BLE_RECOVERY_CARRIER_SCHEMA or
+                not isinstance(message.get("request_id"), _TEXT_TYPES) or
+                not 0 < len(message["request_id"]) <= 64 or
+                not isinstance(message.get("prelude"), _TEXT_TYPES)):
+            raise BleProtocolError("invalid BLE recovery carrier")
+        try:
+            encoded = message["prelude"].encode("ascii")
+            prelude = base64.b64decode(encoded, validate=True)
+            # The relay checks the mode markers before opening loopback; the
+            # HTTP owner validates the signed prelude and exact peer.
+            BLETLSRelay(self.config.get("ble_http_base_url") or
+                        "http://127.0.0.1:8787", recovery_prelude=prelude)
+        except Exception:
+            raise BleProtocolError("invalid BLE recovery carrier")
+        with self._connection_state_lock:
+            now = self.monotonic()
+            for peer, pending in list(self._recovery_preludes_by_connection.items()):
+                if (now >= pending[2] or
+                        pending[1] != self._connection_generation(peer)):
+                    self._recovery_preludes_by_connection.pop(peer, None)
+            if (self._connection_generation(connection_id) != expected_generation or
+                    connection_id in self._tls_relays_by_connection or
+                    connection_id in self._recovery_preludes_by_connection or
+                    self._recovery_preludes_by_connection):
+                raise BleProtocolError("BLE recovery carrier unavailable")
+            self._recovery_preludes_by_connection[connection_id] = (
+                prelude, expected_generation, now + 30.0)
+        return {"schema": BLE_RECOVERY_READY_SCHEMA,
+                "request_id": message["request_id"]}
 
     def _prepare_ble_write(self, raw_bytes, connection_id=""):
         _ble_log("ble write received bytes=%d" % len(raw_bytes))
@@ -1350,8 +1481,8 @@ class RigBridge(object):
                 "yes" if decoded.get("auth_token") else "no",
             )
         )
-        self._authorize_ble_message(decoded)
         if isinstance(decoded, dict) and decoded.get("schema") == "openaps.local.event.v1":
+            self._authorize_ble_message(decoded)
             _ble_log("ble write direct event %s" % _event_summary(decoded))
             self.require_legacy_ble("event_write")
             return False, lambda: self.submit_event(decoded)
@@ -1374,10 +1505,20 @@ class RigBridge(object):
                     self._record_authentication_failure(connection_id)
                     raise
             return True, submit_auth_hello
+        if event.get("schema") == BLE_ENROLLMENT_CARRIER_SCHEMA:
+            return True, lambda: self._submit_enrollment_carrier(
+                event, len(complete), decoded.get("total"))
+        if event.get("schema") == BLE_RECOVERY_CARRIER_SCHEMA:
+            generation = self._connection_generation(connection_id)
+            return True, lambda: self._submit_recovery_carrier(
+                event, len(complete), decoded.get("total"),
+                connection_id, generation)
         if event.get("schema") == SIGNED_EVENT_SCHEMA:
+            self._authorize_ble_message(decoded)
             self.require_legacy_ble("event_write")
             return True, lambda: self._submit_signed_event(event, connection_id)
         _ble_log("ble write reassembled event %s" % _event_summary(event))
+        self._authorize_ble_message(decoded)
         self.require_legacy_ble("event_write")
         return False, lambda: self.submit_event(event)
 
@@ -1566,7 +1707,9 @@ class AckCharacteristic(Characteristic):
     def _read_value(self, options):
         connection_id = str(options.get("device", "")) if options else ""
         ack = self.bridge.ack_for_connection(connection_id)
-        operation = ("authorization_ack" if ack.get("schema") == AUTH_ACK_SCHEMA
+        operation = ("authorization_ack" if ack.get("schema") in
+                     (AUTH_ACK_SCHEMA, BLE_ENROLLMENT_RESULT_SCHEMA,
+                      BLE_RECOVERY_READY_SCHEMA)
                      else "event_ack")
         self.bridge.require_legacy_ble(operation)
         return _bytes_to_dbus_array(_json_bytes(ack))
