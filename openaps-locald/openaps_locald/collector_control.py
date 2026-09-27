@@ -171,7 +171,30 @@ def _logger_pids():
 
 
 def _process_count():
-    return len(_logger_pids())
+    logger_pids = set(_logger_pids())
+    roots = 0
+    for pid in logger_pids:
+        parent = _read_process_parent(pid)
+        seen = {pid}
+        while parent and parent > 1 and parent not in seen:
+            if parent in logger_pids:
+                break
+            seen.add(parent)
+            parent = _read_process_parent(parent)
+        else:
+            roots += 1
+    return roots
+
+
+def _read_process_parent(pid):
+    try:
+        with open("/proc/%d/status" % pid, "r") as f:
+            for line in f:
+                if line.startswith("PPid:"):
+                    return int(line.split()[1])
+    except (IOError, OSError, ValueError, IndexError):
+        pass
+    return None
 
 
 def _start_logger():

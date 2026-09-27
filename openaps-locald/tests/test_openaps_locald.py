@@ -276,6 +276,16 @@ class LocaldTests(unittest.TestCase):
         stop_mock.assert_not_called()
         install_mock.assert_not_called()
 
+    def test_collector_process_count_treats_logger_child_as_one_collector(self):
+        parents = {101: 1, 102: 103, 103: 101}
+        with mock.patch.object(collector_control, "_logger_pids", return_value=[101, 102]), mock.patch.object(collector_control, "_read_process_parent", side_effect=lambda pid: parents.get(pid)):
+            self.assertEqual(collector_control._process_count(), 1)
+
+    def test_collector_process_count_detects_two_independent_loggers(self):
+        parents = {101: 1, 102: 103, 103: 101, 201: 1, 202: 203, 203: 201}
+        with mock.patch.object(collector_control, "_logger_pids", return_value=[101, 102, 201, 202]), mock.patch.object(collector_control, "_read_process_parent", side_effect=lambda pid: parents.get(pid)):
+            self.assertEqual(collector_control._process_count(), 2)
+
     def test_collector_status_distinguishes_process_from_direct_reading(self):
         config = self._collector_config()
         source = os.path.join(self.tmp, "direct-entry.json")
