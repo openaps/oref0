@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 import time
 
-from .xdripjs import read_latest_xdripjs_record
+from .xdripjs import _coerce_int, read_latest_xdripjs_record
 
 
 COLLECTOR = "xdripjs"
@@ -237,6 +237,13 @@ def _state(config, payload):
         config_error = str(exc)
     process_count = _process_count()
     latest_direct = read_latest_xdripjs_record(config)
+    if latest_direct is not None:
+        record = latest_direct["record"]
+        glucose = _coerce_int(record.get("sgv"))
+        if glucose is None:
+            glucose = _coerce_int(record.get("glucose"))
+        if glucose is None or glucose <= 0:
+            latest_direct = None
     direct_millis = latest_direct["date_millis"] if latest_direct else None
     direct_age = int(time.time() - direct_millis / 1000.0) if direct_millis is not None else None
     if process_count == 0:

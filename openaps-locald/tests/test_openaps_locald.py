@@ -292,6 +292,17 @@ class LocaldTests(unittest.TestCase):
             stale = collector_control.read_collector_status(config)
         self.assertEqual(stale["collector_health"], "stale_direct_reading")
 
+    def test_collector_status_does_not_call_status_only_record_a_bg(self):
+        config = self._collector_config()
+        source = os.path.join(self.tmp, "direct-entry.json")
+        config["xdripjs_source_path"] = source
+        with open(source, "w") as handle:
+            json.dump({"date": 1800000000000, "status": "Scanning"}, handle)
+        with mock.patch.object(collector_control, "_logger_pids", return_value=[7]), mock.patch.object(collector_control, "_read_crontab", return_value=[]):
+            details = collector_control.read_collector_status(config)
+        self.assertEqual(details["collector_health"], "no_direct_reading")
+        self.assertIsNone(details["last_direct_bg_millis"])
+
     def test_collector_stop_only_targets_exact_logger(self):
         config = self._collector_config()
         cron_lines = ["unrelated command /usr/local/bin/Logger-extra", collector_control.MANAGED_CRON_LINE]
