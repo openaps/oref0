@@ -319,6 +319,20 @@ class LocaldTests(unittest.TestCase):
             collector_control.COMMENTED_MANAGED_CRON_LINE,
         ]])
 
+    def test_collector_stop_removes_active_logger_cron_variant(self):
+        config = self._collector_config()
+        variant = (
+            "* * * * * cd /root/src/Logger && ps aux | grep -v grep | "
+            "grep -q '[L]ogger' || /usr/local/bin/Logger >> "
+            "/var/log/openaps/logger-loop.log 2>&1"
+        )
+        lines = ["* * * * * unrelated-job", variant]
+        with mock.patch.object(collector_control, "_read_crontab", side_effect=lambda: list(lines)), mock.patch.object(collector_control, "_install_crontab", side_effect=lambda updated: lines.__setitem__(slice(None), updated)):
+            self.assertTrue(collector_control._cron_enabled(config))
+            collector_control._set_cron_enabled(config, False)
+            self.assertFalse(collector_control._cron_enabled(config))
+        self.assertEqual(lines, ["* * * * * unrelated-job", collector_control.COMMENTED_MANAGED_CRON_LINE])
+
     def test_crontab_install_uses_fixed_command_and_temp_input(self):
         captured = {}
 

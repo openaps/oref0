@@ -3,6 +3,7 @@ from __future__ import print_function
 import errno
 import json
 import os
+import re
 import shutil
 import signal
 import stat
@@ -22,6 +23,10 @@ LEGACY_MANAGED_CRON_LINE = "* * * * * cd /root/src/Logger && ps aux | grep -v gr
 MANAGED_CRON_LINE = "* * * * * cd /root/src/Logger && ps -eo state=,args= | grep -v grep | grep -v \"^[[:space:]]*Z\" | grep -q Logger || /usr/local/bin/Logger >> /var/log/openaps/logger-loop.log 2>&1"
 COMMENTED_MANAGED_CRON_LINE = "#" + MANAGED_CRON_LINE
 MANAGED_CRON_LINES = (LEGACY_MANAGED_CRON_LINE, MANAGED_CRON_LINE)
+LOGGER_CRON_RE = re.compile(
+    r"^\* \* \* \* \* cd /root/src/Logger && ps .+ \|\| "
+    r"/usr/local/bin/Logger >> /var/log/openaps/logger-loop\.log 2>&1$"
+)
 STOP_TERM_SECONDS = 5.0
 STOP_KILL_SECONDS = 2.0
 
@@ -76,8 +81,18 @@ def _read_crontab():
     return content.splitlines()
 
 
+def _is_managed_logger_cron_line(line):
+    stripped = line.strip()
+    if stripped.startswith("#"):
+        stripped = stripped[1:].strip()
+    return stripped in MANAGED_CRON_LINES or bool(LOGGER_CRON_RE.match(stripped))
+
+
 def _cron_enabled(config):
-    return any(line in MANAGED_CRON_LINES for line in _read_crontab())
+    return any(
+        not line.lstrip().startswith("#") and _is_managed_logger_cron_line(line)
+        for line in _read_crontab()
+    )
 
 
 def _install_crontab(lines):
@@ -98,9 +113,7 @@ def _install_crontab(lines):
 
 def _set_cron_enabled(config, enabled):
     lines = _read_crontab()
-    managed_lines = set(MANAGED_CRON_LINES)
-    managed_lines.update("#" + line for line in MANAGED_CRON_LINES)
-    updated = [line for line in lines if line not in managed_lines]
+    updated = [line for line in lines if not _is_managed_logger_cron_line(line)]
     updated.append(MANAGED_CRON_LINE if enabled else COMMENTED_MANAGED_CRON_LINE)
     if updated == lines:
         return False
