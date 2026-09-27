@@ -9,6 +9,7 @@ No Nightscout URL, address, or credential is printed or persisted.
 import argparse
 import configparser
 import fcntl
+import importlib.machinery
 import ipaddress
 import json
 import os
@@ -152,6 +153,40 @@ def loop_evidence(myopenaps_dir, started_at):
     return result
 
 
+def pump_history_evidence(myopenaps_dir, started_at):
+    """Report pump-confirmed event types, never doses or raw history."""
+    result = {"pump_history_updated": False, "pump_resume_new": False,
+              "temp_basal_new": False}
+    roots = (os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+             "/usr/local/src/oref0", "/root/src/oref0")
+    module = None
+    for root in roots:
+        path = os.path.join(root, "openaps-locald", "openaps_locald", "pump_history.py")
+        if os.path.isfile(path):
+            module = importlib.machinery.SourceFileLoader(
+                "openaps_outage_pump_history", path).load_module()
+            break
+    if module is None:
+        return result
+    config = {"myopenaps_dir": myopenaps_dir}
+    summary = module.read_pumphistory_summary(config)
+    if not summary["available"]:
+        return result
+    result["pump_history_updated"] = (marker_time(summary["source_path"]) or 0) > started_at
+    threshold_ms = int(started_at * 1000)
+    for record in module.read_pumphistory_records(config, limit=None):
+        if not isinstance(record, dict):
+            continue
+        timestamp_ms = module._record_timestamp_millis(record)
+        if timestamp_ms is None or timestamp_ms <= threshold_ms:
+            continue
+        if record.get("_type") == "PumpResume":
+            result["pump_resume_new"] = True
+        elif record.get("_type") == "TempBasal":
+            result["temp_basal_new"] = True
+    return result
+
+
 def start(myopenaps_dir, seconds):
     if os.geteuid() != 0:
         raise ValueError("Root is required")
@@ -212,6 +247,7 @@ def status(myopenaps_dir):
     intact = all(chain_exists(firewall_for(family)) and jump_exists(firewall_for(family))
                  for family in state["families"])
     evidence = loop_evidence(myopenaps_dir, state["started_at"])
+    pump_evidence = pump_history_evidence(myopenaps_dir, state["started_at"])
     try:
         host, port = nightscout_endpoint(myopenaps_dir)
         blocked = not any(can_connect(target, port) for target in targets_for(host, port))
@@ -219,11 +255,14 @@ def status(myopenaps_dir):
         blocked = False
     print("Nightscout outage test: active; remaining={}s; rules={}; target_count={}; "
           "endpoint_blocked={}; glucose_new={}; suggested_new={}; loop_success_new={}; "
-          "ordered_loop_candidate={}".format(
+          "ordered_loop_candidate={}; pump_history_updated={}; pump_resume_new={}; "
+          "temp_basal_new={}".format(
               remaining, "intact" if intact else "MISSING", state["target_count"],
               blocked,
               evidence["glucose_new"], evidence["suggested_new"],
-              evidence["loop_success_new"], evidence["ordered_loop_candidate"]))
+              evidence["loop_success_new"], evidence["ordered_loop_candidate"],
+              pump_evidence["pump_history_updated"], pump_evidence["pump_resume_new"],
+              pump_evidence["temp_basal_new"]))
 
 
 def plan(myopenaps_dir):

@@ -1,4 +1,7 @@
 import importlib.machinery
+import calendar
+import datetime
+import json
 import os
 import socket
 import tempfile
@@ -84,6 +87,30 @@ class NightscoutOutageToolTests(unittest.TestCase):
         with patch.object(outage, "marker_time", side_effect=times_for(101, 100, 103)):
             evidence = outage.loop_evidence("/unused", 100)
         self.assertFalse(evidence["ordered_loop_candidate"])
+
+    def test_pump_history_evidence_uses_event_times_without_therapy_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            monitor = os.path.join(directory, "monitor")
+            os.makedirs(monitor)
+            history = os.path.join(monitor, "pumphistory-merged.json")
+            with open(history, "w", encoding="utf-8") as handle:
+                json.dump([
+                    {"_type": "PumpSuspend", "dateString": "2026-01-01T00:00:00Z"},
+                    {"_type": "PumpResume", "dateString": "2026-01-01T00:05:00Z"},
+                    {"_type": "TempBasal", "dateString": "2026-01-01T00:06:00Z"},
+                ], handle)
+            started_at = calendar.timegm(datetime.datetime(2026, 1, 1, 0, 3).timetuple())
+            os.utime(history, (started_at + 240, started_at + 240))
+            evidence = outage.pump_history_evidence(directory, started_at)
+            self.assertEqual(evidence, {
+                "pump_history_updated": True,
+                "pump_resume_new": True,
+                "temp_basal_new": True,
+            })
+            evidence = outage.pump_history_evidence(directory, started_at + 600)
+            self.assertFalse(evidence["pump_history_updated"])
+            self.assertFalse(evidence["pump_resume_new"])
+            self.assertFalse(evidence["temp_basal_new"])
 
     def test_failed_firewall_install_rolls_back_and_cancels_timer(self):
         with tempfile.TemporaryDirectory() as directory:
