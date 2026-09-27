@@ -55,10 +55,15 @@ ensure_bluetooth_hci_socket() {
     log "Logger node-pre-gyp not found at ${node_pre_gyp}"
     return 1
   fi
+  if [ ! -d "${LOGGER_DIR}/node_modules/nan" ]; then
+    log "Logger nan build dependency not found at ${LOGGER_DIR}/node_modules/nan"
+    return 1
+  fi
 
   local tmpdir pkg_src
   tmpdir="$(mktemp -d)"
-  trap 'rm -rf "${tmpdir}"' EXIT
+  # Expand the path now: a local variable is no longer available to EXIT.
+  trap "rm -rf -- $(printf '%q' "${tmpdir}")" EXIT
 
   log "Installing @abandonware/bluetooth-hci-socket ${BLUETOOTH_HCI_SOCKET_VERSION} into ${LOGGER_DIR}"
   curl -fsSL "${BLUETOOTH_HCI_SOCKET_TARBALL_URL}" -o "${tmpdir}/bluetooth-hci-socket.tgz"
@@ -69,10 +74,17 @@ ensure_bluetooth_hci_socket() {
     return 1
   fi
 
+  # node-gyp evaluates binding.gyp from the unpacked package. Its require('nan')
+  # cannot resolve Logger's sibling node_modules from a temporary directory.
+  mkdir -p "${pkg_src}/node_modules"
+  ln -s "${LOGGER_DIR}/node_modules/nan" "${pkg_src}/node_modules/nan"
+
   (
     cd "${pkg_src}"
     "${node_pre_gyp}" install --build-from-source
   )
+
+  rm "${pkg_src}/node_modules/nan"
 
   rm -rf "${package_dir}"
   mkdir -p "$(dirname "${package_dir}")"
