@@ -103,13 +103,21 @@ class NightscoutOutageToolTests(unittest.TestCase):
             os.utime(history, (started_at + 240, started_at + 240))
             evidence = outage.pump_history_evidence(directory, started_at)
             self.assertEqual(evidence, {
+                "pump_history_available": True,
                 "pump_history_updated": True,
                 "pump_resume_new": True,
                 "temp_basal_new": True,
             })
             evidence = outage.pump_history_evidence(directory, started_at + 600)
+            self.assertTrue(evidence["pump_history_available"])
             self.assertFalse(evidence["pump_history_updated"])
             self.assertFalse(evidence["pump_resume_new"])
+            self.assertFalse(evidence["temp_basal_new"])
+
+    def test_missing_pump_history_is_reported_as_unavailable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = outage.pump_history_evidence(directory, 100)
+            self.assertFalse(evidence["pump_history_available"])
             self.assertFalse(evidence["temp_basal_new"])
 
     def test_failed_firewall_install_rolls_back_and_cancels_timer(self):

@@ -155,8 +155,8 @@ def loop_evidence(myopenaps_dir, started_at):
 
 def pump_history_evidence(myopenaps_dir, started_at):
     """Report pump-confirmed event types, never doses or raw history."""
-    result = {"pump_history_updated": False, "pump_resume_new": False,
-              "temp_basal_new": False}
+    result = {"pump_history_available": False, "pump_history_updated": False,
+              "pump_resume_new": False, "temp_basal_new": False}
     roots = (os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
              "/usr/local/src/oref0", "/root/src/oref0")
     module = None
@@ -172,6 +172,7 @@ def pump_history_evidence(myopenaps_dir, started_at):
     summary = module.read_pumphistory_summary(config)
     if not summary["available"]:
         return result
+    result["pump_history_available"] = True
     result["pump_history_updated"] = (marker_time(summary["source_path"]) or 0) > started_at
     threshold_ms = int(started_at * 1000)
     for record in module.read_pumphistory_records(config, limit=None):
@@ -255,12 +256,14 @@ def status(myopenaps_dir):
         blocked = False
     print("Nightscout outage test: active; remaining={}s; rules={}; target_count={}; "
           "endpoint_blocked={}; glucose_new={}; suggested_new={}; loop_success_new={}; "
-          "ordered_loop_candidate={}; pump_history_updated={}; pump_resume_new={}; "
+          "ordered_loop_candidate={}; pump_history_available={}; "
+          "pump_history_updated={}; pump_resume_new={}; "
           "temp_basal_new={}".format(
               remaining, "intact" if intact else "MISSING", state["target_count"],
               blocked,
               evidence["glucose_new"], evidence["suggested_new"],
               evidence["loop_success_new"], evidence["ordered_loop_candidate"],
+              pump_evidence["pump_history_available"],
               pump_evidence["pump_history_updated"], pump_evidence["pump_resume_new"],
               pump_evidence["temp_basal_new"]))
 
