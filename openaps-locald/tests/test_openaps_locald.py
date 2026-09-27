@@ -344,6 +344,16 @@ class LocaldTests(unittest.TestCase):
             self.assertFalse(collector_control._cron_enabled(config))
         self.assertEqual(lines, ["* * * * * unrelated-job", collector_control.COMMENTED_MANAGED_CRON_LINE])
 
+    def test_collector_stop_does_not_replace_saved_transmitter(self):
+        config = self._collector_config()
+        before = self._read_bytes(config["xdripjs_config_path"])
+        stop = collector_event(desired_state="stopped")
+        stop["payload"]["transmitter_id"] = "OLD999"
+        with mock.patch.object(collector_control, "_logger_pids", return_value=[]), mock.patch.object(collector_control, "_read_crontab", return_value=[]), mock.patch.object(collector_control, "_install_crontab"):
+            details = materialize_event_result(stop, config)
+        self.assertEqual(details["actual_state"], "stopped")
+        self.assertEqual(self._read_bytes(config["xdripjs_config_path"]), before)
+
     def test_crontab_install_uses_fixed_command_and_temp_input(self):
         captured = {}
 

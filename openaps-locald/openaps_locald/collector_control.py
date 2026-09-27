@@ -297,8 +297,8 @@ def apply_collector_control(config, payload):
     if desired_state == "status":
         details = read_collector_status(config, payload)
     else:
-        changed = _configure(config, payload)
         if desired_state == "running":
+            changed = _configure(config, payload)
             _set_cron_enabled(config, False)
             process_count = _process_count()
             if changed or process_count > 1:
