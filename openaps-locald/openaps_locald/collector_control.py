@@ -88,6 +88,14 @@ def _is_managed_logger_cron_line(line):
     return stripped in MANAGED_CRON_LINES or bool(LOGGER_CRON_RE.match(stripped))
 
 
+def _is_conflicting_config_restore_cron_line(line):
+    return (
+        not line.lstrip().startswith("#")
+        and "No Response" in line
+        and "cp /root/myopenaps/xdripjs-2.json /root/myopenaps/xdripjs.json" in line
+    )
+
+
 def _cron_enabled(config):
     return any(
         not line.lstrip().startswith("#") and _is_managed_logger_cron_line(line)
@@ -113,7 +121,11 @@ def _install_crontab(lines):
 
 def _set_cron_enabled(config, enabled):
     lines = _read_crontab()
-    updated = [line for line in lines if not _is_managed_logger_cron_line(line)]
+    updated = [
+        line for line in lines
+        if not _is_managed_logger_cron_line(line)
+        and not (enabled and _is_conflicting_config_restore_cron_line(line))
+    ]
     updated.append(MANAGED_CRON_LINE if enabled else COMMENTED_MANAGED_CRON_LINE)
     if updated == lines:
         return False

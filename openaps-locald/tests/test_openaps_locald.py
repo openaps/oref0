@@ -286,6 +286,17 @@ class LocaldTests(unittest.TestCase):
         with mock.patch.object(collector_control, "_logger_pids", return_value=[101, 102, 201, 202]), mock.patch.object(collector_control, "_read_process_parent", side_effect=lambda pid: parents.get(pid)):
             self.assertEqual(collector_control._process_count(), 2)
 
+    def test_collector_start_removes_only_conflicting_config_restore_cron(self):
+        config = self._collector_config()
+        restore = ("2-59/3 * * * * tail -50 /var/log/openaps/logger-loop.log "
+                   "| grep 'No Response' && cp /root/myopenaps/xdripjs-2.json "
+                   "/root/myopenaps/xdripjs.json")
+        unrelated = "5 * * * * /usr/local/bin/unrelated-task"
+        lines = [unrelated, restore]
+        with mock.patch.object(collector_control, "_read_crontab", side_effect=lambda: list(lines)), mock.patch.object(collector_control, "_install_crontab", side_effect=lambda updated: lines.__setitem__(slice(None), updated)):
+            collector_control._set_cron_enabled(config, True)
+        self.assertEqual(lines, [unrelated, collector_control.MANAGED_CRON_LINE])
+
     def test_collector_status_distinguishes_process_from_direct_reading(self):
         config = self._collector_config()
         source = os.path.join(self.tmp, "direct-entry.json")
