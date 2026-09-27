@@ -268,11 +268,29 @@ class LocaldTests(unittest.TestCase):
         self.assertEqual(details["desired_state"], "status")
         self.assertEqual(details["actual_state"], "running")
         self.assertEqual(details["cron_enabled"], True)
+        self.assertEqual(details["collector_health"], "no_direct_reading")
+        self.assertIsNone(details["last_direct_bg_millis"])
         self.assertEqual(self._read_bytes(config["xdripjs_config_path"]), before_config)
         self.assertEqual(cron_lines, ["# unrelated", collector_control.MANAGED_CRON_LINE])
         start_mock.assert_not_called()
         stop_mock.assert_not_called()
         install_mock.assert_not_called()
+
+    def test_collector_status_distinguishes_process_from_direct_reading(self):
+        config = self._collector_config()
+        source = os.path.join(self.tmp, "direct-entry.json")
+        config["xdripjs_source_path"] = source
+        now_millis = 1800000000000
+        with open(source, "w") as handle:
+            json.dump({"date": now_millis, "sgv": 110}, handle)
+        with mock.patch.object(collector_control, "_logger_pids", return_value=[7]), mock.patch.object(collector_control, "_read_crontab", return_value=[]), mock.patch.object(collector_control.time, "time", return_value=now_millis / 1000.0 + 120):
+            fresh = collector_control.read_collector_status(config)
+        self.assertEqual(fresh["collector_health"], "fresh_direct_reading")
+        self.assertEqual(fresh["last_direct_bg_millis"], now_millis)
+        self.assertEqual(fresh["direct_bg_age_seconds"], 120)
+        with mock.patch.object(collector_control, "_logger_pids", return_value=[7]), mock.patch.object(collector_control, "_read_crontab", return_value=[]), mock.patch.object(collector_control.time, "time", return_value=now_millis / 1000.0 + 1200):
+            stale = collector_control.read_collector_status(config)
+        self.assertEqual(stale["collector_health"], "stale_direct_reading")
 
     def test_collector_stop_only_targets_exact_logger(self):
         config = self._collector_config()

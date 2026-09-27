@@ -10,6 +10,8 @@ import subprocess
 import tempfile
 import time
 
+from .xdripjs import read_latest_xdripjs_record
+
 
 COLLECTOR = "xdripjs"
 LOGGER_PATH = "/usr/local/bin/Logger"
@@ -221,6 +223,19 @@ def _state(config, payload):
         alternate = None
         config_error = str(exc)
     process_count = _process_count()
+    latest_direct = read_latest_xdripjs_record(config)
+    direct_millis = latest_direct["date_millis"] if latest_direct else None
+    direct_age = int(time.time() - direct_millis / 1000.0) if direct_millis is not None else None
+    if process_count == 0:
+        health = "stopped"
+    elif direct_age is None:
+        health = "no_direct_reading"
+    elif direct_age < -300:
+        health = "reading_clock_skew"
+    elif direct_age > 900:
+        health = "stale_direct_reading"
+    else:
+        health = "fresh_direct_reading"
     result = {
         "desired_state": payload.get("desired_state"),
         "actual_state": "running" if process_count > 0 else "stopped",
@@ -229,6 +244,9 @@ def _state(config, payload):
         "election_id": payload.get("election_id"),
         "cron_enabled": _cron_enabled(config),
         "process_count": process_count,
+        "collector_health": health,
+        "last_direct_bg_millis": direct_millis,
+        "direct_bg_age_seconds": direct_age,
     }
     if config_error:
         result["config_error"] = config_error
