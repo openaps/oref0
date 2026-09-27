@@ -98,7 +98,7 @@ progress. Do not use this to test loss of local Wi-Fi; that is a separate path.
 From the oref0 checkout:
 
 ```sh
-python3 -m unittest discover -s openaps-locald/tests -p 'test*.py'
+PYTHONPATH=openaps-locald python3 -m unittest discover -s openaps-locald/tests -p 'test*.py'
 ```
 
 For a disposable Nightscout compatibility environment with placeholder
