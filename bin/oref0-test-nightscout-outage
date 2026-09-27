@@ -1,0 +1,256 @@
+#!/usr/bin/env python3
+"""Temporarily block this rig's Nightscout TCP endpoint for a local-loop test.
+
+The rule is per-rig and destination/port-specific. It does not touch the rig's
+LAN listener, Bluetooth service, or pump radio. Requires root and systemd.
+No Nightscout URL, address, or credential is printed or persisted.
+"""
+
+import argparse
+import configparser
+import fcntl
+import ipaddress
+import json
+import os
+import shlex
+import shutil
+import socket
+import subprocess
+import sys
+import time
+import uuid
+from urllib.parse import urlsplit
+
+
+STATE = "/run/oref0-ns-outage.json"
+LOCK = "/run/lock/oref0-ns-outage.lock"
+CHAIN = "OREF0_NS_TEST"
+MAX_SECONDS = 15 * 60
+
+
+def nightscout_endpoint(myopenaps_dir):
+    parser = configparser.ConfigParser()
+    with open(os.path.join(myopenaps_dir, "ns.ini"), encoding="utf-8") as handle:
+        parser.read_file(handle)
+    args = shlex.split(parser.get('device "ns"', "args"))
+    if len(args) < 2 or args[0] != "ns":
+        raise ValueError("Nightscout configuration is not recognized")
+    url = urlsplit(args[1])
+    if url.scheme not in ("http", "https") or not url.hostname or url.username or url.password:
+        raise ValueError("Nightscout endpoint is not a supported HTTP URL")
+    port = url.port or (443 if url.scheme == "https" else 80)
+    return url.hostname, port
+
+
+def targets_for(host, port):
+    answers = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    targets = sorted({(answer[0], answer[4][0]) for answer in answers})
+    if not targets:
+        raise ValueError("Nightscout DNS returned no addresses")
+    for family, address in targets:
+        if family not in (socket.AF_INET, socket.AF_INET6):
+            raise ValueError("Unsupported Nightscout address family")
+        ip = ipaddress.ip_address(address)
+        if ip.is_loopback or ip.is_link_local or ip.is_unspecified or ip.is_multicast:
+            raise ValueError("Refusing to isolate a local or special-use endpoint")
+    return targets
+
+
+def can_connect(target, port):
+    family, address = target
+    try:
+        with socket.socket(family, socket.SOCK_STREAM) as connection:
+            connection.settimeout(2)
+            connection.connect((address, port))
+        return True
+    except OSError:
+        return False
+
+
+def firewall_for(family):
+    return "ip6tables" if family == socket.AF_INET6 else "iptables"
+
+
+def run(command):
+    subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def chain_exists(binary):
+    return subprocess.run([binary, "-nL", CHAIN], stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL).returncode == 0
+
+
+def jump_exists(binary):
+    return subprocess.run([binary, "-C", "OUTPUT", "-j", CHAIN],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+
+def remove_rules(families):
+    for family in families:
+        binary = firewall_for(family)
+        if not chain_exists(binary):
+            continue
+        # Only the named, tool-owned chain is removed; unrelated rules remain.
+        while subprocess.run([binary, "-D", "OUTPUT", "-j", CHAIN],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+            pass
+        run([binary, "-F", CHAIN])
+        run([binary, "-X", CHAIN])
+
+
+def read_state():
+    if not os.path.exists(STATE):
+        return None
+    with open(STATE, encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def write_state(state):
+    temporary = STATE + ".tmp"
+    with open(temporary, "w", encoding="utf-8") as handle:
+        json.dump(state, handle)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.chmod(temporary, 0o600)
+    os.replace(temporary, STATE)
+
+
+def stop():
+    state = read_state()
+    if state is None:
+        print("Nightscout outage test: inactive")
+        return
+    remove_rules(state["families"])
+    os.unlink(STATE)
+    # A manually stopped test must not be interrupted later by its old timer.
+    subprocess.run(["systemctl", "stop", state["unit"] + ".timer"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print("Nightscout outage test: stopped; rig network restored")
+
+
+def marker_time(path):
+    try:
+        return os.stat(path).st_mtime
+    except OSError:
+        return None
+
+
+def loop_evidence(myopenaps_dir, started_at):
+    paths = {
+        "glucose_new": os.path.join(myopenaps_dir, "monitor", "glucose.json"),
+        "suggested_new": os.path.join(myopenaps_dir, "enact", "suggested.json"),
+        "loop_success_new": "/tmp/pump_loop_success",
+    }
+    return {key: (marker_time(path) or 0) > started_at for key, path in paths.items()}
+
+
+def start(myopenaps_dir, seconds):
+    if os.geteuid() != 0:
+        raise ValueError("Root is required")
+    if not 60 <= seconds <= MAX_SECONDS:
+        raise ValueError("Duration must be 60–900 seconds")
+    if read_state() is not None:
+        raise ValueError("A Nightscout outage test is already active; stop it first")
+    host, port = nightscout_endpoint(myopenaps_dir)
+    targets = targets_for(host, port)
+    if not any(can_connect(target, port) for target in targets):
+        raise ValueError("Nightscout was already unreachable; cannot prove isolation")
+    families = sorted({family for family, _ in targets})
+    for family in families:
+        binary = firewall_for(family)
+        if not shutil.which(binary):
+            raise ValueError("Required firewall tool is unavailable")
+        if chain_exists(binary):
+            raise ValueError("Test firewall chain already exists without state; inspect manually")
+    script = os.path.realpath(__file__)
+    unit = "oref0-ns-outage-restore-{}".format(uuid.uuid4().hex[:12])
+    started_at = time.time()
+    state = {"started_at": started_at, "expires_at": started_at + seconds, "families": families,
+             "unit": unit, "target_count": len(targets)}
+    write_state(state)
+    try:
+        # Arm restoration before changing the firewall. Reboot also clears
+        # transient iptables rules and the /run state.
+        run(["systemd-run", "--unit=" + unit, "--on-active=" + str(seconds),
+             "--timer-property=AccuracySec=1s", script, "stop"])
+        for family in families:
+            binary = firewall_for(family)
+            run([binary, "-N", CHAIN])
+            for _, address in (target for target in targets if target[0] == family):
+                run([binary, "-A", CHAIN, "-p", "tcp", "-d", address,
+                     "--dport", str(port), "-j", "REJECT"])
+            run([binary, "-I", "OUTPUT", "1", "-j", CHAIN])
+        if any(can_connect(target, port) for target in targets):
+            raise ValueError("Nightscout is still reachable after isolation")
+    except Exception:
+        remove_rules(families)
+        os.unlink(STATE)
+        subprocess.run(["systemctl", "stop", unit + ".timer"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        raise
+    print("Nightscout outage test: active for {}s; {} target(s); automatic restore armed".format(
+        seconds, len(targets)))
+
+
+def status(myopenaps_dir):
+    state = read_state()
+    if state is None:
+        print("Nightscout outage test: inactive")
+        return
+    remaining = max(0, int(state["expires_at"] - time.time()))
+    if remaining == 0:
+        stop()
+        return
+    intact = all(chain_exists(firewall_for(family)) and jump_exists(firewall_for(family))
+                 for family in state["families"])
+    evidence = loop_evidence(myopenaps_dir, state["started_at"])
+    try:
+        host, port = nightscout_endpoint(myopenaps_dir)
+        blocked = not any(can_connect(target, port) for target in targets_for(host, port))
+    except (OSError, ValueError, socket.gaierror):
+        blocked = False
+    print("Nightscout outage test: active; remaining={}s; rules={}; target_count={}; "
+          "endpoint_blocked={}; glucose_new={}; suggested_new={}; loop_success_new={}".format(
+              remaining, "intact" if intact else "MISSING", state["target_count"],
+              blocked,
+              evidence["glucose_new"], evidence["suggested_new"],
+              evidence["loop_success_new"]))
+
+
+def plan(myopenaps_dir):
+    host, port = nightscout_endpoint(myopenaps_dir)
+    targets = targets_for(host, port)
+    print("Nightscout outage plan: {} target(s), TCP port {}; local rig services unchanged".format(
+        len(targets), port))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=("plan", "start", "status", "stop"))
+    parser.add_argument("--myopenaps-dir", default="/root/myopenaps")
+    parser.add_argument("--seconds", type=int, default=600)
+    args = parser.parse_args()
+    if args.action in ("start", "stop", "status") and os.geteuid() != 0:
+        parser.error("root is required")
+    try:
+        if args.action == "plan":
+            plan(args.myopenaps_dir)
+            return
+        os.makedirs(os.path.dirname(LOCK), exist_ok=True)
+        with open(LOCK, "a+") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            if args.action == "start":
+                start(args.myopenaps_dir, args.seconds)
+            elif args.action == "stop":
+                stop()
+            else:
+                status(args.myopenaps_dir)
+    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+        # Do not print exception text: OS errors can include endpoint addresses.
+        print("Nightscout outage test failed; inspect local service state", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -59,6 +59,42 @@ deployed-image interoperability gates.
 
 ## Test
 
+### Time-limited, per-rig Nightscout outage test
+
+`bin/oref0-test-nightscout-outage` can test a rig's **own** Nightscout-offline
+loop path without disconnecting its local Wi-Fi, TLS relay, Bluetooth, or pump
+radio. It must run on the selected rig as root. It reads that rig's existing
+`ns.ini` locally, blocks only outbound TCP to the resolved Nightscout endpoint
+and port, and prints no URL, address, or credential. This is an operational
+test, not a synthetic glucose or dosing simulator.
+
+Run `plan` first. During a monitored test, use at most 900 seconds; the tool
+arms a systemd restore timer **before** adding firewall rules. `stop` restores
+immediately, and a reboot clears the transient rules. Use one rig at a time.
+Install the standalone tool from the oref0 checkout on that rig first:
+
+```sh
+sudo install -m 755 bin/oref0-test-nightscout-outage /usr/local/sbin/oref0-test-nightscout-outage
+```
+
+```sh
+ssh root@RIG_EXAMPLE '/usr/local/sbin/oref0-test-nightscout-outage plan'
+ssh root@RIG_EXAMPLE '/usr/local/sbin/oref0-test-nightscout-outage start --seconds 600'
+ssh root@RIG_EXAMPLE '/usr/local/sbin/oref0-test-nightscout-outage status'
+ssh root@RIG_EXAMPLE '/usr/local/sbin/oref0-test-nightscout-outage stop'
+```
+
+`status` reports whether the endpoint is blocked and whether a new glucose
+file, new suggested result, and new successful pump-loop marker appeared after
+the test began. Those are separate observations, not a claim that a therapy
+change was enacted. Inspect the rig's normal loop diagnostics and phone's
+secure-relay/acknowledgement evidence to establish the actual outcome. A
+Nightscout-only CGM source cannot supply new glucose during this test; arrange
+a local CGM collector first. The tool pins the addresses resolved at test start,
+so a changed DNS answer or alternate proxy may make `endpoint_blocked=false`.
+Stop the test if the rig loses local connectivity, fresh BG, or expected loop
+progress. Do not use this to test loss of local Wi-Fi; that is a separate path.
+
 From the oref0 checkout:
 
 ```sh
