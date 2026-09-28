@@ -1,5 +1,6 @@
 import socket
 import threading
+import time
 import unittest
 
 from openaps_locald.ble_tls_relay import (
@@ -49,6 +50,46 @@ class Fixture(object):
 
 
 class BLETLSRelayTests(unittest.TestCase):
+    def test_session_backpressures_full_att_queue(self):
+        class OneFrameRelay(object):
+            def __init__(self):
+                self.first_read = threading.Event()
+                self.delivered = False
+
+            def open(self):
+                return self
+
+            def receive(self, *_args, **_kwargs):
+                if not self.delivered:
+                    self.delivered = True
+                    self.first_read.set()
+                    return b"tail"
+                time.sleep(0.01)
+                return None
+
+            def close(self):
+                pass
+
+        relay = OneFrameRelay()
+        session = _BLETLSRelaySession(relay, 1)
+        for _ in range(32):
+            session.inbound.put_nowait(b"earlier")
+        session.start()
+        try:
+            self.assertTrue(relay.first_read.wait(1))
+            self.assertFalse(session.failed.is_set())
+            self.assertEqual(session.dequeue(), b"earlier")
+            deadline = time.monotonic() + 1
+            while session.inbound.qsize() < 32 and time.monotonic() < deadline:
+                time.sleep(0.01)
+            self.assertEqual(session.inbound.qsize(), 32)
+            self.assertFalse(session.failed.is_set())
+            self.assertEqual([session.dequeue() for _ in range(31)], [b"earlier"] * 31)
+            self.assertEqual(session.dequeue(), b"tail")
+        finally:
+            session.close()
+            session.worker.join(1)
+
     def test_session_drains_final_tls_bytes_after_socket_eof(self):
         session = _BLETLSRelaySession(None, 1)
         session.inbound.put_nowait(b"final TLS flight")

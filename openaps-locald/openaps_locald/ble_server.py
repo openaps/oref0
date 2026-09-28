@@ -687,17 +687,34 @@ class _BLETLSRelaySession(object):
                     if self.socket_receive_count <= 40:
                         _ble_log("authorization TLS relay socket rx count=%d bytes=%d" %
                                  (self.socket_receive_count, len(value)))
-                    try:
-                        self.inbound.put_nowait(value)
-                    except Full:
-                        raise BLETLSRelayError("relay inbound queue full")
+                    # The loopback TLS socket can produce a handshake flight
+                    # faster than ATT reads drain it. Keep the queue bounded,
+                    # but backpressure the socket instead of aborting a valid
+                    # secure session when that transient burst fills it.
+                    stalled_until = time.monotonic() + 30.0
+                    while not self.closed.is_set():
+                        try:
+                            self.inbound.put(value, timeout=0.1)
+                            break
+                        except Full:
+                            if time.monotonic() >= stalled_until:
+                                raise BLETLSRelayError("relay inbound queue stalled")
+                            continue
         except Exception as exc:
             if not self.closed.is_set():
                 # Keep the diagnostic bounded to an exception class.  Relay
                 # errors must never expose endpoint, credential, or clinical
                 # data through the BLE service journal.
-                _ble_log("authorization TLS relay failed category=%s" %
-                         type(exc).__name__)
+                categories = {
+                    "relay inbound queue stalled": "inbound_queue_stalled",
+                    "relay outbound queue full": "outbound_queue_full",
+                    "relay closed": "socket_closed",
+                    "relay read failed": "socket_read_failed",
+                    "relay write failed": "socket_write_failed",
+                    "relay is unavailable": "socket_unavailable",
+                }
+                category = categories.get(str(exc), type(exc).__name__)
+                _ble_log("authorization TLS relay failed category=%s" % category)
                 self.failed.set()
         finally:
             self.relay.close()
