@@ -32,7 +32,7 @@ from .enrollment_carrier import EnrollmentPublicationWorker
 from .reverse_enrollment import ReverseEnrollmentWorkflow
 from .authorization_tls import TLSError, boottime
 from .stored_proof import _object as _bounded_proof_object
-from .write_challenge import validate_challenge
+from .write_challenge import ChallengeError, validate_challenge
 from .authorization_protocol import (
     AUTH_HELLO_SCHEMA,
     HTTP_AUTH_ATTEMPT_CAPACITY,
@@ -101,11 +101,18 @@ _TLS_ERROR_REASONS = frozenset((
     "TLS input rejected", "output limit", "application write limit",
     "partial application write", "TLS write rejected", "TLS output unavailable",
 ))
+_TLS_CHALLENGE_REASONS = frozenset((
+    "registry peer not admitted", "registry invalidated",
+    "settings epoch changed", "key epoch changed",
+    "registry peer key changed", "policy generation changed",
+))
 
 
 def _tls_error_reason(error):
     """Return a bounded, static reason token for a TLS stream failure."""
     if isinstance(error, TLSError) and str(error) in _TLS_ERROR_REASONS:
+        return str(error).replace(" ", "_").lower()
+    if isinstance(error, ChallengeError) and str(error) in _TLS_CHALLENGE_REASONS:
         return str(error).replace(" ", "_").lower()
     return "unclassified"
 
