@@ -634,19 +634,29 @@ class _BLETLSRelaySession(object):
             raise BLETLSRelayError("relay outbound queue full")
 
     def dequeue(self, timeout=None):
-        if self.failed.is_set() or self.closed.is_set():
+        if self.closed.is_set():
             raise BLETLSRelayError("relay unavailable")
         if timeout is None:
             try:
                 return self.inbound.get_nowait()
             except Empty:
+                if self.failed.is_set():
+                    raise BLETLSRelayError("relay unavailable")
                 raise _BLETLSRelayPending("relay response unavailable")
         if not isinstance(timeout, (int, float)) or timeout <= 0:
             raise _BLETLSRelayPending("relay response unavailable")
         deadline = time.monotonic() + float(timeout)
         while True:
-            if self.failed.is_set() or self.closed.is_set():
+            if self.closed.is_set():
                 raise BLETLSRelayError("relay unavailable")
+            try:
+                # A recovery peer may close immediately after writing its
+                # final TLS flight. Drain already queued bytes before making
+                # that EOF terminal to the BLE reader.
+                return self.inbound.get_nowait()
+            except Empty:
+                if self.failed.is_set():
+                    raise BLETLSRelayError("relay unavailable")
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise _BLETLSRelayPending("relay response unavailable")

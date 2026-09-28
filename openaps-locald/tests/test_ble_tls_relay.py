@@ -5,6 +5,7 @@ import unittest
 from openaps_locald.ble_tls_relay import (
     BLETLSRelay, BLETLSRelayError, MAX_UPGRADE_BYTES, parse_loopback_origin,
 )
+from openaps_locald.ble_server import _BLETLSRelaySession
 
 
 class Fixture(object):
@@ -48,6 +49,26 @@ class Fixture(object):
 
 
 class BLETLSRelayTests(unittest.TestCase):
+    def test_session_drains_final_tls_bytes_after_socket_eof(self):
+        session = _BLETLSRelaySession(None, 1)
+        session.inbound.put_nowait(b"final TLS flight")
+        session.failed.set()
+        self.assertEqual(session.dequeue(), b"final TLS flight")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+
+        session.inbound.put_nowait(b"second flight")
+        self.assertEqual(session.dequeue(timeout=0.1), b"second flight")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue(timeout=0.1)
+
+        # An explicit disconnect is different from socket EOF: never expose
+        # queued bytes to the next BLE connection generation.
+        session.inbound.put_nowait(b"discarded on disconnect")
+        session.closed.set()
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+
     def test_origin_requires_explicit_numeric_loopback(self):
         self.assertEqual(parse_loopback_origin("http://127.0.0.1:8787")[:2],
                          ("127.0.0.1", 8787))
