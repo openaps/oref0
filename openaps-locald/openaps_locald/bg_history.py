@@ -175,6 +175,13 @@ def _record_identity_candidates(record):
     return candidates
 
 
+def _record_timestamp_millis(record):
+    date = _coerce_int(record.get("date"))
+    if date is not None:
+        return date
+    return _iso_to_millis(record.get("dateString")) or -1
+
+
 def merge_bg_records(local_records, monitor_records):
     merged = []
     seen = set()
@@ -185,14 +192,17 @@ def merge_bg_records(local_records, monitor_records):
                 continue
             merged.append(record)
             seen.update(candidates)
-    return merged
+    # oref0 reads the first monitor/glucose.json entry as the current BG.
+    # Local BLE events can arrive out of order (for example, a backlog after
+    # reconnect), so source-array order must never determine the loop's BG.
+    return sorted(merged, key=_record_timestamp_millis, reverse=True)
 
 
 def write_local_bg_record(event, config):
     path = _local_glucose_path(config)
     records = _read_json_array(path)
     records.insert(0, bg_record_from_event(event))
-    _atomic_write_json(path, records)
+    _atomic_write_json(path, sorted(records, key=_record_timestamp_millis, reverse=True))
     return path
 
 

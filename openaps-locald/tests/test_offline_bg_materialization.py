@@ -30,6 +30,33 @@ class OfflineBGMaterializationTests(unittest.TestCase):
                 self.assertEqual(records[0]["dateString"], event["effective_at"])
                 self.assertEqual(records[0]["openapsAppEventId"], event["event_id"])
 
+    def test_late_ble_backlog_does_not_put_old_bg_first_for_pump_loop(self):
+        with tempfile.TemporaryDirectory(prefix="offline-bg-test-") as directory:
+            config = build_install_config({}, directory, "127.0.0.1", 8787)
+
+            def event(identifier, timestamp, glucose):
+                return {
+                    "schema": "openaps.local.event.v1",
+                    "event_id": identifier,
+                    "patient_id": "patient-placeholder",
+                    "event_type": "bg_reading",
+                    "created_at": timestamp,
+                    "effective_at": timestamp,
+                    "payload": {"sgv": glucose, "source": "nightscout"},
+                }
+
+            newest = event("synthetic-newest", "2026-01-01T00:15:00Z", 103)
+            older = event("synthetic-backlog", "2026-01-01T00:05:00Z", 101)
+            materialize_event(newest, config)
+            materialize_event(older, config)
+            for path in (config["local_glucose_path"], config["monitor_glucose_path"]):
+                with open(path) as stream:
+                    records = json.load(stream)
+                self.assertEqual(
+                    [record["openapsAppEventId"] for record in records],
+                    ["synthetic-newest", "synthetic-backlog"],
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
