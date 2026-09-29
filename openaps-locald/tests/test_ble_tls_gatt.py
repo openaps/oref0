@@ -80,6 +80,7 @@ class BLETLSGATTTests(unittest.TestCase):
         session.inbound.put_nowait(b"final-tls-frame")
         session.failed.set()
         self.assertEqual(session.dequeue(), b"final-tls-frame")
+        self.assertEqual(session.dequeued_count, 1)
         with self.assertRaises(BLETLSRelayError):
             session.dequeue()
 
