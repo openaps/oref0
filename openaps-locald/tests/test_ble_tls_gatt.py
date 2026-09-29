@@ -75,6 +75,14 @@ class RelayFactory(object):
 
 
 class BLETLSGATTTests(unittest.TestCase):
+    def test_queued_tls_output_survives_peer_socket_close(self):
+        session = ble_server._BLETLSRelaySession(FakeRelay("fixture", 1), 1)
+        session.inbound.put_nowait(b"final-tls-frame")
+        session.failed.set()
+        self.assertEqual(session.dequeue(), b"final-tls-frame")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+
     def test_recovery_carrier_is_scoped_to_one_ble_connection(self):
         factory = RelayFactory()
         bridge = self.bridge(True, factory)
