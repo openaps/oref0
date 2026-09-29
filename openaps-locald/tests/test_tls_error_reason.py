@@ -11,6 +11,10 @@ class TLSErrorReasonTests(unittest.TestCase):
             _tls_error_reason(ChallengeError("registry peer not admitted")),
             "registry_peer_not_admitted",
         )
+        self.assertEqual(
+            _tls_error_reason(ChallengeError("admission unavailable")),
+            "admission_unavailable",
+        )
 
     def test_unknown_exception_text_is_not_logged(self):
         self.assertEqual(_tls_error_reason(ChallengeError("secret token value")), "unclassified")
