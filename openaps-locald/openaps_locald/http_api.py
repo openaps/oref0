@@ -105,6 +105,9 @@ _TLS_CHALLENGE_REASONS = frozenset((
     "registry peer not admitted", "registry invalidated",
     "settings epoch changed", "key epoch changed",
     "registry peer key changed", "policy generation changed",
+    "admission unavailable", "admission owner invalidated",
+    "admission context changed", "reviewed policy unavailable",
+    "reviewed policy changed", "recovery connection cannot become normal",
 ))
 
 

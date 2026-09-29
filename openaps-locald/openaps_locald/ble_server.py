@@ -628,6 +628,7 @@ class _BLETLSRelaySession(object):
         # without exposing any TLS bytes or application data in the journal.
         self.socket_send_count = 0
         self.socket_receive_count = 0
+        self.dequeued_count = 0
         self.closed = threading.Event()
         self.failed = threading.Event()
         self.stopped = threading.Event()
@@ -646,24 +647,42 @@ class _BLETLSRelaySession(object):
             raise BLETLSRelayError("relay outbound queue full")
 
     def dequeue(self, timeout=None):
-        if self.failed.is_set() or self.closed.is_set():
+        if self.closed.is_set():
+            raise BLETLSRelayError("relay unavailable")
+        # The loopback peer may close immediately after its final TLS flight.
+        # Deliver frames already received before surfacing that socket close;
+        # the phone's TLS and recovery parser still validate the full response.
+        try:
+            result = self.inbound.get_nowait()
+            self.dequeued_count += 1
+            return result
+        except Empty:
+            pass
+        if self.failed.is_set():
             raise BLETLSRelayError("relay unavailable")
         if timeout is None:
-            try:
-                return self.inbound.get_nowait()
-            except Empty:
-                raise _BLETLSRelayPending("relay response unavailable")
+            raise _BLETLSRelayPending("relay response unavailable")
         if not isinstance(timeout, (int, float)) or timeout <= 0:
             raise _BLETLSRelayPending("relay response unavailable")
         deadline = time.monotonic() + float(timeout)
         while True:
-            if self.failed.is_set() or self.closed.is_set():
+            if self.closed.is_set():
+                raise BLETLSRelayError("relay unavailable")
+            try:
+                result = self.inbound.get_nowait()
+                self.dequeued_count += 1
+                return result
+            except Empty:
+                pass
+            if self.failed.is_set():
                 raise BLETLSRelayError("relay unavailable")
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise _BLETLSRelayPending("relay response unavailable")
             try:
-                return self.inbound.get(timeout=min(remaining, 0.1))
+                result = self.inbound.get(timeout=min(remaining, 0.1))
+                self.dequeued_count += 1
+                return result
             except Empty:
                 continue
 
@@ -716,7 +735,8 @@ class _BLETLSRelaySession(object):
                     "relay is unavailable": "socket_unavailable",
                 }
                 category = categories.get(str(exc), type(exc).__name__)
-                _ble_log("authorization TLS relay failed category=%s" % category)
+                _ble_log("authorization TLS relay failed category=%s received=%d delivered=%d queued=%d" % (
+                    category, self.socket_receive_count, self.dequeued_count, self.inbound.qsize()))
                 self.failed.set()
         finally:
             self.relay.close()

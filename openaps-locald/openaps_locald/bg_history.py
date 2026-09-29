@@ -32,7 +32,9 @@ def _atomic_write_json(path, payload):
     fd, tmp_path = tempfile.mkstemp(prefix=".openaps-locald-", suffix=".json", dir=dirname or None)
     try:
         with os.fdopen(fd, "w") as f:
-            json.dump(payload, f, sort_keys=True, indent=2)
+            # These cache arrays can contain days of readings. Pretty-printing
+            # the whole file for every new BG delays the BLE acknowledgement.
+            json.dump(payload, f, separators=(",", ":"))
             f.write("\n")
         os.rename(tmp_path, path)
     finally:
