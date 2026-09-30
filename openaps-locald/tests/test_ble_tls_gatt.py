@@ -75,6 +75,48 @@ class RelayFactory(object):
 
 
 class BLETLSGATTTests(unittest.TestCase):
+    def test_socket_eof_preserves_final_ciphertext_until_att_reads_drain(self):
+        class FinalRelay(FakeRelay):
+            def receive(self, maximum, timeout=None, timeout_is_empty=False):
+                if self.incoming:
+                    return self.incoming.pop(0)
+                raise BLETLSRelayError("relay closed")
+
+        relay = FinalRelay("http://127.0.0.1:8787", 0.1)
+        relay.incoming = [b"ciphertext-a", b"ciphertext-b"]
+        session = ble_server._BLETLSRelaySession(relay, "fixture-generation")
+        session.start()
+        self.assertTrue(session.stopped.wait(1))
+        self.assertTrue(session.peer_eof.is_set())
+        self.assertFalse(session.failed.is_set())
+        session.enqueue(b"")
+        self.assertEqual(session.dequeue(), b"ciphertext-a")
+        session.enqueue(b"")
+        self.assertEqual(session.dequeue(timeout=0.1), b"ciphertext-b")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+        with self.assertRaises(BLETLSRelayError):
+            session.enqueue(b"new-application-data")
+        session.close()
+
+    def test_socket_read_failure_does_not_expose_queued_ciphertext(self):
+        class BrokenRelay(FakeRelay):
+            def receive(self, maximum, timeout=None, timeout_is_empty=False):
+                if self.incoming:
+                    return self.incoming.pop(0)
+                raise BLETLSRelayError("relay read failed")
+
+        relay = BrokenRelay("http://127.0.0.1:8787", 0.1)
+        relay.incoming = [b"ciphertext"]
+        session = ble_server._BLETLSRelaySession(relay, "fixture-generation")
+        session.start()
+        self.assertTrue(session.stopped.wait(1))
+        self.assertTrue(session.failed.is_set())
+        self.assertFalse(session.peer_eof.is_set())
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+        session.close()
+
     def test_recovery_carrier_is_scoped_to_one_ble_connection(self):
         factory = RelayFactory()
         bridge = self.bridge(True, factory)

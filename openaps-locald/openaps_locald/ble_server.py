@@ -630,6 +630,7 @@ class _BLETLSRelaySession(object):
         self.socket_receive_count = 0
         self.closed = threading.Event()
         self.failed = threading.Event()
+        self.peer_eof = threading.Event()
         self.stopped = threading.Event()
         self.worker = threading.Thread(target=self._run, name="ble-tls-relay")
         self.worker.daemon = True
@@ -639,6 +640,12 @@ class _BLETLSRelaySession(object):
 
     def enqueue(self, value):
         if self.closed.is_set() or self.failed.is_set():
+            raise BLETLSRelayError("relay unavailable")
+        if self.peer_eof.is_set():
+            # Empty ATT writes are response polls, not socket application data.
+            # Permit them while the bounded final ciphertext queue is drained.
+            if value == b"":
+                return
             raise BLETLSRelayError("relay unavailable")
         try:
             self.outbound.put_nowait(value)
@@ -652,6 +659,8 @@ class _BLETLSRelaySession(object):
             try:
                 return self.inbound.get_nowait()
             except Empty:
+                if self.peer_eof.is_set():
+                    raise BLETLSRelayError("relay unavailable")
                 raise _BLETLSRelayPending("relay response unavailable")
         if not isinstance(timeout, (int, float)) or timeout <= 0:
             raise _BLETLSRelayPending("relay response unavailable")
@@ -665,6 +674,8 @@ class _BLETLSRelaySession(object):
             try:
                 return self.inbound.get(timeout=min(remaining, 0.1))
             except Empty:
+                if self.peer_eof.is_set():
+                    raise BLETLSRelayError("relay unavailable")
                 continue
 
     def _run(self):
@@ -704,6 +715,14 @@ class _BLETLSRelaySession(object):
                             continue
         except Exception as exc:
             if not self.closed.is_set():
+                if isinstance(exc, BLETLSRelayError) and str(exc) == "relay closed":
+                    # A recovery peer intentionally closes after its final TLS
+                    # response. Socket EOF must not discard ciphertext already
+                    # queued for slower ATT readers. Authentication remains the
+                    # phone TLS/evidence owner's responsibility.
+                    self.peer_eof.set()
+                    _ble_log("authorization TLS relay socket EOF queued=%d" % self.inbound.qsize())
+                    return
                 # Fixed categories only: exception text from socket/TLS code
                 # may contain endpoints or other private values.
                 categories = {
