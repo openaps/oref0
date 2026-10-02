@@ -90,6 +90,28 @@ class BLETLSRelayTests(unittest.TestCase):
             session.close()
             session.worker.join(1)
 
+    def test_empty_poll_preserves_final_response_after_socket_eof(self):
+        session = _BLETLSRelaySession(None, 1)
+        session.inbound.put_nowait(b"final TLS flight")
+        session.failed.set()
+        # The phone polls by writing an empty frame before reading TX.
+        session.enqueue(b"")
+        self.assertTrue(session.outbound.empty())
+        self.assertEqual(session.dequeue(), b"final TLS flight")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+        with self.assertRaises(BLETLSRelayError):
+            session.enqueue(b"new TLS data")
+        session.closed.set()
+        with self.assertRaises(BLETLSRelayError):
+            session.enqueue(b"")
+
+    def test_empty_poll_does_not_consume_outbound_queue_capacity(self):
+        session = _BLETLSRelaySession(None, 1)
+        for _ in range(64):
+            session.enqueue(b"")
+        self.assertTrue(session.outbound.empty())
+
     def test_session_drains_final_tls_bytes_after_socket_eof(self):
         session = _BLETLSRelaySession(None, 1)
         session.inbound.put_nowait(b"final TLS flight")

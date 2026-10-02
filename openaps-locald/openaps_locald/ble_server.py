@@ -626,7 +626,14 @@ class _BLETLSRelaySession(object):
         self.worker.start()
 
     def enqueue(self, value):
-        if self.closed.is_set() or self.failed.is_set():
+        if self.closed.is_set():
+            raise BLETLSRelayError("relay unavailable")
+        # Empty frames are ATT polls, not socket writes. A poll must still
+        # reach dequeue after socket EOF so the final queued TLS response can
+        # drain. Explicit disconnects and new data remain terminal above/below.
+        if not value:
+            return
+        if self.failed.is_set():
             raise BLETLSRelayError("relay unavailable")
         try:
             self.outbound.put_nowait(value)
