@@ -225,8 +225,10 @@ class RawHciAdvertiser(object):
 
     def command_sequence(self):
         advertising_data, scan_response_data = self._advertising_pair()
+        # start() has already attempted disable through stop(force=True).
+        # Repeating disable can be rejected by an already-disabled controller.
+        # Setup and final enable still each require an accepted response.
         return [
-            self._hcitool_command(0x08, 0x000A, [0x00]),
             self._hcitool_command(
                 0x08,
                 0x0006,
@@ -297,6 +299,8 @@ class RawHciAdvertiser(object):
             "process": "openaps-locald-advertise",
             "reason": reason,
             "adapter": self.adapter,
+            # Lifecycle state only; neither this nor last_enable_at proves
+            # that advertisements are currently being transmitted.
             "running": bool(self._running),
             "started_at": self.started_at,
             "last_setup_at": self.last_setup_at,

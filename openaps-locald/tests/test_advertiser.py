@@ -48,7 +48,7 @@ class AdvertiserCommandStatusTests(unittest.TestCase):
         self.assertEqual(instance.last_enable_at, "accepted-now")
         self.assertIsNone(instance.last_error)
 
-    def test_successful_start_keeps_exact_existing_command_sequence(self):
+    def test_successful_start_disables_once_before_setup_and_enable(self):
         instance = self.make_advertiser()
         calls = []
         def response(command, **_kwargs):
@@ -59,6 +59,7 @@ class AdvertiserCommandStatusTests(unittest.TestCase):
             instance.start()
         self.assertEqual(calls, [instance._hcitool_command(8, 10, [0])] + instance.command_sequence())
         self.assertTrue(instance._running)
+        self.assertEqual(sum(command[5:] == ["0x000a", "0x00"] for command in calls), 1)
 
     def test_mismatched_opcode_never_records_success(self):
         instance = self.make_advertiser()
@@ -97,6 +98,106 @@ class AdvertiserCommandStatusTests(unittest.TestCase):
             self.assertFalse(instance.enable_once())
         self.assertEqual(instance.last_enable_at, "previous-success")
         self.assertIsNotNone(instance.last_error_at)
+
+
+class StatefulController(object):
+    """Model a controller that rejects redundant state requests."""
+    def __init__(self, enabled, fail_opcode=None, fail_final_enable=False):
+        self.enabled = enabled
+        self.fail_opcode = fail_opcode
+        self.fail_final_enable = fail_final_enable
+        self.calls = []
+
+    def __call__(self, command, **_kwargs):
+        opcode = (int(command[4], 16) << 10) | int(command[5], 16)
+        status = 0
+        if opcode == self.fail_opcode:
+            status = 0x12
+        elif opcode == 0x200a:
+            desired = bool(int(command[6], 16))
+            if desired == self.enabled or (desired and self.fail_final_enable):
+                status = 0x0c
+            else:
+                self.enabled = desired
+        elif self.enabled:
+            status = 0x0c
+        self.calls.append((opcode, list(command[6:]), status))
+        return command_complete(opcode, status)
+
+
+class AdvertiserStatefulStartupTests(unittest.TestCase):
+    make_advertiser = AdvertiserCommandStatusTests.make_advertiser
+    def test_initially_enabled_controller_starts_with_one_disable(self):
+        instance = self.make_advertiser()
+        controller = StatefulController(True)
+        with patch.object(advertiser.subprocess, "check_output", side_effect=controller):
+            instance.start()
+        self.assertTrue(controller.enabled)
+        self.assertTrue(instance._running)
+        self.assertIsNotNone(instance.last_enable_at)
+        self.assertEqual([c[0] for c in controller.calls], [0x200a, 0x2006, 0x2008, 0x2009, 0x200a])
+        self.assertTrue(all(c[2] == 0 for c in controller.calls))
+
+    def test_initially_disabled_controller_retains_best_effort_stop_then_validates_setup(self):
+        instance = self.make_advertiser()
+        controller = StatefulController(False)
+        with patch.object(advertiser.subprocess, "check_output", side_effect=controller):
+            instance.start()
+        self.assertEqual(controller.calls[0][2], 0x0c)
+        self.assertTrue(all(c[2] == 0 for c in controller.calls[1:]))
+        self.assertTrue(controller.enabled)
+        self.assertTrue(instance._running)
+
+    def test_each_setup_failure_stays_fatal_and_clears_running(self):
+        for opcode in (0x2006, 0x2008, 0x2009):
+            instance = self.make_advertiser()
+            instance._running = True
+            controller = StatefulController(True, fail_opcode=opcode)
+            with patch.object(advertiser.subprocess, "check_output", side_effect=controller):
+                with self.assertRaisesRegex(RuntimeError, "status=0x12"):
+                    instance.start()
+            self.assertFalse(instance._running)
+            self.assertFalse(controller.enabled)
+            self.assertIsNone(instance.last_enable_at)
+            self.assertFalse(any(c[0] == 0x200a and c[1] == ["0x01"] for c in controller.calls))
+
+    def test_failed_initial_disable_cannot_bypass_setup_validation(self):
+        instance = self.make_advertiser()
+        controller = StatefulController(True, fail_opcode=0x200a)
+        with patch.object(advertiser.subprocess, "check_output", side_effect=controller):
+            with self.assertRaisesRegex(RuntimeError, "status=0x0c"):
+                instance.start()
+        self.assertFalse(instance._running)
+        self.assertTrue(controller.enabled)
+        self.assertIsNone(instance.last_enable_at)
+        self.assertFalse(any(c[0] == 0x200a and c[1] == ["0x01"] for c in controller.calls))
+
+    def test_final_enable_failure_remains_fatal(self):
+        instance = self.make_advertiser()
+        controller = StatefulController(False, fail_final_enable=True)
+        with patch.object(advertiser.subprocess, "check_output", side_effect=controller):
+            with self.assertRaisesRegex(RuntimeError, "status=0x0c"):
+                instance.start()
+        self.assertFalse(instance._running)
+        self.assertFalse(controller.enabled)
+        self.assertIsNone(instance.last_enable_at)
+
+    def test_periodic_rejection_does_not_invent_acceptance_or_change_controller_state(self):
+        instance = self.make_advertiser()
+        controller = StatefulController(True)
+        with patch.object(advertiser.subprocess, "check_output", side_effect=controller):
+            with patch.object(advertiser, "_utc_now", return_value="startup-accepted"):
+                instance.start()
+            with patch.object(advertiser, "_utc_now", return_value="repeat-rejected"):
+                self.assertFalse(instance.enable_once())
+        health = instance.health_payload("test")
+        self.assertEqual(health["last_enable_at"], "startup-accepted")
+        self.assertEqual(health["last_error_at"], "repeat-rejected")
+        self.assertIn("status=0x0c", health["last_error"])
+        self.assertTrue(controller.enabled)
+        self.assertTrue(health["running"])  # Lifecycle, not an on-air assertion.
+        self.assertNotIn("advertising_enabled", health)
+        self.assertEqual([c[0] for c in controller.calls].count(0x200a), 3)
 
 
 if __name__ == "__main__":
