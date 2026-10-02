@@ -44,6 +44,28 @@ evidence; all clinical imports still require their normal authenticated TLS
 and admission checks. Enabling this feature requires matching client support
 and device validation; it does not enable any polling of clinical files or HTTP.
 
+### Deployment readiness
+
+Service activation alone does not establish GATT readiness. After restarting
+the BLE service, capture its new systemd `MainPID` and wait for that exact
+process's health file to report registered GATT and the required characteristic:
+
+```sh
+python3 -m openaps_locald.ble_readiness \
+  --health-path /path/to/ble-health.json \
+  --expected-pid 12345 \
+  --required-characteristic '<required-characteristic-uuid>' \
+  --timeout 90
+```
+
+Run from the installed package directory, substituting the actual health path,
+new PID, and characteristic. Recheck that systemd still reports the same PID
+after success. The bounded, read-only check rejects a previous process's ready
+health file, tolerates temporarily absent or incomplete JSON, and reports the
+exact readiness condition on timeout. It does not restart services or roll back
+deployments. Wake deployments must require the wake characteristic, not just
+the existing service or ACK characteristic.
+
 External event JSON uses `openaps.local.event.v1` and snake_case keys. In
 particular, `set_cgm_config` accepts the full OpenAPS-iOS payload while retaining
 compatibility with the older transmitter-only payload. BG trend rate accepts

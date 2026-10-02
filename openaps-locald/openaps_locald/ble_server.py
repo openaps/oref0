@@ -1852,6 +1852,7 @@ class LocalBleApplication(object):
         bridge = self.bridge
         return {
             "process": "openaps-locald-ble",
+            "pid": os.getpid(),
             "started_at": self.started_at,
             "registered_at": self.registered_at,
             "bluez_owner": bluez_owner,

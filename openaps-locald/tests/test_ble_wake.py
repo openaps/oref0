@@ -33,6 +33,30 @@ class Scheduler(object):
 
 
 class BackgroundWakeTests(unittest.TestCase):
+    def test_health_identifies_current_process_for_deployment_readiness(self):
+        app = ble_server.LocalBleApplication.__new__(ble_server.LocalBleApplication)
+        app.service = SimpleNamespace(get_characteristics=lambda: [])
+        contact_fields = ["last_rig_info_read_at", "last_status_read_at",
+                          "last_pumphistory_read_at", "last_device_status_read_at",
+                          "last_bg_readings_read_at", "last_event_write_at",
+                          "last_event_ack_at", "last_event_error_at", "last_event_error"]
+        bridge = {name: None for name in contact_fields}
+        bridge.update(service_uuid="service-placeholder", authorization=SimpleNamespace(
+            mode="legacy", last_state={}, identity=None))
+        app.bridge = SimpleNamespace(**bridge)
+        app.config = {}
+        app.started_at = "2026-01-01T00:00:00Z"
+        app.registered_at = "2026-01-01T00:00:31Z"
+        app.adapter_path = "adapter-placeholder"
+        app.advertisement_backend = "external"
+        app._adapter_health = lambda: {}
+        with patch.object(ble_server.os, "getpid", return_value=12345):
+            health = app.health_payload()
+        self.assertEqual(health["pid"], 12345)
+        self.assertEqual(health["started_at"], app.started_at)
+        self.assertEqual(health["registered_at"], app.registered_at)
+        self.assertTrue(health["gatt_registered"])
+
     def ticker(self, emit=None):
         scheduler = Scheduler()
         values = []
