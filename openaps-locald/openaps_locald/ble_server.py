@@ -28,6 +28,8 @@ except ImportError:
 
 from .ble_protocol import (
     BLE_ACK_CHAR_UUID,
+    BLE_BACKGROUND_WAKE_CHAR_UUID,
+    BLE_BACKGROUND_WAKE_CAPABILITY,
     BLE_BG_READINGS_CHAR_UUID,
     BLE_DEVICE_STATUS_CHAR_UUID,
     BLE_EVENT_CHAR_UUID,
@@ -46,6 +48,7 @@ from .ble_protocol import (
     payload_to_json_bytes,
 )
 from .ble_tls_relay import BLETLSRelay, BLETLSRelayError
+from .ble_wake import BackgroundWakeTicker, wake_interval
 from .bg_readings import read_bg_readings_payload
 from .authorization_protocol import (
     AUTH_ACK_SCHEMA,
@@ -1096,6 +1099,8 @@ class RigBridge(object):
         }
         if self._tls_relay_enabled:
             payload["capabilities"].append("authorization_tls_relay_v1")
+        if self.config.get("ble_background_wake_enabled") is True:
+            payload["capabilities"].append(BLE_BACKGROUND_WAKE_CAPABILITY)
         # This is a legacy BLE read path. Never take the cross-process trust
         # store flock here; background reconciliation owns cache refreshes.
         carrier_ready = bool(
@@ -1706,6 +1711,35 @@ class TLSRelayTXCharacteristic(Characteristic):
         worker.start()
 
 
+class BackgroundWakeCharacteristic(Characteristic):
+    def __init__(self, bus, index, service, config):
+        super(BackgroundWakeCharacteristic, self).__init__(
+            bus, service.bus_name, index, BLE_BACKGROUND_WAKE_CHAR_UUID,
+            service, ["notify"])
+        self.ticker = BackgroundWakeTicker(
+            wake_interval(config), GLib.timeout_add_seconds, GLib.source_remove,
+            self._set_value)
+
+    @dbus.service.method(GATT_CHRC_IFACE, in_signature="", out_signature="")
+    def StartNotify(self):
+        self.notifying = True
+        try:
+            if not self.ticker.start():
+                self.notifying = False
+        except Exception:
+            self.notifying = False
+            raise
+
+    @dbus.service.method(GATT_CHRC_IFACE, in_signature="", out_signature="")
+    def StopNotify(self):
+        self.ticker.stop()
+        self.notifying = False
+
+    def close(self):
+        self.ticker.close()
+        self.notifying = False
+
+
 class LocalBleApplication(object):
     def __init__(self, bus, config, secure_mode_policy_provider=None):
         self.bus = bus
@@ -1729,6 +1763,9 @@ class LocalBleApplication(object):
         if config.get("ble_authorization_tls_relay_enabled") is True:
             self.tls_rx = TLSRelayRXCharacteristic(bus, 7, service, self.bridge)
             self.tls_tx = TLSRelayTXCharacteristic(bus, 8, service, self.bridge)
+        self.background_wake = None
+        if config.get("ble_background_wake_enabled") is True:
+            self.background_wake = BackgroundWakeCharacteristic(bus, 9, service, config)
         self.app = Application(bus, self.bus_name, [service])
         self.advertisement = Advertisement(bus, self.bus_name, 0, config)
         self.legacy_advertisement = LegacyBtMgmtAdvertisement(config)
@@ -1965,6 +2002,8 @@ def serve_ble(config):
         )
         loop_thread.join()
     finally:
+        if app.background_wake is not None:
+            app.background_wake.close()
         if secure_mode_owner is not None:
             secure_mode_owner.close()
         try:

@@ -27,6 +27,23 @@ cover the service, rig info, status, event write, acknowledgement, pump history,
 device status, and BG readings respectively. BLE writes use version-1 JSON
 envelopes with base64 chunks.
 
+An optional wake-only notification characteristic uses UUID suffix `000b` and
+the `background_wake_v1` capability. It is disabled unless
+`ble_background_wake_enabled` is explicitly `true`. While subscribed, it emits
+two bytes: version `1`, then a process-local rolling tick modulo 256. The first
+tick occurs after one interval; the counter is not a clinical revision or a
+guarantee that new data exists. `ble_background_wake_interval_seconds` defaults
+to 60 and is bounded to 30–300 seconds. Unsubscribe and shutdown retire the
+timer. Existing ACK and TLS relay contracts are unchanged.
+
+This hint requires a connected, subscribed client and does not guarantee iOS
+background execution. Clients must bind their subscription to the exact peer
+and connection generation, coalesce wake work with discovery/import operations,
+and resubscribe after reconnect. The notification carries no identity or trust
+evidence; all clinical imports still require their normal authenticated TLS
+and admission checks. Enabling this feature requires matching client support
+and device validation; it does not enable any polling of clinical files or HTTP.
+
 External event JSON uses `openaps.local.event.v1` and snake_case keys. In
 particular, `set_cgm_config` accepts the full OpenAPS-iOS payload while retaining
 compatibility with the older transmitter-only payload. BG trend rate accepts

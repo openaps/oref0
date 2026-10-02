@@ -173,6 +173,8 @@ def default_config(myopenaps_dir):
         "ble_require_auth": False,
         "ble_auth_token": None,
         "ble_authorization_tls_relay_enabled": False,
+        "ble_background_wake_enabled": False,
+        "ble_background_wake_interval_seconds": 60,
         "ble_legacy_advertising": False,
         "xdripjs_enabled": False,
         "advertise_enabled": True,
