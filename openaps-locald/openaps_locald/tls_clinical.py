@@ -82,7 +82,11 @@ class TLSClinicalSession(object):
             if not self.tls.ready or request["destination_credential_id"] != self.tls.binding[1]:
                 raise TLSError("clinical destination rejected")
         authorize()
-        if request["method"] == "GET" and request["body"] is None:
+        if (path in ("/v1/wifi", "/v1/wifi/scan", "/v1/wifi/networks") and not query and
+                (request["method"] == "POST" or
+                 (request["method"] == "GET" and request["body"] is None))):
+            status, body = self.reads.wifi_authenticated(request["method"], path, request["body"], authorize)
+        elif request["method"] == "GET" and request["body"] is None:
             status, body = self.reads.read_authenticated(path, query, authorize)
         elif request["method"] == "POST" and path == "/v1/events" and not query:
             body = request["body"]

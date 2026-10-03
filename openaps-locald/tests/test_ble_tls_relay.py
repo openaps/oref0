@@ -1,10 +1,12 @@
 import socket
 import threading
+import time
 import unittest
 
 from openaps_locald.ble_tls_relay import (
     BLETLSRelay, BLETLSRelayError, MAX_UPGRADE_BYTES, parse_loopback_origin,
 )
+from openaps_locald.ble_server import _BLETLSRelaySession
 
 
 class Fixture(object):
@@ -48,6 +50,88 @@ class Fixture(object):
 
 
 class BLETLSRelayTests(unittest.TestCase):
+    def test_session_backpressures_full_att_queue(self):
+        class OneFrameRelay(object):
+            def __init__(self):
+                self.first_read = threading.Event()
+                self.delivered = False
+
+            def open(self):
+                return self
+
+            def receive(self, *_args, **_kwargs):
+                if not self.delivered:
+                    self.delivered = True
+                    self.first_read.set()
+                    return b"tail"
+                time.sleep(0.01)
+                return None
+
+            def close(self):
+                pass
+
+        relay = OneFrameRelay()
+        session = _BLETLSRelaySession(relay, 1)
+        for _ in range(32):
+            session.inbound.put_nowait(b"earlier")
+        session.start()
+        try:
+            self.assertTrue(relay.first_read.wait(1))
+            self.assertFalse(session.failed.is_set())
+            self.assertEqual(session.dequeue(), b"earlier")
+            deadline = time.monotonic() + 1
+            while session.inbound.qsize() < 32 and time.monotonic() < deadline:
+                time.sleep(0.01)
+            self.assertEqual(session.inbound.qsize(), 32)
+            self.assertFalse(session.failed.is_set())
+            self.assertEqual([session.dequeue() for _ in range(31)], [b"earlier"] * 31)
+            self.assertEqual(session.dequeue(), b"tail")
+        finally:
+            session.close()
+            session.worker.join(1)
+
+    def test_empty_poll_preserves_final_response_after_socket_eof(self):
+        session = _BLETLSRelaySession(None, 1)
+        session.inbound.put_nowait(b"final TLS flight")
+        session.failed.set()
+        # The phone polls by writing an empty frame before reading TX.
+        session.enqueue(b"")
+        self.assertTrue(session.outbound.empty())
+        self.assertEqual(session.dequeue(), b"final TLS flight")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+        with self.assertRaises(BLETLSRelayError):
+            session.enqueue(b"new TLS data")
+        session.closed.set()
+        with self.assertRaises(BLETLSRelayError):
+            session.enqueue(b"")
+
+    def test_empty_poll_does_not_consume_outbound_queue_capacity(self):
+        session = _BLETLSRelaySession(None, 1)
+        for _ in range(64):
+            session.enqueue(b"")
+        self.assertTrue(session.outbound.empty())
+
+    def test_session_drains_final_tls_bytes_after_socket_eof(self):
+        session = _BLETLSRelaySession(None, 1)
+        session.inbound.put_nowait(b"final TLS flight")
+        session.failed.set()
+        self.assertEqual(session.dequeue(), b"final TLS flight")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+
+        session.inbound.put_nowait(b"second flight")
+        self.assertEqual(session.dequeue(timeout=0.1), b"second flight")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue(timeout=0.1)
+
+        # An explicit disconnect is different from socket EOF: never expose
+        # queued bytes to the next BLE connection generation.
+        session.inbound.put_nowait(b"discarded on disconnect")
+        session.closed.set()
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+
     def test_origin_requires_explicit_numeric_loopback(self):
         self.assertEqual(parse_loopback_origin("http://127.0.0.1:8787")[:2],
                          ("127.0.0.1", 8787))

@@ -8,13 +8,24 @@ import threading
 import time
 import unittest
 
-from openaps_locald.enrollment_carrier import EnrollmentPublicationWorker
+from openaps_locald.enrollment_carrier import EnrollmentPublicationWorker, _publication_failure_code
 from openaps_locald.http_api import ThreadedHTTPServer, make_handler
+from openaps_locald.nightscout_authorization import NightscoutAuthorizationError
 from openaps_locald.reverse_enrollment import ReverseEnrollmentWorkflow
-from openaps_locald.write_challenge import fresh_challenge
+from openaps_locald.write_challenge import ChallengeError, fresh_challenge
 
 
 class EnrollmentCarrierTests(unittest.TestCase):
+    def test_publication_failure_codes_never_include_untrusted_exception_text(self):
+        self.assertEqual(_publication_failure_code(
+            NightscoutAuthorizationError("proof_publication", status=503)),
+            "proof_publication_http_503")
+        self.assertEqual(_publication_failure_code(
+            ChallengeError("proof participant context mismatch")),
+            "proof_context_mismatch")
+        self.assertEqual(_publication_failure_code(
+            Exception("token=private-example")), "publication_unexpected")
+
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(prefix="openaps-enrollment-http-test-")
         self.server = None

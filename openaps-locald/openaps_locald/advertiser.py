@@ -3,6 +3,7 @@ from __future__ import print_function
 import argparse
 import json
 import os
+import re
 import signal
 import subprocess
 import threading
@@ -14,6 +15,36 @@ DEFAULT_ADVERTISE_INTERVAL_MS = 100
 HCI_TOOL = "hcitool"
 BTMGMT = "btmgmt"
 ADVERTISER_HEALTH_INTERVAL_SECONDS = 60
+
+
+def _validate_hci_command_response(output, expected_opcode):
+    # hcitool cmd exits successfully even when the controller rejects its
+    # command. It can also receive an unrelated event. Only the matching
+    # Command Complete event with success status confirms these commands.
+    if not isinstance(output, bytes) or len(output) > 4096:
+        raise RuntimeError("invalid HCI command response")
+    try:
+        text = output.decode("ascii")
+    except UnicodeDecodeError:
+        raise RuntimeError("invalid HCI command response")
+    events = list(re.finditer(r"^> HCI Event: 0x([0-9a-fA-F]{2}) plen ([0-9]+)\s*$",
+                              text, re.MULTILINE))
+    if len(events) != 1:
+        raise RuntimeError("invalid HCI command response")
+    event = events[0]
+    tokens = text[event.end():].split()
+    payload_length = int(event.group(2))
+    if (int(event.group(1), 16) != 0x0e or
+            not 4 <= payload_length <= 255 or len(tokens) != payload_length or
+            any(re.match(r"^[0-9a-fA-F]{2}$", token) is None for token in tokens)):
+        raise RuntimeError("invalid HCI command response")
+    values = [int(token, 16) for token in tokens]
+    opcode = values[1] | (values[2] << 8)
+    if opcode != expected_opcode:
+        raise RuntimeError("HCI command response opcode mismatch")
+    if values[3] != 0:
+        raise RuntimeError("HCI command rejected opcode=0x%04x status=0x%02x" %
+                           (opcode, values[3]))
 
 
 def _utc_now():
@@ -194,8 +225,10 @@ class RawHciAdvertiser(object):
 
     def command_sequence(self):
         advertising_data, scan_response_data = self._advertising_pair()
+        # start() has already attempted disable through stop(force=True).
+        # Repeating disable can be rejected by an already-disabled controller.
+        # Setup and final enable still each require an accepted response.
         return [
-            self._hcitool_command(0x08, 0x000A, [0x00]),
             self._hcitool_command(
                 0x08,
                 0x0006,
@@ -215,7 +248,9 @@ class RawHciAdvertiser(object):
         ]
 
     def _run_command(self, command):
-        subprocess.check_output(command, stderr=subprocess.STDOUT)
+        output = subprocess.check_output(command, stderr=subprocess.STDOUT)
+        opcode = (int(command[4], 16) << 10) | int(command[5], 16)
+        _validate_hci_command_response(output, opcode)
 
     def start(self):
         self.stop(force=True)
@@ -264,6 +299,8 @@ class RawHciAdvertiser(object):
             "process": "openaps-locald-advertise",
             "reason": reason,
             "adapter": self.adapter,
+            # Lifecycle state only; neither this nor last_enable_at proves
+            # that advertisements are currently being transmitted.
             "running": bool(self._running),
             "started_at": self.started_at,
             "last_setup_at": self.last_setup_at,

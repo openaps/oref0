@@ -46,6 +46,7 @@ class AuthorizationRuntime(object):
         self._admission_activation_lock = threading.Lock()
         self._admission_activation_state = "not_started"
         self._admission_activation_error_category = None
+        self._admission_retryable = False
         self._proof_lock = threading.Lock()
         self._proof_closed = threading.Event()
         self.replay = None
@@ -296,16 +297,20 @@ class AuthorizationRuntime(object):
                         "registry": self._admission_runtime.registry if active else None}
 
     def _activate_admission_once(self):
-        """Perform one bounded policy observation when explicitly enabled."""
+        """Perform one bounded policy observation, including transient retries."""
         if not self._enable_admission:
             return False
         with self._admission_activation_lock:
             if self._admission_activation_state == "active":
                 return True
-            if self._admission_activation_state not in ("not_started", "recovery_only"):
+            if (self._admission_activation_state == "failed" and
+                    not self._admission_retryable):
+                return False
+            if self._admission_activation_state not in ("not_started", "recovery_only", "failed"):
                 return self._admission_activation_state == "active"
-            was_recovery_only = self._admission_activation_state == "recovery_only"
+            was_recovery_only = self._admission_runtime is not None
             self._admission_activation_state = "running"
+        retryable_proof_step = False
         try:
             with self._proof_lock:
                 if self._proof_closed.is_set() or self._proof_client is None:
@@ -319,8 +324,12 @@ class AuthorizationRuntime(object):
                     from .reviewed_policy_anchor import PolicyAnchorMissing
                     if not isinstance(restore_error, PolicyAnchorMissing):
                         raise
+            # Only the remote proof steps are retryable. Local anchor/owner
+            # installation failures may be ambiguous and must remain sticky.
+            retryable_proof_step = True
             observation = client.observe_enrollment_permissions()
             evidence = client.reviewed_policy_evidence(observation)
+            retryable_proof_step = False
             with self._proof_lock:
                 if self._proof_closed.is_set() or self._proof_client is not client:
                     raise NightscoutAuthorizationError("admission_runtime_unavailable")
@@ -334,6 +343,7 @@ class AuthorizationRuntime(object):
                     raise NightscoutAuthorizationError("admission_runtime_unavailable")
                 self._admission_activation_state = "active"
                 self._admission_activation_error_category = None
+                self._admission_retryable = False
             print("openaps authorization admission active", file=sys.stderr, flush=True)
             return True
         except Exception as exc:
@@ -344,6 +354,7 @@ class AuthorizationRuntime(object):
                         "recovery_only" if was_recovery_only and
                         self._admission_runtime is not None else "failed")
                     self._admission_activation_error_category = category
+                    self._admission_retryable = retryable_proof_step
             print("openaps authorization admission unavailable category=" + category,
                   file=sys.stderr, flush=True)
             return False
@@ -518,16 +529,15 @@ class AuthorizationRuntime(object):
 
         def periodic():
             while True:
+                with self._admission_activation_lock:
+                    retry_admission = self._admission_retryable
                 delay = (
                     FAILED_INITIALIZATION_RETRY_SECONDS
-                    if self.client is None
+                    if self.client is None or retry_admission
                     else interval_seconds
                 )
                 time.sleep(delay)
-                if self.client is None:
-                    self.initialize_async()
-                else:
-                    self.reconcile_async()
+                self._periodic_reconciliation_tick()
 
         thread = threading.Thread(target=periodic, name="openaps-auth-shadow-periodic")
         thread.daemon = True
@@ -544,6 +554,16 @@ class AuthorizationRuntime(object):
             }
             return None
         return thread
+
+    def _periodic_reconciliation_tick(self):
+        if self.client is None:
+            self.initialize_async()
+            return
+        with self._admission_activation_lock:
+            retry_admission = self._admission_retryable
+        if retry_admission:
+            self._activate_admission_once()
+        self.reconcile_async()
 
     def consume_replay(self, kind, credential_id, message_id, ack_digest=None):
         if self.client is None or self.replay is None:

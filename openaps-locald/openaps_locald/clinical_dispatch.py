@@ -10,6 +10,7 @@ from urllib.parse import unquote
 
 from .config import accepted_patient_ids
 from .models import ValidationError, ack, validate_event
+from .wifi import WiFiService, WiFiError
 
 
 class ClinicalEventDispatcher(object):
@@ -109,6 +110,15 @@ class ClinicalEventDispatcher(object):
 class ClinicalReadDispatcher(object):
     def __init__(self, config, db, providers, lock):
         self.config, self.db, self.providers, self.lock = config, db, providers, lock
+        self.wifi = WiFiService(config)
+
+    def wifi_authenticated(self, method, path, body, authorize):
+        if not callable(authorize):
+            raise ValueError("live authorization callback required")
+        try:
+            return self.wifi.request(method, path, body, authorize)
+        except WiFiError as exc:
+            return exc.status, {"error": exc.code}
 
     def read_legacy(self, path, query):
         with self.lock:
