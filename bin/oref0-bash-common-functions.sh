@@ -8,6 +8,21 @@ self=$(basename $0)
 
 PREFERENCES_FILE="preferences.json"
 
+# Notifications are optional network work, not part of pump verification.
+# Bound the entire notification process tree, including its Nightscout snooze
+# query and uploads. A dead network must not stall the completed pump loop or
+# cause its watchdog to misclassify a notification hang as a radio failure.
+function run_optional_pushover () {
+    local notification_status=0
+    timeout --kill-after=5s 20s oref0-pushover "$1" "$2" || notification_status=$?
+    if [[ "$notification_status" -eq 124 || "$notification_status" -eq 137 ]]; then
+        echo "Optional notification timed out; continuing completed pump loop."
+    elif [[ "$notification_status" -ne 0 ]]; then
+        echo "Optional notification failed (exit $notification_status); continuing completed pump loop."
+    fi
+    return 0
+}
+
 function run_remote_command () {
     set -o pipefail
     out_file=$( mktemp /tmp/shared_node.XXXXXXXXXXXX)
