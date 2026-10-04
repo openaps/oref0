@@ -21,6 +21,7 @@ except ImportError:
 
 from .db import EventDB
 from .clinical_dispatch import ClinicalEventDispatcher, ClinicalReadDispatcher
+from .bg_readings import read_bg_readings_payload
 from .device_status import read_device_status_payload
 from .config import accepted_patient_ids
 from .authorization_runtime import AuthorizationRuntime
@@ -295,6 +296,7 @@ def make_handler(config, authorization_runtime=None, tls_stream_factory=None, en
     read_dispatcher = ClinicalReadDispatcher(config, db, {
         "status": lambda *args: status(*args),
         "device_status": lambda *args: read_device_status_payload(*args),
+        "bg_readings": lambda *args: read_bg_readings_payload(*args),
         "materialization": lambda *args: read_materialization_state(*args),
         "pump_history": lambda *args, **kwargs: read_pumphistory_payload(*args, **kwargs),
         "metadata": lambda: _authorization_metadata(authorization_runtime),

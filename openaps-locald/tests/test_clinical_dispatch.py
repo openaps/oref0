@@ -132,6 +132,76 @@ class ClinicalDispatchTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.handler.clinical_reads.read_authenticated("/v1/health", {}, True)
 
+    def test_maintenance_bundle_uses_one_authenticated_read_with_bounded_sections(self):
+        reads = self.handler.clinical_reads
+        called = []
+        reads.providers["pump_history"] = lambda config, limit: (
+            called.append(("pump_history", limit)) or {
+                "schema": "openaps.local.pump_history.v1",
+                "rig_id": config["rig_id"], "patient_id": config["patient_id"],
+                "insulin_events": [], "pump_suspend_segments": [], "bolus_events": [],
+            })
+        reads.providers["device_status"] = lambda config: (
+            called.append(("device_status", None)) or {"device_statuses": []})
+        reads.providers["bg_readings"] = lambda config: (
+            called.append(("bg_readings", None)) or {
+                "schema": "openaps.local.bg_readings.v1",
+                "rig_id": config["rig_id"], "patient_id": config["patient_id"], "bg_readings": [],
+            })
+        checks = []
+        code, body = reads.read_authenticated(
+            "/v1/maintenance", {"limit": ["64"]}, lambda: checks.append(True))
+        self.assertEqual(code, 200)
+        self.assertEqual(checks, [True, True])
+        self.assertEqual(body["schema"], "openaps.local.maintenance.v1")
+        self.assertEqual(body["rig_id"], "rig-placeholder")
+        self.assertEqual(body["patient_id"], "patient-placeholder")
+        self.assertEqual(body["device_status"]["patient_id"], "patient-placeholder")
+        self.assertEqual(called, [("pump_history", 64), ("device_status", None),
+                                  ("bg_readings", None)])
+
+        called[:] = []
+        code, body = reads.read_authenticated(
+            "/v1/maintenance", {"include_pump_history": ["0"],
+                                "include_bg_readings": ["0"], "limit": ["1"]},
+            lambda: None)
+        self.assertEqual(code, 200)
+        self.assertEqual(set(body), {"schema", "rig_id", "patient_id", "device_status"})
+        self.assertEqual(called, [("device_status", None)])
+
+    def test_maintenance_bundle_rejects_invalid_identity_and_oversize_without_truncation(self):
+        reads = self.handler.clinical_reads
+        for query in ({"limit": ["65"]}, {"limit": ["0"]},
+                      {"include_pump_history": ["0"], "include_device_status": ["0"],
+                       "include_bg_readings": ["0"]}, {"unknown": ["1"]}):
+            self.assertEqual(reads.read_authenticated("/v1/maintenance", query, lambda: None)[0], 400)
+
+        reads.providers["pump_history"] = lambda config, limit: {
+            "rig_id": "wrong-rig", "patient_id": config["patient_id"]}
+        self.assertEqual(reads.read_authenticated(
+            "/v1/maintenance", {"include_device_status": ["0"],
+                                "include_bg_readings": ["0"]}, lambda: None)[0], 503)
+
+        reads.providers["pump_history"] = lambda config, limit: {
+            "rig_id": config["rig_id"], "patient_id": config["patient_id"],
+            "insulin_events": [{"synthetic_padding": "x" * (61 * 1024)}],
+        }
+        code, body = reads.read_authenticated(
+            "/v1/maintenance", {"include_device_status": ["0"],
+                                "include_bg_readings": ["0"]}, lambda: None)
+        self.assertEqual(code, 413)
+        self.assertEqual(body, {"error": "maintenance_too_large"})
+
+    def test_maintenance_bundle_does_not_read_after_failed_authorization(self):
+        reads = self.handler.clinical_reads
+        calls = []
+        reads.providers["pump_history"] = lambda config, limit: calls.append(True)
+        def reject():
+            raise PermissionError("synthetic trust unavailable")
+        with self.assertRaises(PermissionError):
+            reads.read_authenticated("/v1/maintenance", {}, reject)
+        self.assertEqual(calls, [])
+
     @contextmanager
     def tls_pair(self, authenticated_contact=None):
         # An isolated subclass reuses the synthetic TLS fixture without sharing
@@ -179,6 +249,31 @@ class ClinicalDispatchTests(unittest.TestCase):
             self.assertEqual(first["body"]["acks"][0]["ack_status"], "stored")
             self.assertEqual(second[0]["ack_status"], "duplicate")
             self.assertEqual(self.effects, ["synthetic-event"])
+
+    def test_real_tls_maintenance_bundle_is_one_authenticated_request(self):
+        reads = self.handler.clinical_reads
+        reads.providers["pump_history"] = lambda config, limit: {
+            "schema": "openaps.local.pump_history.v1", "rig_id": config["rig_id"],
+            "patient_id": config["patient_id"], "insulin_events": [],
+            "pump_suspend_segments": [], "bolus_events": [],
+        }
+        reads.providers["device_status"] = lambda config: {"device_statuses": []}
+        reads.providers["bg_readings"] = lambda config: {
+            "schema": "openaps.local.bg_readings.v1", "rig_id": config["rig_id"],
+            "patient_id": config["patient_id"], "bg_readings": [],
+        }
+        with self.tls_pair() as (fixture, session, client, incoming, outgoing):
+            request = self.tls_request(fixture, path="/v1/maintenance")
+            request["query"] = {"limit": ["64"], "include_pump_history": ["1"],
+                                "include_device_status": ["1"], "include_bg_readings": ["1"]}
+            response = self.exchange(session, client, incoming, outgoing, request)
+            self.assertEqual(response["status"], 200)
+            self.assertEqual(response["body"]["schema"], "openaps.local.maintenance.v1")
+            self.assertEqual(response["body"]["rig_id"], "rig-placeholder")
+            self.assertEqual(response["body"]["patient_id"], "patient-placeholder")
+            self.assertEqual(set(response["body"]), {
+                "schema", "rig_id", "patient_id", "pump_history", "device_status", "bg_readings"
+            })
 
     def test_authenticated_contact_runs_only_after_valid_request(self):
         contacts = []
