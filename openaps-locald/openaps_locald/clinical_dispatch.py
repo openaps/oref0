@@ -5,11 +5,22 @@ No TLS/HTTP/BLE framing belongs here. Reuse one dispatcher per service database.
 """
 from __future__ import print_function
 
+import json
+import base64
+import zlib
 import threading
 from urllib.parse import unquote
 
 from .config import accepted_patient_ids
 from .models import ValidationError, ack, validate_event
+from .wifi import WiFiService, WiFiError
+
+
+MAINTENANCE_SCHEMA = "openaps.local.maintenance.v1"
+# The authenticated TLS response frame is 65,532 bytes including its own
+# envelope. Leave room for that envelope and reject an oversized full history
+# rather than silently removing pump events from a clinical read.
+MAX_MAINTENANCE_BODY_BYTES = 60 * 1024
 
 
 class ClinicalEventDispatcher(object):
@@ -109,6 +120,15 @@ class ClinicalEventDispatcher(object):
 class ClinicalReadDispatcher(object):
     def __init__(self, config, db, providers, lock):
         self.config, self.db, self.providers, self.lock = config, db, providers, lock
+        self.wifi = WiFiService(config)
+
+    def wifi_authenticated(self, method, path, body, authorize):
+        if not callable(authorize):
+            raise ValueError("live authorization callback required")
+        try:
+            return self.wifi.request(method, path, body, authorize)
+        except WiFiError as exc:
+            return exc.status, {"error": exc.code}
 
     def read_legacy(self, path, query):
         with self.lock:
@@ -152,6 +172,68 @@ class ClinicalReadDispatcher(object):
             return (200, status_payload)
         elif path in ("/v1/device-status", "/v1/devicestatus"):
             return (200, self.providers["device_status"](config))
+        elif path == "/v1/maintenance":
+            allowed = frozenset(("include_pump_history", "include_device_status",
+                                 "include_bg_readings", "limit", "encoding"))
+            if set(query) - allowed:
+                return (400, {"error": "invalid_maintenance_query"})
+            encoding = query.get("encoding", ["identity"])
+            if encoding not in (["identity"], ["deflate-raw-v1"]):
+                return (400, {"error": "invalid_maintenance_query"})
+            include = {}
+            for name in ("pump_history", "device_status", "bg_readings"):
+                raw = query.get("include_" + name, ["1"])
+                if len(raw) != 1 or raw[0] not in ("0", "1"):
+                    return (400, {"error": "invalid_maintenance_query"})
+                include[name] = raw[0] == "1"
+            raw_limit = query.get("limit", ["64"])
+            if len(raw_limit) != 1 or not raw_limit[0].isdigit() or len(raw_limit[0]) > 2:
+                return (400, {"error": "invalid_maintenance_query"})
+            limit = int(raw_limit[0])
+            if not 1 <= limit <= 64 or not any(include.values()):
+                return (400, {"error": "invalid_maintenance_query"})
+
+            payload = {
+                "schema": MAINTENANCE_SCHEMA,
+                "rig_id": config["rig_id"],
+                "patient_id": config["patient_id"],
+            }
+            if include["pump_history"]:
+                history = self.providers["pump_history"](config, limit=limit)
+                if not isinstance(history, dict) or history.get("rig_id") != config["rig_id"] or \
+                        history.get("patient_id") != config["patient_id"]:
+                    return (503, {"error": "maintenance_source_identity"})
+                payload["pump_history"] = history
+            if include["device_status"]:
+                device_status = self.providers["device_status"](config)
+                if not isinstance(device_status, dict) or not isinstance(device_status.get("device_statuses"), list):
+                    return (503, {"error": "maintenance_source_invalid"})
+                if (device_status.get("rig_id", config["rig_id"]) != config["rig_id"] or
+                        device_status.get("patient_id", config["patient_id"]) != config["patient_id"]):
+                    return (503, {"error": "maintenance_source_identity"})
+                device_status = dict(device_status)
+                device_status["rig_id"] = config["rig_id"]
+                device_status["patient_id"] = config["patient_id"]
+                payload["device_status"] = device_status
+            if include["bg_readings"]:
+                bg_readings = self.providers["bg_readings"](config)
+                if not isinstance(bg_readings, dict) or bg_readings.get("rig_id") != config["rig_id"] or \
+                        bg_readings.get("patient_id") != config["patient_id"]:
+                    return (503, {"error": "maintenance_source_identity"})
+                payload["bg_readings"] = bg_readings
+            encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+            if len(encoded) > MAX_MAINTENANCE_BODY_BYTES:
+                return (413, {"error": "maintenance_too_large"})
+            if encoding == ["deflate-raw-v1"]:
+                compressor = zlib.compressobj(5, zlib.DEFLATED, -15)
+                compressed = compressor.compress(encoded) + compressor.flush()
+                envelope = {"schema": "openaps.local.maintenance.deflate.v1",
+                            "rig_id": config["rig_id"], "patient_id": config["patient_id"],
+                            "uncompressed_bytes": len(encoded),
+                            "payload": base64.b64encode(compressed).decode("ascii")}
+                if len(json.dumps(envelope, separators=(",", ":")).encode("utf-8")) < len(encoded):
+                    return (200, envelope)
+            return (200, payload)
         elif path == "/v1/materialization":
             return (200, {
                 "schema": "openaps.local.materialization.v1",

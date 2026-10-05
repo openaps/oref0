@@ -21,6 +21,7 @@ except ImportError:
 
 from .db import EventDB
 from .clinical_dispatch import ClinicalEventDispatcher, ClinicalReadDispatcher
+from .bg_readings import read_bg_readings_payload
 from .device_status import read_device_status_payload
 from .config import accepted_patient_ids
 from .authorization_runtime import AuthorizationRuntime
@@ -30,7 +31,7 @@ from .enrollment_carrier import EnrollmentPublicationWorker
 from .reverse_enrollment import ReverseEnrollmentWorkflow
 from .authorization_tls import TLSError, boottime
 from .stored_proof import _object as _bounded_proof_object
-from .write_challenge import validate_challenge
+from .write_challenge import ChallengeError, validate_challenge
 from .authorization_protocol import (
     AUTH_HELLO_SCHEMA,
     HTTP_AUTH_ATTEMPT_CAPACITY,
@@ -103,6 +104,25 @@ _TLS_ERROR_REASONS = frozenset((
 
 def _tls_error_reason(error):
     """Return a bounded, static reason token for a TLS stream failure."""
+    if isinstance(error, ChallengeError):
+        # Only fixed admission messages are publishable. Never echo arbitrary
+        # challenge text, credentials, peer keys, or lower-layer diagnostics.
+        reasons = {
+            "registry peer not admitted": "registry_peer_not_admitted",
+            "registry invalidated": "registry_invalidated",
+            "registry peer key changed": "registry_peer_key_changed",
+            "registry peer context changed": "registry_peer_context_changed",
+            "recovery witness unavailable": "recovery_witness_unavailable",
+            "admission unavailable": "admission_unavailable",
+            "admission context changed": "admission_context_changed",
+            "admission owner invalidated": "admission_owner_invalidated",
+            "admission runtime scope changed": "admission_runtime_scope_changed",
+            "settings epoch changed": "settings_epoch_changed",
+            "key epoch changed": "key_epoch_changed",
+            "policy lease replaced": "policy_lease_replaced",
+            "policy generation changed": "policy_generation_changed",
+        }
+        return reasons.get(str(error), "unclassified")
     if isinstance(error, TLSError) and str(error) in _TLS_ERROR_REASONS:
         return str(error).replace(" ", "_").lower()
     return "unclassified"
@@ -295,6 +315,7 @@ def make_handler(config, authorization_runtime=None, tls_stream_factory=None, en
     read_dispatcher = ClinicalReadDispatcher(config, db, {
         "status": lambda *args: status(*args),
         "device_status": lambda *args: read_device_status_payload(*args),
+        "bg_readings": lambda *args: read_bg_readings_payload(*args),
         "materialization": lambda *args: read_materialization_state(*args),
         "pump_history": lambda *args, **kwargs: read_pumphistory_payload(*args, **kwargs),
         "metadata": lambda: _authorization_metadata(authorization_runtime),
@@ -498,7 +519,15 @@ def make_handler(config, authorization_runtime=None, tls_stream_factory=None, en
                 self.wfile.flush()
                 adapter_owned = True
                 serve_recovery_socket(self.connection, stream)
-            except Exception:
+            except Exception as exc:
+                # Never log the signed prelude or arbitrary exception text.
+                # Before-upgrade 503s otherwise hide the recovery prerequisite
+                # that failed behind a generic BLE relay close on the phone.
+                category = ("challenge" if isinstance(exc, ChallengeError) else
+                            "tls" if isinstance(exc, TLSError) else "other")
+                _api_log("recovery TLS upgrade failed category=%s stage=%s reason=%s" %
+                         (category, "after_upgrade" if upgraded else "before_upgrade",
+                          _tls_error_reason(exc)))
                 if not upgraded:
                     self._send_json(503, {"error": "authorization_unavailable"})
             finally:

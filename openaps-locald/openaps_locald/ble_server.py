@@ -28,6 +28,8 @@ except ImportError:
 
 from .ble_protocol import (
     BLE_ACK_CHAR_UUID,
+    BLE_BACKGROUND_WAKE_CHAR_UUID,
+    BLE_BACKGROUND_WAKE_CAPABILITY,
     BLE_BG_READINGS_CHAR_UUID,
     BLE_DEVICE_STATUS_CHAR_UUID,
     BLE_EVENT_CHAR_UUID,
@@ -46,6 +48,7 @@ from .ble_protocol import (
     payload_to_json_bytes,
 )
 from .ble_tls_relay import BLETLSRelay, BLETLSRelayError
+from .ble_wake import BackgroundWakeTicker, wake_interval
 from .bg_readings import read_bg_readings_payload
 from .authorization_protocol import (
     AUTH_ACK_SCHEMA,
@@ -626,7 +629,14 @@ class _BLETLSRelaySession(object):
         self.worker.start()
 
     def enqueue(self, value):
-        if self.closed.is_set() or self.failed.is_set():
+        if self.closed.is_set():
+            raise BLETLSRelayError("relay unavailable")
+        # Empty frames are ATT polls, not socket writes. A poll must still
+        # reach dequeue after socket EOF so the final queued TLS response can
+        # drain. Explicit disconnects and new data remain terminal above/below.
+        if not value:
+            return
+        if self.failed.is_set():
             raise BLETLSRelayError("relay unavailable")
         try:
             self.outbound.put_nowait(value)
@@ -634,19 +644,29 @@ class _BLETLSRelaySession(object):
             raise BLETLSRelayError("relay outbound queue full")
 
     def dequeue(self, timeout=None):
-        if self.failed.is_set() or self.closed.is_set():
+        if self.closed.is_set():
             raise BLETLSRelayError("relay unavailable")
         if timeout is None:
             try:
                 return self.inbound.get_nowait()
             except Empty:
+                if self.failed.is_set():
+                    raise BLETLSRelayError("relay unavailable")
                 raise _BLETLSRelayPending("relay response unavailable")
         if not isinstance(timeout, (int, float)) or timeout <= 0:
             raise _BLETLSRelayPending("relay response unavailable")
         deadline = time.monotonic() + float(timeout)
         while True:
-            if self.failed.is_set() or self.closed.is_set():
+            if self.closed.is_set():
                 raise BLETLSRelayError("relay unavailable")
+            try:
+                # A recovery peer may close immediately after writing its
+                # final TLS flight. Drain already queued bytes before making
+                # that EOF terminal to the BLE reader.
+                return self.inbound.get_nowait()
+            except Empty:
+                if self.failed.is_set():
+                    raise BLETLSRelayError("relay unavailable")
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise _BLETLSRelayPending("relay response unavailable")
@@ -677,17 +697,34 @@ class _BLETLSRelaySession(object):
                     if self.socket_receive_count <= 40:
                         _ble_log("authorization TLS relay socket rx count=%d bytes=%d" %
                                  (self.socket_receive_count, len(value)))
-                    try:
-                        self.inbound.put_nowait(value)
-                    except Full:
-                        raise BLETLSRelayError("relay inbound queue full")
+                    # The loopback TLS socket can produce a handshake flight
+                    # faster than ATT reads drain it. Keep the queue bounded,
+                    # but backpressure the socket instead of aborting a valid
+                    # secure session when that transient burst fills it.
+                    stalled_until = time.monotonic() + 30.0
+                    while not self.closed.is_set():
+                        try:
+                            self.inbound.put(value, timeout=0.1)
+                            break
+                        except Full:
+                            if time.monotonic() >= stalled_until:
+                                raise BLETLSRelayError("relay inbound queue stalled")
+                            continue
         except Exception as exc:
             if not self.closed.is_set():
                 # Keep the diagnostic bounded to an exception class.  Relay
                 # errors must never expose endpoint, credential, or clinical
                 # data through the BLE service journal.
-                _ble_log("authorization TLS relay failed category=%s" %
-                         type(exc).__name__)
+                categories = {
+                    "relay inbound queue stalled": "inbound_queue_stalled",
+                    "relay outbound queue full": "outbound_queue_full",
+                    "relay closed": "socket_closed",
+                    "relay read failed": "socket_read_failed",
+                    "relay write failed": "socket_write_failed",
+                    "relay is unavailable": "socket_unavailable",
+                }
+                category = categories.get(str(exc), type(exc).__name__)
+                _ble_log("authorization TLS relay failed category=%s" % category)
                 self.failed.set()
         finally:
             self.relay.close()
@@ -1062,6 +1099,9 @@ class RigBridge(object):
         }
         if self._tls_relay_enabled:
             payload["capabilities"].append("authorization_tls_relay_v1")
+            payload["capabilities"].append("maintenance_deflate_raw_v1")
+        if self.config.get("ble_background_wake_enabled") is True:
+            payload["capabilities"].append(BLE_BACKGROUND_WAKE_CAPABILITY)
         # This is a legacy BLE read path. Never take the cross-process trust
         # store flock here; background reconciliation owns cache refreshes.
         carrier_ready = bool(
@@ -1672,6 +1712,35 @@ class TLSRelayTXCharacteristic(Characteristic):
         worker.start()
 
 
+class BackgroundWakeCharacteristic(Characteristic):
+    def __init__(self, bus, index, service, config):
+        super(BackgroundWakeCharacteristic, self).__init__(
+            bus, service.bus_name, index, BLE_BACKGROUND_WAKE_CHAR_UUID,
+            service, ["notify"])
+        self.ticker = BackgroundWakeTicker(
+            wake_interval(config), GLib.timeout_add_seconds, GLib.source_remove,
+            self._set_value)
+
+    @dbus.service.method(GATT_CHRC_IFACE, in_signature="", out_signature="")
+    def StartNotify(self):
+        self.notifying = True
+        try:
+            if not self.ticker.start():
+                self.notifying = False
+        except Exception:
+            self.notifying = False
+            raise
+
+    @dbus.service.method(GATT_CHRC_IFACE, in_signature="", out_signature="")
+    def StopNotify(self):
+        self.ticker.stop()
+        self.notifying = False
+
+    def close(self):
+        self.ticker.close()
+        self.notifying = False
+
+
 class LocalBleApplication(object):
     def __init__(self, bus, config, secure_mode_policy_provider=None):
         self.bus = bus
@@ -1695,6 +1764,9 @@ class LocalBleApplication(object):
         if config.get("ble_authorization_tls_relay_enabled") is True:
             self.tls_rx = TLSRelayRXCharacteristic(bus, 7, service, self.bridge)
             self.tls_tx = TLSRelayTXCharacteristic(bus, 8, service, self.bridge)
+        self.background_wake = None
+        if config.get("ble_background_wake_enabled") is True:
+            self.background_wake = BackgroundWakeCharacteristic(bus, 9, service, config)
         self.app = Application(bus, self.bus_name, [service])
         self.advertisement = Advertisement(bus, self.bus_name, 0, config)
         self.legacy_advertisement = LegacyBtMgmtAdvertisement(config)
@@ -1781,6 +1853,7 @@ class LocalBleApplication(object):
         bridge = self.bridge
         return {
             "process": "openaps-locald-ble",
+            "pid": os.getpid(),
             "started_at": self.started_at,
             "registered_at": self.registered_at,
             "bluez_owner": bluez_owner,
@@ -1931,6 +2004,8 @@ def serve_ble(config):
         )
         loop_thread.join()
     finally:
+        if app.background_wake is not None:
+            app.background_wake.close()
         if secure_mode_owner is not None:
             secure_mode_owner.close()
         try:

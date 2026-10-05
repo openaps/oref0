@@ -32,7 +32,12 @@ def _atomic_write_json(path, payload):
     fd, tmp_path = tempfile.mkstemp(prefix=".openaps-locald-", suffix=".json", dir=dirname or None)
     try:
         with os.fdopen(fd, "w") as f:
-            json.dump(payload, f, sort_keys=True, indent=2)
+            # These are machine-readable loop inputs, not diagnostic exports.
+            # dump(indent=2) iterates and writes every token in Python; on the
+            # rig a growing BG cache can consume the BLE acknowledgement window.
+            # dumps without indentation uses the fast encoder and one write,
+            # preserving every record and the existing atomic rename.
+            f.write(json.dumps(payload, sort_keys=True, separators=(",", ":")))
             f.write("\n")
         os.rename(tmp_path, path)
     finally:
@@ -175,6 +180,14 @@ def _record_identity_candidates(record):
     return candidates
 
 
+def _record_timestamp_millis(record):
+    date = _coerce_int(record.get("date"))
+    if date is not None:
+        return date
+    date = _iso_to_millis(record.get("dateString"))
+    return date if date is not None else -1
+
+
 def merge_bg_records(local_records, monitor_records):
     merged = []
     seen = set()
@@ -185,14 +198,16 @@ def merge_bg_records(local_records, monitor_records):
                 continue
             merged.append(record)
             seen.update(candidates)
-    return merged
+    # The loop treats the first entry as current; reconnect backlogs can
+    # arrive out of order, so arrival/source order must not choose the BG.
+    return sorted(merged, key=_record_timestamp_millis, reverse=True)
 
 
 def write_local_bg_record(event, config):
     path = _local_glucose_path(config)
     records = _read_json_array(path)
     records.insert(0, bg_record_from_event(event))
-    _atomic_write_json(path, records)
+    _atomic_write_json(path, sorted(records, key=_record_timestamp_millis, reverse=True))
     return path
 
 

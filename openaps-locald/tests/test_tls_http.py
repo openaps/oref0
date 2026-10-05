@@ -211,7 +211,7 @@ class TLSHTTPTests(unittest.TestCase):
 
     def test_every_legacy_clinical_alias_remains_behind_legacy_auth(self):
         self.start()
-        paths = (b"/v1/status", b"/v1/device-status", b"/v1/devicestatus",
+        paths = (b"/v1/status", b"/v1/device-status", b"/v1/devicestatus", b"/v1/maintenance",
                  b"/v1/materialization", b"/v1/events", b"/v1/bg-readings",
                  b"/v1/bg-readings/latest", b"/v1/pumphistory", b"/v1/pump-history",
                  b"/v1/events/synthetic", b"/v1/events/synthetic/acks")
