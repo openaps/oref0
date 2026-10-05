@@ -39,6 +39,18 @@ class ClinicalDispatchTests(unittest.TestCase):
         self.effects.append(event["event_id"])
         return {"materialization": "synthetic-only"}
 
+    def test_production_handler_wires_maintenance_glucose_provider(self):
+        reads = self.handler.clinical_reads
+        self.assertTrue(callable(reads.providers.get("bg_readings")))
+        status, payload = reads.read_authenticated("/v1/maintenance", {
+            "include_pump_history": ["0"],
+            "include_device_status": ["0"],
+            "include_bg_readings": ["1"],
+        }, lambda: None)
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["bg_readings"]["rig_id"], "rig-placeholder")
+        self.assertEqual(payload["bg_readings"]["patient_id"], "patient-placeholder")
+
     def test_retry_across_legacy_and_authenticated_entry_is_once(self):
         first = self.dispatch.process_legacy([self.event])
         second = self.dispatch.process_authenticated([self.event], lambda: None)
