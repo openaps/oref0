@@ -31,7 +31,7 @@ from .enrollment_carrier import EnrollmentPublicationWorker
 from .reverse_enrollment import ReverseEnrollmentWorkflow
 from .authorization_tls import TLSError, boottime
 from .stored_proof import _object as _bounded_proof_object
-from .write_challenge import validate_challenge
+from .write_challenge import ChallengeError, validate_challenge
 from .authorization_protocol import (
     AUTH_HELLO_SCHEMA,
     HTTP_AUTH_ATTEMPT_CAPACITY,
@@ -104,6 +104,17 @@ _TLS_ERROR_REASONS = frozenset((
 
 def _tls_error_reason(error):
     """Return a bounded, static reason token for a TLS stream failure."""
+    if isinstance(error, ChallengeError):
+        # Only fixed registry messages are publishable. Never echo arbitrary
+        # challenge text, credentials, peer keys, or lower-layer diagnostics.
+        reasons = {
+            "registry peer not admitted": "registry_peer_not_admitted",
+            "registry invalidated": "registry_invalidated",
+            "registry peer key changed": "registry_peer_key_changed",
+            "registry peer context changed": "registry_peer_context_changed",
+            "recovery witness unavailable": "recovery_witness_unavailable",
+        }
+        return reasons.get(str(error), "unclassified")
     if isinstance(error, TLSError) and str(error) in _TLS_ERROR_REASONS:
         return str(error).replace(" ", "_").lower()
     return "unclassified"
