@@ -540,6 +540,30 @@ dedupe_path() {
     fi
 }
 
+# Preserve cp -pu freshness semantics without exposing partial loop inputs.
+atomic_copy_if_newer() {
+    local source_file=$1 destination_file=$2 temporary_file
+    [[ -f "$source_file" ]] || return 1
+    if [[ -e "$destination_file" && ! "$source_file" -nt "$destination_file" ]]; then
+        return 0
+    fi
+    temporary_file=$(mktemp "${destination_file}.copy.XXXXXX") || return 1
+    if ! cp -p "$source_file" "$temporary_file"; then
+        rm -f "$temporary_file"
+        return 1
+    fi
+    # Another producer may have supplied fresher data during the copy.
+    if [[ -e "$destination_file" && ! "$temporary_file" -nt "$destination_file" ]]; then
+        rm -f "$temporary_file"
+        return 0
+    fi
+    # Same-directory rename prevents readers from seeing a truncated copy.
+    if ! mv -f "$temporary_file" "$destination_file"; then
+        rm -f "$temporary_file"
+        return 1
+    fi
+}
+
 # Usage: wait_for_silence <seconds of silence>
 # listen for $1 seconds of silence (no other rigs or enlite transmitter talking to pump) before continuing
 # If communication is detected, it'll retry to listen for $1 seconds.
