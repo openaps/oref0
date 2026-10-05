@@ -511,7 +511,15 @@ def make_handler(config, authorization_runtime=None, tls_stream_factory=None, en
                 self.wfile.flush()
                 adapter_owned = True
                 serve_recovery_socket(self.connection, stream)
-            except Exception:
+            except Exception as exc:
+                # Never log the signed prelude or arbitrary exception text.
+                # Before-upgrade 503s otherwise hide the recovery prerequisite
+                # that failed behind a generic BLE relay close on the phone.
+                category = ("challenge" if isinstance(exc, ChallengeError) else
+                            "tls" if isinstance(exc, TLSError) else "other")
+                _api_log("recovery TLS upgrade failed category=%s stage=%s reason=%s" %
+                         (category, "after_upgrade" if upgraded else "before_upgrade",
+                          _tls_error_reason(exc)))
                 if not upgraded:
                     self._send_json(503, {"error": "authorization_unavailable"})
             finally:
