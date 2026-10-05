@@ -32,7 +32,12 @@ def _atomic_write_json(path, payload):
     fd, tmp_path = tempfile.mkstemp(prefix=".openaps-locald-", suffix=".json", dir=dirname or None)
     try:
         with os.fdopen(fd, "w") as f:
-            json.dump(payload, f, sort_keys=True, indent=2)
+            # These are machine-readable loop inputs, not diagnostic exports.
+            # dump(indent=2) iterates and writes every token in Python; on the
+            # rig a growing BG cache can consume the BLE acknowledgement window.
+            # dumps without indentation uses the fast encoder and one write,
+            # preserving every record and the existing atomic rename.
+            f.write(json.dumps(payload, sort_keys=True, separators=(",", ":")))
             f.write("\n")
         os.rename(tmp_path, path)
     finally:

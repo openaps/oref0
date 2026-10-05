@@ -4,10 +4,27 @@ import shutil
 import tempfile
 import unittest
 
-from openaps_locald.bg_history import merge_bg_records, merge_local_bg_into_monitor, write_local_bg_record
+from openaps_locald.bg_history import _atomic_write_json, merge_bg_records, merge_local_bg_into_monitor, write_local_bg_record
 
 
 class BGHistoryOrderingTests(unittest.TestCase):
+    def test_large_cache_compact_write_preserves_every_record(self):
+        directory = tempfile.mkdtemp()
+        try:
+            path = os.path.join(directory, "glucose.json")
+            records = [{"date": index, "sgv": 100,
+                        "event_id": "synthetic-%s" % index,
+                        "notes": "synthetic unicode \u2603", "noise": None}
+                       for index in range(5000)]
+            _atomic_write_json(path, records)
+            with open(path) as handle:
+                encoded = handle.read()
+            self.assertEqual(json.loads(encoded), records)
+            self.assertEqual(encoded.count("\n"), 1)
+            self.assertEqual(os.listdir(directory), ["glucose.json"])
+        finally:
+            shutil.rmtree(directory)
+
     def test_newer_monitor_record_precedes_local_backlog(self):
         older = {"date": 1000, "event_id": "synthetic-old"}
         newer = {"date": 2000, "event_id": "synthetic-new"}
