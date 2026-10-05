@@ -42,6 +42,18 @@ class BGHistoryOrderingTests(unittest.TestCase):
         other = {"date": 1000, "event_id": "synthetic-other"}
         self.assertEqual(merge_bg_records([local], [duplicate, other]), [local, other])
 
+    def test_skipped_duplicate_does_not_add_new_identity_aliases(self):
+        first = {"date": 1000, "event_id": "synthetic-first"}
+        duplicate = dict(first, reading_id="synthetic-new-alias")
+        distinct = {"date": 2000, "reading_id": "synthetic-new-alias"}
+        self.assertEqual(merge_bg_records([first], [duplicate, distinct]),
+                         [distinct, first])
+
+    def test_fallback_identity_and_string_coercion_are_preserved(self):
+        first = {"date": 1000, "glucose": 100, "device": "synthetic"}
+        duplicate = {"date": "1000", "sgv": "100", "device": "synthetic"}
+        self.assertEqual(merge_bg_records([first], [duplicate]), [first])
+
     def test_older_arrival_does_not_replace_current_local_or_monitor_bg(self):
         directory = tempfile.mkdtemp()
         try:
