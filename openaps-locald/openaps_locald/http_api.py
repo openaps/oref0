@@ -105,7 +105,7 @@ _TLS_ERROR_REASONS = frozenset((
 def _tls_error_reason(error):
     """Return a bounded, static reason token for a TLS stream failure."""
     if isinstance(error, ChallengeError):
-        # Only fixed registry messages are publishable. Never echo arbitrary
+        # Only fixed admission messages are publishable. Never echo arbitrary
         # challenge text, credentials, peer keys, or lower-layer diagnostics.
         reasons = {
             "registry peer not admitted": "registry_peer_not_admitted",
@@ -113,6 +113,14 @@ def _tls_error_reason(error):
             "registry peer key changed": "registry_peer_key_changed",
             "registry peer context changed": "registry_peer_context_changed",
             "recovery witness unavailable": "recovery_witness_unavailable",
+            "admission unavailable": "admission_unavailable",
+            "admission context changed": "admission_context_changed",
+            "admission owner invalidated": "admission_owner_invalidated",
+            "admission runtime scope changed": "admission_runtime_scope_changed",
+            "settings epoch changed": "settings_epoch_changed",
+            "key epoch changed": "key_epoch_changed",
+            "policy lease replaced": "policy_lease_replaced",
+            "policy generation changed": "policy_generation_changed",
         }
         return reasons.get(str(error), "unclassified")
     if isinstance(error, TLSError) and str(error) in _TLS_ERROR_REASONS:

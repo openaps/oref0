@@ -29,6 +29,24 @@ class TLSErrorReasonTests(unittest.TestCase):
         self.assertEqual(_tls_error_reason(TLSError("invalid stream hello")),
                          "invalid_stream_hello")
 
+    def test_fixed_admission_failures_are_distinguishable(self):
+        messages = (
+            "admission unavailable", "admission context changed",
+            "admission owner invalidated", "admission runtime scope changed",
+            "settings epoch changed", "key epoch changed",
+            "policy lease replaced", "policy generation changed",
+        )
+        for message in messages:
+            with self.subTest(message=message):
+                self.assertEqual(_tls_error_reason(ChallengeError(message)),
+                                 message.replace(" ", "_"))
+
+    def test_unknown_or_embellished_messages_never_escape(self):
+        for message in ("synthetic-private-payload",
+                        "settings epoch changed: synthetic-private-payload"):
+            self.assertEqual(_tls_error_reason(ChallengeError(message)), "unclassified")
+            self.assertEqual(_tls_error_reason(ValueError(message)), "unclassified")
+
 
 if __name__ == "__main__":
     unittest.main()
