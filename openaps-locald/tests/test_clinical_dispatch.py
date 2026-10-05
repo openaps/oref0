@@ -1,4 +1,6 @@
 import copy
+import base64
+import zlib
 import json
 import struct
 import os
@@ -169,6 +171,22 @@ class ClinicalDispatchTests(unittest.TestCase):
         self.assertEqual(set(body), {"schema", "rig_id", "patient_id", "device_status"})
         self.assertEqual(called, [("device_status", None)])
 
+    def test_maintenance_compression_is_opt_in_and_lossless(self):
+        self.test_maintenance_bundle_uses_one_authenticated_read_with_bounded_sections()
+        reads = self.handler.clinical_reads
+        code, original = reads.read_authenticated("/v1/maintenance", {}, lambda: None)
+        self.assertEqual(code, 200)
+        code, compressed = reads.read_authenticated(
+            "/v1/maintenance", {"encoding": ["deflate-raw-v1"]}, lambda: None)
+        self.assertEqual(code, 200)
+        self.assertEqual(compressed["schema"], "openaps.local.maintenance.deflate.v1")
+        decoded = zlib.decompress(base64.b64decode(compressed["payload"]), -15)
+        self.assertEqual(len(decoded), compressed["uncompressed_bytes"])
+        self.assertEqual(json.loads(decoded.decode("utf-8")), original)
+        for encoding in (["unknown"], ["identity", "deflate-raw-v1"]):
+            self.assertEqual(reads.read_authenticated(
+                "/v1/maintenance", {"encoding": encoding}, lambda: None)[0], 400)
+
     def test_maintenance_bundle_rejects_invalid_identity_and_oversize_without_truncation(self):
         reads = self.handler.clinical_reads
         for query in ({"limit": ["65"]}, {"limit": ["0"]},
@@ -189,6 +207,12 @@ class ClinicalDispatchTests(unittest.TestCase):
         code, body = reads.read_authenticated(
             "/v1/maintenance", {"include_device_status": ["0"],
                                 "include_bg_readings": ["0"]}, lambda: None)
+        self.assertEqual(code, 413)
+        self.assertEqual(body, {"error": "maintenance_too_large"})
+        code, body = reads.read_authenticated(
+            "/v1/maintenance", {"include_device_status": ["0"],
+                                "include_bg_readings": ["0"],
+                                "encoding": ["deflate-raw-v1"]}, lambda: None)
         self.assertEqual(code, 413)
         self.assertEqual(body, {"error": "maintenance_too_large"})
 

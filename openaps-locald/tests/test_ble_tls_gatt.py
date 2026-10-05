@@ -125,10 +125,14 @@ class BLETLSGATTTests(unittest.TestCase):
         self.assertEqual(factory.instances, [])
         self.assertNotIn("authorization_tls_relay_v1",
                          bridge.rig_info_payload("connection-a")["capabilities"])
+        self.assertNotIn("maintenance_deflate_raw_v1",
+                         bridge.rig_info_payload("connection-a")["capabilities"])
 
     def test_single_session_frames_remain_opaque(self):
         factory = RelayFactory()
         bridge = self.bridge(True, factory)
+        self.assertIn("maintenance_deflate_raw_v1",
+                      bridge.rig_info_payload("connection-a")["capabilities"])
         first = b"\x16\x03\x03\x00\x01a"
         second = b"\x00opaque\xff"
         bridge.submit_tls_relay_frame(encode_tls_relay_frame(first), "connection-a")

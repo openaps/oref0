@@ -6,6 +6,8 @@ No TLS/HTTP/BLE framing belongs here. Reuse one dispatcher per service database.
 from __future__ import print_function
 
 import json
+import base64
+import zlib
 import threading
 from urllib.parse import unquote
 
@@ -172,8 +174,11 @@ class ClinicalReadDispatcher(object):
             return (200, self.providers["device_status"](config))
         elif path == "/v1/maintenance":
             allowed = frozenset(("include_pump_history", "include_device_status",
-                                 "include_bg_readings", "limit"))
+                                 "include_bg_readings", "limit", "encoding"))
             if set(query) - allowed:
+                return (400, {"error": "invalid_maintenance_query"})
+            encoding = query.get("encoding", ["identity"])
+            if encoding not in (["identity"], ["deflate-raw-v1"]):
                 return (400, {"error": "invalid_maintenance_query"})
             include = {}
             for name in ("pump_history", "device_status", "bg_readings"):
@@ -216,9 +221,18 @@ class ClinicalReadDispatcher(object):
                         bg_readings.get("patient_id") != config["patient_id"]:
                     return (503, {"error": "maintenance_source_identity"})
                 payload["bg_readings"] = bg_readings
-            if len(json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")) > \
-                    MAX_MAINTENANCE_BODY_BYTES:
+            encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+            if len(encoded) > MAX_MAINTENANCE_BODY_BYTES:
                 return (413, {"error": "maintenance_too_large"})
+            if encoding == ["deflate-raw-v1"]:
+                compressor = zlib.compressobj(5, zlib.DEFLATED, -15)
+                compressed = compressor.compress(encoded) + compressor.flush()
+                envelope = {"schema": "openaps.local.maintenance.deflate.v1",
+                            "rig_id": config["rig_id"], "patient_id": config["patient_id"],
+                            "uncompressed_bytes": len(encoded),
+                            "payload": base64.b64encode(compressed).decode("ascii")}
+                if len(json.dumps(envelope, separators=(",", ":")).encode("utf-8")) < len(encoded):
+                    return (200, envelope)
             return (200, payload)
         elif path == "/v1/materialization":
             return (200, {

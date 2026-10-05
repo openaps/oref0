@@ -1099,6 +1099,7 @@ class RigBridge(object):
         }
         if self._tls_relay_enabled:
             payload["capabilities"].append("authorization_tls_relay_v1")
+            payload["capabilities"].append("maintenance_deflate_raw_v1")
         if self.config.get("ble_background_wake_enabled") is True:
             payload["capabilities"].append(BLE_BACKGROUND_WAKE_CAPABILITY)
         # This is a legacy BLE read path. Never take the cross-process trust
