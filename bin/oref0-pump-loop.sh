@@ -823,7 +823,14 @@ function check_battery() {
 }
 function check_tempbasal() {
   set -o pipefail
-  mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp | grep absolute >&4 && cp monitor/temp_basal.json monitor/last_temp_basal.json
+  if (mdt tempbasal | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp | grep absolute >&4 && cp monitor/temp_basal.json monitor/last_temp_basal.json) 2>monitor/temp-basal-read-error.log; then
+    return 0
+  else
+    local read_status=$?
+    echo "Pump temp basal read failed (exit $read_status)." >&2
+    tail -n 12 monitor/temp-basal-read-error.log >&2
+    return "$read_status"
+  fi
 }
 
 # clear and refresh the 24h pumphistory file approximatively every 6 hours.
