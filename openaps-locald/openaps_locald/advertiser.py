@@ -15,6 +15,7 @@ DEFAULT_ADVERTISE_INTERVAL_MS = 100
 HCI_TOOL = "hcitool"
 BTMGMT = "btmgmt"
 ADVERTISER_HEALTH_INTERVAL_SECONDS = 60
+CONTROLLER_COMMAND_TIMEOUT_SECONDS = 5
 
 
 def _validate_hci_command_response(output, expected_opcode):
@@ -186,23 +187,23 @@ class RawHciAdvertiser(object):
     def _ensure_visibility(self):
         if not self.manage_visibility:
             return
-        subprocess.check_output(self._btmgmt_command("name", self.name), stderr=subprocess.STDOUT)
-        subprocess.check_output(self._btmgmt_command("connectable", "on"), stderr=subprocess.STDOUT)
-        subprocess.check_output(self._btmgmt_command("discov", "on"), stderr=subprocess.STDOUT)
+        subprocess.check_output(self._btmgmt_command("name", self.name), stderr=subprocess.STDOUT, timeout=CONTROLLER_COMMAND_TIMEOUT_SECONDS)
+        subprocess.check_output(self._btmgmt_command("connectable", "on"), stderr=subprocess.STDOUT, timeout=CONTROLLER_COMMAND_TIMEOUT_SECONDS)
+        subprocess.check_output(self._btmgmt_command("discov", "on"), stderr=subprocess.STDOUT, timeout=CONTROLLER_COMMAND_TIMEOUT_SECONDS)
 
     def _restore_visibility(self):
         if not self.manage_visibility:
             return
         try:
-            subprocess.check_output(self._btmgmt_command("discov", "off"), stderr=subprocess.STDOUT)
+            subprocess.check_output(self._btmgmt_command("discov", "off"), stderr=subprocess.STDOUT, timeout=CONTROLLER_COMMAND_TIMEOUT_SECONDS)
         except Exception:
             pass
         try:
-            subprocess.check_output(self._btmgmt_command("connectable", "off"), stderr=subprocess.STDOUT)
+            subprocess.check_output(self._btmgmt_command("connectable", "off"), stderr=subprocess.STDOUT, timeout=CONTROLLER_COMMAND_TIMEOUT_SECONDS)
         except Exception:
             pass
         try:
-            subprocess.check_output(self._btmgmt_command("name", self.restore_name), stderr=subprocess.STDOUT)
+            subprocess.check_output(self._btmgmt_command("name", self.restore_name), stderr=subprocess.STDOUT, timeout=CONTROLLER_COMMAND_TIMEOUT_SECONDS)
         except Exception:
             pass
 
@@ -248,7 +249,10 @@ class RawHciAdvertiser(object):
         ]
 
     def _run_command(self, command):
-        output = subprocess.check_output(command, stderr=subprocess.STDOUT)
+        # A missing controller reply must not freeze periodic re-enablement or
+        # prevent shutdown. check_output kills and reaps a timed-out child.
+        output = subprocess.check_output(command, stderr=subprocess.STDOUT,
+                                         timeout=CONTROLLER_COMMAND_TIMEOUT_SECONDS)
         opcode = (int(command[4], 16) << 10) | int(command[5], 16)
         _validate_hci_command_response(output, opcode)
 

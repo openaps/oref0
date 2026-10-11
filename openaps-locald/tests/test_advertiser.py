@@ -44,7 +44,8 @@ class AdvertiserCommandStatusTests(unittest.TestCase):
                 self.assertTrue(instance.enable_once())
         run.assert_called_once_with(
             ["hcitool", "-i", "hci0", "cmd", "0x08", "0x000a", "0x01"],
-            stderr=advertiser.subprocess.STDOUT)
+            stderr=advertiser.subprocess.STDOUT,
+            timeout=advertiser.CONTROLLER_COMMAND_TIMEOUT_SECONDS)
         self.assertEqual(instance.last_enable_at, "accepted-now")
         self.assertIsNone(instance.last_error)
 
@@ -98,6 +99,26 @@ class AdvertiserCommandStatusTests(unittest.TestCase):
             self.assertFalse(instance.enable_once())
         self.assertEqual(instance.last_enable_at, "previous-success")
         self.assertIsNotNone(instance.last_error_at)
+
+    def test_timed_out_enable_can_retry_without_claiming_success(self):
+        instance = self.make_advertiser()
+        instance.last_enable_at = "previous-success"
+        timeout = advertiser.subprocess.TimeoutExpired("synthetic-controller", 5)
+        with patch.object(advertiser.subprocess, "check_output",
+                          side_effect=[timeout, command_complete()]) as run:
+            self.assertFalse(instance.enable_once())
+            self.assertEqual(instance.last_enable_at, "previous-success")
+            self.assertTrue(instance.enable_once())
+        self.assertTrue(all(call.kwargs["timeout"] == 5 for call in run.call_args_list))
+
+    def test_visibility_commands_are_bounded_even_during_cleanup(self):
+        instance = self.make_advertiser()
+        instance.manage_visibility = True
+        with patch.object(advertiser.subprocess, "check_output", return_value=b"") as run:
+            instance._ensure_visibility()
+            instance._restore_visibility()
+        self.assertEqual(run.call_count, 6)
+        self.assertTrue(all(call.kwargs["timeout"] == 5 for call in run.call_args_list))
 
 
 class StatefulController(object):
