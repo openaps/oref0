@@ -846,7 +846,9 @@ function read_pumphistory() {
   else
     echo -n "Pump history update"
     try_fail mv monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json
-    if ((pumphistory -f $topRecordId  2>&3 | jq -f openaps.jq 2>&3 ) && cat monitor/pumphistory-24h-zoned-old.json) | jq -s '.[0] + .[1]'  > monitor/pumphistory-24h-zoned.json; then
+    # Keep the acquisition error locally: fd 3 is normally /dev/null, which
+    # otherwise hides the reason a required history refresh stops the loop.
+    if ((pumphistory -f "$topRecordId" | jq -f openaps.jq) && cat monitor/pumphistory-24h-zoned-old.json) 2>monitor/pumphistory-refresh-error.log | jq -s '.[0] + .[1]'  > monitor/pumphistory-24h-zoned.json; then
       newRecords=$(jq -s '(.[0] | length) - (.[1] | length)' monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json)
       try_fail rm monitor/pumphistory-24h-zoned-old.json
       echo -n "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json) with ${newRecords} new records; "
@@ -854,6 +856,8 @@ function read_pumphistory() {
     else
       # exit status 2 means we didn't find the topRecordId in the pump, we should request a full history refresh.
       exit_status=$?
+      echo "Pump history refresh failed (exit $exit_status)." >&2
+      tail -n 12 monitor/pumphistory-refresh-error.log >&2
       if [ $exit_status -eq 2 ]; then
         read_full_pumphistory
       else
