@@ -540,6 +540,9 @@ class Characteristic(dbus.service.Object):
                                 Characteristic._read_buffers.pop(key, None)
                             else:
                                 Characteristic._read_buffers[key] = (chunks, next_index, time.time())
+                            record_progress = getattr(self, "_record_read_progress", None)
+                            if callable(record_progress):
+                                record_progress(next_index, len(chunks))
                             return _bytes_to_dbus_array(chunk)
             data = bytes(bytearray(self._read_value(options)))
             if device and len(data) > _ATT_CHUNK:
@@ -547,7 +550,13 @@ class Characteristic(dbus.service.Object):
                 if len(chunks) > 1:
                     with Characteristic._read_buffers_lock:
                         Characteristic._read_buffers[(device, self.uuid)] = (chunks, 1, time.time())
+                record_progress = getattr(self, "_record_read_progress", None)
+                if callable(record_progress):
+                    record_progress(1, len(chunks))
                 return _bytes_to_dbus_array(chunks[0])
+            record_progress = getattr(self, "_record_read_progress", None)
+            if callable(record_progress):
+                record_progress(1, 1)
             return _bytes_to_dbus_array(data)
         finally:
             if state_lock is not None:
@@ -758,6 +767,7 @@ class RigBridge(object):
         self.http_endpoint = _advertised_http_endpoint(config)
         self.started_at = _utc_now()
         self.last_rig_info_read_at = None
+        self.rig_info_read_trace = []
         self.last_status_read_at = None
         self.last_pumphistory_read_at = None
         self.last_device_status_read_at = None
@@ -1479,6 +1489,14 @@ class RigInfoCharacteristic(Characteristic):
         super(RigInfoCharacteristic, self).__init__(bus, service.bus_name, index, BLE_INFO_CHAR_UUID, service, ["read"])
         self.bridge = bridge
 
+    def _record_read_progress(self, completed_chunks, expected_chunks):
+        # Only timestamps and counts; never device paths, payloads or keys.
+        trace = getattr(self.bridge, "rig_info_read_trace", [])
+        trace.append({"at_ms": int(time.time() * 1000),
+                      "completed_chunks": completed_chunks,
+                      "expected_chunks": expected_chunks})
+        self.bridge.rig_info_read_trace = trace[-64:]
+
     def _read_value(self, options):
         self.bridge.last_rig_info_read_at = _utc_now()
         connection_id = str(options.get("device", "")) if options else ""
@@ -1867,6 +1885,7 @@ class LocalBleApplication(object):
             "advertisement_backend": self.advertisement_backend or "external",
             "advertise_enabled": bool(self.config.get("advertise_enabled")),
             "last_rig_info_read_at": bridge.last_rig_info_read_at,
+            "rig_info_read_trace": list(getattr(bridge, "rig_info_read_trace", [])),
             "last_status_read_at": bridge.last_status_read_at,
             "last_pumphistory_read_at": bridge.last_pumphistory_read_at,
             "last_device_status_read_at": bridge.last_device_status_read_at,
