@@ -321,8 +321,8 @@ class AuthorizationRuntime(object):
                     self.install_admission_registry(None)
                     was_recovery_only = True
                 except Exception as restore_error:
-                    from .reviewed_policy_anchor import PolicyAnchorMissing
-                    if not isinstance(restore_error, PolicyAnchorMissing):
+                    from .reviewed_policy_anchor import PolicyAnchorMissing, PolicyAnchorRejected
+                    if not isinstance(restore_error, (PolicyAnchorMissing, PolicyAnchorRejected)):
                         raise
             # Only the remote proof steps are retryable. Local anchor/owner
             # installation failures may be ambiguous and must remain sticky.

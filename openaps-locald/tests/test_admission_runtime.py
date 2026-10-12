@@ -272,7 +272,7 @@ class AdmissionRuntimeTests(unittest.TestCase):
         self.assertFalse(runtime._admission_retryable)
         self.assertTrue(callable(runtime.enrollment_components()[0]))
 
-    def test_authorization_runtime_malformed_anchor_is_sticky_without_network(self):
+    def test_authorization_runtime_malformed_anchor_recovers_with_fresh_network_proof(self):
         f, client, _evidence, paths = self.fixture()
         AdmissionStorage(paths[4]).replace(b"{}", expecting=None)
         runtime = AuthorizationRuntime({"authorization_mode": "legacy",
@@ -280,15 +280,16 @@ class AdmissionRuntimeTests(unittest.TestCase):
         runtime.identity, runtime._proof_client = f.rig, client
         self.addCleanup(runtime.close_proof_owner)
         before = len(f.calls)
-        self.assertFalse(runtime._activate_admission_once())
-        self.assertEqual(len(f.calls), before)
-        self.assertEqual(runtime.admission_availability()["state"], "failed")
+        f.replies = [(200, b'{"check":true}')]
+        self.assertTrue(runtime._activate_admission_once())
+        self.assertEqual(len(f.calls), before + 1)
+        self.assertEqual(runtime.admission_availability()["state"], "active")
         self.assertFalse(runtime._admission_retryable)
-        self.assertIsNone(runtime.recovery_registry())
-        self.assertFalse(runtime._activate_admission_once())
-        self.assertEqual(len(f.calls), before)
+        self.assertTrue(callable(runtime.enrollment_components()[0]))
+        self.assertTrue(runtime._activate_admission_once())
+        self.assertEqual(len(f.calls), before + 1)
 
-    def test_authorization_runtime_changed_settings_epoch_rejects_anchor_before_network(self):
+    def test_authorization_runtime_changed_settings_epoch_recovers_with_fresh_proof(self):
         f, client, evidence, paths = self.fixture()
         first = AdmissionRuntime(client, f.rig, evidence, *paths, clock=lambda: f.time)
         first.invalidate()
@@ -303,9 +304,10 @@ class AdmissionRuntimeTests(unittest.TestCase):
         runtime.identity, runtime._proof_client = f.rig, client
         self.addCleanup(runtime.close_proof_owner)
         before = len(f.calls)
-        self.assertFalse(runtime._activate_admission_once())
-        self.assertEqual(len(f.calls), before)
-        self.assertEqual(runtime.admission_availability()["state"], "failed")
+        f.replies = [(200, b'{"check":true}')]
+        self.assertTrue(runtime._activate_admission_once())
+        self.assertEqual(len(f.calls), before + 1)
+        self.assertEqual(runtime.admission_availability()["state"], "active")
 
     def complete_enrollment(self, f, runtime):
         original = fresh_challenge(f.authority, f.phone.credential_id, "phone",
