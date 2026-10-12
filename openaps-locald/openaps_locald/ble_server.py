@@ -691,11 +691,13 @@ class _BLETLSRelaySession(object):
         try:
             self.relay.open()
             _ble_log("authorization TLS relay loopback upgraded")
+            last_send_at = None
             while not self.closed.is_set():
                 try:
                     while True:
                         value = self.outbound.get_nowait()
                         self.relay.send(value)
+                        last_send_at = time.monotonic()
                         self.socket_send_count += 1
                         if self.socket_send_count <= 40:
                             _ble_log("authorization TLS relay socket tx count=%d bytes=%d" %
@@ -703,7 +705,9 @@ class _BLETLSRelaySession(object):
                 except Empty:
                     pass
                 value = self.relay.receive(
-                    MAX_TLS_RELAY_FRAME_BYTES, timeout=0.1, timeout_is_empty=True)
+                    MAX_TLS_RELAY_FRAME_BYTES,
+                    timeout=self._receive_poll_timeout(last_send_at, time.monotonic()),
+                    timeout_is_empty=True)
                 if value is not None:
                     self.socket_receive_count += 1
                     if self.socket_receive_count <= 40:
@@ -741,6 +745,16 @@ class _BLETLSRelaySession(object):
         finally:
             self.relay.close()
             self.stopped.set()
+
+    @staticmethod
+    def _receive_poll_timeout(last_send_at, now):
+        # One worker handles both directions. During fragmented phone TLS
+        # flights, a long socket wait delays forwarding the next ATT write.
+        # Poll briefly for one second after a send, then back off when idle.
+        # Queue bounds, TLS deadlines and disconnect handling are unchanged.
+        if last_send_at is not None and 0 <= now - last_send_at < 1.0:
+            return 0.01
+        return 0.1
 
     def close(self):
         self.closed.set()

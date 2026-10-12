@@ -50,6 +50,37 @@ class Fixture(object):
 
 
 class BLETLSRelayTests(unittest.TestCase):
+    def test_active_fragment_polling_backs_off_when_idle(self):
+        poll = _BLETLSRelaySession._receive_poll_timeout
+        self.assertEqual(poll(None, 10), 0.1)
+        self.assertEqual(poll(10, 10), 0.01)
+        self.assertEqual(poll(10, 10.999), 0.01)
+        self.assertEqual(poll(10, 11), 0.1)
+        self.assertEqual(poll(10, 9), 0.1)
+
+    def test_worker_uses_active_poll_after_forwarding_fragment(self):
+        class RecordingRelay(object):
+            def open(self):
+                pass
+            def send(self, value):
+                self.sent = value
+            def receive(self, size, timeout, timeout_is_empty):
+                self.poll = timeout
+                self.session.closed.set()
+                return None
+            def close(self):
+                pass
+        relay = RecordingRelay()
+        session = _BLETLSRelaySession(relay, 1)
+        relay.session = session
+        session.enqueue(b"synthetic fragment")
+        session.start()
+        session.worker.join(1)
+        self.assertFalse(session.worker.is_alive())
+        self.assertEqual(relay.sent, b"synthetic fragment")
+        self.assertEqual(relay.poll, 0.01)
+        self.assertFalse(session.failed.is_set())
+
     def test_session_backpressures_full_att_queue(self):
         class OneFrameRelay(object):
             def __init__(self):
