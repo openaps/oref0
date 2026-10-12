@@ -598,7 +598,7 @@ function wait_for_silence {
             listen -t "${waitfor}s" 2>"$silence_log" || silence_status=$?
         fi
         silence_quiet=no
-        if [ "$silence_status" -eq 1 ] && grep -q ' timeout$' "$silence_log"; then
+        if [ "$silence_status" -eq 1 ] && grep -Eq '^[0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} timeout$' "$silence_log"; then
             silence_quiet=yes
         fi
         cat "$silence_log" >&4

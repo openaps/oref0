@@ -20,14 +20,15 @@ listen() {
     calls=$((calls + 1))
     SECONDS=$((SECONDS + 27))
     case "$scenario" in
-        quiet) echo 'SYNTHETIC_TIME timeout' >&2; return 1 ;;
+        quiet) echo '2020/01/01 00:00:00 timeout' >&2; return 1 ;;
         busy) return 0 ;;
-        clears) [[ "$calls" -eq 1 ]] && return 0; echo 'SYNTHETIC_TIME timeout' >&2; return 1 ;;
+        clears) [[ "$calls" -eq 1 ]] && return 0; echo '2020/01/01 00:00:00 timeout' >&2; return 1 ;;
         error) return 2 ;;
         native_error) echo 'SYNTHETIC_TIME radio error' >&2; return 1 ;;
+        radio_timeout) echo '2020/01/01 00:00:00 SPI timeout' >&2; return 1 ;;
     esac
 }
-for scenario in quiet busy clears error native_error hung; do
+for scenario in quiet busy clears error native_error radio_timeout hung; do
     SECONDS=0
     calls=0
     result=0
@@ -44,7 +45,8 @@ for scenario in quiet busy clears error native_error hung; do
         busy) [[ "$calls" -eq 3 ]] ;;
         error) [[ "$calls" -eq 1 ]] ;;
         native_error) [[ "$calls" -eq 1 ]] ;;
+        radio_timeout) [[ "$calls" -eq 1 ]] ;;
         hung) [[ "$calls" -eq 0 ]] ;;
     esac
 done
-echo 'Radio silence deadline: 6 synthetic cases passed.'
+echo 'Radio silence deadline: 7 synthetic cases passed.'
