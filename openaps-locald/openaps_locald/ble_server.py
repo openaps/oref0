@@ -257,7 +257,9 @@ _READ_BUFFER_TTL_SECONDS = 5.0
 # cross that transport seam.  This is deliberately much shorter than a session
 # and is never used for signed event acknowledgements.
 _AUTHORIZATION_ACK_HANDOFF_TTL_SECONDS = 15.0
-_READ_ENVELOPE_PAYLOAD_BYTES = 36
+# A compact UUID keeps the same 128-bit message identity while allowing more
+# payload per ATT read. Worst-case envelopes stay below the previous size.
+_READ_ENVELOPE_PAYLOAD_BYTES = 42
 _BLE_PUMPHISTORY_LIMIT = 24
 _BLE_PUMPHISTORY_SAFE_BYTES = 520
 _BLE_HEALTH_INTERVAL_SECONDS = 60
@@ -300,7 +302,8 @@ def _write_health(config, payload):
 
 
 def _read_envelopes_for_payload(data, characteristic_uuid):
-    message_id = "%s-%s" % (characteristic_uuid[-4:], uuid.uuid4().hex)
+    nonce = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode("ascii").rstrip("=")
+    message_id = "%s-%s" % (characteristic_uuid[-4:], nonce)
     total = int(math.ceil(float(len(data)) / float(_READ_ENVELOPE_PAYLOAD_BYTES)))
     envelopes = []
     for seq in range(total):

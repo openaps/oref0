@@ -1,10 +1,12 @@
 import base64
 import json
 import unittest
+import uuid
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from openaps_locald.ble_server import Characteristic, RigInfoCharacteristic
+from openaps_locald.ble_server import _ATT_CHUNK, _read_envelopes_for_payload
 
 
 class RigInfoReadTraceTests(unittest.TestCase):
@@ -54,6 +56,27 @@ class RigInfoReadTraceTests(unittest.TestCase):
         self.assertEqual(len(harness.bridge.rig_info_read_trace), 64)
         self.assertEqual(harness.bridge.rig_info_read_trace[0]["completed_chunks"], 37)
         self.assertNotIn("synthetic", json.dumps(harness.bridge.rig_info_read_trace))
+
+    def test_compact_id_preserves_all_uuid_bits_and_reduces_round_trips(self):
+        identity = uuid.UUID("11111111-2222-4333-8444-555555555555")
+        with patch("openaps_locald.ble_server.uuid.uuid4", return_value=identity):
+            frames = _read_envelopes_for_payload(b"A" * 864, "synthetic-info")
+        first = json.loads(frames[0])
+        token = first["message_id"].split("-", 1)[1]
+        self.assertEqual(base64.urlsafe_b64decode(token + "=="), identity.bytes)
+        self.assertEqual(len(token), 22)
+        self.assertEqual(len(frames), 21)  # Previously 24 reads at 36 bytes.
+
+    def test_all_envelopes_fit_att_and_reassemble_at_digit_boundaries(self):
+        for size in [185, 864, 4096, 65536]:
+            with self.subTest(size=size):
+                payload = b"A" * size
+                frames = _read_envelopes_for_payload(payload, "synthetic-info")
+                decoded = [json.loads(frame) for frame in frames]
+                self.assertTrue(all(len(frame) <= _ATT_CHUNK for frame in frames))
+                self.assertEqual([f["seq"] for f in decoded], list(range(len(frames))))
+                self.assertTrue(all(f["total"] == len(frames) for f in decoded))
+                self.assertEqual(b"".join(base64.b64decode(f["payload"]) for f in decoded), payload)
 
 
 if __name__ == "__main__":
