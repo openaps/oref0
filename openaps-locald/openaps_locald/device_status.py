@@ -13,6 +13,9 @@ BLE_SAFE_BYTES = 4096
 PUMP_STATUS_MAX_AGE_SECONDS = 1800
 
 _SUGGESTED_KEYS = [
+    "timestamp",
+    "mills",
+    "reason",
     "temp",
     "bg",
     "tick",
@@ -53,12 +56,22 @@ def _read_json(path):
 
 
 def _file_entry(path):
-    data = _read_json(path)
+    # Date the JSON snapshot from the same open file, never the response clock.
+    data = None
+    modified_at = None
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+            modified_at = datetime.utcfromtimestamp(os.fstat(f.fileno()).st_mtime)
+    except Exception:
+        pass
     result = {
         "path": path,
         "age_seconds": _file_age_seconds(path),
         "available": data is not None,
     }
+    if modified_at is not None:
+        result["modified_at"] = modified_at.replace(microsecond=0).isoformat() + "Z"
     if data is not None:
         result["data"] = data
     return result
@@ -87,10 +100,12 @@ def _trim_pred_bgs(pred_bgs, limit):
     return trimmed or None
 
 
-def _compact_loop_payload(payload, keys, pred_limit):
+def _compact_loop_payload(payload, keys, pred_limit, source_timestamp=None):
     if not isinstance(payload, dict):
         return payload
     result = {key: payload[key] for key in keys if key in payload}
+    if "timestamp" not in payload and "mills" not in payload and source_timestamp is not None:
+        result["timestamp"] = source_timestamp
     pred_bgs = _trim_pred_bgs(payload.get("predBGs"), pred_limit)
     if pred_bgs:
         result["predBGs"] = pred_bgs
@@ -145,6 +160,11 @@ def _fit_for_ble(record, config, generated_at):
             return payload
 
     suggested = openaps.get("suggested") or {}
+    # Preserve concise diagnostic reasons, but do not let newly retained
+    # verbose text displace pump state and every prediction in a small frame.
+    reason = suggested.get("reason")
+    if isinstance(reason, str) and len(reason) > 80:
+        suggested["reason"] = reason[:80] + "..."
     pred_bgs = suggested.get("predBGs") or {}
     current_limit = suggested.get("predBGs_points") or DEFAULT_PRED_BG_POINTS
     for limit in _candidate_pred_limits(current_limit):
@@ -279,8 +299,8 @@ def read_device_status_payload(config):
         "device": "openaps://%s" % config["rig_id"],
         "created_at": generated_at,
         "openaps": _prune_empty({
-            "suggested": _compact_loop_payload(files["suggested"].get("data"), _SUGGESTED_KEYS, pred_limit),
-            "enacted": _compact_loop_payload(files["enacted"].get("data"), _ENACTED_KEYS, pred_limit),
+            "suggested": _compact_loop_payload(files["suggested"].get("data"), _SUGGESTED_KEYS, pred_limit, files["suggested"].get("modified_at")),
+            "enacted": _compact_loop_payload(files["enacted"].get("data"), _ENACTED_KEYS, pred_limit, files["enacted"].get("modified_at")),
             "iob": _compact_iob(files["iob"].get("data")),
             "meal": _compact_meal(files["meal"].get("data")),
         }),
