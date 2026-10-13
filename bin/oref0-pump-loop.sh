@@ -552,10 +552,17 @@ function preflight {
     mkdir -p settings
     mkdir -p monitor
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
-    ( check_model || check_model ) 2>&3 >&4 \
-    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo -n "(x12 models do not support SMB safety checks, SMB will not be available.) ") ) \
-    && echo -n "OK. " \
-    || ( echo -n "fail. "; false )
+    if ( check_model || check_model ) 2>&3 >&4; then
+        if ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo -n "(x12 models do not support SMB safety checks, SMB will not be available.) ") ); then
+            echo -n "OK. "
+            return 0
+        fi
+        echo -n "fail. stage=model-validation "
+    else
+        local read_status=$?
+        echo -n "fail. stage=model-read exit=$read_status "
+    fi
+    return 1
 }
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
