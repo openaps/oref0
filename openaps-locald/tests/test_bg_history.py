@@ -8,6 +8,48 @@ from openaps_locald.bg_history import _atomic_write_json, merge_bg_records, merg
 
 
 class BGHistoryOrderingTests(unittest.TestCase):
+    def test_monitor_merge_mtime_tracks_newest_measurement_not_write_time(self):
+        directory = tempfile.mkdtemp()
+        try:
+            config = {"myopenaps_dir": directory}
+            write_local_bg_record({"event_id": "synthetic-backlog",
+                                   "effective_at": "2000-01-01T00:10:00Z",
+                                   "payload": {"sgv": 100}}, config)
+            merge_local_bg_into_monitor(config)
+            path = os.path.join(directory, "monitor", "glucose.json")
+            with open(path) as handle:
+                records = json.load(handle)
+            self.assertEqual(os.path.getmtime(path), records[0]["date"] / 1000.0)
+            source = os.path.join(directory, "synthetic-ns.json")
+            _atomic_write_json(source, [{"date": records[0]["date"] + 300000}])
+            newer_time = records[0]["date"] / 1000.0 + 300
+            os.utime(source, (newer_time, newer_time))
+            self.assertGreater(os.path.getmtime(source), os.path.getmtime(path))
+        finally:
+            shutil.rmtree(directory)
+
+    def test_monitor_merge_preserves_newer_measurement_milliseconds(self):
+        directory = tempfile.mkdtemp()
+        try:
+            config = {"myopenaps_dir": directory}
+            path = os.path.join(directory, "monitor", "glucose.json")
+            _atomic_write_json(path, [{"date": 946685700125, "event_id": "synthetic-newer"}])
+            write_local_bg_record({"event_id": "synthetic-backlog",
+                                   "effective_at": "2000-01-01T00:10:00Z",
+                                   "payload": {"sgv": 100}}, config)
+            merge_local_bg_into_monitor(config)
+            self.assertAlmostEqual(os.path.getmtime(path), 946685700.125, places=5)
+        finally:
+            shutil.rmtree(directory)
+
+    def test_empty_monitor_merge_does_not_appear_fresh(self):
+        directory = tempfile.mkdtemp()
+        try:
+            merge_local_bg_into_monitor({"myopenaps_dir": directory})
+            self.assertEqual(os.path.getmtime(os.path.join(directory, "monitor", "glucose.json")), 0)
+        finally:
+            shutil.rmtree(directory)
+
     def test_large_cache_compact_write_preserves_every_record(self):
         directory = tempfile.mkdtemp()
         try:

@@ -25,7 +25,7 @@ def _read_json_array(path):
     return []
 
 
-def _atomic_write_json(path, payload):
+def _atomic_write_json(path, payload, measured_at=None):
     dirname = os.path.dirname(path)
     if dirname and not os.path.exists(dirname):
         os.makedirs(dirname)
@@ -39,6 +39,11 @@ def _atomic_write_json(path, payload):
             # preserving every record and the existing atomic rename.
             f.write(json.dumps(payload, sort_keys=True, separators=(",", ":")))
             f.write("\n")
+        if measured_at is not None:
+            # Loop freshness and Nightscout's cp -pu selection use mtime.
+            # Set it before rename so an old backlog never appears freshly
+            # measured merely because the BLE merge just finished.
+            os.utime(tmp_path, (measured_at, measured_at))
         os.rename(tmp_path, path)
     finally:
         if os.path.exists(tmp_path):
@@ -217,7 +222,8 @@ def merge_local_bg_into_monitor(config):
     local_records = _read_json_array(local_path)
     monitor_records = _read_json_array(monitor_path)
     merged = merge_bg_records(local_records, monitor_records)
-    _atomic_write_json(monitor_path, merged)
+    newest_millis = _record_timestamp_millis(merged[0]) if merged else -1
+    _atomic_write_json(monitor_path, merged, measured_at=max(0, newest_millis) / 1000.0)
     return {
         "local_path": local_path,
         "monitor_path": monitor_path,
