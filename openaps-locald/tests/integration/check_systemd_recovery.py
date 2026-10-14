@@ -45,6 +45,10 @@ def main():
             # Keep the production dependency graph. Replace hardware/network
             # dependencies and all service commands with inert test processes.
             section = text.split('[Service]', 1)[0]
+            # This dependency-graph check must never invoke the production
+            # controller recovery handler or exhaust its startup limit.
+            section = '\n'.join(line for line in section.splitlines()
+                                if not line.startswith(('OnFailure=', 'StartLimit'))) + '\n'
             section = section.replace('bluetooth.service', '').replace('network-online.target', '')
             for original, replacement in zip(NAMES[::-1], UNITS[::-1]):
                 section = section.replace(original + '.service', replacement)

@@ -181,6 +181,14 @@ This prevents a sync/BLE restart from leaving an enabled advertiser stopped
 until reboot or manual intervention. Existing `advertise_enabled` configuration
 still controls whether the advertiser transmits.
 
+Four advertiser startup failures within a minute invoke a bounded controller
+recovery handler. It acts only on the explicit advertising-enable rejection
+(exit 75), checks for controller connections, and restarts Bluetooth and BLE
+when no links are active. Other startup failures do not reset the controller.
+Active or unreadable link state and the two-minute recovery cooldown schedule
+a later retry. A single worker and a persisted attempt timestamp prevent
+overlapping resets or rapid retries after a partial failure.
+
 After installing updated units, run `systemctl daemon-reload`. Restarting
 `openaps-locald` should bring all three services back without separately starting
 BLE or advertising. No phone update or re-enrollment is required for this fix.

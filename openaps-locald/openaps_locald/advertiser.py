@@ -18,6 +18,13 @@ ADVERTISER_HEALTH_INTERVAL_SECONDS = 60
 CONTROLLER_COMMAND_TIMEOUT_SECONDS = 5
 
 
+class HCICommandRejected(RuntimeError):
+    def __init__(self, opcode, status):
+        self.opcode, self.status = opcode, status
+        super(HCICommandRejected, self).__init__(
+            "HCI command rejected opcode=0x%04x status=0x%02x" % (opcode, status))
+
+
 def _validate_hci_command_response(output, expected_opcode):
     # hcitool cmd exits successfully even when the controller rejects its
     # command. It can also receive an unrelated event. Only the matching
@@ -44,8 +51,7 @@ def _validate_hci_command_response(output, expected_opcode):
     if opcode != expected_opcode:
         raise RuntimeError("HCI command response opcode mismatch")
     if values[3] != 0:
-        raise RuntimeError("HCI command rejected opcode=0x%04x status=0x%02x" %
-                           (opcode, values[3]))
+        raise HCICommandRejected(opcode, values[3])
 
 
 def _utc_now():
