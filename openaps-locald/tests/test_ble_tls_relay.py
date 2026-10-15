@@ -1,10 +1,13 @@
+import base64
 import socket
 import threading
+import time
 import unittest
 
 from openaps_locald.ble_tls_relay import (
     BLETLSRelay, BLETLSRelayError, MAX_UPGRADE_BYTES, parse_loopback_origin,
 )
+from openaps_locald.ble_server import _BLETLSRelaySession
 
 
 class Fixture(object):
@@ -48,6 +51,119 @@ class Fixture(object):
 
 
 class BLETLSRelayTests(unittest.TestCase):
+    def test_active_fragment_polling_backs_off_when_idle(self):
+        poll = _BLETLSRelaySession._receive_poll_timeout
+        self.assertEqual(poll(None, 10), 0.1)
+        self.assertEqual(poll(10, 10), 0.01)
+        self.assertEqual(poll(10, 10.999), 0.01)
+        self.assertEqual(poll(10, 11), 0.1)
+        self.assertEqual(poll(10, 9), 0.1)
+
+    def test_worker_uses_active_poll_after_forwarding_fragment(self):
+        class RecordingRelay(object):
+            def open(self):
+                pass
+            def send(self, value):
+                self.sent = value
+            def receive(self, size, timeout, timeout_is_empty):
+                self.poll = timeout
+                self.session.closed.set()
+                return None
+            def close(self):
+                pass
+        relay = RecordingRelay()
+        session = _BLETLSRelaySession(relay, 1)
+        relay.session = session
+        session.enqueue(b"synthetic fragment")
+        session.start()
+        session.worker.join(1)
+        self.assertFalse(session.worker.is_alive())
+        self.assertEqual(relay.sent, b"synthetic fragment")
+        self.assertEqual(relay.poll, 0.01)
+        self.assertFalse(session.failed.is_set())
+
+    def test_session_backpressures_full_att_queue(self):
+        class OneFrameRelay(object):
+            def __init__(self):
+                self.first_read = threading.Event()
+                self.delivered = False
+
+            def open(self):
+                return self
+
+            def receive(self, *_args, **_kwargs):
+                if not self.delivered:
+                    self.delivered = True
+                    self.first_read.set()
+                    return b"tail"
+                time.sleep(0.01)
+                return None
+
+            def close(self):
+                pass
+
+        relay = OneFrameRelay()
+        session = _BLETLSRelaySession(relay, 1)
+        for _ in range(32):
+            session.inbound.put_nowait(b"earlier")
+        session.start()
+        try:
+            self.assertTrue(relay.first_read.wait(1))
+            self.assertFalse(session.failed.is_set())
+            self.assertEqual(session.dequeue(), b"earlier")
+            deadline = time.monotonic() + 1
+            while session.inbound.qsize() < 32 and time.monotonic() < deadline:
+                time.sleep(0.01)
+            self.assertEqual(session.inbound.qsize(), 32)
+            self.assertFalse(session.failed.is_set())
+            self.assertEqual([session.dequeue() for _ in range(31)], [b"earlier"] * 31)
+            self.assertEqual(session.dequeue(), b"tail")
+        finally:
+            session.close()
+            session.worker.join(1)
+
+    def test_empty_poll_preserves_final_response_after_socket_eof(self):
+        session = _BLETLSRelaySession(None, 1)
+        session.inbound.put_nowait(b"final TLS flight")
+        session.failed.set()
+        # The phone polls by writing an empty frame before reading TX.
+        session.enqueue(b"")
+        self.assertTrue(session.outbound.empty())
+        self.assertEqual(session.dequeue(), b"final TLS flight")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+        with self.assertRaises(BLETLSRelayError):
+            session.enqueue(b"new TLS data")
+        session.closed.set()
+        with self.assertRaises(BLETLSRelayError):
+            session.enqueue(b"")
+
+    def test_empty_poll_does_not_consume_outbound_queue_capacity(self):
+        session = _BLETLSRelaySession(None, 1)
+        for _ in range(64):
+            session.enqueue(b"")
+        self.assertTrue(session.outbound.empty())
+
+    def test_session_drains_final_tls_bytes_after_socket_eof(self):
+        session = _BLETLSRelaySession(None, 1)
+        session.inbound.put_nowait(b"final TLS flight")
+        session.failed.set()
+        self.assertEqual(session.dequeue(), b"final TLS flight")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+
+        session.inbound.put_nowait(b"second flight")
+        self.assertEqual(session.dequeue(timeout=0.1), b"second flight")
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue(timeout=0.1)
+
+        # An explicit disconnect is different from socket EOF: never expose
+        # queued bytes to the next BLE connection generation.
+        session.inbound.put_nowait(b"discarded on disconnect")
+        session.closed.set()
+        with self.assertRaises(BLETLSRelayError):
+            session.dequeue()
+
     def test_origin_requires_explicit_numeric_loopback(self):
         self.assertEqual(parse_loopback_origin("http://127.0.0.1:8787")[:2],
                          ("127.0.0.1", 8787))
@@ -77,6 +193,39 @@ class BLETLSRelayTests(unittest.TestCase):
             ("GET /v3/tls HTTP/1.1\r\nHost: 127.0.0.1:%d\r\n"
              "Connection: Upgrade\r\nUpgrade: openaps-tls/1\r\n\r\n" %
              fixture.port).encode("ascii"))
+
+    def test_recovery_upgrade_uses_restricted_route_and_signed_prelude(self):
+        prelude = b"synthetic signed recovery prelude"
+        fixture = Fixture([
+            b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\n"
+            b"Upgrade: openaps-recovery/1\r\n\r\npeer-hello",
+        ])
+        relay = BLETLSRelay(fixture.origin, recovery_prelude=prelude).open()
+        self.addCleanup(relay.close)
+        self.assertEqual(relay.receive(), b"peer-hello")
+        expected = (
+            "GET /v3/recovery HTTP/1.1\r\nHost: 127.0.0.1:%d\r\n"
+            "Connection: Upgrade\r\nUpgrade: openaps-recovery/1\r\n"
+            "Content-Length: 0\r\nOpenAPS-Recovery: %s\r\n\r\n" %
+            (fixture.port, base64.b64encode(prelude).decode("ascii"))
+        ).encode("ascii")
+        self.assertTrue(fixture.done.wait(2))
+        self.assertEqual(fixture.request, expected)
+        self.assertNotIn(b"/v3/tls", fixture.request)
+
+    def test_recovery_upgrade_rejects_wrong_response_protocol(self):
+        fixture = Fixture([
+            b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\n"
+            b"Upgrade: openaps-tls/1\r\n\r\n",
+        ])
+        relay = BLETLSRelay(fixture.origin, recovery_prelude=b"selector")
+        with self.assertRaises(BLETLSRelayError):
+            relay.open()
+        self.assertTrue(relay.closed)
+
+    def test_recovery_upgrade_prelude_is_bounded(self):
+        with self.assertRaises(BLETLSRelayError):
+            BLETLSRelay("http://127.0.0.1:8787", recovery_prelude=b"x" * 2049)
 
     def test_503_fails_closed_without_forwarding_body(self):
         fixture = Fixture([b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 6\r\n\r\nsecret"])

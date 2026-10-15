@@ -68,12 +68,27 @@ class PolicyAnchorTests(unittest.TestCase):
         lease.require_fresh()
         self.assertEqual(lease.generation, generation)
 
-    def test_invalid_existing_and_ambiguous_create_fail_closed(self):
+    def test_rejected_cache_restores_only_after_live_evidence(self):
         storage = AdmissionStorage(self.path)
-        storage.replace(b"{}", expecting=None)
+        old_binding = self.binding._replace(authority="ns_" + "0" * 64)
+        old_generation = uuid.uuid4()
+        old_data = encode(old_binding, old_generation, self.f.rig)
+        storage.replace(old_data, expecting=None)
         anchor = PolicyAnchorStore(storage, self.f.rig)
+        owner = ReviewedIngressPolicy(anchor)
         with self.assertRaises(ChallengeError):
-            anchor.load_or_create(self.binding)
+            owner.restore(self.binding)
+        self.assertEqual(storage.load(), old_data)
+        with self.assertRaises(ChallengeError):
+            owner.install(True, self.binding)
+        self.assertEqual(storage.load(), old_data)
+        client = self._client()
+        lease = owner.install(self._evidence(client), self.binding)
+        self.assertNotEqual(lease.generation, old_generation)
+        lease.require_fresh()
+        self.assertEqual(anchor.load(self.binding), lease.generation)
+
+    def test_ambiguous_create_fail_closed(self):
 
         class Ambiguous(object):
             def __init__(self):

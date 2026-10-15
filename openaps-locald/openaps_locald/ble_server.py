@@ -11,7 +11,12 @@ import time
 import base64
 import math
 import uuid
+import copy
 from collections import OrderedDict, deque
+try:
+    from http.client import HTTPConnection
+except ImportError:
+    from httplib import HTTPConnection
 try:
     from queue import Empty, Full, Queue
 except ImportError:
@@ -28,6 +33,8 @@ except ImportError:
 
 from .ble_protocol import (
     BLE_ACK_CHAR_UUID,
+    BLE_BACKGROUND_WAKE_CHAR_UUID,
+    BLE_BACKGROUND_WAKE_CAPABILITY,
     BLE_BG_READINGS_CHAR_UUID,
     BLE_DEVICE_STATUS_CHAR_UUID,
     BLE_EVENT_CHAR_UUID,
@@ -37,7 +44,11 @@ from .ble_protocol import (
     BLE_STATUS_CHAR_UUID,
     BLE_TLS_RX_CHAR_UUID,
     BLE_TLS_TX_CHAR_UUID,
+    RECOVERY_CARRIER_SCHEMA,
+    ENROLLMENT_CARRIER_SCHEMA,
+    ENROLLMENT_RESULT_SCHEMA,
     MAX_TLS_RELAY_FRAME_BYTES,
+    MAX_AUTH_CHUNKS,
     BleChunkAssembler,
     BleProtocolError,
     decode_ble_payload,
@@ -46,6 +57,10 @@ from .ble_protocol import (
     payload_to_json_bytes,
 )
 from .ble_tls_relay import BLETLSRelay, BLETLSRelayError
+from .ble_tls_relay import parse_loopback_origin
+from .ble_wake import BackgroundWakeTicker, wake_interval
+from . import recovery_http_prelude
+from .device_identity import credential_id_for_public_key
 from .bg_readings import read_bg_readings_payload
 from .authorization_protocol import (
     AUTH_ACK_SCHEMA,
@@ -78,6 +93,7 @@ from .device_status import read_device_status_payload
 from .models import validate_event
 from .pump_history import read_pumphistory_payload
 from .secure_mode_runtime import SecureModeRouteOwner
+from .stored_proof import _object as _bounded_proof_object
 
 
 try:
@@ -93,6 +109,14 @@ except Exception:
 
 
 _DBUS_AVAILABLE = dbus is not None
+BLE_RECOVERY_PRELUDE_LIFETIME_SECONDS = recovery_http_prelude.LIFETIME_SECONDS
+BLE_MAX_PENDING_RECOVERY_PRELUDES = 8
+BLE_ENROLLMENT_CARRIER_LIFETIME_SECONDS = 20.0
+BLE_ENROLLMENT_REPLAY_LIFETIME_SECONDS = 120.0
+BLE_MAX_ENROLLMENT_REQUESTS = 128
+BLE_MAX_ENROLLMENT_RESPONSE_BYTES = 1024
+BLE_ENROLLMENT_HTTP_TIMEOUT_SECONDS = 21.0
+BLE_ENROLLMENT_STATUS_CODES = frozenset((200, 202, 400, 425, 429, 503))
 if not _DBUS_AVAILABLE:
     class _UnavailableDBusObject(object):
         pass
@@ -254,7 +278,9 @@ _READ_BUFFER_TTL_SECONDS = 5.0
 # cross that transport seam.  This is deliberately much shorter than a session
 # and is never used for signed event acknowledgements.
 _AUTHORIZATION_ACK_HANDOFF_TTL_SECONDS = 15.0
-_READ_ENVELOPE_PAYLOAD_BYTES = 36
+# A compact UUID keeps the same 128-bit message identity while allowing more
+# payload per ATT read. Worst-case envelopes stay below the previous size.
+_READ_ENVELOPE_PAYLOAD_BYTES = 42
 _BLE_PUMPHISTORY_LIMIT = 24
 _BLE_PUMPHISTORY_SAFE_BYTES = 520
 _BLE_HEALTH_INTERVAL_SECONDS = 60
@@ -297,7 +323,8 @@ def _write_health(config, payload):
 
 
 def _read_envelopes_for_payload(data, characteristic_uuid):
-    message_id = "%s-%s" % (characteristic_uuid[-4:], uuid.uuid4().hex)
+    nonce = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode("ascii").rstrip("=")
+    message_id = "%s-%s" % (characteristic_uuid[-4:], nonce)
     total = int(math.ceil(float(len(data)) / float(_READ_ENVELOPE_PAYLOAD_BYTES)))
     envelopes = []
     for seq in range(total):
@@ -537,6 +564,9 @@ class Characteristic(dbus.service.Object):
                                 Characteristic._read_buffers.pop(key, None)
                             else:
                                 Characteristic._read_buffers[key] = (chunks, next_index, time.time())
+                            record_progress = getattr(self, "_record_read_progress", None)
+                            if callable(record_progress):
+                                record_progress(next_index, len(chunks))
                             return _bytes_to_dbus_array(chunk)
             data = bytes(bytearray(self._read_value(options)))
             if device and len(data) > _ATT_CHUNK:
@@ -544,7 +574,13 @@ class Characteristic(dbus.service.Object):
                 if len(chunks) > 1:
                     with Characteristic._read_buffers_lock:
                         Characteristic._read_buffers[(device, self.uuid)] = (chunks, 1, time.time())
+                record_progress = getattr(self, "_record_read_progress", None)
+                if callable(record_progress):
+                    record_progress(1, len(chunks))
                 return _bytes_to_dbus_array(chunks[0])
+            record_progress = getattr(self, "_record_read_progress", None)
+            if callable(record_progress):
+                record_progress(1, 1)
             return _bytes_to_dbus_array(data)
         finally:
             if state_lock is not None:
@@ -626,7 +662,14 @@ class _BLETLSRelaySession(object):
         self.worker.start()
 
     def enqueue(self, value):
-        if self.closed.is_set() or self.failed.is_set():
+        if self.closed.is_set():
+            raise BLETLSRelayError("relay unavailable")
+        # Empty frames are ATT polls, not socket writes. A poll must still
+        # reach dequeue after socket EOF so the final queued TLS response can
+        # drain. Explicit disconnects and new data remain terminal above/below.
+        if not value:
+            return
+        if self.failed.is_set():
             raise BLETLSRelayError("relay unavailable")
         try:
             self.outbound.put_nowait(value)
@@ -634,19 +677,29 @@ class _BLETLSRelaySession(object):
             raise BLETLSRelayError("relay outbound queue full")
 
     def dequeue(self, timeout=None):
-        if self.failed.is_set() or self.closed.is_set():
+        if self.closed.is_set():
             raise BLETLSRelayError("relay unavailable")
         if timeout is None:
             try:
                 return self.inbound.get_nowait()
             except Empty:
+                if self.failed.is_set():
+                    raise BLETLSRelayError("relay unavailable")
                 raise _BLETLSRelayPending("relay response unavailable")
         if not isinstance(timeout, (int, float)) or timeout <= 0:
             raise _BLETLSRelayPending("relay response unavailable")
         deadline = time.monotonic() + float(timeout)
         while True:
-            if self.failed.is_set() or self.closed.is_set():
+            if self.closed.is_set():
                 raise BLETLSRelayError("relay unavailable")
+            try:
+                # A recovery peer may close immediately after writing its
+                # final TLS flight. Drain already queued bytes before making
+                # that EOF terminal to the BLE reader.
+                return self.inbound.get_nowait()
+            except Empty:
+                if self.failed.is_set():
+                    raise BLETLSRelayError("relay unavailable")
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise _BLETLSRelayPending("relay response unavailable")
@@ -659,11 +712,13 @@ class _BLETLSRelaySession(object):
         try:
             self.relay.open()
             _ble_log("authorization TLS relay loopback upgraded")
+            last_send_at = None
             while not self.closed.is_set():
                 try:
                     while True:
                         value = self.outbound.get_nowait()
                         self.relay.send(value)
+                        last_send_at = time.monotonic()
                         self.socket_send_count += 1
                         if self.socket_send_count <= 40:
                             _ble_log("authorization TLS relay socket tx count=%d bytes=%d" %
@@ -671,27 +726,56 @@ class _BLETLSRelaySession(object):
                 except Empty:
                     pass
                 value = self.relay.receive(
-                    MAX_TLS_RELAY_FRAME_BYTES, timeout=0.1, timeout_is_empty=True)
+                    MAX_TLS_RELAY_FRAME_BYTES,
+                    timeout=self._receive_poll_timeout(last_send_at, time.monotonic()),
+                    timeout_is_empty=True)
                 if value is not None:
                     self.socket_receive_count += 1
                     if self.socket_receive_count <= 40:
                         _ble_log("authorization TLS relay socket rx count=%d bytes=%d" %
                                  (self.socket_receive_count, len(value)))
-                    try:
-                        self.inbound.put_nowait(value)
-                    except Full:
-                        raise BLETLSRelayError("relay inbound queue full")
+                    # The loopback TLS socket can produce a handshake flight
+                    # faster than ATT reads drain it. Keep the queue bounded,
+                    # but backpressure the socket instead of aborting a valid
+                    # secure session when that transient burst fills it.
+                    stalled_until = time.monotonic() + 30.0
+                    while not self.closed.is_set():
+                        try:
+                            self.inbound.put(value, timeout=0.1)
+                            break
+                        except Full:
+                            if time.monotonic() >= stalled_until:
+                                raise BLETLSRelayError("relay inbound queue stalled")
+                            continue
         except Exception as exc:
             if not self.closed.is_set():
                 # Keep the diagnostic bounded to an exception class.  Relay
                 # errors must never expose endpoint, credential, or clinical
                 # data through the BLE service journal.
-                _ble_log("authorization TLS relay failed category=%s" %
-                         type(exc).__name__)
+                categories = {
+                    "relay inbound queue stalled": "inbound_queue_stalled",
+                    "relay outbound queue full": "outbound_queue_full",
+                    "relay closed": "socket_closed",
+                    "relay read failed": "socket_read_failed",
+                    "relay write failed": "socket_write_failed",
+                    "relay is unavailable": "socket_unavailable",
+                }
+                category = categories.get(str(exc), type(exc).__name__)
+                _ble_log("authorization TLS relay failed category=%s" % category)
                 self.failed.set()
         finally:
             self.relay.close()
             self.stopped.set()
+
+    @staticmethod
+    def _receive_poll_timeout(last_send_at, now):
+        # One worker handles both directions. During fragmented phone TLS
+        # flights, a long socket wait delays forwarding the next ATT write.
+        # Poll briefly for one second after a send, then back off when idle.
+        # Queue bounds, TLS deadlines and disconnect handling are unchanged.
+        if last_send_at is not None and 0 <= now - last_send_at < 1.0:
+            return 0.01
+        return 0.1
 
     def close(self):
         self.closed.set()
@@ -721,6 +805,7 @@ class RigBridge(object):
         self.http_endpoint = _advertised_http_endpoint(config)
         self.started_at = _utc_now()
         self.last_rig_info_read_at = None
+        self.rig_info_read_trace = []
         self.last_status_read_at = None
         self.last_pumphistory_read_at = None
         self.last_device_status_read_at = None
@@ -729,6 +814,10 @@ class RigBridge(object):
         self.last_event_ack_at = None
         self.last_event_error_at = None
         self.last_event_error = None
+        self.last_tls_relay_write_at = None
+        self.last_tls_relay_read_at = None
+        self.tls_relay_write_count = 0
+        self.tls_relay_read_count = 0
         self.last_ack = {
             "ack_status": "idle",
             "details": {},
@@ -743,8 +832,12 @@ class RigBridge(object):
         self._connection_generation_counter = 0
         self._authorization_ack_handoff = None
         self._tls_relays_by_connection = {}
+        self._recovery_preludes_by_connection = {}
         self._tls_relay_factory = tls_relay_factory or BLETLSRelay
         self._tls_relay_enabled = config.get("ble_authorization_tls_relay_enabled") is True
+        # Retain one-use carrier results briefly so same-connection retries
+        # replay the ACK instead of repeating a proof publication or poll.
+        self._enrollment_carrier_requests = OrderedDict()
         # Preserve at least one slot in the HTTP owner's two-entry pending TLS
         # handshake pool.  BLE is only a bounded byte carrier and must never be
         # able to monopolize the admission surface, even if a stale deployment
@@ -875,6 +968,14 @@ class RigBridge(object):
     def clear_connection_state(self, connection_id):
         with self._connection_state_lock:
             relay = self._tls_relays_by_connection.pop(connection_id, None)
+            self._recovery_preludes_by_connection.pop(connection_id, None)
+            # Keep short-lived request-ID tombstones to reject cross-connection
+            # replay, but drop any cached reverse challenge body and release a
+            # pending slot as soon as this BLE generation is gone.
+            for record in self._enrollment_carrier_requests.values():
+                if record["connection_id"] == connection_id:
+                    record["pending"] = False
+                    record["ack"] = None
         self._invalidate_connection_generation(connection_id)
         self.assembler.clear_connection(connection_id)
         self.authorization_sessions.invalidate_connection(connection_id)
@@ -895,11 +996,22 @@ class RigBridge(object):
                 return relay
             if len(self._tls_relays_by_connection) >= self._maximum_tls_relays:
                 raise BleProtocolError("BLE TLS relay busy")
+            recovery = self._recovery_preludes_by_connection.pop(connection_id, None)
+            recovery_prelude = None
+            if recovery is not None:
+                if (recovery["generation"] != generation or
+                        self.monotonic() >= recovery["expires_at"]):
+                    raise BleProtocolError("BLE recovery carrier expired")
+                recovery_prelude = recovery["prelude"]
             try:
-                transport = self._tls_relay_factory(
-                    self.config.get("ble_http_base_url") or "http://127.0.0.1:8787",
-                    timeout=min(5.0, max(0.1, float(
-                        self.config.get("ble_authorization_tls_relay_timeout") or 5.0))))
+                origin = self.config.get("ble_http_base_url") or "http://127.0.0.1:8787"
+                timeout = min(5.0, max(0.1, float(
+                    self.config.get("ble_authorization_tls_relay_timeout") or 5.0)))
+                if recovery_prelude is None:
+                    transport = self._tls_relay_factory(origin, timeout=timeout)
+                else:
+                    transport = self._tls_relay_factory(
+                        origin, timeout=timeout, recovery_prelude=recovery_prelude)
             except Exception:
                 raise BleProtocolError("BLE TLS relay unavailable")
             relay = _BLETLSRelaySession(transport, generation)
@@ -912,12 +1024,16 @@ class RigBridge(object):
         relay = self._tls_relay(connection_id, create=True)
         try:
             relay.enqueue(payload)
+            with self._connection_state_lock:
+                self.last_tls_relay_write_at = _utc_now()
+                self.tls_relay_write_count += 1
         except BLETLSRelayError:
             self.clear_connection_state(connection_id)
             raise BleProtocolError("BLE TLS relay unavailable")
 
     def read_tls_relay_frame(self, connection_id):
         relay = self._tls_relay(connection_id)
+        self._note_tls_relay_read()
         try:
             return encode_tls_relay_frame(relay.dequeue())
         except _BLETLSRelayPending:
@@ -929,6 +1045,7 @@ class RigBridge(object):
     def read_tls_relay_frame_wait(self, connection_id, timeout=7.0):
         """Wait for socket output, or return a transport ACK while pending."""
         relay = self._tls_relay(connection_id)
+        self._note_tls_relay_read()
         try:
             # The phone sends TLS records as several 48-byte ATT writes.  A
             # strict write-then-read exchange would deadlock on every record:
@@ -948,6 +1065,22 @@ class RigBridge(object):
         except BLETLSRelayError:
             self.clear_connection_state(connection_id)
             raise BleProtocolError("BLE TLS relay unavailable")
+
+    def _note_tls_relay_read(self):
+        with self._connection_state_lock:
+            self.last_tls_relay_read_at = _utc_now()
+            self.tls_relay_read_count += 1
+
+    def tls_relay_health(self):
+        # Aggregate activity only: no peer paths, identities, or frame content.
+        with self._connection_state_lock:
+            return {
+                "last_tls_relay_write_at": self.last_tls_relay_write_at,
+                "last_tls_relay_read_at": self.last_tls_relay_read_at,
+                "tls_relay_write_count": self.tls_relay_write_count,
+                "tls_relay_read_count": self.tls_relay_read_count,
+                "tls_relay_session_count": len(self._tls_relays_by_connection),
+            }
 
     def handle_device_properties_changed(self, interface, changed, connection_id):
         if interface != BLUEZ_DEVICE_IFACE or not connection_id:
@@ -1062,6 +1195,9 @@ class RigBridge(object):
         }
         if self._tls_relay_enabled:
             payload["capabilities"].append("authorization_tls_relay_v1")
+            payload["capabilities"].append("maintenance_deflate_raw_v1")
+        if self.config.get("ble_background_wake_enabled") is True:
+            payload["capabilities"].append(BLE_BACKGROUND_WAKE_CAPABILITY)
         # This is a legacy BLE read path. Never take the cross-process trust
         # store flock here; background reconciliation owns cache refreshes.
         carrier_ready = bool(
@@ -1303,7 +1439,8 @@ class RigBridge(object):
             self._acks_by_connection.move_to_end(connection_id)
             while len(self._acks_by_connection) > self._maximum_connection_states:
                 self._acks_by_connection.popitem(last=False)
-            self.last_ack = ack
+            if schema != ENROLLMENT_RESULT_SCHEMA:
+                self.last_ack = ack
             if schema == AUTH_ACK_SCHEMA:
                 self._authorization_ack_handoff = {
                     "ack": ack,
@@ -1327,7 +1464,7 @@ class RigBridge(object):
             _ble_log("authorization ack published kind=auth")
         if (
             self.ack_characteristic is not None and
-            schema not in (AUTH_ACK_SCHEMA, SIGNED_ACK_SCHEMA)
+            schema not in (AUTH_ACK_SCHEMA, SIGNED_ACK_SCHEMA, ENROLLMENT_RESULT_SCHEMA)
         ):
             try:
                 self.ack_characteristic._set_value(_json_bytes(ack))
@@ -1337,6 +1474,245 @@ class RigBridge(object):
 
     def submit_event(self, event):
         return self.post_event(event)
+
+    def _prepare_ble_recovery_carrier(self, event, message_id, connection_id):
+        """Bind one signed recovery selector to this live BLE connection."""
+        if (not self._tls_relay_enabled or
+                self.config.get("authorization_recovery_enabled") is not True):
+            raise BleProtocolError("BLE recovery carrier unavailable")
+        if (not connection_id or set(event) != set(("schema", "request_id", "prelude")) or
+                event.get("schema") != RECOVERY_CARRIER_SCHEMA):
+            raise BleProtocolError("invalid BLE recovery carrier")
+        request_id = event.get("request_id")
+        if not isinstance(request_id, str) or request_id != message_id:
+            raise BleProtocolError("BLE recovery carrier identity mismatch")
+        try:
+            if str(uuid.UUID(request_id)) != request_id:
+                raise ValueError("noncanonical request id")
+        except (TypeError, ValueError, AttributeError):
+            raise BleProtocolError("invalid BLE recovery carrier")
+
+        encoded = event.get("prelude")
+        maximum_encoded = ((recovery_http_prelude.MAX_BYTES + 2) // 3) * 4
+        if not isinstance(encoded, str) or not encoded or len(encoded) > maximum_encoded:
+            raise BleProtocolError("invalid BLE recovery carrier")
+        try:
+            prelude = base64.b64decode(encoded.encode("ascii"), validate=True)
+            if (not prelude or len(prelude) > recovery_http_prelude.MAX_BYTES or
+                    base64.b64encode(prelude).decode("ascii") != encoded):
+                raise ValueError("invalid encoding")
+            fields, requester_key, _signature = recovery_http_prelude.shape(prelude)
+            requester_id = credential_id_for_public_key(requester_key)
+            expected_witness_id = self.authorization.credential_id
+        except Exception:
+            raise BleProtocolError("invalid BLE recovery carrier")
+        if (fields["requester_credential_id"] != requester_id or
+                fields["witness_credential_id"] != expected_witness_id):
+            raise BleProtocolError("BLE recovery carrier identity mismatch")
+
+        generation = self._connection_generation(connection_id)
+        operation = lambda: self._store_ble_recovery_prelude(
+            connection_id, generation, prelude)
+        operation._ble_connection_generation = generation
+        return False, operation
+
+    def _store_ble_recovery_prelude(self, connection_id, generation, prelude):
+        now = self.monotonic()
+        if not math.isfinite(now):
+            raise BleProtocolError("BLE recovery carrier unavailable")
+        with self._connection_state_lock:
+            for expired in [key for key, value in self._recovery_preludes_by_connection.items()
+                            if now >= value["expires_at"]]:
+                self._recovery_preludes_by_connection.pop(expired, None)
+            if (self._connection_generation(connection_id) != generation or
+                    connection_id in self._tls_relays_by_connection):
+                raise BleProtocolError("BLE recovery carrier connection changed")
+            if connection_id in self._recovery_preludes_by_connection:
+                raise BleProtocolError("BLE recovery carrier already pending")
+            if len(self._recovery_preludes_by_connection) >= BLE_MAX_PENDING_RECOVERY_PRELUDES:
+                raise BleProtocolError("BLE recovery carrier capacity reached")
+            self._recovery_preludes_by_connection[connection_id] = {
+                "generation": generation,
+                "expires_at": now + BLE_RECOVERY_PRELUDE_LIFETIME_SECONDS,
+                "prelude": prelude,
+            }
+
+    @staticmethod
+    def _enrollment_result(request_id, status, body=None):
+        return {
+            "schema": ENROLLMENT_RESULT_SCHEMA,
+            "request_id": request_id,
+            "status": status,
+            "body": body,
+        }
+
+    def _prune_enrollment_carrier_requests_locked(self, now):
+        for request_id, record in list(self._enrollment_carrier_requests.items()):
+            if not record["pending"] and now >= record["replay_until"]:
+                self._enrollment_carrier_requests.pop(request_id, None)
+
+    def _post_enrollment_carrier(self, route, payload):
+        """Use the existing loopback HTTP proof endpoint; never run proof logic here."""
+        endpoint = {
+            "challenge": "/v3/enrollment/challenge",
+            "reverse": "/v3/enrollment/reverse",
+        }.get(route)
+        if endpoint is None:
+            return 503, None
+        connection = None
+        response = None
+        try:
+            base = self.config.get("ble_http_base_url") or "http://127.0.0.1:8787"
+            host, port, authority, _family = parse_loopback_origin(base)
+            body = _json_bytes(payload)
+            if len(body) > MAX_AUTH_MESSAGE_BYTES:
+                return 400, None
+            connection = HTTPConnection(
+                host, port, timeout=BLE_ENROLLMENT_HTTP_TIMEOUT_SECONDS)
+            connection.request("POST", endpoint, body=body, headers={
+                "Host": authority,
+                "Connection": "close",
+                "Content-Type": "application/json",
+                "Content-Length": str(len(body)),
+            })
+            response = connection.getresponse()
+            status = response.status
+            raw = response.read(BLE_MAX_ENROLLMENT_RESPONSE_BYTES + 1)
+            if status not in BLE_ENROLLMENT_STATUS_CODES or len(raw) > BLE_MAX_ENROLLMENT_RESPONSE_BYTES:
+                return 503, None
+            if status != 200:
+                return (status, None) if not raw else (503, None)
+            result = _bounded_proof_object(
+                raw, maximum_bytes=BLE_MAX_ENROLLMENT_RESPONSE_BYTES, maximum_depth=4)
+            if not isinstance(result, dict):
+                return 503, None
+            return status, result
+        except Exception:
+            # Never return or log loopback response bytes, request payloads, or
+            # lower-layer exception text through the BLE write path.
+            return 503, None
+        finally:
+            if response is not None:
+                try:
+                    response.close()
+                except Exception:
+                    pass
+            if connection is not None:
+                try:
+                    connection.close()
+                except Exception:
+                    pass
+
+    def _prepare_ble_enrollment_carrier(self, event, message_id, connection_id,
+                                        message_bytes, total_chunks):
+        """Prepare one bounded, connection-bound request for the HTTP owner."""
+        if (not connection_id or
+                set(event) != set(("schema", "request_id", "route", "payload")) or
+                event.get("schema") != ENROLLMENT_CARRIER_SCHEMA):
+            raise BleProtocolError("invalid BLE enrollment carrier")
+        request_id = event.get("request_id")
+        if not isinstance(request_id, str) or request_id != message_id:
+            raise BleProtocolError("BLE enrollment carrier identity mismatch")
+        try:
+            if str(uuid.UUID(request_id)) != request_id:
+                raise ValueError("noncanonical request id")
+        except (TypeError, ValueError, AttributeError):
+            raise BleProtocolError("invalid BLE enrollment carrier")
+        route = event.get("route")
+        payload = event.get("payload")
+        if route not in ("challenge", "reverse") or not isinstance(payload, dict):
+            raise BleProtocolError("invalid BLE enrollment carrier")
+        if (not isinstance(message_bytes, int) or message_bytes > MAX_AUTH_MESSAGE_BYTES or
+                not isinstance(total_chunks, int) or total_chunks > MAX_AUTH_CHUNKS):
+            raise BleProtocolError("BLE enrollment carrier exceeds transport limit")
+        try:
+            payload_bytes = json.dumps(
+                payload, sort_keys=True, separators=(",", ":"), allow_nan=False
+            ).encode("utf-8")
+            checked_payload = _bounded_proof_object(
+                payload_bytes, maximum_bytes=MAX_AUTH_MESSAGE_BYTES, maximum_depth=2)
+            if checked_payload != payload:
+                raise ValueError("noncanonical payload object")
+            fingerprint = hashlib.sha256(_json_bytes(event)).hexdigest()
+            now = self.monotonic()
+            if not math.isfinite(now):
+                raise ValueError("carrier clock unavailable")
+        except Exception:
+            raise BleProtocolError("invalid BLE enrollment carrier")
+
+        generation = self._connection_generation(connection_id)
+        with self._connection_state_lock:
+            self._prune_enrollment_carrier_requests_locked(now)
+            existing = self._enrollment_carrier_requests.get(request_id)
+            if existing is not None:
+                if (existing["connection_id"] == connection_id and
+                        existing["generation"] == generation and
+                        existing["fingerprint"] == fingerprint and
+                        existing["ack"] is not None):
+                    cached_ack = copy.deepcopy(existing["ack"])
+                    operation = lambda: cached_ack
+                    operation._ble_connection_generation = generation
+                    return False, operation
+                raise BleProtocolError("BLE enrollment carrier replay rejected")
+            if any(record["pending"] and
+                   record["connection_id"] == connection_id and
+                   record["generation"] == generation
+                   for record in self._enrollment_carrier_requests.values()):
+                operation = lambda: self._enrollment_result(request_id, 429)
+                operation._ble_connection_generation = generation
+                return False, operation
+            if len(self._enrollment_carrier_requests) >= BLE_MAX_ENROLLMENT_REQUESTS:
+                operation = lambda: self._enrollment_result(request_id, 429)
+                operation._ble_connection_generation = generation
+                return False, operation
+            record = {
+                "connection_id": connection_id,
+                "generation": generation,
+                "fingerprint": fingerprint,
+                "expires_at": now + BLE_ENROLLMENT_CARRIER_LIFETIME_SECONDS,
+                "replay_until": now + BLE_ENROLLMENT_REPLAY_LIFETIME_SECONDS,
+                "pending": True,
+                "ack": None,
+            }
+            self._enrollment_carrier_requests[request_id] = record
+
+        def cancel_reservation():
+            with self._connection_state_lock:
+                if self._enrollment_carrier_requests.get(request_id) is record:
+                    self._enrollment_carrier_requests.pop(request_id, None)
+
+        def execute():
+            current_generation = self._connection_generation(connection_id)
+            current_time = self.monotonic()
+            if current_generation != generation:
+                return None
+            if not math.isfinite(current_time) or current_time >= record["expires_at"]:
+                status, body = 503, None
+            else:
+                status, body = self._post_enrollment_carrier(route, payload)
+                if status not in BLE_ENROLLMENT_STATUS_CODES:
+                    status, body = 503, None
+                if status != 200:
+                    body = None
+            ack = self._enrollment_result(request_id, status, body)
+            with self._connection_state_lock:
+                current = self._enrollment_carrier_requests.get(request_id)
+                if current is record:
+                    record["pending"] = False
+                    if self._connection_generation(connection_id) == generation:
+                        record["ack"] = copy.deepcopy(ack)
+                    else:
+                        # The endpoint may have completed while BlueZ was
+                        # disconnecting. Never retain/publish its body after
+                        # the initiating connection generation has ended.
+                        record["ack"] = None
+                        return None
+                    self._enrollment_carrier_requests.move_to_end(request_id)
+            return ack
+
+        execute._ble_connection_generation = generation
+        execute._ble_cancel_reservation = cancel_reservation
+        return False, execute
 
     def _prepare_ble_write(self, raw_bytes, connection_id=""):
         _ble_log("ble write received bytes=%d" % len(raw_bytes))
@@ -1358,9 +1734,29 @@ class RigBridge(object):
         complete = self.assembler.add(decoded, connection_id=connection_id)
         if complete is None:
             return None
-        event = json.loads(complete.decode("utf-8"))
+        try:
+            event = _bounded_proof_object(
+                complete, maximum_bytes=MAX_EVENT_MESSAGE_BYTES, maximum_depth=32)
+        except Exception:
+            raise BleProtocolError("reassembled BLE event is invalid")
         if not isinstance(event, dict):
             raise BleProtocolError("reassembled BLE event must be a JSON object")
+        schema = event.get("schema")
+        if schema == RECOVERY_CARRIER_SCHEMA:
+            # A recovery carrier is control-plane input. It never reaches the
+            # legacy dispatcher, even when malformed or not authorized here.
+            return self._prepare_ble_recovery_carrier(
+                event, decoded["message_id"], connection_id)
+        if isinstance(schema, str) and schema.startswith("openaps.ble.recovery-carrier."):
+            # Reserve this schema family so an old/new/misspelled carrier can
+            # never fall through to the clinical event dispatcher.
+            raise BleProtocolError("unsupported BLE recovery carrier")
+        if schema == ENROLLMENT_CARRIER_SCHEMA:
+            return self._prepare_ble_enrollment_carrier(
+                event, decoded["message_id"], connection_id,
+                len(complete), decoded["total"])
+        if isinstance(schema, str) and schema.startswith("openaps.ble.enrollment-carrier."):
+            raise BleProtocolError("unsupported BLE enrollment carrier")
         if event.get("schema") == AUTH_HELLO_SCHEMA:
             def submit_auth_hello():
                 try:
@@ -1394,13 +1790,17 @@ class RigBridge(object):
             # An auth worker can finish after BlueZ has reported disconnect and
             # after _submit_auth_hello created its session. Never leave that
             # session attached to the stable device path's next generation.
-            self.authorization_sessions.invalidate_connection(connection_id)
+            if isinstance(ack, dict) and ack.get("schema") == AUTH_ACK_SCHEMA:
+                self.authorization_sessions.invalidate_connection(connection_id)
             raise BleProtocolError("BLE connection changed before ACK publication")
         return ack
 
     def submit_ble_write(self, raw_bytes, connection_id=""):
         prepared = self._prepare_ble_write(raw_bytes, connection_id=connection_id)
-        generation = self._connection_generation(connection_id)
+        operation = prepared[1] if prepared is not None else None
+        generation = getattr(operation, "_ble_connection_generation", None)
+        if generation is None:
+            generation = self._connection_generation(connection_id)
         return self._execute_prepared_ble_write(prepared, connection_id, generation)
 
     def submit_ble_write_async(self, raw_bytes, connection_id, on_success, on_error):
@@ -1409,8 +1809,10 @@ class RigBridge(object):
             if prepared is None:
                 on_success(None)
                 return True
-            shadow, _operation = prepared
-            generation = self._connection_generation(connection_id)
+            shadow, operation = prepared
+            generation = getattr(operation, "_ble_connection_generation", None)
+            if generation is None:
+                generation = self._connection_generation(connection_id)
 
             def run():
                 try:
@@ -1425,6 +1827,9 @@ class RigBridge(object):
                 on_success(ack)
 
             if not self._worker_pool(shadow).submit(run):
+                cancel = getattr(operation, "_ble_cancel_reservation", None)
+                if callable(cancel):
+                    cancel()
                 raise BleProtocolError(
                     "authorization shadow is busy" if shadow else "legacy BLE delivery is busy"
                 )
@@ -1438,6 +1843,14 @@ class RigInfoCharacteristic(Characteristic):
     def __init__(self, bus, index, service, bridge):
         super(RigInfoCharacteristic, self).__init__(bus, service.bus_name, index, BLE_INFO_CHAR_UUID, service, ["read"])
         self.bridge = bridge
+
+    def _record_read_progress(self, completed_chunks, expected_chunks):
+        # Only timestamps and counts; never device paths, payloads or keys.
+        trace = getattr(self.bridge, "rig_info_read_trace", [])
+        trace.append({"at_ms": int(time.time() * 1000),
+                      "completed_chunks": completed_chunks,
+                      "expected_chunks": expected_chunks})
+        self.bridge.rig_info_read_trace = trace[-64:]
 
     def _read_value(self, options):
         self.bridge.last_rig_info_read_at = _utc_now()
@@ -1566,7 +1979,8 @@ class AckCharacteristic(Characteristic):
     def _read_value(self, options):
         connection_id = str(options.get("device", "")) if options else ""
         ack = self.bridge.ack_for_connection(connection_id)
-        operation = ("authorization_ack" if ack.get("schema") == AUTH_ACK_SCHEMA
+        operation = ("authorization_ack" if ack.get("schema") in (
+            AUTH_ACK_SCHEMA, ENROLLMENT_RESULT_SCHEMA)
                      else "event_ack")
         self.bridge.require_legacy_ble(operation)
         return _bytes_to_dbus_array(_json_bytes(ack))
@@ -1672,6 +2086,35 @@ class TLSRelayTXCharacteristic(Characteristic):
         worker.start()
 
 
+class BackgroundWakeCharacteristic(Characteristic):
+    def __init__(self, bus, index, service, config):
+        super(BackgroundWakeCharacteristic, self).__init__(
+            bus, service.bus_name, index, BLE_BACKGROUND_WAKE_CHAR_UUID,
+            service, ["notify"])
+        self.ticker = BackgroundWakeTicker(
+            wake_interval(config), GLib.timeout_add_seconds, GLib.source_remove,
+            self._set_value)
+
+    @dbus.service.method(GATT_CHRC_IFACE, in_signature="", out_signature="")
+    def StartNotify(self):
+        self.notifying = True
+        try:
+            if not self.ticker.start():
+                self.notifying = False
+        except Exception:
+            self.notifying = False
+            raise
+
+    @dbus.service.method(GATT_CHRC_IFACE, in_signature="", out_signature="")
+    def StopNotify(self):
+        self.ticker.stop()
+        self.notifying = False
+
+    def close(self):
+        self.ticker.close()
+        self.notifying = False
+
+
 class LocalBleApplication(object):
     def __init__(self, bus, config, secure_mode_policy_provider=None):
         self.bus = bus
@@ -1695,6 +2138,9 @@ class LocalBleApplication(object):
         if config.get("ble_authorization_tls_relay_enabled") is True:
             self.tls_rx = TLSRelayRXCharacteristic(bus, 7, service, self.bridge)
             self.tls_tx = TLSRelayTXCharacteristic(bus, 8, service, self.bridge)
+        self.background_wake = None
+        if config.get("ble_background_wake_enabled") is True:
+            self.background_wake = BackgroundWakeCharacteristic(bus, 9, service, config)
         self.app = Application(bus, self.bus_name, [service])
         self.advertisement = Advertisement(bus, self.bus_name, 0, config)
         self.legacy_advertisement = LegacyBtMgmtAdvertisement(config)
@@ -1779,8 +2225,9 @@ class LocalBleApplication(object):
     def health_payload(self, bluez_owner=None):
         chars = [chrc.uuid for chrc in self.service.get_characteristics()]
         bridge = self.bridge
-        return {
+        payload = {
             "process": "openaps-locald-ble",
+            "pid": os.getpid(),
             "started_at": self.started_at,
             "registered_at": self.registered_at,
             "bluez_owner": bluez_owner,
@@ -1794,6 +2241,7 @@ class LocalBleApplication(object):
             "advertisement_backend": self.advertisement_backend or "external",
             "advertise_enabled": bool(self.config.get("advertise_enabled")),
             "last_rig_info_read_at": bridge.last_rig_info_read_at,
+            "rig_info_read_trace": list(getattr(bridge, "rig_info_read_trace", [])),
             "last_status_read_at": bridge.last_status_read_at,
             "last_pumphistory_read_at": bridge.last_pumphistory_read_at,
             "last_device_status_read_at": bridge.last_device_status_read_at,
@@ -1806,6 +2254,8 @@ class LocalBleApplication(object):
             "authorization_state": bridge.authorization.last_state.get("classification"),
             "authorization_credential_available": bridge.authorization.identity is not None,
         }
+        payload.update(bridge.tls_relay_health())
+        return payload
 
     def log_health(self, bluez_owner=None, reason="heartbeat"):
         payload = self.health_payload(bluez_owner=bluez_owner)
@@ -1931,6 +2381,8 @@ def serve_ble(config):
         )
         loop_thread.join()
     finally:
+        if app.background_wake is not None:
+            app.background_wake.close()
         if secure_mode_owner is not None:
             secure_mode_owner.close()
         try:

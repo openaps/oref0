@@ -72,7 +72,7 @@ main() {
             PUSHOVER_TOKEN="$(get_pref_string .pushover_token "")"
             PUSHOVER_USER="$(get_pref_string .pushover_user "")"
             if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
-                oref0-pushover $PUSHOVER_TOKEN $PUSHOVER_USER # 2>&1 >> /var/log/openaps/pushover.log &
+                run_optional_pushover "$PUSHOVER_TOKEN" "$PUSHOVER_USER"
             fi
 
             # before each of these (optional) refresh checks, make sure we don't have fresh glucose data
@@ -552,10 +552,17 @@ function preflight {
     mkdir -p settings
     mkdir -p monitor
     # only 515, 522, 523, 715, 722, 723, 554, and 754 pump models have been tested with SMB
-    ( check_model || check_model ) 2>&3 >&4 \
-    && ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo -n "(x12 models do not support SMB safety checks, SMB will not be available.) ") ) \
-    && echo -n "OK. " \
-    || ( echo -n "fail. "; false )
+    if ( check_model || check_model ) 2>&3 >&4; then
+        if ( egrep -q "[57](15|22|23|54)" settings/model.json || (grep -q 12 settings/model.json && echo -n "(x12 models do not support SMB safety checks, SMB will not be available.) ") ); then
+            echo -n "OK. "
+            return 0
+        fi
+        echo -n "fail. stage=model-validation "
+    else
+        local read_status=$?
+        echo -n "fail. stage=model-read exit=$read_status "
+    fi
+    return 1
 }
 
 # reset radio, init world wide pump (if applicable), mmtune, and wait_for_silence 60 if no signal
@@ -823,7 +830,14 @@ function check_battery() {
 }
 function check_tempbasal() {
   set -o pipefail
-  mdt tempbasal 2>&3 | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp | grep absolute >&4 && cp monitor/temp_basal.json monitor/last_temp_basal.json
+  if (mdt tempbasal | tee monitor/temp_basal.json >&4 && cat monitor/temp_basal.json | jq .temp | grep absolute >&4 && cp monitor/temp_basal.json monitor/last_temp_basal.json) 2>monitor/temp-basal-read-error.log; then
+    return 0
+  else
+    local read_status=$?
+    echo "Pump temp basal read failed (exit $read_status)." >&2
+    tail -n 12 monitor/temp-basal-read-error.log >&2
+    return "$read_status"
+  fi
 }
 
 # clear and refresh the 24h pumphistory file approximatively every 6 hours.
@@ -846,7 +860,9 @@ function read_pumphistory() {
   else
     echo -n "Pump history update"
     try_fail mv monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json
-    if ((pumphistory -f $topRecordId  2>&3 | jq -f openaps.jq 2>&3 ) && cat monitor/pumphistory-24h-zoned-old.json) | jq -s '.[0] + .[1]'  > monitor/pumphistory-24h-zoned.json; then
+    # Keep the acquisition error locally: fd 3 is normally /dev/null, which
+    # otherwise hides the reason a required history refresh stops the loop.
+    if ((pumphistory -f "$topRecordId" | jq -f openaps.jq) && cat monitor/pumphistory-24h-zoned-old.json) 2>monitor/pumphistory-refresh-error.log | jq -s '.[0] + .[1]'  > monitor/pumphistory-24h-zoned.json; then
       newRecords=$(jq -s '(.[0] | length) - (.[1] | length)' monitor/pumphistory-24h-zoned.json monitor/pumphistory-24h-zoned-old.json)
       try_fail rm monitor/pumphistory-24h-zoned-old.json
       echo -n "d through $(jq -r '.[0].timestamp' monitor/pumphistory-24h-zoned.json) with ${newRecords} new records; "
@@ -854,6 +870,8 @@ function read_pumphistory() {
     else
       # exit status 2 means we didn't find the topRecordId in the pump, we should request a full history refresh.
       exit_status=$?
+      echo "Pump history refresh failed (exit $exit_status)." >&2
+      tail -n 12 monitor/pumphistory-refresh-error.log >&2
       if [ $exit_status -eq 2 ]; then
         read_full_pumphistory
       else

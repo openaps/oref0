@@ -918,7 +918,6 @@ class DeviceAuthorizationTests(unittest.TestCase):
                 "total": 6,
                 "payload": chunks[4],
             }, "connection-placeholder")
-
         self.assertEqual(
             assembler.add({
                 "message_id": "oversized-auth",
@@ -928,6 +927,38 @@ class DeviceAuthorizationTests(unittest.TestCase):
             }, "connection-placeholder"),
             b"{}",
         )
+
+    def test_ble_recovery_and_enrollment_carriers_use_auth_message_bounds(self):
+        for schema in (
+            "openaps.ble.recovery-carrier.v1",
+            "openaps.ble.enrollment-carrier.v1",
+        ):
+            assembler = BleChunkAssembler()
+            prefix = ('{"schema":"%s",' % schema).encode("ascii")
+            with self.assertRaises(BleProtocolError):
+                assembler.add({
+                    "message_id": "oversized-control-chunks",
+                    "seq": 0,
+                    "total": MAX_AUTH_CHUNKS + 1,
+                    "payload": prefix,
+                }, "connection-placeholder")
+
+            first_chunk = prefix + (b" " * (1024 - len(prefix)))
+            chunks = [first_chunk] + [b"x" * 1024] * 4
+            for index, chunk in enumerate(chunks[:4]):
+                self.assertIsNone(assembler.add({
+                    "message_id": "oversized-control-body",
+                    "seq": index,
+                    "total": 6,
+                    "payload": chunk,
+                }, "connection-placeholder"))
+            with self.assertRaises(BleProtocolError):
+                assembler.add({
+                    "message_id": "oversized-control-body",
+                    "seq": 4,
+                    "total": 6,
+                "payload": chunks[4],
+            }, "connection-placeholder")
 
     def test_rig_info_reconnect_clears_connection_assembly_session_and_challenge(self):
         rig = self.rig_identity

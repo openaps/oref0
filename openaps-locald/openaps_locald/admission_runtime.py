@@ -1,6 +1,7 @@
 """Fail-closed construction of a startup-owned admission registry."""
 import os
 import threading
+import time
 import uuid
 
 from .admission_owner import LiveAdmissionContext
@@ -23,7 +24,7 @@ from . import recovery_http_prelude
 class AdmissionRuntime:
     def __init__(self, proof_client, identity, evidence, settings_directory,
                  key_directory, candidate_directory, committed_directory,
-                 policy_anchor_directory, clock=None):
+                 policy_anchor_directory, clock=None, wall_clock=None):
         directories = (settings_directory, key_directory, candidate_directory,
                        committed_directory, policy_anchor_directory)
         if (proof_client is None or identity is None or
@@ -54,6 +55,7 @@ class AdmissionRuntime:
                 raise ChallengeError("key epoch changed")
 
         self.clock = clock or boottime
+        self.wall_clock = wall_clock or time.time
         kwargs = {"clock": self.clock}
         candidate_storage = AdmissionStorage(candidate_directory)
         committed_storage = AdmissionStorage(committed_directory)
@@ -129,26 +131,11 @@ class AdmissionRuntime:
         """Authenticate a bounded selector against the exact committed peer."""
         fields, key, _signature = recovery_http_prelude.shape(data)
         peer = fields["requester_credential_id"]
-        stream = self.make_recovery_stream(peer, key)
-        try:
-            nonce = recovery_http_prelude.verify(data, self.registry.identity,
-                self.registry.scope.authority, self.registry.identity.credential_id,
-                peer, key)
-            with self._recovery_prelude_lock:
-                now = self.clock()
-                for expired in [value for value, started in self._recovery_preludes.items()
-                                if now - started >= 20]:
-                    self._recovery_preludes.pop(expired, None)
-                if nonce in self._recovery_preludes or len(self._recovery_preludes) >= 128:
-                    raise ChallengeError("recovery prelude replay or capacity")
-                self._recovery_preludes[nonce] = now
-            return stream
-        except Exception:
-            try:
-                stream.transport_terminated()
-            except Exception:
-                pass
-            raise
+        nonce = recovery_http_prelude.verify(data, self.registry.identity,
+            self.registry.scope.authority, self.registry.identity.credential_id,
+            peer, key, now=self.wall_clock())
+        self._consume_recovery_prelude(nonce, fields)
+        return self.make_recovery_stream(peer, key)
 
     def make_recovery_witness_stream_from_prelude(self, data):
         """Create the HTTP route's phone-requester/rig-witness stream."""
@@ -156,21 +143,24 @@ class AdmissionRuntime:
         peer = fields["requester_credential_id"]
         nonce = recovery_http_prelude.verify(data, self.registry.identity,
             self.registry.scope.authority, self.registry.identity.credential_id,
-            peer, key)
+            peer, key, now=self.wall_clock())
+        self._consume_recovery_prelude(nonce, fields)
+        return self.make_recovery_witness_stream(peer, key)
+
+    def _consume_recovery_prelude(self, nonce, fields):
+        now = self.clock()
+        wall_now = self.wall_clock()
+        expires_at = int(fields["expires_at_ms"]) / 1000.0
+        # Keep each nonce reserved until the signed selector can no longer
+        # pass time validation, including the verifier's bounded clock skew.
+        reserved_until = now + max(0.0, expires_at - wall_now) + recovery_http_prelude.CLOCK_SKEW_SECONDS
         with self._recovery_prelude_lock:
-            now = self.clock()
-            for expired in [value for value, started in self._recovery_preludes.items()
-                            if now - started >= 20]:
+            for expired in [value for value, reserved in self._recovery_preludes.items()
+                            if reserved <= now]:
                 self._recovery_preludes.pop(expired, None)
             if nonce in self._recovery_preludes or len(self._recovery_preludes) >= 128:
                 raise ChallengeError("recovery prelude replay or capacity")
-            self._recovery_preludes[nonce] = now
-        try:
-            return self.make_recovery_witness_stream(peer, key)
-        except Exception:
-            with self._recovery_prelude_lock:
-                self._recovery_preludes.pop(nonce, None)
-            raise
+            self._recovery_preludes[nonce] = reserved_until
 
     def invalidate(self):
         self.live_context.invalidate()

@@ -29,6 +29,24 @@ class RecoveryHTTPPreludeTests(unittest.TestCase):
             recovery_http_prelude.verify(data, self.rig, "ns_" + "b" * 64,
                 self.rig.credential_id, self.phone.credential_id, self.phone.public_key_der)
 
+    def test_signed_prelude_rejects_mismatched_witness_peer_and_key(self):
+        other_phone = DeviceIdentity(os.path.join(self.directory.name, "other-phone"))
+        other_rig = DeviceIdentity(os.path.join(self.directory.name, "other-rig"))
+        data = recovery_http_prelude.prepare(self.phone, self.authority,
+                                             self.rig.credential_id)
+        mismatches = (
+            (self.authority, other_rig.credential_id,
+             self.phone.credential_id, self.phone.public_key_der),
+            (self.authority, self.rig.credential_id,
+             other_phone.credential_id, self.phone.public_key_der),
+            (self.authority, self.rig.credential_id,
+             self.phone.credential_id, other_phone.public_key_der),
+        )
+        for authority, witness, requester, key in mismatches:
+            with self.assertRaises(Exception):
+                recovery_http_prelude.verify(
+                    data, self.rig, authority, witness, requester, key)
+
     def test_tamper_trailing_and_oversize_fail_closed(self):
         data = recovery_http_prelude.prepare(self.phone, self.authority,
                                              self.rig.credential_id)
@@ -40,9 +58,11 @@ class RecoveryHTTPPreludeTests(unittest.TestCase):
                 recovery_http_prelude.shape(invalid)
 
     def test_expired_attempts_prune_but_live_nonce_replay_rejects(self):
-        now = [0.0]
+        monotonic_now = [0.0]
+        wall_now = [1800000000.0]
         runtime = AdmissionRuntime.__new__(AdmissionRuntime)
-        runtime.clock = lambda: now[0]
+        runtime.clock = lambda: monotonic_now[0]
+        runtime.wall_clock = lambda: wall_now[0]
         runtime._recovery_preludes = {}
         runtime._recovery_prelude_lock = threading.Lock()
         runtime.registry = type("Registry", (), {})()
@@ -52,18 +72,43 @@ class RecoveryHTTPPreludeTests(unittest.TestCase):
             def transport_terminated(self):
                 raise Exception("synthetic incomplete")
         runtime.make_recovery_stream = lambda peer, key: Stream()
+        runtime.make_recovery_witness_stream = lambda peer, key: Stream()
 
         first = recovery_http_prelude.prepare(self.phone, self.authority,
-                                              self.rig.credential_id)
-        runtime.make_recovery_stream_from_prelude(first)
+                                              self.rig.credential_id, now=wall_now[0])
+        runtime.make_recovery_witness_stream_from_prelude(first)
         with self.assertRaises(Exception):
             runtime.make_recovery_stream_from_prelude(first)
+        # The signed deadline, not an in-memory nonce cache, prevents replay
+        # after the reservation window and across process restarts.
+        monotonic_now[0] += recovery_http_prelude.LIFETIME_SECONDS + recovery_http_prelude.CLOCK_SKEW_SECONDS + 1
+        wall_now[0] += recovery_http_prelude.LIFETIME_SECONDS + recovery_http_prelude.CLOCK_SKEW_SECONDS + 1
+        runtime._recovery_preludes = {}
+        with self.assertRaises(Exception):
+            runtime.make_recovery_witness_stream_from_prelude(first)
         for _ in range(140):
-            now[0] += 21
+            elapsed = recovery_http_prelude.LIFETIME_SECONDS + recovery_http_prelude.CLOCK_SKEW_SECONDS + 1
+            monotonic_now[0] += elapsed
+            wall_now[0] += elapsed
             data = recovery_http_prelude.prepare(self.phone, self.authority,
-                                                 self.rig.credential_id)
+                                                 self.rig.credential_id, now=wall_now[0])
             runtime.make_recovery_stream_from_prelude(data)
         self.assertLessEqual(len(runtime._recovery_preludes), 1)
+
+    def test_prelude_expiry_is_signed_and_bounded(self):
+        now = 1800000000.0
+        data = recovery_http_prelude.prepare(self.phone, self.authority,
+                                             self.rig.credential_id, now=now)
+        fields, _key, _signature = recovery_http_prelude.shape(data)
+        self.assertEqual(
+            int(fields["expires_at_ms"]) - int(fields["issued_at_ms"]),
+            int(recovery_http_prelude.LIFETIME_SECONDS * 1000),
+        )
+        with self.assertRaises(Exception):
+            recovery_http_prelude.verify(data, self.rig, self.authority,
+                self.rig.credential_id, self.phone.credential_id,
+                self.phone.public_key_der, now=now + recovery_http_prelude.LIFETIME_SECONDS +
+                recovery_http_prelude.CLOCK_SKEW_SECONDS + 0.001)
 
 
 if __name__ == "__main__":

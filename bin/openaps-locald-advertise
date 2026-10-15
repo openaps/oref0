@@ -31,7 +31,7 @@ for package_path in _candidate_package_paths():
         sys.path.insert(0, package_path)
         break
 
-from openaps_locald.advertiser import build_arg_parser, serve_advertiser
+from openaps_locald.advertiser import HCICommandRejected, build_arg_parser, serve_advertiser
 from openaps_locald.config import load_config
 
 
@@ -41,7 +41,13 @@ def main(argv=None):
     config = load_config(args.config, args.myopenaps_dir)
     if args.adapter is not None:
         config["advertise_adapter"] = args.adapter
-    return serve_advertiser(config, force=args.force)
+    try:
+        return serve_advertiser(config, force=args.force)
+    except HCICommandRejected as error:
+        if error.opcode == 0x200A and error.status == 0x0C:
+            print("advertiser_startup=controller_enable_rejected", flush=True)
+            return 75
+        raise
 
 
 if __name__ == "__main__":

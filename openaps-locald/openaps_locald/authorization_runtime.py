@@ -27,6 +27,17 @@ FAILED_INITIALIZATION_RETRY_SECONDS = 5 * 60
 MAX_PEER_REFRESH_HISTORY_ENTRIES = 128
 
 
+def _admission_failure_site(error):
+    """Return source location only, never exception text or an absolute path."""
+    frame = error.__traceback__
+    if frame is None:
+        return "unknown:unknown:0"
+    while frame.tb_next is not None:
+        frame = frame.tb_next
+    code = frame.tb_frame.f_code
+    return "%s:%s:%d" % (os.path.basename(code.co_filename), code.co_name, frame.tb_lineno)
+
+
 class AuthorizationRuntime(object):
     """Process-local shadow coordinator; it never changes legacy allow/deny behavior."""
 
@@ -46,6 +57,7 @@ class AuthorizationRuntime(object):
         self._admission_activation_lock = threading.Lock()
         self._admission_activation_state = "not_started"
         self._admission_activation_error_category = None
+        self._admission_retryable = False
         self._proof_lock = threading.Lock()
         self._proof_closed = threading.Event()
         self.replay = None
@@ -296,16 +308,21 @@ class AuthorizationRuntime(object):
                         "registry": self._admission_runtime.registry if active else None}
 
     def _activate_admission_once(self):
-        """Perform one bounded policy observation when explicitly enabled."""
+        """Perform one bounded policy observation, including transient retries."""
         if not self._enable_admission:
             return False
         with self._admission_activation_lock:
             if self._admission_activation_state == "active":
                 return True
-            if self._admission_activation_state not in ("not_started", "recovery_only"):
+            if (self._admission_activation_state == "failed" and
+                    not self._admission_retryable):
+                return False
+            if self._admission_activation_state not in ("not_started", "recovery_only", "failed"):
                 return self._admission_activation_state == "active"
-            was_recovery_only = self._admission_activation_state == "recovery_only"
+            was_recovery_only = self._admission_runtime is not None
             self._admission_activation_state = "running"
+        retryable_proof_step = False
+        activation_stage = "restore_local_owner"
         try:
             with self._proof_lock:
                 if self._proof_closed.is_set() or self._proof_client is None:
@@ -316,11 +333,18 @@ class AuthorizationRuntime(object):
                     self.install_admission_registry(None)
                     was_recovery_only = True
                 except Exception as restore_error:
-                    from .reviewed_policy_anchor import PolicyAnchorMissing
-                    if not isinstance(restore_error, PolicyAnchorMissing):
+                    from .reviewed_policy_anchor import PolicyAnchorMissing, PolicyAnchorRejected
+                    if not isinstance(restore_error, (PolicyAnchorMissing, PolicyAnchorRejected)):
                         raise
+            # Only the remote proof steps are retryable. Local anchor/owner
+            # installation failures may be ambiguous and must remain sticky.
+            retryable_proof_step = True
+            activation_stage = "observe_permissions"
             observation = client.observe_enrollment_permissions()
+            activation_stage = "verify_policy"
             evidence = client.reviewed_policy_evidence(observation)
+            retryable_proof_step = False
+            activation_stage = "install_or_upgrade"
             with self._proof_lock:
                 if self._proof_closed.is_set() or self._proof_client is not client:
                     raise NightscoutAuthorizationError("admission_runtime_unavailable")
@@ -334,6 +358,7 @@ class AuthorizationRuntime(object):
                     raise NightscoutAuthorizationError("admission_runtime_unavailable")
                 self._admission_activation_state = "active"
                 self._admission_activation_error_category = None
+                self._admission_retryable = False
             print("openaps authorization admission active", file=sys.stderr, flush=True)
             return True
         except Exception as exc:
@@ -344,7 +369,9 @@ class AuthorizationRuntime(object):
                         "recovery_only" if was_recovery_only and
                         self._admission_runtime is not None else "failed")
                     self._admission_activation_error_category = category
-            print("openaps authorization admission unavailable category=" + category,
+                    self._admission_retryable = retryable_proof_step
+            print("openaps authorization admission unavailable category=" + category +
+                  " stage=" + activation_stage + " site=" + _admission_failure_site(exc),
                   file=sys.stderr, flush=True)
             return False
 
@@ -518,16 +545,15 @@ class AuthorizationRuntime(object):
 
         def periodic():
             while True:
+                with self._admission_activation_lock:
+                    retry_admission = self._admission_retryable
                 delay = (
                     FAILED_INITIALIZATION_RETRY_SECONDS
-                    if self.client is None
+                    if self.client is None or retry_admission
                     else interval_seconds
                 )
                 time.sleep(delay)
-                if self.client is None:
-                    self.initialize_async()
-                else:
-                    self.reconcile_async()
+                self._periodic_reconciliation_tick()
 
         thread = threading.Thread(target=periodic, name="openaps-auth-shadow-periodic")
         thread.daemon = True
@@ -544,6 +570,16 @@ class AuthorizationRuntime(object):
             }
             return None
         return thread
+
+    def _periodic_reconciliation_tick(self):
+        if self.client is None:
+            self.initialize_async()
+            return
+        with self._admission_activation_lock:
+            retry_admission = self._admission_retryable
+        if retry_admission:
+            self._activate_admission_once()
+        self.reconcile_async()
 
     def consume_replay(self, kind, credential_id, message_id, ack_digest=None):
         if self.client is None or self.replay is None:

@@ -2,6 +2,10 @@
 Description=OpenAPS local BLE transport
 After=bluetooth.service openaps-locald.service
 Requires=bluetooth.service openaps-locald.service
+# Pull advertising back in on start, including automatic recovery after failure.
+Wants=openaps-locald-advertise.service
+# Restart BLE when its sync daemon is deliberately restarted.
+PartOf=openaps-locald.service
 
 [Service]
 Type=simple

@@ -6,6 +6,8 @@ import tempfile
 import threading
 import unittest
 import uuid
+import io
+from contextlib import redirect_stderr
 
 from openaps_locald.admission_runtime import AdmissionRuntime
 from openaps_locald.authorization_runtime import AuthorizationRuntime
@@ -19,6 +21,36 @@ from tests import test_nightscout_write_proof
 
 
 class AdmissionRuntimeTests(unittest.TestCase):
+    def test_activation_diagnostic_distinguishes_sticky_local_and_retryable_remote(self):
+        secret = "https://example.invalid/private-token /private/synthetic-credential"
+        class Client:
+            def observe_enrollment_permissions(self):
+                raise ValueError(secret)
+        runtime = AuthorizationRuntime({"authorization_mode": "legacy",
+            "authorization_admission_dir": "synthetic-admission"}, enable_admission=True)
+        runtime._proof_client = Client()
+        def failed_restore(evidence):
+            raise ValueError(secret)
+        runtime.install_admission_registry = failed_restore
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.assertFalse(runtime._activate_admission_once())
+        self.assertFalse(runtime._admission_retryable)
+        self.assertIn("stage=restore_local_owner", output.getvalue())
+        self.assertRegex(output.getvalue(), r"site=test_admission_runtime.py:failed_restore:\d+")
+        self.assertNotIn(secret, output.getvalue())
+        self.assertNotIn(os.path.dirname(__file__), output.getvalue())
+        remote = AuthorizationRuntime({"authorization_mode": "legacy"}, enable_admission=True)
+        remote._proof_client = Client()
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.assertFalse(remote._activate_admission_once())
+        self.assertTrue(remote._admission_retryable)
+        self.assertIn("stage=observe_permissions", output.getvalue())
+        self.assertRegex(output.getvalue(), r"site=test_admission_runtime.py:observe_enrollment_permissions:\d+")
+        self.assertNotIn(secret, output.getvalue())
+        self.assertNotIn(os.path.dirname(__file__), output.getvalue())
+
     def fixture(self):
         f = test_nightscout_write_proof.ProofIOTests()
         f.setUp()
@@ -253,7 +285,26 @@ class AdmissionRuntimeTests(unittest.TestCase):
         self.assertEqual(runtime.admission_availability()["state"], "active")
         self.assertIsNotNone(AdmissionStorage(paths[4]).load())
 
-    def test_authorization_runtime_malformed_anchor_is_sticky_without_network(self):
+    def test_authorization_runtime_retries_transient_policy_observation_failure(self):
+        f, client, _evidence, paths = self.fixture()
+        runtime = AuthorizationRuntime({"authorization_mode": "legacy",
+            "authorization_admission_dir": os.path.dirname(paths[0])}, enable_admission=True)
+        runtime.identity, runtime._proof_client = f.rig, client
+        self.addCleanup(runtime.close_proof_owner)
+        f.replies = [(503, b"")]
+        self.assertFalse(runtime._activate_admission_once())
+        self.assertEqual(runtime.admission_availability()["state"], "failed")
+        self.assertTrue(runtime._admission_retryable)
+        self.assertEqual(runtime.enrollment_components(), (None, None))
+        f.replies = [(200, b'{"check":true}')]
+        runtime.client = object()
+        runtime.reconcile_async = lambda: None
+        runtime._periodic_reconciliation_tick()
+        self.assertEqual(runtime.admission_availability()["state"], "active")
+        self.assertFalse(runtime._admission_retryable)
+        self.assertTrue(callable(runtime.enrollment_components()[0]))
+
+    def test_authorization_runtime_malformed_anchor_recovers_with_fresh_network_proof(self):
         f, client, _evidence, paths = self.fixture()
         AdmissionStorage(paths[4]).replace(b"{}", expecting=None)
         runtime = AuthorizationRuntime({"authorization_mode": "legacy",
@@ -261,14 +312,16 @@ class AdmissionRuntimeTests(unittest.TestCase):
         runtime.identity, runtime._proof_client = f.rig, client
         self.addCleanup(runtime.close_proof_owner)
         before = len(f.calls)
-        self.assertFalse(runtime._activate_admission_once())
-        self.assertEqual(len(f.calls), before)
-        self.assertEqual(runtime.admission_availability()["state"], "failed")
-        self.assertIsNone(runtime.recovery_registry())
-        self.assertFalse(runtime._activate_admission_once())
-        self.assertEqual(len(f.calls), before)
+        f.replies = [(200, b'{"check":true}')]
+        self.assertTrue(runtime._activate_admission_once())
+        self.assertEqual(len(f.calls), before + 1)
+        self.assertEqual(runtime.admission_availability()["state"], "active")
+        self.assertFalse(runtime._admission_retryable)
+        self.assertTrue(callable(runtime.enrollment_components()[0]))
+        self.assertTrue(runtime._activate_admission_once())
+        self.assertEqual(len(f.calls), before + 1)
 
-    def test_authorization_runtime_changed_settings_epoch_rejects_anchor_before_network(self):
+    def test_authorization_runtime_changed_settings_epoch_recovers_with_fresh_proof(self):
         f, client, evidence, paths = self.fixture()
         first = AdmissionRuntime(client, f.rig, evidence, *paths, clock=lambda: f.time)
         first.invalidate()
@@ -283,9 +336,10 @@ class AdmissionRuntimeTests(unittest.TestCase):
         runtime.identity, runtime._proof_client = f.rig, client
         self.addCleanup(runtime.close_proof_owner)
         before = len(f.calls)
-        self.assertFalse(runtime._activate_admission_once())
-        self.assertEqual(len(f.calls), before)
-        self.assertEqual(runtime.admission_availability()["state"], "failed")
+        f.replies = [(200, b'{"check":true}')]
+        self.assertTrue(runtime._activate_admission_once())
+        self.assertEqual(len(f.calls), before + 1)
+        self.assertEqual(runtime.admission_availability()["state"], "active")
 
     def complete_enrollment(self, f, runtime):
         original = fresh_challenge(f.authority, f.phone.credential_id, "phone",
@@ -309,7 +363,7 @@ class AdmissionRuntimeTests(unittest.TestCase):
         fixture.phone, fixture.rig, fixture.directory = f.phone, f.rig, f.directory
         return fixture.certificate(f.phone, 1).encode()
 
-    def test_activation_is_default_off_and_failure_stays_fail_closed(self):
+    def test_activation_is_default_off_and_transient_retry_stays_fail_closed(self):
         class Client:
             observations = 0
             def observe_enrollment_permissions(self):
@@ -333,7 +387,10 @@ class AdmissionRuntimeTests(unittest.TestCase):
         self.assertEqual(enabled.enrollment_components(), (None, None))
         self.assertIsNone(enabled.tls_stream_factory())
         self.assertFalse(enabled._activate_admission_once())
-        self.assertEqual(client.observations, 1)
+        self.assertEqual(client.observations, 2)
+        self.assertEqual(enabled._admission_activation_state, "failed")
+        self.assertEqual(enabled.enrollment_components(), (None, None))
+        self.assertIsNone(enabled.tls_stream_factory())
 
     def test_close_racing_observation_cancels_without_installing(self):
         entered, release = threading.Event(), threading.Event()

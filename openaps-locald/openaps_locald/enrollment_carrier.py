@@ -6,7 +6,34 @@ until its thread is actually terminal. No retry spawns work behind that slot.
 """
 import threading
 import math
+import logging
 from .authorization_tls import boottime
+from .nightscout_authorization import NightscoutAuthorizationError
+from .write_challenge import ChallengeError
+
+
+_log = logging.getLogger(__name__)
+
+
+def _publication_failure_code(exc):
+    """Return only fixed diagnostic labels, never exception text or proof data."""
+    if isinstance(exc, NightscoutAuthorizationError):
+        category = exc.category
+        if category in ("proof_status", "proof_publication"):
+            status = exc.status
+            if type(status) is int and 100 <= status <= 599:
+                return category + "_http_" + str(status)
+        return "nightscout_authorization"
+    if isinstance(exc, ChallengeError):
+        reason = exc.args[0] if exc.args else None
+        if reason == "proof participant context mismatch":
+            return "proof_context_mismatch"
+        if reason == "proof client busy":
+            return "proof_client_busy"
+        if reason == "invalid proof server date":
+            return "invalid_proof_server_date"
+        return "challenge_validation"
+    return "publication_unexpected"
 
 
 class EnrollmentPublicationWorker(object):
@@ -48,8 +75,10 @@ class EnrollmentPublicationWorker(object):
                     if self._time() < deadline:
                         result[1] = operation()
                         result[0] = True
-                except Exception:
-                    pass # Never expose credential-bearing exception details.
+                except Exception as exc:
+                    # The carrier still returns only 503. Journal a fixed,
+                    # credential-free category for operator diagnosis.
+                    _log.warning("enrollment publication failed category=%s", _publication_failure_code(exc))
                 finally:
                     done.set()
             self.worker = threading.Thread(target=work, name="enrollment-own-publication")
