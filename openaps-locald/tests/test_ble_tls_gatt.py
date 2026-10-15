@@ -73,6 +73,31 @@ class RelayFactory(object):
 
 
 class BLETLSGATTTests(unittest.TestCase):
+    def test_health_counts_secure_activity_without_peer_or_frame_content(self):
+        bridge = self.bridge(enabled=True, factory=RelayFactory())
+        initial = bridge.tls_relay_health()
+        self.assertEqual(initial["tls_relay_write_count"], 0)
+        self.assertEqual(initial["tls_relay_read_count"], 0)
+        self.assertIsNone(initial["last_tls_relay_write_at"])
+        with self.assertRaises(BleProtocolError):
+            bridge.submit_tls_relay_frame(b"invalid", "private-peer-placeholder")
+        self.assertEqual(bridge.tls_relay_health(), initial)
+        try:
+            bridge.submit_tls_relay_frame(encode_tls_relay_frame(b"private-frame-placeholder"),
+                                          "private-peer-placeholder")
+            bridge.read_tls_relay_frame_wait("private-peer-placeholder", timeout=0.01)
+            health = bridge.tls_relay_health()
+            self.assertEqual(health["tls_relay_write_count"], 1)
+            self.assertEqual(health["tls_relay_read_count"], 1)
+            self.assertEqual(health["tls_relay_session_count"], 1)
+            self.assertIsNotNone(health["last_tls_relay_write_at"])
+            self.assertIsNotNone(health["last_tls_relay_read_at"])
+            self.assertNotIn("private-peer", json.dumps(health))
+            self.assertNotIn("private-frame", json.dumps(health))
+        finally:
+            bridge.clear_connection_state("private-peer-placeholder")
+        self.assertEqual(bridge.tls_relay_health()["tls_relay_session_count"], 0)
+
     def wait_for(self, predicate):
         deadline = time.time() + 1
         while time.time() < deadline:

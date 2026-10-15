@@ -58,6 +58,24 @@ def _utc_now():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
+def _has_established_peripheral_connection(output):
+    if not isinstance(output, bytes) or len(output) > 4096:
+        return False
+    try:
+        lines = [line.strip() for line in output.decode("ascii").splitlines() if line.strip()]
+    except UnicodeDecodeError:
+        return False
+    if not lines or lines[0] != "Connections:":
+        return False
+    peripheral = False
+    for line in lines[1:]:
+        match = re.match(r"^[<>] LE (?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2} handle ([0-9]+) state ([0-9]+) lm (SLAVE|MASTER)$", line)
+        if match is None or not 0 <= int(match.group(1)) <= 4095:
+            return False
+        peripheral = peripheral or (match.group(2) == "1" and match.group(3) == "SLAVE")
+    return peripheral
+
+
 def _health_path(config):
     explicit = config.get("advertiser_health_path")
     if explicit:
@@ -166,6 +184,8 @@ class RawHciAdvertiser(object):
         self.primary_name = bool(config.get("advertise_primary_name", False))
         self.manage_visibility = bool(config.get("advertise_manage_visibility", True))
         self._running = False
+        self._configured = False
+        self._enable_pending = False
         self.started_at = None
         self.last_setup_at = None
         self.last_enable_at = None
@@ -266,8 +286,18 @@ class RawHciAdvertiser(object):
         self.stop(force=True)
         try:
             self._ensure_visibility()
-            for command in self.command_sequence():
+            commands = self.command_sequence()
+            for command in commands[:-1]:
                 self._run_command(command)
+            self._configured = True
+            try:
+                self._run_command(commands[-1])
+            except HCICommandRejected as exc:
+                if exc.opcode != 0x200a or exc.status != 0x0c or not self._established_peripheral_connection():
+                    raise
+                self._enable_pending = True
+                self.last_error_at = _utc_now()
+                self.last_error = "enable deferred: established peripheral connection"
         except Exception as exc:
             self.last_error_at = _utc_now()
             self.last_error = "start failed: %s" % exc
@@ -277,10 +307,19 @@ class RawHciAdvertiser(object):
         now = _utc_now()
         self.started_at = now
         self.last_setup_at = now
-        self.last_enable_at = now
+        if not self._enable_pending:
+            self.last_enable_at = now
+
+    def _established_peripheral_connection(self):
+        try:
+            output = subprocess.check_output([HCI_TOOL, "-i", self.adapter, "con"],
+                stderr=subprocess.STDOUT, timeout=CONTROLLER_COMMAND_TIMEOUT_SECONDS)
+            return _has_established_peripheral_connection(output)
+        except (OSError, ValueError, subprocess.SubprocessError):
+            return False
 
     def stop(self, force=False):
-        if not force and not self._running:
+        if not force and not (self._running or self._configured or self._enable_pending):
             return
         try:
             self._run_command(self._hcitool_command(0x08, 0x000A, [0x00]))
@@ -292,11 +331,14 @@ class RawHciAdvertiser(object):
             pass
         finally:
             self._running = False
+            self._configured = False
+            self._enable_pending = False
 
     def enable_once(self):
         try:
             self._run_command(self._hcitool_command(0x08, 0x000A, [0x01]))
             self.last_enable_at = _utc_now()
+            self._enable_pending = False
             return True
         except Exception as exc:
             self.last_error_at = _utc_now()
@@ -312,6 +354,8 @@ class RawHciAdvertiser(object):
             # Lifecycle state only; neither this nor last_enable_at proves
             # that advertisements are currently being transmitted.
             "running": bool(self._running),
+            "configured": self._configured,
+            "enable_pending": self._enable_pending,
             "started_at": self.started_at,
             "last_setup_at": self.last_setup_at,
             "last_enable_at": self.last_enable_at,
@@ -333,11 +377,13 @@ class RawHciAdvertiser(object):
         except Exception as exc:
             print("advertiser health write failed error=%s" % exc, flush=True)
         print(
-            "advertiser health reason=%s adapter=%s running=%s service=%s name=%s adv_bytes=%s scan_bytes=%s last_enable=%s error=%s"
+            "advertiser health reason=%s adapter=%s running=%s configured=%s enable_pending=%s service=%s name=%s adv_bytes=%s scan_bytes=%s last_enable=%s error=%s"
             % (
                 reason,
                 payload.get("adapter"),
                 "yes" if payload.get("running") else "no",
+                "yes" if payload.get("configured") else "no",
+                "yes" if payload.get("enable_pending") else "no",
                 payload.get("service_uuid"),
                 payload.get("local_name"),
                 payload.get("advertising_bytes"),

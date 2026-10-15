@@ -130,6 +130,8 @@ class StatefulController(object):
         self.calls = []
 
     def __call__(self, command, **_kwargs):
+        if command[-1] == "con":
+            return b"Connections:\n"
         opcode = (int(command[4], 16) << 10) | int(command[5], 16)
         status = 0
         if opcode == self.fail_opcode:
@@ -148,6 +150,86 @@ class StatefulController(object):
 
 class AdvertiserStatefulStartupTests(unittest.TestCase):
     make_advertiser = AdvertiserCommandStatusTests.make_advertiser
+
+    def test_peripheral_role_not_direction_marker_proves_occupied_slot(self):
+        for marker in (b"<", b">"):
+            row = b"Connections:\n " + marker + b" LE 00:00:00:00:00:00 handle 64 state 1 lm SLAVE\n"
+            self.assertTrue(advertiser._has_established_peripheral_connection(row))
+            self.assertFalse(advertiser._has_established_peripheral_connection(
+                row.replace(b"SLAVE", b"MASTER")))
+
+    def test_occupied_peripheral_defers_enable_then_retries_without_reconfiguration(self):
+        instance = self.make_advertiser()
+        controller = StatefulController(False, fail_final_enable=True)
+        queries = []
+        def response(command, **kwargs):
+            if command[-1] == "con":
+                queries.append((command, kwargs["timeout"]))
+                return b"Connections:\n > LE 00:00:00:00:00:00 handle 64 state 1 lm SLAVE\n"
+            return controller(command, **kwargs)
+        with patch.object(advertiser.subprocess, "check_output", side_effect=response):
+            instance.start()
+            health = instance.health_payload("pending")
+            self.assertTrue(health["configured"])
+            self.assertTrue(health["enable_pending"])
+            self.assertIsNone(health["last_enable_at"])
+            self.assertFalse(controller.enabled)
+            self.assertFalse(instance.enable_once())
+            controller.fail_final_enable = False
+            self.assertTrue(instance.enable_once())
+            self.assertFalse(instance.health_payload("enabled")["enable_pending"])
+            self.assertIsNotNone(instance.last_enable_at)
+        self.assertEqual(queries, [(["hcitool", "-i", "hci0", "con"], 5)])
+        self.assertEqual([call[0] for call in controller.calls].count(0x2006), 1)
+
+    def test_pending_start_cleanup_disables_without_touching_connection(self):
+        instance = self.make_advertiser()
+        controller = StatefulController(False, fail_final_enable=True)
+        def response(command, **kwargs):
+            if command[-1] == "con":
+                return b"Connections:\n < LE 00:00:00:00:00:00 handle 64 state 1 lm SLAVE\n"
+            return controller(command, **kwargs)
+        with patch.object(advertiser.subprocess, "check_output", side_effect=response):
+            instance.start()
+            instance.stop()
+        self.assertFalse(instance._running)
+        self.assertFalse(instance._configured)
+        self.assertFalse(instance._enable_pending)
+        self.assertEqual(controller.calls[-1][:2], (0x200a, ["0x00"]))
+
+    def test_unproven_connection_or_query_timeout_keeps_enable_failure_fatal(self):
+        outcomes = [b"Connections:\n", b"Connections:\n unknown\n",
+                    b"Connections:\n < LE 00:00:00:00:00:00 handle 64 state 1 lm MASTER\n",
+                    advertiser.subprocess.TimeoutExpired("synthetic query", 5)]
+        for outcome in outcomes:
+            instance = self.make_advertiser()
+            controller = StatefulController(False, fail_final_enable=True)
+            def response(command, **kwargs):
+                if command[-1] == "con":
+                    self.assertEqual(kwargs["timeout"], 5)
+                    if isinstance(outcome, Exception):
+                        raise outcome
+                    return outcome
+                return controller(command, **kwargs)
+            with patch.object(advertiser.subprocess, "check_output", side_effect=response):
+                with self.assertRaises(advertiser.HCICommandRejected):
+                    instance.start()
+            self.assertFalse(instance._running)
+            self.assertFalse(instance._enable_pending)
+
+    def test_other_enable_status_never_queries_connection_or_defers(self):
+        instance = self.make_advertiser()
+        controller = StatefulController(False)
+        def response(command, **kwargs):
+            self.assertNotEqual(command[-1], "con")
+            if command[5:] == ["0x000a", "0x01"]:
+                return command_complete(0x200a, 0x12)
+            return controller(command, **kwargs)
+        with patch.object(advertiser.subprocess, "check_output", side_effect=response):
+            with self.assertRaises(advertiser.HCICommandRejected):
+                instance.start()
+        self.assertFalse(instance._configured)
+        self.assertFalse(instance._enable_pending)
     def test_initially_enabled_controller_starts_with_one_disable(self):
         instance = self.make_advertiser()
         controller = StatefulController(True)

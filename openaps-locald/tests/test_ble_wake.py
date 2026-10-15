@@ -41,7 +41,8 @@ class BackgroundWakeTests(unittest.TestCase):
                           "last_bg_readings_read_at", "last_event_write_at",
                           "last_event_ack_at", "last_event_error_at", "last_event_error"]
         bridge = {name: None for name in contact_fields}
-        bridge.update(service_uuid="service-placeholder", authorization=SimpleNamespace(
+        bridge.update(tls_relay_health=lambda: {"tls_relay_session_count": 0},
+                      service_uuid="service-placeholder", authorization=SimpleNamespace(
             mode="legacy", last_state={}, identity=None))
         app.bridge = SimpleNamespace(**bridge)
         app.config = {}

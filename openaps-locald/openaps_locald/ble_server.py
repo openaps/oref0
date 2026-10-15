@@ -793,6 +793,10 @@ class RigBridge(object):
         self.last_event_ack_at = None
         self.last_event_error_at = None
         self.last_event_error = None
+        self.last_tls_relay_write_at = None
+        self.last_tls_relay_read_at = None
+        self.tls_relay_write_count = 0
+        self.tls_relay_read_count = 0
         self.last_ack = {
             "ack_status": "idle",
             "details": {},
@@ -976,12 +980,16 @@ class RigBridge(object):
         relay = self._tls_relay(connection_id, create=True)
         try:
             relay.enqueue(payload)
+            with self._connection_state_lock:
+                self.last_tls_relay_write_at = _utc_now()
+                self.tls_relay_write_count += 1
         except BLETLSRelayError:
             self.clear_connection_state(connection_id)
             raise BleProtocolError("BLE TLS relay unavailable")
 
     def read_tls_relay_frame(self, connection_id):
         relay = self._tls_relay(connection_id)
+        self._note_tls_relay_read()
         try:
             return encode_tls_relay_frame(relay.dequeue())
         except _BLETLSRelayPending:
@@ -993,6 +1001,7 @@ class RigBridge(object):
     def read_tls_relay_frame_wait(self, connection_id, timeout=7.0):
         """Wait for socket output, or return a transport ACK while pending."""
         relay = self._tls_relay(connection_id)
+        self._note_tls_relay_read()
         try:
             # The phone sends TLS records as several 48-byte ATT writes.  A
             # strict write-then-read exchange would deadlock on every record:
@@ -1012,6 +1021,22 @@ class RigBridge(object):
         except BLETLSRelayError:
             self.clear_connection_state(connection_id)
             raise BleProtocolError("BLE TLS relay unavailable")
+
+    def _note_tls_relay_read(self):
+        with self._connection_state_lock:
+            self.last_tls_relay_read_at = _utc_now()
+            self.tls_relay_read_count += 1
+
+    def tls_relay_health(self):
+        # Aggregate activity only: no peer paths, identities, or frame content.
+        with self._connection_state_lock:
+            return {
+                "last_tls_relay_write_at": self.last_tls_relay_write_at,
+                "last_tls_relay_read_at": self.last_tls_relay_read_at,
+                "tls_relay_write_count": self.tls_relay_write_count,
+                "tls_relay_read_count": self.tls_relay_read_count,
+                "tls_relay_session_count": len(self._tls_relays_by_connection),
+            }
 
     def handle_device_properties_changed(self, interface, changed, connection_id):
         if interface != BLUEZ_DEVICE_IFACE or not connection_id:
@@ -1886,7 +1911,7 @@ class LocalBleApplication(object):
     def health_payload(self, bluez_owner=None):
         chars = [chrc.uuid for chrc in self.service.get_characteristics()]
         bridge = self.bridge
-        return {
+        payload = {
             "process": "openaps-locald-ble",
             "pid": os.getpid(),
             "started_at": self.started_at,
@@ -1915,6 +1940,8 @@ class LocalBleApplication(object):
             "authorization_state": bridge.authorization.last_state.get("classification"),
             "authorization_credential_available": bridge.authorization.identity is not None,
         }
+        payload.update(bridge.tls_relay_health())
+        return payload
 
     def log_health(self, bluez_owner=None, reason="heartbeat"):
         payload = self.health_payload(bluez_owner=bluez_owner)
