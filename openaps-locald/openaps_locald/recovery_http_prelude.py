@@ -11,7 +11,7 @@ from .write_challenge import ChallengeError
 
 SCHEMA = "openaps.http-recovery-prelude.v2"
 MAX_BYTES = 2048
-LIFETIME_SECONDS = 20.0
+LIFETIME_SECONDS = 60.0
 CLOCK_SKEW_SECONDS = 5.0
 SIGNATURE_DOMAIN = b"openaps-http-recovery-prelude-v2\0"
 NAMES = {"schema", "authority_context_id", "requester_credential_id",
