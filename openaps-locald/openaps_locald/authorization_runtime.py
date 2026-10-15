@@ -27,6 +27,17 @@ FAILED_INITIALIZATION_RETRY_SECONDS = 5 * 60
 MAX_PEER_REFRESH_HISTORY_ENTRIES = 128
 
 
+def _admission_failure_site(error):
+    """Return source location only, never exception text or an absolute path."""
+    frame = error.__traceback__
+    if frame is None:
+        return "unknown:unknown:0"
+    while frame.tb_next is not None:
+        frame = frame.tb_next
+    code = frame.tb_frame.f_code
+    return "%s:%s:%d" % (os.path.basename(code.co_filename), code.co_name, frame.tb_lineno)
+
+
 class AuthorizationRuntime(object):
     """Process-local shadow coordinator; it never changes legacy allow/deny behavior."""
 
@@ -311,6 +322,7 @@ class AuthorizationRuntime(object):
             was_recovery_only = self._admission_runtime is not None
             self._admission_activation_state = "running"
         retryable_proof_step = False
+        activation_stage = "restore_local_owner"
         try:
             with self._proof_lock:
                 if self._proof_closed.is_set() or self._proof_client is None:
@@ -327,9 +339,12 @@ class AuthorizationRuntime(object):
             # Only the remote proof steps are retryable. Local anchor/owner
             # installation failures may be ambiguous and must remain sticky.
             retryable_proof_step = True
+            activation_stage = "observe_permissions"
             observation = client.observe_enrollment_permissions()
+            activation_stage = "verify_policy"
             evidence = client.reviewed_policy_evidence(observation)
             retryable_proof_step = False
+            activation_stage = "install_or_upgrade"
             with self._proof_lock:
                 if self._proof_closed.is_set() or self._proof_client is not client:
                     raise NightscoutAuthorizationError("admission_runtime_unavailable")
@@ -355,7 +370,8 @@ class AuthorizationRuntime(object):
                         self._admission_runtime is not None else "failed")
                     self._admission_activation_error_category = category
                     self._admission_retryable = retryable_proof_step
-            print("openaps authorization admission unavailable category=" + category,
+            print("openaps authorization admission unavailable category=" + category +
+                  " stage=" + activation_stage + " site=" + _admission_failure_site(exc),
                   file=sys.stderr, flush=True)
             return False
 

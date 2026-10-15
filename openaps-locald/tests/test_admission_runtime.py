@@ -6,6 +6,8 @@ import tempfile
 import threading
 import unittest
 import uuid
+import io
+from contextlib import redirect_stderr
 
 from openaps_locald.admission_runtime import AdmissionRuntime
 from openaps_locald.authorization_runtime import AuthorizationRuntime
@@ -19,6 +21,36 @@ from tests import test_nightscout_write_proof
 
 
 class AdmissionRuntimeTests(unittest.TestCase):
+    def test_activation_diagnostic_distinguishes_sticky_local_and_retryable_remote(self):
+        secret = "https://example.invalid/private-token /private/synthetic-credential"
+        class Client:
+            def observe_enrollment_permissions(self):
+                raise ValueError(secret)
+        runtime = AuthorizationRuntime({"authorization_mode": "legacy",
+            "authorization_admission_dir": "synthetic-admission"}, enable_admission=True)
+        runtime._proof_client = Client()
+        def failed_restore(evidence):
+            raise ValueError(secret)
+        runtime.install_admission_registry = failed_restore
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.assertFalse(runtime._activate_admission_once())
+        self.assertFalse(runtime._admission_retryable)
+        self.assertIn("stage=restore_local_owner", output.getvalue())
+        self.assertRegex(output.getvalue(), r"site=test_admission_runtime.py:failed_restore:\d+")
+        self.assertNotIn(secret, output.getvalue())
+        self.assertNotIn(os.path.dirname(__file__), output.getvalue())
+        remote = AuthorizationRuntime({"authorization_mode": "legacy"}, enable_admission=True)
+        remote._proof_client = Client()
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.assertFalse(remote._activate_admission_once())
+        self.assertTrue(remote._admission_retryable)
+        self.assertIn("stage=observe_permissions", output.getvalue())
+        self.assertRegex(output.getvalue(), r"site=test_admission_runtime.py:observe_enrollment_permissions:\d+")
+        self.assertNotIn(secret, output.getvalue())
+        self.assertNotIn(os.path.dirname(__file__), output.getvalue())
+
     def fixture(self):
         f = test_nightscout_write_proof.ProofIOTests()
         f.setUp()
