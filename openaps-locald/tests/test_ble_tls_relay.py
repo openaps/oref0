@@ -1,3 +1,4 @@
+import base64
 import socket
 import threading
 import time
@@ -192,6 +193,39 @@ class BLETLSRelayTests(unittest.TestCase):
             ("GET /v3/tls HTTP/1.1\r\nHost: 127.0.0.1:%d\r\n"
              "Connection: Upgrade\r\nUpgrade: openaps-tls/1\r\n\r\n" %
              fixture.port).encode("ascii"))
+
+    def test_recovery_upgrade_uses_restricted_route_and_signed_prelude(self):
+        prelude = b"synthetic signed recovery prelude"
+        fixture = Fixture([
+            b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\n"
+            b"Upgrade: openaps-recovery/1\r\n\r\npeer-hello",
+        ])
+        relay = BLETLSRelay(fixture.origin, recovery_prelude=prelude).open()
+        self.addCleanup(relay.close)
+        self.assertEqual(relay.receive(), b"peer-hello")
+        expected = (
+            "GET /v3/recovery HTTP/1.1\r\nHost: 127.0.0.1:%d\r\n"
+            "Connection: Upgrade\r\nUpgrade: openaps-recovery/1\r\n"
+            "Content-Length: 0\r\nOpenAPS-Recovery: %s\r\n\r\n" %
+            (fixture.port, base64.b64encode(prelude).decode("ascii"))
+        ).encode("ascii")
+        self.assertTrue(fixture.done.wait(2))
+        self.assertEqual(fixture.request, expected)
+        self.assertNotIn(b"/v3/tls", fixture.request)
+
+    def test_recovery_upgrade_rejects_wrong_response_protocol(self):
+        fixture = Fixture([
+            b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\n"
+            b"Upgrade: openaps-tls/1\r\n\r\n",
+        ])
+        relay = BLETLSRelay(fixture.origin, recovery_prelude=b"selector")
+        with self.assertRaises(BLETLSRelayError):
+            relay.open()
+        self.assertTrue(relay.closed)
+
+    def test_recovery_upgrade_prelude_is_bounded(self):
+        with self.assertRaises(BLETLSRelayError):
+            BLETLSRelay("http://127.0.0.1:8787", recovery_prelude=b"x" * 2049)
 
     def test_503_fails_closed_without_forwarding_body(self):
         fixture = Fixture([b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 6\r\n\r\nsecret"])

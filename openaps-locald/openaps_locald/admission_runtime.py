@@ -137,7 +137,7 @@ class AdmissionRuntime:
             with self._recovery_prelude_lock:
                 now = self.clock()
                 for expired in [value for value, started in self._recovery_preludes.items()
-                                if now - started >= 20]:
+                                if now - started >= recovery_http_prelude.LIFETIME_SECONDS]:
                     self._recovery_preludes.pop(expired, None)
                 if nonce in self._recovery_preludes or len(self._recovery_preludes) >= 128:
                     raise ChallengeError("recovery prelude replay or capacity")
@@ -160,7 +160,7 @@ class AdmissionRuntime:
         with self._recovery_prelude_lock:
             now = self.clock()
             for expired in [value for value, started in self._recovery_preludes.items()
-                            if now - started >= 20]:
+                            if now - started >= recovery_http_prelude.LIFETIME_SECONDS]:
                 self._recovery_preludes.pop(expired, None)
             if nonce in self._recovery_preludes or len(self._recovery_preludes) >= 128:
                 raise ChallengeError("recovery prelude replay or capacity")

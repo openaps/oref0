@@ -29,6 +29,24 @@ class RecoveryHTTPPreludeTests(unittest.TestCase):
             recovery_http_prelude.verify(data, self.rig, "ns_" + "b" * 64,
                 self.rig.credential_id, self.phone.credential_id, self.phone.public_key_der)
 
+    def test_signed_prelude_rejects_mismatched_witness_peer_and_key(self):
+        other_phone = DeviceIdentity(os.path.join(self.directory.name, "other-phone"))
+        other_rig = DeviceIdentity(os.path.join(self.directory.name, "other-rig"))
+        data = recovery_http_prelude.prepare(self.phone, self.authority,
+                                             self.rig.credential_id)
+        mismatches = (
+            (self.authority, other_rig.credential_id,
+             self.phone.credential_id, self.phone.public_key_der),
+            (self.authority, self.rig.credential_id,
+             other_phone.credential_id, self.phone.public_key_der),
+            (self.authority, self.rig.credential_id,
+             self.phone.credential_id, other_phone.public_key_der),
+        )
+        for authority, witness, requester, key in mismatches:
+            with self.assertRaises(Exception):
+                recovery_http_prelude.verify(
+                    data, self.rig, authority, witness, requester, key)
+
     def test_tamper_trailing_and_oversize_fail_closed(self):
         data = recovery_http_prelude.prepare(self.phone, self.authority,
                                              self.rig.credential_id)

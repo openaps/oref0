@@ -28,6 +28,9 @@ BLE_TLS_TX_CHAR_UUID = "d8b4b1e4-6f95-4d71-9f8d-4d4e4f1d000a"
 BLE_BACKGROUND_WAKE_CHAR_UUID = "d8b4b1e4-6f95-4d71-9f8d-4d4e4f1d000b"
 BLE_BACKGROUND_WAKE_CAPABILITY = "background_wake_v1"
 TLS_RELAY_FRAME_SCHEMA = "openaps.ble.tls-frame.v1"
+RECOVERY_CARRIER_SCHEMA = "openaps.ble.recovery-carrier.v1"
+ENROLLMENT_CARRIER_SCHEMA = "openaps.ble.enrollment-carrier.v1"
+ENROLLMENT_RESULT_SCHEMA = "openaps.ble.enrollment-result.v1"
 MAX_TLS_RELAY_FRAME_BYTES = 48
 BLE_CHARACTERISTIC_UUIDS = [
     BLE_INFO_CHAR_UUID,
@@ -39,8 +42,8 @@ BLE_CHARACTERISTIC_UUIDS = [
     BLE_BG_READINGS_CHAR_UUID,
 ]
 BLE_TLS_CHARACTERISTIC_UUIDS = [BLE_TLS_RX_CHAR_UUID, BLE_TLS_TX_CHAR_UUID]
-_AUTH_HELLO_SCHEMA_PATTERN = re.compile(
-    br'"schema"\s*:\s*"openaps\.ble\.auth-hello\.v1"'
+_AUTH_CONTROL_SCHEMA_PATTERN = re.compile(
+    br'"schema"\s*:\s*"openaps\.ble\.(?:auth-hello|recovery-carrier|enrollment-carrier)\.v1"'
 )
 _JSON_UNICODE_ESCAPE_PATTERN = re.compile(br'\\u([0-9a-fA-F]{4})')
 
@@ -181,7 +184,7 @@ class BleChunkAssembler(object):
             self._messages.pop(key, None)
 
     @staticmethod
-    def _declares_auth_hello(chunks):
+    def _declares_auth_control(chunks):
         ordered = b"".join(chunks[index] for index in sorted(chunks))
 
         def decode_ascii_escape(match):
@@ -191,7 +194,7 @@ class BleChunkAssembler(object):
             return match.group(0)
 
         normalized = _JSON_UNICODE_ESCAPE_PATTERN.sub(decode_ascii_escape, ordered)
-        return _AUTH_HELLO_SCHEMA_PATTERN.search(normalized) is not None
+        return _AUTH_CONTROL_SCHEMA_PATTERN.search(normalized) is not None
 
     def clear_connection(self, connection_id):
         for key in [key for key in self._messages if key[0] == connection_id]:
@@ -227,7 +230,7 @@ class BleChunkAssembler(object):
         candidate_bytes = message["bytes"]
         if seq not in message["chunks"]:
             candidate_bytes += len(payload)
-        auth_hello = message["auth_hello"] or self._declares_auth_hello(candidate_chunks)
+        auth_hello = message["auth_hello"] or self._declares_auth_control(candidate_chunks)
         maximum_chunks = MAX_AUTH_CHUNKS if auth_hello else MAX_EVENT_CHUNKS
         maximum_bytes = MAX_AUTH_MESSAGE_BYTES if auth_hello else MAX_EVENT_MESSAGE_BYTES
         if total > maximum_chunks:
