@@ -58,6 +58,51 @@ class ClinicalDispatchTests(unittest.TestCase):
         self.assertEqual(second[0]["ack_status"], "duplicate")
         self.assertEqual(self.effects, ["synthetic-event"])
 
+    def test_stage_timing_preserves_ack_and_materialization_order(self):
+        messages = []
+        self.dispatch.log = messages.append
+        first = self.dispatch.process_authenticated([self.event], lambda: None)
+        second = self.dispatch.process_authenticated([self.event], lambda: None)
+        stages = [message.split("stage=")[1].split()[0] for message in messages
+                  if message.startswith("clinical timing ")]
+        self.assertEqual(stages, ["event_insert", "event_materialize",
+                                 "event_materialization_update", "event_ack_persist",
+                                 "event_insert", "event_ack_persist"])
+        self.assertEqual([first[0]["ack_status"], second[0]["ack_status"]], ["stored", "duplicate"])
+        self.assertEqual(self.effects, ["synthetic-event"])
+
+    def test_tls_stage_timing_reaches_response_after_ack_persistence(self):
+        messages = []
+        self.dispatch.log = messages.append
+        contacts = []
+        with self.tls_pair(authenticated_contact=lambda: contacts.append(True)) as (fixture, session, client, incoming, outgoing):
+            response = self.exchange(session, client, incoming, outgoing, self.tls_request(
+                fixture, method="POST", path="/v1/events", body={"events": [self.event]}))
+        self.assertEqual(response["body"]["acks"][0]["ack_status"], "stored")
+        self.assertEqual(contacts, [True])
+        stages = [message.split("stage=")[1].split()[0] for message in messages
+                  if message.startswith("clinical timing ")]
+        self.assertEqual(stages, ["event_insert", "event_materialize",
+                                 "event_materialization_update", "event_ack_persist",
+                                 "tls_event_dispatch", "tls_postdispatch_authorize", "tls_authenticated_contact",
+                                 "tls_response_encode", "tls_response_queue"])
+
+    def test_tls_timing_logger_failure_preserves_contact_error(self):
+        primary = RuntimeError("synthetic contact failure")
+        stages = []
+        def diagnostic_logger(message):
+            if message.startswith("clinical timing "):
+                stages.append(message.split("stage=")[1].split()[0])
+                raise ValueError("synthetic diagnostic failure")
+        def failed_contact():
+            raise primary
+        self.dispatch.log = diagnostic_logger
+        with self.tls_pair(authenticated_contact=failed_contact) as (fixture, session, client, incoming, outgoing):
+            with self.assertRaises(RuntimeError) as caught:
+                self.exchange(session, client, incoming, outgoing, self.tls_request(fixture))
+        self.assertIs(caught.exception, primary)
+        self.assertEqual(stages, ["tls_postdispatch_authorize", "tls_authenticated_contact"])
+
     def test_concurrent_authenticated_routes_share_serialization(self):
         with ThreadPoolExecutor(max_workers=2) as pool:
             results = list(pool.map(lambda _: self.dispatch.process_authenticated([self.event], lambda: None), range(2)))

@@ -14,6 +14,7 @@ from urllib.parse import unquote
 from .config import accepted_patient_ids
 from .models import ValidationError, ack, validate_event
 from .wifi import WiFiService, WiFiError
+from .clinical_timing import timed_clinical_call
 
 
 MAINTENANCE_SCHEMA = "openaps.local.maintenance.v1"
@@ -67,13 +68,16 @@ class ClinicalEventDispatcher(object):
                         % (log_prefix, index, event_id, patient_id, config["patient_id"])
                     )
                 else:
-                    inserted = db.insert_event(validated)
-                    materialization_result = materialize_event_result(event, config) if inserted else {"materialization": "duplicate"}
+                    inserted = timed_clinical_call(_api_log, "event_insert", lambda: db.insert_event(validated))
+                    materialization_result = timed_clinical_call(
+                        _api_log, "event_materialize", lambda: materialize_event_result(event, config)
+                    ) if inserted else {"materialization": "duplicate"}
                     if not inserted:
                         materialization_result.update(collector_ack_details(event, config))
                     materialized = materialization_result["materialization"]
                     if inserted:
-                        db.update_materialization_status(event_id, materialized)
+                        timed_clinical_call(_api_log, "event_materialization_update",
+                                            lambda: db.update_materialization_status(event_id, materialized))
                     _api_log(
                         "%s item=%d event_id=%s outcome=%s materialization=%s"
                         % (log_prefix, index, event_id, "stored" if inserted else "duplicate", materialized)
@@ -112,7 +116,7 @@ class ClinicalEventDispatcher(object):
                     % (log_prefix, index, _event_summary(event), exc)
                 )
                 event_ack = ack(event_id or "unknown", patient_id or config["patient_id"], config["rig_id"], "error_materialization_failed", {"error": str(exc)})
-            db.record_ack(event_ack)
+            timed_clinical_call(_api_log, "event_ack_persist", lambda: db.record_ack(event_ack))
             acks.append(event_ack)
         return acks
 
