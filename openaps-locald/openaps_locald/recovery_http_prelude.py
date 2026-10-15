@@ -2,33 +2,39 @@
 import base64
 import json
 import re
+import time
 import uuid
 
 from .stored_proof import _object
 from .write_challenge import ChallengeError
 
 
-SCHEMA = "openaps.http-recovery-prelude.v1"
+SCHEMA = "openaps.http-recovery-prelude.v2"
 MAX_BYTES = 2048
 LIFETIME_SECONDS = 20.0
-SIGNATURE_DOMAIN = b"openaps-http-recovery-prelude-v1\0"
+CLOCK_SKEW_SECONDS = 5.0
+SIGNATURE_DOMAIN = b"openaps-http-recovery-prelude-v2\0"
 NAMES = {"schema", "authority_context_id", "requester_credential_id",
          "requester_device_kind", "requester_public_key_der",
          "witness_credential_id", "witness_device_kind", "method", "path",
-         "nonce", "signature"}
+         "issued_at_ms", "expires_at_ms", "nonce", "signature"}
 
 
 def _json(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("ascii")
 
 
-def prepare(identity, authority, witness_credential_id):
+def prepare(identity, authority, witness_credential_id, now=None, nonce=None):
+    issued_at_ms = int((time.time() if now is None else now) * 1000)
     fields = {"schema": SCHEMA, "authority_context_id": authority,
         "requester_credential_id": identity.credential_id,
         "requester_device_kind": "phone",
         "requester_public_key_der": base64.b64encode(identity.public_key_der).decode("ascii"),
         "witness_credential_id": witness_credential_id, "witness_device_kind": "rig",
-        "method": "GET", "path": "/v3/recovery", "nonce": str(uuid.uuid4())}
+        "method": "GET", "path": "/v3/recovery",
+        "issued_at_ms": str(issued_at_ms),
+        "expires_at_ms": str(issued_at_ms + int(LIFETIME_SECONDS * 1000)),
+        "nonce": str(nonce or uuid.uuid4())}
     fields["signature"] = base64.b64encode(identity.sign(
         SIGNATURE_DOMAIN + _json(fields))).decode("ascii")
     data = _json(fields)
@@ -54,19 +60,34 @@ def shape(data):
         signature = base64.b64decode(obj["signature"], validate=True)
     except (ValueError, TypeError):
         raise ChallengeError("recovery prelude encoding") from None
-    if (str(nonce) != obj["nonce"] or nonce.int == 0 or
+    try:
+        issued_at_ms = int(obj["issued_at_ms"])
+        expires_at_ms = int(obj["expires_at_ms"])
+    except (ValueError, TypeError):
+        raise ChallengeError("recovery prelude timestamp") from None
+    if (str(issued_at_ms) != obj["issued_at_ms"] or issued_at_ms < 0 or
+            str(expires_at_ms) != obj["expires_at_ms"] or expires_at_ms < 0 or
+            expires_at_ms - issued_at_ms != int(LIFETIME_SECONDS * 1000) or
+            str(nonce) != obj["nonce"] or nonce.int == 0 or
             base64.b64encode(key).decode("ascii") != obj["requester_public_key_der"] or
             base64.b64encode(signature).decode("ascii") != obj["signature"]):
         raise ChallengeError("recovery prelude canonical encoding")
     return obj, key, signature
 
 
-def verify(data, identity, expected_authority, expected_witness, expected_peer, expected_key):
+def verify(data, identity, expected_authority, expected_witness, expected_peer, expected_key,
+           now=None):
     fields, key, signature = shape(data)
     unsigned = dict(fields); del unsigned["signature"]
+    now_ms = int((time.time() if now is None else now) * 1000)
+    issued_at_ms = int(fields["issued_at_ms"])
+    expires_at_ms = int(fields["expires_at_ms"])
+    clock_skew_ms = int(CLOCK_SKEW_SECONDS * 1000)
     if (fields["authority_context_id"] != expected_authority or
             fields["witness_credential_id"] != expected_witness or
             fields["requester_credential_id"] != expected_peer or key != expected_key or
+            issued_at_ms > now_ms + clock_skew_ms or
+            expires_at_ms < now_ms - clock_skew_ms or
             not identity.verify(SIGNATURE_DOMAIN + _json(unsigned), signature,
                                 expected_peer, expected_key)):
         raise ChallengeError("recovery prelude rejected")
