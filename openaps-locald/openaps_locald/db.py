@@ -81,6 +81,13 @@ class EventDB(object):
             return None
         return json.loads(row["event_json"])
 
+    def get_materialization_status(self, event_id):
+        with self.lock:
+            row = self.conn.execute(
+                "SELECT materialization_status FROM events WHERE event_id = ?", (event_id,)
+            ).fetchone()
+        return row["materialization_status"] if row is not None else None
+
     def list_events(self, since=None, limit=100, event_type=None, descending=False):
         limit = max(1, min(int(limit), 500))
         with self.lock:
