@@ -70,7 +70,7 @@ class ClinicalEventDispatcher(object):
                 else:
                     inserted = timed_clinical_call(_api_log, "event_insert", lambda: db.insert_event(validated))
                     stored = event if inserted else db.get_event(event_id)
-                    if stored != json.loads(validated["json"]):
+                    if validated["event_type"] == "bg_reading" and stored != json.loads(validated["json"]):
                         raise ValidationError("event_id already belongs to a different event")
                     prior_materialization = None if inserted else db.get_materialization_status(event_id)
                     # Glucose input writes merge/deduplicate records and preserve
