@@ -69,13 +69,23 @@ class ClinicalEventDispatcher(object):
                     )
                 else:
                     inserted = timed_clinical_call(_api_log, "event_insert", lambda: db.insert_event(validated))
+                    stored = event if inserted else db.get_event(event_id)
+                    if validated["event_type"] == "bg_reading" and stored != json.loads(validated["json"]):
+                        raise ValidationError("event_id already belongs to a different event")
+                    prior_materialization = None if inserted else db.get_materialization_status(event_id)
+                    # Glucose input writes merge/deduplicate records and preserve
+                    # measurement mtime. Resume an interrupted write, including
+                    # after daemon restart. Never replay pump/control commands.
+                    repair_glucose = (not inserted and validated["event_type"] == "bg_reading"
+                                      and prior_materialization not in (
+                                          "materialized_into_monitor_glucose", "materialized_into_local_glucose"))
                     materialization_result = timed_clinical_call(
-                        _api_log, "event_materialize", lambda: materialize_event_result(event, config)
-                    ) if inserted else {"materialization": "duplicate"}
+                        _api_log, "event_materialize", lambda: materialize_event_result(stored, config)
+                    ) if inserted or repair_glucose else {"materialization": prior_materialization or "duplicate"}
                     if not inserted:
                         materialization_result.update(collector_ack_details(event, config))
                     materialized = materialization_result["materialization"]
-                    if inserted:
+                    if inserted or repair_glucose:
                         timed_clinical_call(_api_log, "event_materialization_update",
                                             lambda: db.update_materialization_status(event_id, materialized))
                     _api_log(

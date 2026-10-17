@@ -58,6 +58,80 @@ class ClinicalDispatchTests(unittest.TestCase):
         self.assertEqual(second[0]["ack_status"], "duplicate")
         self.assertEqual(self.effects, ["synthetic-event"])
 
+    def glucose_event(self):
+        event = copy.deepcopy(self.event)
+        event["event_type"] = "bg_reading"
+        event["payload"] = {"sgv": 120, "dateString": event["effective_at"], "source": "synthetic"}
+        return event
+
+    def test_glucose_retry_repairs_input_after_storage_succeeded(self):
+        event = self.glucose_event()
+        attempts = []
+        def flaky_materialize(stored, config):
+            attempts.append(stored["event_id"])
+            if len(attempts) == 1:
+                raise OSError("synthetic input write failure")
+            return {"materialization": "materialized_into_monitor_glucose"}
+        self.dispatch.materialize = flaky_materialize
+        first = self.dispatch.process_authenticated([event], lambda: None)[0]
+        second = self.dispatch.process_legacy([event])[0]
+        third = self.dispatch.process_authenticated([event], lambda: None)[0]
+        self.assertEqual(first["ack_status"], "error_materialization_failed")
+        self.assertEqual(second["ack_status"], "duplicate")
+        self.assertEqual(second["details"]["materialization"], "materialized_into_monitor_glucose")
+        self.assertEqual(third["details"]["materialization"], "materialized_into_monitor_glucose")
+        self.assertEqual(attempts, [event["event_id"], event["event_id"]])
+
+    def test_glucose_retry_repairs_after_database_reopen(self):
+        event = self.glucose_event()
+        from openaps_locald.models import validate_event
+        self.handler.db.insert_event(validate_event(event))
+        self.handler.db.close()
+        from openaps_locald.db import EventDB
+        self.dispatch.db = self.handler.db = EventDB(os.path.join(self.directory.name, "events.sqlite3"))
+        self.dispatch.materialize = lambda stored, config: {"materialization": "materialized_into_monitor_glucose"}
+        result = self.dispatch.process_authenticated([event], lambda: None)[0]
+        self.assertEqual(result["details"]["materialization"], "materialized_into_monitor_glucose")
+        self.assertEqual(self.handler.db.get_materialization_status(event["event_id"]), "materialized_into_monitor_glucose")
+
+    def test_retry_finishes_real_glucose_files_after_partial_materialization(self):
+        from openaps_locald.materialize import materialize_event_result
+        event = self.glucose_event()
+        blocker = os.path.join(self.directory.name, "blocked-parent")
+        with open(blocker, "w") as output:
+            output.write("synthetic obstruction")
+        monitor = os.path.join(blocker, "glucose.json")
+        local = os.path.join(self.directory.name, "local-glucose.json")
+        self.dispatch.config.update({"myopenaps_dir": self.directory.name,
+            "materialize_bg_readings": True, "merge_local_bg_into_monitor": True,
+            "local_glucose_path": local, "monitor_glucose_path": monitor})
+        self.dispatch.materialize = materialize_event_result
+        first = self.dispatch.process_legacy([event])[0]
+        self.assertEqual(first["ack_status"], "error_materialization_failed")
+        self.assertTrue(os.path.exists(local), "First half of materialization succeeded")
+        os.unlink(blocker)
+        os.mkdir(blocker)
+        second = self.dispatch.process_authenticated([event], lambda: None)[0]
+        self.assertEqual(second["details"]["materialization"], "materialized_into_monitor_glucose")
+        with open(monitor) as source:
+            rows = json.load(source)
+        with open(local) as source:
+            local_rows = json.load(source)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(local_rows), 1)
+        self.assertEqual(rows[0]["sgv"], event["payload"]["sgv"])
+        self.assertEqual(os.path.getmtime(monitor), rows[0]["date"] / 1000.0)
+
+    def test_retry_with_changed_payload_cannot_replace_stored_glucose(self):
+        event = self.glucose_event()
+        self.dispatch.process_legacy([event])
+        changed = copy.deepcopy(event)
+        changed["payload"]["sgv"] = 130
+        result = self.dispatch.process_authenticated([changed], lambda: None)[0]
+        self.assertEqual(result["ack_status"], "rejected_invalid_schema")
+        self.assertEqual(self.handler.db.get_event(event["event_id"]), event)
+        self.assertEqual(self.effects, [event["event_id"]])
+
     def test_stage_timing_preserves_ack_and_materialization_order(self):
         messages = []
         self.dispatch.log = messages.append
