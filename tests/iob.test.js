@@ -1635,4 +1635,73 @@ describe('IOB', function() {
         after4h.iob.should.equal(0);
     });
 
+    it('should not report IOB as 0 when dia is missing or not a number', function() {
+
+        var basalprofile = [{
+            'i': 0,
+            'start': '00:00:00',
+            'rate': 1,
+            'minutes': 0
+        }];
+
+        function iobFor (dia) {
+            var now = Date.now();
+            return iob({
+                clock: new Date(now).toISOString(),
+                history: [{
+                    _type: 'Bolus',
+                    amount: 2,
+                    timestamp: new Date(now).toISOString()
+                }],
+                profile: {
+                    dia: dia,
+                    basalprofile: basalprofile,
+                    current_basal: 1,
+                    max_daily_basal: 1
+                }
+            })[0];
+        }
+
+        // `dia < 3` is false for undefined, NaN and non-numeric strings, so those
+        // used to slip through to iobCalcBilinear() and come back as 0.
+        iobFor(undefined).iob.should.equal(2);
+        iobFor(NaN).iob.should.equal(2);
+        iobFor('abc').iob.should.equal(2);
+        iobFor({}).iob.should.equal(2);
+    });
+
+    it('should keep clamping a small, negative or numeric-string dia to the minimum', function() {
+
+        var basalprofile = [{
+            'i': 0,
+            'start': '00:00:00',
+            'rate': 1,
+            'minutes': 0
+        }];
+
+        function iobFor (dia) {
+            var now = Date.now();
+            return iob({
+                clock: new Date(now).toISOString(),
+                history: [{
+                    _type: 'Bolus',
+                    amount: 2,
+                    timestamp: new Date(now).toISOString()
+                }],
+                profile: {
+                    dia: dia,
+                    basalprofile: basalprofile,
+                    current_basal: 1,
+                    max_daily_basal: 1
+                }
+            })[0];
+        }
+
+        iobFor(3).iob.should.equal(2);
+        iobFor(0).iob.should.equal(2);
+        iobFor(-2).iob.should.equal(2);
+        iobFor(null).iob.should.equal(2);
+        iobFor('3').iob.should.equal(2);
+    });
+
 });
