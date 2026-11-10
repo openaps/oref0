@@ -1,6 +1,29 @@
 #!/usr/bin/env bash
 set -e
 
+configure_archived_debian_repos() {
+    if grep 'PRETTY_NAME="Debian GNU/Linux 9 (stretch)"' /etc/os-release >/dev/null 2>&1; then
+        cat >/etc/apt/apt.conf.d/99stretch-archive <<'EOF'
+Acquire::Check-Valid-Until "false";
+Acquire::AllowInsecureRepositories "true";
+Acquire::AllowDowngradeToInsecureRepositories "true";
+APT::Get::AllowUnauthenticated "true";
+EOF
+        cat >/etc/apt/sources.list <<'EOF'
+deb [trusted=yes] http://archive.debian.org/debian stretch main contrib non-free
+deb [trusted=yes] http://archive.debian.org/debian-security stretch/updates main contrib non-free
+EOF
+        if [ -d /etc/apt/sources.list.d ]; then
+            find /etc/apt/sources.list.d -type f -name '*.list' -exec sed -i \
+                -e '/deb\.debian\.org/d' \
+                -e '/security\.debian\.org/d' \
+                -e '/stretch-updates/d' \
+                -e '/stretch-proposed-updates/d' \
+                {} +
+        fi
+    fi
+}
+
 BRANCH=${1:-dev}
 read -p "Enter your rig's new hostname (this will be your rig's "name" in the future, so make sure to write it down): " -r
 myrighostname=$REPLY
@@ -46,9 +69,13 @@ if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 8 (jessie)"' &> /de
     echo "Jubilinux 0.2.0, based on Debian Jessie, is no longer receiving security or software updates!"
 fi
 
-# TODO: remove the `-o Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
-apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true -y dist-upgrade && apt-get -o Acquire::ForceIPv4=true -y autoremove
-apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y sudo strace tcpdump screen acpid vim locate ntpdate ntp
+# Workaround for Debian Stretch migration to LTS
+if cat /etc/os-release | grep 'PRETTY_NAME="Debian GNU/Linux 9 (stretch)"' &> /dev/null; then
+    configure_archived_debian_repos
+fi
+
+apt-get update && apt-get -o Dpkg::Options::="--force-confdef" -y dist-upgrade && apt-get -y autoremove
+apt-get update && apt-get install -y sudo strace tcpdump screen acpid vim locate ntpdate ntp
 #check if edison user exists before trying to add it to groups
 
 grep "PermitRootLogin yes" /etc/ssh/sshd_config || echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
