@@ -717,6 +717,26 @@ if prompt_yn "" N; then
         # Replace apt sources.list with archive.debian.org locations
         echo -e "deb http://security.debian.org/ jessie/updates main\n#deb-src http://security.debian.org/ jessie/updates main\n\ndeb http://archive.debian.org/debian/ jessie-backports main\n#deb-src http://archive.debian.org/debian/ jessie-backports main\n\ndeb http://archive.debian.org/debian/ jessie main contrib non-free\n#deb-src http://archive.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
     fi
+    if grep 'PRETTY_NAME="Debian GNU/Linux 9 (stretch)"' /etc/os-release >/dev/null 2>&1; then
+        cat >/etc/apt/apt.conf.d/99stretch-archive <<'EOF'
+Acquire::Check-Valid-Until "false";
+Acquire::AllowInsecureRepositories "true";
+Acquire::AllowDowngradeToInsecureRepositories "true";
+APT::Get::AllowUnauthenticated "true";
+EOF
+        cat >/etc/apt/sources.list <<'EOF'
+deb [trusted=yes] http://archive.debian.org/debian stretch main contrib non-free
+deb [trusted=yes] http://archive.debian.org/debian-security stretch/updates main contrib non-free
+EOF
+        if [ -d /etc/apt/sources.list.d ]; then
+            find /etc/apt/sources.list.d -type f -name '*.list' -exec sed -i \
+                -e '/deb\.debian\.org/d' \
+                -e '/security\.debian\.org/d' \
+                -e '/stretch-updates/d' \
+                -e '/stretch-proposed-updates/d' \
+                {} +
+        fi
+    fi
     
     #Mount the Edison's fat32 partition at /usr/local/go to give us lots of room to install golang
     if is_edison && [ -e /dev/mmcblk0p9 ] && ! mount | grep -qa mmcblk0p9 ; then

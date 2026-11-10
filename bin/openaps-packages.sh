@@ -5,8 +5,33 @@ die() {
     exit 1
 }
 
+configure_archived_debian_repos() {
+    if grep 'PRETTY_NAME="Debian GNU/Linux 9 (stretch)"' /etc/os-release >/dev/null 2>&1; then
+        cat >/etc/apt/apt.conf.d/99stretch-archive <<'EOF'
+Acquire::Check-Valid-Until "false";
+Acquire::AllowInsecureRepositories "true";
+Acquire::AllowDowngradeToInsecureRepositories "true";
+APT::Get::AllowUnauthenticated "true";
+EOF
+        cat >/etc/apt/sources.list <<'EOF'
+deb [trusted=yes] http://archive.debian.org/debian stretch main contrib non-free
+deb [trusted=yes] http://archive.debian.org/debian-security stretch/updates main contrib non-free
+EOF
+        if [ -d /etc/apt/sources.list.d ]; then
+            find /etc/apt/sources.list.d -type f -name '*.list' -exec sed -i \
+                -e '/deb\.debian\.org/d' \
+                -e '/security\.debian\.org/d' \
+                -e '/stretch-updates/d' \
+                -e '/stretch-proposed-updates/d' \
+                {} +
+        fi
+    fi
+}
+
 # TODO: remove the `Acquire::ForceIPv4=true` once Debian's mirrors work reliably over IPv6
 echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4
+
+configure_archived_debian_repos
 
 apt-get install -y sudo
 sudo apt-get update && sudo apt-get -y upgrade
