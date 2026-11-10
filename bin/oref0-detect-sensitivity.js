@@ -14,7 +14,7 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-var detect = require('../lib/determine-basal/autosens');
+var detectSensitivity = require('../lib/determine-basal/autosens');
 
 if (!module.parent) {
     var argv = require('yargs')
@@ -112,14 +112,14 @@ if (!module.parent) {
     };
     console.error("Calculating sensitivity using 8h of non-exluded data");
     detection_inputs.deviations = 96;
-    detect(detection_inputs);
-    var ratio8h = ratio;
-    var newisf8h = newisf;
+    var result = detectSensitivity(detection_inputs);
+    var ratio8h = result.ratio;
+    var newisf8h = result.newisf;
     console.error("Calculating sensitivity using all non-exluded data (up to 24h)");
     detection_inputs.deviations = 288;
-    detect(detection_inputs);
-    var ratio24h = ratio;
-    var newisf24h = newisf;
+    result = detectSensitivity(detection_inputs);
+    var ratio24h = result.ratio;
+    var newisf24h = result.newisf;
     if ( ratio8h < ratio24h ) {
         console.error("Using 8h autosens ratio of",ratio8h,"(ISF",newisf8h+")");
     } else {

@@ -3,6 +3,7 @@
 require('should');
 
 var moment = require('moment');
+var iob = require('../lib/iob');
 
 describe('IOB', function() {
 
@@ -34,13 +35,13 @@ describe('IOB', function() {
 
             };
 
-        var rightAfterBolus = require('../lib/iob')(inputs)[0];
+        var rightAfterBolus = iob(inputs)[0];
         rightAfterBolus.iob.should.equal(2);
         //rightAfterBolus.bolussnooze.should.equal(2);
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(1.45);
         //hourLater.bolussnooze.should.be.lessThan(.5);
         hourLater.iob.should.be.greaterThan(0);
@@ -49,7 +50,7 @@ describe('IOB', function() {
 
         var afterDIAInputs = inputs;
         afterDIAInputs.clock = new Date(now + (3 * 60 * 60 * 1000)).toISOString();
-        var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+        var afterDIA = iob(afterDIAInputs)[0];
 
         afterDIA.iob.should.equal(0);
         //afterDIA.bolussnooze.should.equal(0);
@@ -83,14 +84,14 @@ describe('IOB', function() {
                 }
             };
 
-        var rightAfterBolus = require('../lib/iob')(inputs)[0];
+        var rightAfterBolus = iob(inputs)[0];
 
         rightAfterBolus.iob.should.equal(2);
         //rightAfterBolus.bolussnooze.should.equal(2);
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(1.6);
         hourLater.iob.should.be.greaterThan(1.3);
 
@@ -101,7 +102,7 @@ describe('IOB', function() {
 
         var afterDIAInputs = inputs;
         afterDIAInputs.clock = new Date(now + (5 * 60 * 60 * 1000)).toISOString();
-        var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+        var afterDIA = iob(afterDIAInputs)[0];
         afterDIA.iob.should.equal(0);
         //afterDIA.bolussnooze.should.equal(0);
     });
@@ -135,13 +136,13 @@ describe('IOB', function() {
                 }
             };
 
-        var rightAfterBolus = require('../lib/iob')(inputs)[0];
+        var rightAfterBolus = iob(inputs)[0];
         rightAfterBolus.iob.should.equal(1);
         //rightAfterBolus.bolussnooze.should.equal(1);
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(0.75);
         //hourLater.bolussnooze.should.be.lessThan(0.75);
         hourLater.iob.should.be.greaterThan(0);
@@ -150,7 +151,7 @@ describe('IOB', function() {
 
         var afterDIAInputs = inputs;
         afterDIAInputs.clock = new Date(now + (5 * 60 * 60 * 1000)).toISOString();
-        var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+        var afterDIA = iob(afterDIAInputs)[0];
 
         afterDIA.iob.should.equal(0);
         //afterDIA.bolussnooze.should.equal(0);
@@ -186,13 +187,13 @@ describe('IOB', function() {
                 }
             };
 
-        var rightAfterBolus = require('../lib/iob')(inputs)[0];
+        var rightAfterBolus = iob(inputs)[0];
         rightAfterBolus.iob.should.equal(1);
         //rightAfterBolus.bolussnooze.should.equal(1);
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(0.77);
         //hourLater.bolussnooze.should.be.lessThan(0.36);
         hourLater.iob.should.be.greaterThan(0.72);
@@ -203,7 +204,7 @@ describe('IOB', function() {
 
         var afterDIAInputs = inputs;
         afterDIAInputs.clock = new Date(now + (5 * 60 * 60 * 1000)).toISOString();
-        var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+        var afterDIA = iob(afterDIAInputs)[0];
 
         afterDIA.iob.should.equal(0);
         //afterDIA.bolussnooze.should.equal(0);
@@ -239,13 +240,13 @@ describe('IOB', function() {
                 }
             };
 
-        var rightAfterBolus = require('../lib/iob')(inputs)[0];
+        var rightAfterBolus = iob(inputs)[0];
         rightAfterBolus.iob.should.equal(1);
         //rightAfterBolus.bolussnooze.should.equal(1);
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(0.81);
         //hourLater.bolussnooze.should.be.lessThan(0.5);
         hourLater.iob.should.be.greaterThan(0.76);
@@ -257,7 +258,7 @@ describe('IOB', function() {
 
         var afterDIAInputs = inputs;
         afterDIAInputs.clock = new Date(now + (5 * 60 * 60 * 1000)).toISOString();
-        var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+        var afterDIA = iob(afterDIAInputs)[0];
 
         afterDIA.iob.should.equal(0);
         //afterDIA.bolussnooze.should.equal(0);
@@ -293,13 +294,13 @@ describe('IOB', function() {
                 }
             };
 
-        var rightAfterBolus = require('../lib/iob')(inputs)[0];
+        var rightAfterBolus = iob(inputs)[0];
         rightAfterBolus.iob.should.equal(1);
         //rightAfterBolus.bolussnooze.should.equal(1);
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(0.59);
         //hourLater.bolussnooze.should.be.lessThan(0.23);
 
@@ -311,7 +312,7 @@ describe('IOB', function() {
 
         var afterDIAInputs = inputs;
         afterDIAInputs.clock = new Date(now + (6 * 60 * 60 * 1000)).toISOString();
-        var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+        var afterDIA = iob(afterDIAInputs)[0];
 
         afterDIA.iob.should.equal(0);
         //afterDIA.bolussnooze.should.equal(0);
@@ -345,20 +346,20 @@ describe('IOB', function() {
                 }
             };
 
-        var rightAfterBolus = require('../lib/iob')(inputs)[0];
+        var rightAfterBolus = iob(inputs)[0];
         rightAfterBolus.iob.should.equal(1);
         //rightAfterBolus.bolussnooze.should.equal(1);
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(0.8);
         //hourLater.bolussnooze.should.be.lessThan(.8);
         hourLater.iob.should.be.greaterThan(0);
 
         var afterDIAInputs = inputs;
         afterDIAInputs.clock = new Date(now + (5 * 60 * 60 * 1000)).toISOString();
-        var afterDIA = require('../lib/iob')(afterDIAInputs)[0];
+        var afterDIA = iob(afterDIAInputs)[0];
 
         afterDIA.iob.should.equal(0);
         //afterDIA.bolussnooze.should.equal(0);
@@ -395,13 +396,13 @@ describe('IOB', function() {
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (4 * 60 * 60 * 1000)).toISOString();
 
-        var hourLaterWith5 = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLaterWith5 = iob(hourLaterInputs)[0];
 
         console.error(hourLaterWith5.iob);
 
         hourLaterInputs.profile.dia = 3;
 
-        var hourLaterWith4 = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLaterWith4 = iob(hourLaterInputs)[0];
 
         console.error(hourLaterWith4.iob);
 
@@ -427,7 +428,7 @@ describe('IOB', function() {
 
         //var snoozeInputs = inputs;
         //snoozeInputs.clock = new Date(now + (20 * 60 * 1000)).toISOString();
-        //var snooze = require('../lib/iob')(snoozeInputs)[0];
+        //var snooze = iob(snoozeInputs)[0];
         //snooze.bolussnooze.should.equal(0);
     //});
 
@@ -476,7 +477,7 @@ describe('IOB', function() {
             };
 
         var iobInputs = inputs;
-        var iobNow = require('../lib/iob')(iobInputs)[0];
+        var iobNow = iob(iobInputs)[0];
 
         //console.log(iobNow);
         iobNow.iob.should.be.lessThan(1);
@@ -535,7 +536,7 @@ describe('IOB', function() {
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = moment('2016-06-13 01:30:00.000');
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(0.5);
         hourLater.iob.should.be.greaterThan(0.4);
     });
@@ -599,7 +600,7 @@ describe('IOB', function() {
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = moment('2016-06-13 00:45:00.000'); //new Date(now + (30 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
 
         hourLater.iob.should.be.lessThan(0.8);
         hourLater.iob.should.be.greaterThan(0.7);
@@ -640,7 +641,7 @@ describe('IOB', function() {
             }
         };
 
-        var hourLater = require('../lib/iob')(inputs)[0];
+        var hourLater = iob(inputs)[0];
 
         var timestampEarly2 = startingPoint.clone().subtract(29, 'minutes');
         var timestampEarly3 = startingPoint.clone().subtract(28, 'minutes');
@@ -669,7 +670,7 @@ describe('IOB', function() {
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = moment('2016-06-13 00:30:00.000');
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
 
         var inputs = {
             clock: timestamp,
@@ -713,7 +714,7 @@ describe('IOB', function() {
             }
         };
 
-        var hourLaterWithOverlap = require('../lib/iob')(inputs)[0];
+        var hourLaterWithOverlap = iob(inputs)[0];
 
         hourLater.iob.should.be.greaterThan(hourLaterWithOverlap.iob - 0.05);
         hourLater.iob.should.be.lessThan(hourLaterWithOverlap.iob + 0.05);
@@ -774,7 +775,7 @@ describe('IOB', function() {
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = moment('2016-06-14 00:45:00.000');
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
 
         hourLater.iob.should.be.lessThan(1);
         hourLater.iob.should.be.greaterThan(0.8);
@@ -832,7 +833,7 @@ describe('IOB', function() {
         var iobInputs = inputs;
 
         // Calculate IOB with inputs that will be the same as
-        var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithoutSuspend = iob(iobInputs)[0];
 
         inputs = {
             clock: timestamp,
@@ -867,7 +868,7 @@ describe('IOB', function() {
 
         iobInputs = inputs;
 
-        var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithSuspend = iob(iobInputs)[0];
 
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
     });
@@ -933,7 +934,7 @@ describe('IOB', function() {
 
         var iobInputs = inputs;
 
-        var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithoutSuspend = iob(iobInputs)[0];
 
         inputs = {
                 clock: timestamp,
@@ -968,7 +969,7 @@ describe('IOB', function() {
 
         iobInputs = inputs;
 
-        var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithSuspend = iob(iobInputs)[0];
 
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
     });
@@ -1035,7 +1036,7 @@ describe('IOB', function() {
 
         var iobInputs = inputs;
 
-        var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithoutSuspend = iob(iobInputs)[0];
 
         inputs = {
             clock: timestamp,
@@ -1090,7 +1091,7 @@ describe('IOB', function() {
 
         iobInputs = inputs;
 
-        var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithSuspend = iob(iobInputs)[0];
 
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
     });
@@ -1146,7 +1147,7 @@ describe('IOB', function() {
 
         var iobInputs = inputs;
 
-        var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithoutSuspend = iob(iobInputs)[0];
 
         inputs = {
             clock: timestamp,
@@ -1180,7 +1181,7 @@ describe('IOB', function() {
 
         var iobInputs = inputs;
 
-        var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithSuspend = iob(iobInputs)[0];
 
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
     });
@@ -1237,7 +1238,7 @@ describe('IOB', function() {
 
         var iobInputs = inputs;
 
-        var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithoutSuspend = iob(iobInputs)[0];
 
         inputs = {
             clock: timestamp,
@@ -1268,7 +1269,7 @@ describe('IOB', function() {
 
         iobInputs = inputs;
 
-        var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithSuspend = iob(iobInputs)[0];
 
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
     });
@@ -1324,7 +1325,7 @@ describe('IOB', function() {
 
         var iobInputs = inputs;
 
-        var iobNowWithoutSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithoutSuspend = iob(iobInputs)[0];
 
             inputs = {
                 clock: timestamp,
@@ -1353,7 +1354,7 @@ describe('IOB', function() {
                 }
             };
 
-        var iobNowWithSuspend = require('../lib/iob')(iobInputs)[0];
+        var iobNowWithSuspend = iob(iobInputs)[0];
 
         iobNowWithSuspend.iob.should.equal(iobNowWithoutSuspend.iob);
     });
@@ -1411,7 +1412,7 @@ describe('IOB', function() {
         };
 
         var hourLaterInputs = inputs;
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
         hourLater.iob.should.equal(0);
     });
 
@@ -1460,7 +1461,7 @@ describe('IOB', function() {
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
 
         hourLater.iob.should.be.lessThan(1);
         hourLater.iob.should.be.greaterThan(0);
@@ -1512,7 +1513,7 @@ describe('IOB', function() {
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
 
         hourLater.iob.should.be.lessThan(0);
         hourLater.iob.should.be.greaterThan(-1);
@@ -1542,7 +1543,7 @@ describe('IOB', function() {
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
 
         hourLater.iob.should.equal(0);
     });
@@ -1579,7 +1580,7 @@ describe('IOB', function() {
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
 
         hourLater.iob.should.equal(0);
     });
@@ -1612,25 +1613,25 @@ describe('IOB', function() {
 
             };
 
-        var rightAfterBolus = require('../lib/iob')(inputs)[0];
+        var rightAfterBolus = iob(inputs)[0];
         rightAfterBolus.iob.should.equal(1);
         //rightAfterBolus.bolussnooze.should.equal(1);
 
         var hourLaterInputs = inputs;
         hourLaterInputs.clock = new Date(now + (60 * 60 * 1000)).toISOString();
-        var hourLater = require('../lib/iob')(hourLaterInputs)[0];
+        var hourLater = iob(hourLaterInputs)[0];
         hourLater.iob.should.be.lessThan(1);
         //hourLater.bolussnooze.should.be.lessThan(.5);
         hourLater.iob.should.be.greaterThan(0);
 
         var after3hInputs = inputs;
         after3hInputs.clock = new Date(now + (3 * 60 * 60 * 1000)).toISOString();
-        var after3h = require('../lib/iob')(after3hInputs)[0];
+        var after3h = iob(after3hInputs)[0];
         after3h.iob.should.be.greaterThan(0);
 
         var after4hInputs = inputs;
         after4hInputs.clock = new Date(now + (4 * 60 * 60 * 1000)).toISOString();
-        var after4h = require('../lib/iob')(after4hInputs)[0];
+        var after4h = iob(after4hInputs)[0];
         after4h.iob.should.equal(0);
     });
 

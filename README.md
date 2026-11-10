@@ -87,7 +87,7 @@ API_SECRET="..." NIGHTSCOUT_HOST=localhost:1337 ns-upload-entries <input> <outpu
 ### Get the source
 
 ```
-git clone git://github.com/openaps/oref0.git
+git clone https://github.com/openaps/oref0.git
 cd oref0
 git checkout dev
 git checkout -b wip/my-enhancement-fix-or-proposal

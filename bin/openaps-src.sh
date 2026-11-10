@@ -19,27 +19,27 @@ sudo easy_install -ZU setuptools && \
 mkdir ~/src
 cd ~/src && \
 (
-    git clone -b dev git://github.com/openaps/decocare.git || \
+    git clone -b dev https://github.com/openaps/decocare.git || \
         (cd decocare && git pull)
     (cd decocare && \
         sudo python setup.py develop
     )
-    git clone git://github.com/openaps/dexcom_reader.git || \
+    git clone https://github.com/openaps/dexcom_reader.git || \
         (cd dexcom_reader && git pull)
     (cd dexcom_reader && \
         sudo python setup.py develop
     )
-    git clone -b dev git://github.com/openaps/openaps.git || \
+    git clone -b dev https://github.com/openaps/openaps.git || \
         (cd openaps && git pull)
     (cd openaps && \
         sudo python setup.py develop
     )
-    git clone git://github.com/openaps/openaps-contrib.git || \
+    git clone https://github.com/openaps/openaps-contrib.git || \
         (cd openaps-contrib && git pull)
     (cd openaps-contrib && \
         sudo python setup.py develop
     )
-    git clone -b dev git://github.com/openaps/oref0.git || \
+    git clone -b dev https://github.com/openaps/oref0.git || \
         (cd oref0 && git pull)
 )
 test -d oref0 && \

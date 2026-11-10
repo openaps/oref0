@@ -59,7 +59,7 @@ def enacted():
 
 @app.route("/glucose")
 def glucose():
-    if os.path.getmtime(myopenaps_dir + "xdrip/glucose.json") > os.path.getmtime(myopenaps_dir + "monitor/glucose.json"):
+    if os.path.getmtime(myopenaps_dir + "xdrip/glucose.json") > os.path.getmtime(myopenaps_dir + "monitor/glucose.json") and os.path.getsize(myopenaps_dir + "xdrip/glucose.json") > 0:
         json_url = os.path.join(myopenaps_dir + "xdrip/glucose.json")
     else:
         json_url = os.path.join(myopenaps_dir + "monitor/glucose.json")

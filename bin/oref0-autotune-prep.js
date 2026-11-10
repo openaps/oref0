@@ -27,7 +27,7 @@ var moment = require('moment');
 if (!module.parent) {
 
     var argv = require('yargs')
-        .usage("$0 <pumphistory.json> <profile.json> <glucose.json> <pumpprofile.json> [<carbhistory.json>] [--categorize_uam_as_basal] [--tune-insulin-curve]")
+        .usage("$0 <pumphistory.json> <profile.json> <glucose.json> <pumpprofile.json> [<carbhistory.json>] [--categorize_uam_as_basal] [--tune-insulin-curve] [--output-file=<output_file.json>]")
         .option('categorize_uam_as_basal', {
             alias: 'u',
             boolean: true,
@@ -39,6 +39,11 @@ if (!module.parent) {
             boolean: true,
             describe: "Tune peak time and end time",
             default: false
+        })
+        .option('output-file', {
+            alias: 'o',
+            describe: 'Output file to write output',
+            default: null,
         })
         .strict(true)
         .help('help');
@@ -66,7 +71,6 @@ if (!module.parent) {
         console.log('{ "error": "Could not parse input data" }');
         return console.error("Could not parse input data: ", e);
     }
-
     var pumpprofile_data = { };
     if (typeof pumpprofile_input !== 'undefined') {
         try {
@@ -103,7 +107,7 @@ if (!module.parent) {
     try {
         var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
     } catch (e) {
-        console.error("Warning: could not parse "+glucose_input);
+        return console.error("Warning: could not parse "+glucose_input, e);
     }
 
     var carb_data = { };
@@ -129,6 +133,10 @@ if (!module.parent) {
     };
 
     var prepped_glucose = generate(inputs);
-    console.log(JSON.stringify(prepped_glucose));
+    if (params['output-file']) {
+        fs.writeFileSync(params['output-file'], JSON.stringify(prepped_glucose))
+    } else {
+        console.log(JSON.stringify(prepped_glucose));
+    }
 }
 
