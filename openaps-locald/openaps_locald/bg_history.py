@@ -211,8 +211,11 @@ def merge_bg_records(local_records, monitor_records):
 def write_local_bg_record(event, config):
     path = _local_glucose_path(config)
     records = _read_json_array(path)
-    records.insert(0, bg_record_from_event(event))
-    _atomic_write_json(path, sorted(records, key=_record_timestamp_millis, reverse=True))
+    # An event may be replayed after the local write succeeded but monitor
+    # materialization failed. Use the same identity merge as the loop input.
+    merged = merge_bg_records([bg_record_from_event(event)], records)
+    newest_millis = _record_timestamp_millis(merged[0]) if merged else -1
+    _atomic_write_json(path, merged, measured_at=max(0, newest_millis) / 1000.0)
     return path
 
 
