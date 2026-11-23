@@ -26,7 +26,7 @@ import datetime
 import os, errno
 import logging
 import pytz
-from subprocess import call
+from subprocess import call, check_call
 import shutil
 import six
 
@@ -98,32 +98,17 @@ def get_nightscout_profile(nightscout_host, directory):
         f.write(six.ensure_str(res.text, encoding='utf-8'))
 
 def get_openaps_profile(directory):
-    shutil.copy(os.path.join(directory, 'settings', 'pumpprofile.json'), os.path.join(directory, 'autotune', 'profile.pump.json'))
+    pump_profile = os.path.join(directory, 'settings', 'pumpprofile.json')
+    for filename in ('profile.pump.json', 'profile.json', 'pumpprofile.json'):
+        shutil.copy(pump_profile, os.path.join(directory, 'autotune', filename))
 
-    # If a previous valid settings/autotune.json exists, use that; otherwise start from settings/profile.json
 
-    # This allows manual users to be able to run autotune by simply creating a settings/pumpprofile.json file.
-    # cp -up settings/pumpprofile.json settings/profile.json
-    shutil.copy(os.path.join(directory, 'settings', 'pumpprofile.json'), os.path.join(directory, 'settings', 'profile.json'))
+def write_legacy_settings_profiles(directory):
+    # Keep the successful runner's settings output, after prep and core succeed.
+    pump_profile = os.path.join(directory, 'settings', 'pumpprofile.json')
+    for filename in ('profile.json', 'autotune.json'):
+        shutil.copy(pump_profile, os.path.join(directory, 'settings', filename))
 
-    # TODO: Get this to work. For now, just copy from settings/profile.json each time.
-    # If a previous valid settings/autotune.json exists, use that; otherwise start from settings/profile.json
-    # cp settings/autotune.json autotune/profile.json && cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json
-    # create_autotune_json = "cp {0}settings/autotune.json {0}autotune/profile.json && cat {0}autotune/profile.json | json | grep -q start || cp {0}autotune/profile.pump.json {0}autotune/profile.json".format(directory)
-    # print create_autotune_json
-    # call(create_autotune_json, shell=True)
-
-    # cp settings/profile.json settings/autotune.json
-    shutil.copy(os.path.join(directory, 'settings', 'profile.json'), os.path.join(directory, 'settings', 'autotune.json'))
-
-    # cp settings/autotune.json autotune/profile.json
-    shutil.copy(os.path.join(directory, 'settings', 'autotune.json'), os.path.join(directory, 'autotune', 'profile.json'))
-
-    # cp settings/autotune.json autotune/pumpprofile.json
-    shutil.copy(os.path.join(directory, 'settings', 'autotune.json'), os.path.join(directory, 'autotune', 'pumpprofile.json'))
-
-    #TODO: Do the correct copying here.
-    # cat autotune/profile.json | json | grep -q start || cp autotune/profile.pump.json autotune/profile.json'])
 
 def get_nightscout_carb_and_insulin_treatments(nightscout_host, start_date, end_date, directory):
     logging.info('Grabbing NIGHTSCOUT treatments.json for date range: {0} to {1}'.format(start_date, end_date))
@@ -178,7 +163,7 @@ def run_autotune(start_date, end_date, number_of_runs, directory):
                                                  .format(run_number=run_number, date=date.strftime("%Y-%m-%d")))
             autotune_prep = 'oref0-autotune-prep {ns_treatments} {profile} {ns_entries} {pump_profile} --output-file {autotune_run_filename}'.format(ns_treatments=ns_treatments, profile=profile, ns_entries=ns_entries, pump_profile=pump_profile, autotune_run_filename=autotune_run_filename)
             logging.info('Running {script}'.format(script=autotune_prep))
-            call(autotune_prep, stdout=FNULL, shell=True)
+            check_call(autotune_prep, stdout=FNULL, shell=True)
             logging.info('Writing output to {filename}'.format(filename=autotune_run_filename))
 
             # Autotune  (required args, <autotune/glucose.json> <autotune/autotune.json> <settings/profile.json>),
@@ -193,7 +178,7 @@ def run_autotune(start_date, end_date, number_of_runs, directory):
                                                    .format(run_number=run_number, date=date.strftime("%Y-%m-%d")))
             autotune_core = 'oref0-autotune-core {autotune_run} {profile} {profile_pump} --output-file {newprofile_run_filename}'.format(profile=profile, profile_pump = profile_pump, autotune_run=autotune_run_filename, newprofile_run_filename=newprofile_run_filename)
             logging.info('Running {script}'.format(script=autotune_core))
-            call(autotune_core, stdout=FNULL, shell=True)
+            check_call(autotune_core, stdout=FNULL, shell=True)
             logging.info('Writing output to {filename}'.format(filename=newprofile_run_filename))
 
             # Copy tuned profile produced by autotune to profile.json for use with next day of data
@@ -236,6 +221,7 @@ if __name__ == "__main__":
     get_nightscout_carb_and_insulin_treatments(nightscout_host, start_date, end_date, directory)
     get_nightscout_bg_entries(nightscout_host, start_date, end_date, directory)
     run_autotune(start_date, end_date, number_of_runs, directory)
+    write_legacy_settings_profiles(directory)
 
     if export_excel:
         export_to_excel(directory, export_excel)

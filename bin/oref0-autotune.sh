@@ -132,7 +132,8 @@ esac
 done
 
 # remove any trailing / from NIGHTSCOUT_HOST
-NIGHTSCOUT_HOST=$(echo $NIGHTSCOUT_HOST | sed 's/\/$//g')
+NIGHTSCOUT_HOST="${NIGHTSCOUT_HOST%/}"
+export NIGHTSCOUT_HOST
 
 if [[ -z "$DIR" || -z "$NIGHTSCOUT_HOST" ]]; then
     echo "Usage: oref0-autotune <--dir=myopenaps_directory> <--ns-host=https://mynightscout.azurewebsites.net> [--start-days-ago=number_of_days] [--end-days-ago=number_of_days] [--start-date=YYYY-MM-DD] [--end-date=YYYY-MM-DD] [--xlsx=autotune.xlsx] [--log=(true)|false] [--categorize-uam-as-basal=true|(false)] [--tune-insulin-curve=true|(false) ]"
@@ -149,11 +150,111 @@ if [[ -z "$END_DATE" ]]; then
 fi
 
 if [[ -z "$UNKNOWN_OPTION" ]] ; then # everything is ok
-  echo "Running oref0-autotune --dir=$DIR --ns-host=$NIGHTSCOUT_HOST --start-date=$START_DATE --end-date=$END_DATE --categorize-uam-as-basal=$CATEGORIZE_UAM_AS_BASAL"
+  echo "Running oref0-autotune --dir=$DIR --start-date=$START_DATE --end-date=$END_DATE --categorize-uam-as-basal=$CATEGORIZE_UAM_AS_BASAL"
 else
   echo "Unknown options. Exiting"
   exit 1
 fi
+
+if [[ -z "$START_DATE" || -z "$END_DATE" || "$START_DATE" > "$END_DATE" ]]; then
+    die "Invalid autotune date range"
+fi
+
+# Build date list for autotune iteration
+date_list=()
+date=$START_DATE;
+while :
+do
+  date_list+=( "$date" )
+  if [ $date != "$END_DATE" ]; then
+    date="$(date --date="$date + 1 days" +%Y-%m-%d)" || die "Invalid autotune date";
+  else
+    break
+  fi
+done
+
+# Validate the whole run before touching existing profiles or archives.
+staged_inputs=$(mktemp -d "${TMPDIR:-/tmp}/oref0-autotune.XXXXXXXX") || die "Cannot stage autotune inputs"
+trap 'rm -rf -- "$staged_inputs"' EXIT
+
+validate_inputs() {
+    node - "$0" "$@" <<'NODE'
+const fs = require('fs');
+const path = require('path');
+const args = process.argv.slice(2);
+const script = fs.realpathSync(args.shift());
+const hasInsulinHistory = require(path.resolve(path.dirname(script), '../lib/autotune-prep/insulin-history'));
+const file = args[0];
+const kind = args[1];
+const start = Number(args[2]);
+const end = Number(args[3]);
+const dayStart = Number(args[4]);
+const dayEnd = Number(args[5]);
+const maxRows = Number(args[6]);
+
+function reject(reason) {
+    console.error('Invalid autotune ' + kind + ' input: ' + reason);
+    process.exit(1);
+}
+
+let rows;
+try {
+    rows = JSON.parse(fs.readFileSync(file, 'utf8'));
+} catch (_) {
+    reject('invalid JSON');
+}
+if (!Array.isArray(rows) || rows.length === 0 || rows.length >= maxRows) {
+    reject('missing, empty, or potentially truncated response');
+}
+
+let usableGlucose = false;
+for (const row of rows) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) reject('invalid row');
+    const time = kind === 'glucose' ? row.date : Date.parse(row.created_at);
+    if (!Number.isFinite(time) || time < start || time > end) reject('invalid or out-of-window timestamp');
+    if (kind === 'glucose') {
+        const glucose = row.glucose || row.sgv;
+        // The categorizer ignores low CGM error codes. A few such readings
+        // must not invalidate an otherwise usable day.
+        if (['number', 'string'].includes(typeof glucose) && Number.isFinite(Number(glucose)) && Number(glucose) >= 39) {
+            usableGlucose = true;
+        }
+    } else {
+        const amounts = [row.insulin, row.carbs];
+        if (amounts.some(value => value != null && value !== '' && !Number.isFinite(Number(value)))) {
+            reject('invalid carb or insulin value');
+        }
+    }
+}
+if (kind === 'glucose' && !usableGlucose) reject('no usable glucose data');
+if (kind === 'treatment' && !hasInsulinHistory(rows, dayStart, dayEnd)) reject('no usable insulin history in the tuning day');
+NODE
+}
+
+echo "Downloading and validating Nightscout glucose and treatments before autotune"
+for i in "${date_list[@]}"
+do
+    glucose_start=$(date --date="$i +4 hours" +%s) || die "Invalid glucose window start"
+    glucose_end=$(date --date="$i +28 hours" +%s) || die "Invalid glucose window end"
+    treatment_start=$(date --date="$i -18 hours" +%s) || die "Invalid treatment window start"
+    treatment_end=$(date --date="$i +42 hours" +%s) || die "Invalid treatment window end"
+    glucose_query="find%5Bdate%5D%5B%24gte%5D=${glucose_start}000&find%5Bdate%5D%5B%24lte%5D=${glucose_end}000&count=1500"
+    # UTC produces a consistently encoded and comparable ISO treatment query.
+    treatment_start_iso=$(date --utc --date="@$treatment_start" +%Y-%m-%dT%H:%M:%S.000Z)
+    treatment_end_iso=$(date --utc --date="@$treatment_end" +%Y-%m-%dT%H:%M:%S.000Z)
+    treatment_query="find%5Bcreated_at%5D%5B%24gte%5D=$treatment_start_iso&find%5Bcreated_at%5D%5B%24lte%5D=$treatment_end_iso&count=4096"
+
+    glucose_file="$staged_inputs/ns-entries.$i.json"
+    treatment_file="$staged_inputs/ns-treatments.$i.json"
+    NIGHTSCOUT_STRICT_READ=1 ns-get host "$NIGHTSCOUT_HOST" entries/sgv.json "$glucose_query" > "$glucose_file" \
+        || die "Nightscout glucose download failed for $i"
+    NIGHTSCOUT_STRICT_READ=1 ns-get host "$NIGHTSCOUT_HOST" treatments.json "$treatment_query" > "$treatment_file" \
+        || die "Nightscout treatment download failed for $i"
+    validate_inputs "$glucose_file" glucose "${glucose_start}000" "${glucose_end}000" "${glucose_start}000" "${glucose_end}000" 1500 \
+        || die "Autotune skipped for $i: glucose inputs failed validation"
+    validate_inputs "$treatment_file" treatment "${treatment_start}000" "${treatment_end}000" "${glucose_start}000" "${glucose_end}000" 4096 \
+        || die "Autotune skipped for $i: treatment inputs failed validation"
+done
 
 # Get profile for testing copied to home directory.
 cd $directory && mkdir -p autotune
@@ -174,19 +275,6 @@ if [[ $TERMINAL_LOGGING = "true" ]]; then
   exec &> >(tee -a autotune.$(date +%Y-%m-%d-%H%M%S).log)
 fi
 
-# Build date list for autotune iteration
-date_list=()
-date=$START_DATE; 
-while :
-do 
-  date_list+=( "$date" )
-  if [ $date != "$END_DATE" ]; then 
-    date="$(date --date="$date + 1 days" +%Y-%m-%d)"; 
-  else 
-    break
-  fi
-done
-
 echo "Compressing old json and log files to save space..."
 gzip -f ns-*.json
 gzip -f autotune*.json
@@ -197,27 +285,10 @@ du -h .
 echo "Overall disk used/avail:"
 df -h .
 
-echo "Grabbing NIGHTSCOUT treatments.json and entries/sgv.json for date range..."
-
-# Get Nightscout BG (sgv.json) Entries
 for i in "${date_list[@]}"
-do 
-    # pull CGM data from 4am-4am
-    query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime "$i +4 hours" |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$i +28 hours" |nonl; echo 000)&count=1500"
-    echo Query: $NIGHTSCOUT_HOST entries/sgv.json $query
-    ns-get host $NIGHTSCOUT_HOST entries/sgv.json $query > ns-entries.$i.json || die "Couldn't download ns-entries.$i.json"
-    ls -la ns-entries.$i.json || die "No ns-entries.$i.json downloaded"
-
-    # Get Nightscout carb and insulin Treatments
-    # echo $i $START_DATE;
-    #query="find%5Bdate%5D%5B%24gte%5D=$(to_epochtime $i |nonl; echo 000)&find%5Bdate%5D%5B%24lte%5D=$(to_epochtime "$i +1 days" |nonl; echo 000)&count=1000"
-    # to capture UTC-dated treatments, we need to capture an extra 12h on either side, plus the DIA lookback
-    # 18h = 12h for timezones + 6h for DIA; 40h = 28h for 4am + 12h for timezones
-    query="find%5Bcreated_at%5D%5B%24gte%5D=`date --date="$i -18 hours" -Iminutes`&find%5Bcreated_at%5D%5B%24lte%5D=`date --date="$i +42 hours" -Iminutes`"
-    echo Query: $NIGHTSCOUT_HOST treatments.json $query
-    ns-get host $NIGHTSCOUT_HOST treatments.json $query > ns-treatments.$i.json || die "Couldn't download ns-treatments.$i.json"
-    ls -la ns-treatments.$i.json || die "No ns-treatments.$i.json downloaded"
-
+do
+    mv -- "$staged_inputs/ns-entries.$i.json" "$staged_inputs/ns-treatments.$i.json" . \
+        || die "Cannot store verified inputs for $i"
 
     # Do iterative runs over date range, save autotune.json (prepped data) and input/output profile.json
     cp profile.json profile.$i.json
