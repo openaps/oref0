@@ -33,6 +33,8 @@ class TLSErrorReasonTests(unittest.TestCase):
         messages = (
             "admission unavailable", "admission context changed",
             "admission owner invalidated", "admission runtime scope changed",
+            "reviewed policy unavailable", "reviewed policy changed",
+            "recovery connection cannot become normal",
             "settings epoch changed", "key epoch changed",
             "policy lease replaced", "policy generation changed",
         )

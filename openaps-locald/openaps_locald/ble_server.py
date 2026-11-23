@@ -652,6 +652,7 @@ class _BLETLSRelaySession(object):
         # without exposing any TLS bytes or application data in the journal.
         self.socket_send_count = 0
         self.socket_receive_count = 0
+        self.dequeued_count = 0
         self.closed = threading.Event()
         self.failed = threading.Event()
         self.stopped = threading.Event()
@@ -681,7 +682,7 @@ class _BLETLSRelaySession(object):
             raise BLETLSRelayError("relay unavailable")
         if timeout is None:
             try:
-                return self.inbound.get_nowait()
+                return self._dequeue_frame()
             except Empty:
                 if self.failed.is_set():
                     raise BLETLSRelayError("relay unavailable")
@@ -696,7 +697,7 @@ class _BLETLSRelaySession(object):
                 # A recovery peer may close immediately after writing its
                 # final TLS flight. Drain already queued bytes before making
                 # that EOF terminal to the BLE reader.
-                return self.inbound.get_nowait()
+                return self._dequeue_frame()
             except Empty:
                 if self.failed.is_set():
                     raise BLETLSRelayError("relay unavailable")
@@ -704,9 +705,14 @@ class _BLETLSRelaySession(object):
             if remaining <= 0:
                 raise _BLETLSRelayPending("relay response unavailable")
             try:
-                return self.inbound.get(timeout=min(remaining, 0.1))
+                return self._dequeue_frame(timeout=min(remaining, 0.1))
             except Empty:
                 continue
+
+    def _dequeue_frame(self, timeout=None):
+        value = self.inbound.get_nowait() if timeout is None else self.inbound.get(timeout=timeout)
+        self.dequeued_count += 1
+        return value
 
     def _run(self):
         try:
@@ -761,7 +767,8 @@ class _BLETLSRelaySession(object):
                     "relay is unavailable": "socket_unavailable",
                 }
                 category = categories.get(str(exc), type(exc).__name__)
-                _ble_log("authorization TLS relay failed category=%s" % category)
+                _ble_log("authorization TLS relay failed category=%s received=%d delivered=%d queued=%d" % (
+                    category, self.socket_receive_count, self.dequeued_count, self.inbound.qsize()))
                 self.failed.set()
         finally:
             self.relay.close()

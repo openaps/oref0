@@ -3,6 +3,7 @@ import socket
 import threading
 import time
 import unittest
+from unittest import mock
 
 from openaps_locald.ble_tls_relay import (
     BLETLSRelay, BLETLSRelayError, MAX_UPGRADE_BYTES, parse_loopback_origin,
@@ -149,11 +150,13 @@ class BLETLSRelayTests(unittest.TestCase):
         session.inbound.put_nowait(b"final TLS flight")
         session.failed.set()
         self.assertEqual(session.dequeue(), b"final TLS flight")
+        self.assertEqual(session.dequeued_count, 1)
         with self.assertRaises(BLETLSRelayError):
             session.dequeue()
 
         session.inbound.put_nowait(b"second flight")
         self.assertEqual(session.dequeue(timeout=0.1), b"second flight")
+        self.assertEqual(session.dequeued_count, 2)
         with self.assertRaises(BLETLSRelayError):
             session.dequeue(timeout=0.1)
 
@@ -163,6 +166,19 @@ class BLETLSRelayTests(unittest.TestCase):
         session.closed.set()
         with self.assertRaises(BLETLSRelayError):
             session.dequeue()
+
+    def test_failure_logs_counts_without_frame_or_error_text(self):
+        relay = mock.Mock()
+        relay.receive.side_effect = [b"synthetic frame", BLETLSRelayError("synthetic detail")]
+        session = _BLETLSRelaySession(relay, 1)
+        with mock.patch("openaps_locald.ble_server._ble_log") as log:
+            session._run()
+        self.assertTrue(session.failed.is_set())
+        log.assert_any_call(
+            "authorization TLS relay failed category=BLETLSRelayError received=1 delivered=0 queued=1")
+        self.assertNotIn("synthetic", repr(log.call_args_list))
+        self.assertEqual(session.dequeue(), b"synthetic frame")
+        self.assertEqual(session.dequeued_count, 1)
 
     def test_origin_requires_explicit_numeric_loopback(self):
         self.assertEqual(parse_loopback_origin("http://127.0.0.1:8787")[:2],
