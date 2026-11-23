@@ -13,10 +13,18 @@ EOT
 assert_cwd_contains_ini
 
 ENABLE="$(get_pref_string .enable)"
-NIGHTSCOUT_HOST="$(get_pref_string .nightscout_host)"
+configured_nightscout_host="$(get_pref_string .nightscout_host)"
 directory="$PWD"
 
 if [[ $ENABLE =~ autotune ]]; then
+    # Cron's credential is scoped to its configured destination. Refuse to use
+    # it on a different host if a cutover only updated one of these settings.
+    if [[ -z "$configured_nightscout_host" ||
+          ( -n "${NIGHTSCOUT_HOST:-}" && "${NIGHTSCOUT_HOST%/}" != "${configured_nightscout_host%/}" ) ]]; then
+        echo "Nightly autotune skipped: Nightscout preference and cron destination do not agree" >&2
+        exit 1
+    fi
+    export NIGHTSCOUT_HOST="$configured_nightscout_host"
     # autotune nightly at 4:05am using data from NS
     echo "=== Running Autotune at `date` === " | tee -a /var/log/openaps/autotune.log
     (oref0-autotune -d=$directory -n=$NIGHTSCOUT_HOST && \

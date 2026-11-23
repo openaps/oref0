@@ -64,13 +64,32 @@ if (!module.parent) {
     var carb_input = inputs[4];
 
     var fs = require('fs');
+    var pumphistory_data, profile_data, glucose_data;
     try {
-        var pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
-        var profile_data = JSON.parse(fs.readFileSync(profile_input, 'utf8'));
+        pumphistory_data = JSON.parse(fs.readFileSync(pumphistory_input, 'utf8'));
+        profile_data = JSON.parse(fs.readFileSync(profile_input, 'utf8'));
+        glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
     } catch (e) {
-        console.log('{ "error": "Could not parse input data" }');
-        return console.error("Could not parse input data: ", e);
+        console.error('Could not read autotune inputs.');
+        process.exit(1);
     }
+    if (!Array.isArray(pumphistory_data) || pumphistory_data.length === 0) {
+        console.error('Autotune requires nonempty treatment or pump history.');
+        process.exit(1);
+    }
+    if (!Array.isArray(glucose_data) || glucose_data.length === 0) {
+        console.error('Autotune requires nonempty glucose history.');
+        process.exit(1);
+    }
+    // The Nightscout runner validates the full tuning window separately.
+    // Direct callers can supply sparse glucose or raw pump history with a
+    // lookback, so do not derive an insulin window from observed samples.
+    var hasInsulinHistory = require('../lib/autotune-prep/insulin-history');
+    if (!hasInsulinHistory(pumphistory_data)) {
+        console.error('Autotune requires usable insulin history.');
+        process.exit(1);
+    }
+
     var pumpprofile_data = { };
     if (typeof pumpprofile_input !== 'undefined') {
         try {
@@ -103,12 +122,6 @@ if (!module.parent) {
 
     // Always keep the curve value up to date with what's in the user preferences
     profile_data.curve = pumpprofile_data.curve;
-
-    try {
-        var glucose_data = JSON.parse(fs.readFileSync(glucose_input, 'utf8'));
-    } catch (e) {
-        return console.error("Warning: could not parse "+glucose_input, e);
-    }
 
     var carb_data = { };
     if (typeof carb_input !== 'undefined') {
