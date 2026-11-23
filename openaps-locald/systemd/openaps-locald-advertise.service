@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenAPS local raw BLE advertiser
+After=bluetooth.service openaps-locald-ble.service
+Requires=bluetooth.service
+BindsTo=openaps-locald-ble.service
+
+[Service]
+Type=simple
+User=root
+ExecStartPre=/bin/sleep 3
+ExecStart=/usr/local/bin/openaps-locald-advertise --config /root/myopenaps/openaps-locald.json
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

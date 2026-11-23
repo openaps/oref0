@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenAPS local event sync daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/src/oref0
+ExecStart=/usr/local/bin/openaps-locald --config /root/myopenaps/openaps-locald.json
+ExecStartPost=-/usr/local/bin/openaps-locald-replay-cgm-config --config /root/myopenaps/openaps-locald.json
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+from __future__ import print_function
+
+import os
+import sys
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+
+
+def _candidate_package_paths():
+    candidates = []
+    env_root = os.environ.get("OPENAPS_LOCALD_ROOT")
+    if env_root:
+        candidates.append(os.path.join(env_root, "openaps_locald"))
+    candidates.extend([
+        "/usr/local/src/oref0/openaps-locald",
+        "/usr/local/src/oref0/openaps-locald/openaps_locald",
+        "/root/src/oref0/openaps-locald",
+        "/root/src/oref0/openaps-locald/openaps_locald",
+    ])
+    local_root = os.path.dirname(HERE)
+    candidates.extend([
+        os.path.join(local_root, "openaps-locald"),
+        os.path.join(local_root, "openaps-locald", "openaps_locald"),
+    ])
+    return candidates
+
+
+for package_path in _candidate_package_paths():
+    if os.path.isdir(package_path) and package_path not in sys.path:
+        sys.path.insert(0, package_path)
+        break
+
+from openaps_locald.advertiser import build_arg_parser, serve_advertiser
+from openaps_locald.config import load_config
+
+
+def main(argv=None):
+    parser = build_arg_parser()
+    args = parser.parse_args(argv)
+    config = load_config(args.config, args.myopenaps_dir)
+    if args.adapter is not None:
+        config["advertise_adapter"] = args.adapter
+    return serve_advertiser(config, force=args.force)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

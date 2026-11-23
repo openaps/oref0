@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+MYOPENAPS_DIR="/root/myopenaps"
+MAX_SECONDS="${OPENAPS_LOCALD_PUMP_STATUS_TIMEOUT:-45}"
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --myopenaps-dir)
+            MYOPENAPS_DIR="$2"
+            shift 2
+            ;;
+        --timeout)
+            MAX_SECONDS="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            exit 2
+            ;;
+    esac
+done
+
+cd "${MYOPENAPS_DIR}"
+
+if ! command -v openaps >/dev/null 2>&1; then
+    echo "openaps-locald-refresh-pump-status: openaps not found" >&2
+    exit 0
+fi
+
+if [ ! -f openaps.ini ]; then
+    echo "openaps-locald-refresh-pump-status: openaps.ini not found in ${MYOPENAPS_DIR}" >&2
+    exit 0
+fi
+
+run_report() {
+    report="$1"
+    if ! grep -q "\\[report \"${report}\"\\]" openaps.ini; then
+        return 0
+    fi
+    if command -v timeout >/dev/null 2>&1; then
+        timeout "${MAX_SECONDS}" openaps report invoke "${report}" >/dev/null
+    else
+        openaps report invoke "${report}" >/dev/null
+    fi
+}
+
+for report in \
+    monitor/clock.json \
+    monitor/clock-zoned.json \
+    monitor/reservoir.json \
+    monitor/battery.json \
+    monitor/status.json
+do
+    run_report "${report}" || echo "openaps-locald-refresh-pump-status: ${report} failed" >&2
+done

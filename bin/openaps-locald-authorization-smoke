@@ -1,0 +1,458 @@
+#!/usr/bin/env python3
+from __future__ import print_function
+
+import argparse
+import json
+import os
+import platform
+import pwd
+import re
+try:
+    import resource
+except ImportError:
+    resource = None
+import select
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+MAX_ACTIVE_LINK_SECONDS = 15 * 60
+MAX_BTMON_LINE_BYTES = 4096
+_BTMON_MTU = re.compile(r"(?:Client|Server) RX MTU:\s*(\d+)")
+
+
+def _candidate_package_paths():
+    candidates = []
+    env_root = os.environ.get("OPENAPS_LOCALD_ROOT")
+    if env_root:
+        # OPENAPS_LOCALD_ROOT is the directory that contains the package (or
+        # an oref0 checkout), so add an import root rather than the package
+        # directory itself. This also makes a temporary read-only staged copy
+        # usable before anything is installed on a rig.
+        candidates.extend([
+            os.path.join(env_root, "openaps-locald"),
+            env_root,
+        ])
+    local_root = os.path.dirname(HERE)
+    candidates.extend([
+        # When invoked from an oref0 checkout, validate that checkout before
+        # considering an older system installation.  The installed wrapper
+        # naturally falls through because /usr/local/openaps-locald does not
+        # exist.
+        os.path.join(local_root, "openaps-locald"),
+        os.path.join(local_root, "openaps-locald", "openaps_locald"),
+        "/usr/local/src/oref0/openaps-locald",
+        "/usr/local/src/oref0/openaps-locald/openaps_locald",
+        "/root/src/oref0/openaps-locald",
+        "/root/src/oref0/openaps-locald/openaps_locald",
+    ])
+    return candidates
+
+
+for package_path in _candidate_package_paths():
+    if os.path.isdir(package_path):
+        if package_path not in sys.path:
+            sys.path.insert(0, package_path)
+        break
+
+
+from openaps_locald.device_identity import DeviceIdentity
+from openaps_locald.authorization_protocol import (
+    BLE_AUTH_ATTEMPT_CAPACITY,
+    BLE_CREDENTIAL_ATTEMPT_CAPACITY,
+    BLE_MAX_SESSIONS_GLOBAL,
+    BLE_MAX_SESSIONS_PER_CREDENTIAL,
+    BLE_UNKNOWN_CREDENTIAL_LIMIT,
+    CHALLENGE_LIFETIME_SECONDS,
+    HTTP_AUTH_ATTEMPT_CAPACITY,
+    HTTP_CREDENTIAL_ATTEMPT_CAPACITY,
+    HTTP_MAX_SESSIONS_GLOBAL,
+    HTTP_MAX_SESSIONS_PER_CREDENTIAL,
+    HTTP_UNKNOWN_CREDENTIAL_LIMIT,
+    MAX_AUTH_CHUNKS,
+    MAX_AUTH_MESSAGE_BYTES,
+    MAX_EVENT_CHUNKS,
+    MAX_EVENT_MESSAGE_BYTES,
+    SESSION_ABSOLUTE_SECONDS,
+    SESSION_IDLE_SECONDS,
+)
+
+
+def _command_output(command):
+    try:
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            close_fds=True,
+        )
+        output, _stderr = process.communicate(timeout=5)
+    except (OSError, subprocess.TimeoutExpired):
+        try:
+            process.kill()
+        except Exception:
+            pass
+        return None
+    if process.returncode != 0:
+        return None
+    return output.decode("utf-8", "replace").strip()
+
+
+def _first_executable(candidates):
+    for candidate in candidates:
+        if os.path.isabs(candidate):
+            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                return candidate
+        else:
+            resolved = shutil.which(candidate)
+            if resolved:
+                return resolved
+    return None
+
+
+def _systemd_unit_state(unit):
+    systemctl = _first_executable(["systemctl", "/bin/systemctl"])
+    if not systemctl:
+        return {"available": False}
+    output = _command_output([
+        systemctl,
+        "show",
+        unit,
+        "--property=LoadState,ActiveState,SubState,User,Group,MainPID",
+        "--no-pager",
+    ])
+    if output is None:
+        return {"available": True, "load_state": "unknown"}
+    values = {}
+    for line in output.splitlines():
+        key, separator, value = line.partition("=")
+        if separator:
+            values[key] = value
+    result = {
+        "available": True,
+        "load_state": values.get("LoadState", "unknown"),
+        "active_state": values.get("ActiveState", "unknown"),
+        "sub_state": values.get("SubState", "unknown"),
+        "configured_user": values.get("User") or "root",
+        "configured_group": values.get("Group") or "root",
+    }
+    main_pid = values.get("MainPID")
+    if main_pid and main_pid != "0":
+        try:
+            uid = os.stat("/proc/%s" % main_pid).st_uid
+            result["process_user"] = pwd.getpwuid(uid).pw_name
+        except (KeyError, OSError):
+            result["process_user"] = "unknown"
+    return result
+
+
+def _resource_snapshot():
+    if resource is None:
+        return None
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    # Linux (the supported rig platform) reports ru_maxrss in KiB. Retain the
+    # host-specific unit explicitly so a development-machine run cannot be
+    # mistaken for a rig-memory measurement.
+    return {
+        "user_cpu_seconds": round(usage.ru_utime, 4),
+        "system_cpu_seconds": round(usage.ru_stime, 4),
+        "maximum_resident_set": int(usage.ru_maxrss),
+        "maximum_resident_set_unit": (
+            "kib" if sys.platform.startswith("linux") else "platform_dependent"
+        ),
+    }
+
+
+def _verifier_limits():
+    return {
+        "max_auth_message_bytes": MAX_AUTH_MESSAGE_BYTES,
+        "max_event_message_bytes": MAX_EVENT_MESSAGE_BYTES,
+        "max_auth_chunks": MAX_AUTH_CHUNKS,
+        "max_event_chunks": MAX_EVENT_CHUNKS,
+        "challenge_lifetime_seconds": CHALLENGE_LIFETIME_SECONDS,
+        "session_idle_seconds": SESSION_IDLE_SECONDS,
+        "session_absolute_seconds": SESSION_ABSOLUTE_SECONDS,
+        "ble": {
+            "attempt_capacity": BLE_AUTH_ATTEMPT_CAPACITY,
+            "unknown_credential_limit": BLE_UNKNOWN_CREDENTIAL_LIMIT,
+            "credential_attempt_capacity": BLE_CREDENTIAL_ATTEMPT_CAPACITY,
+            "max_sessions_per_credential": BLE_MAX_SESSIONS_PER_CREDENTIAL,
+            "max_sessions_global": BLE_MAX_SESSIONS_GLOBAL,
+        },
+        "http": {
+            "attempt_capacity": HTTP_AUTH_ATTEMPT_CAPACITY,
+            "unknown_credential_limit": HTTP_UNKNOWN_CREDENTIAL_LIMIT,
+            "credential_attempt_capacity": HTTP_CREDENTIAL_ATTEMPT_CAPACITY,
+            "max_sessions_per_credential": HTTP_MAX_SESSIONS_PER_CREDENTIAL,
+            "max_sessions_global": HTTP_MAX_SESSIONS_GLOBAL,
+        },
+    }
+
+
+def _new_active_link_metrics():
+    return {
+        "le_connection_events": 0,
+        "encryption_change_events": 0,
+        "encryption_enabled_events": 0,
+        "mtu_exchange_events": 0,
+        "negotiated_att_mtu_values": [],
+        "truncated_btmon_lines": 0,
+    }
+
+
+def _observe_btmon_line(metrics, line, mtu_context_lines):
+    """Retain only link-security/MTU aggregates, never the monitor payload."""
+    if len(line) > MAX_BTMON_LINE_BYTES:
+        metrics["truncated_btmon_lines"] += 1
+        line = line[:MAX_BTMON_LINE_BYTES]
+    if "LE Connection Complete" in line:
+        metrics["le_connection_events"] += 1
+    if "Encryption Change" in line or "Encryption Key Refresh Complete" in line:
+        metrics["encryption_change_events"] += 1
+    if "Encryption: Enabled" in line:
+        metrics["encryption_enabled_events"] += 1
+    if "Exchange MTU Request" in line or "Exchange MTU Response" in line:
+        metrics["mtu_exchange_events"] += 1
+        mtu_context_lines = 12
+    elif mtu_context_lines > 0:
+        mtu_context_lines -= 1
+    if mtu_context_lines > 0:
+        match = _BTMON_MTU.search(line)
+        if match:
+            value = int(match.group(1))
+            if 23 <= value <= 517 and value not in metrics["negotiated_att_mtu_values"]:
+                metrics["negotiated_att_mtu_values"].append(value)
+    return mtu_context_lines
+
+
+def _active_link_probe(btmon, seconds):
+    """Run a bounded, passive btmon observation without retaining wire data."""
+    if not btmon:
+        return {
+            "state": "unavailable",
+            "reason": "missing_btmon",
+            "requested_seconds": seconds,
+        }
+    started = time.monotonic()
+    metrics = _new_active_link_metrics()
+    process = None
+    try:
+        process = subprocess.Popen(
+            [btmon],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            close_fds=True,
+        )
+        deadline = started + seconds
+        mtu_context_lines = 0
+        completed_window = False
+        while time.monotonic() < deadline:
+            remaining = max(0.0, deadline - time.monotonic())
+            readable, _unused_writable, _unused_exceptional = select.select(
+                [process.stdout], [], [], min(1.0, remaining)
+            )
+            if not readable:
+                if process.poll() is not None:
+                    break
+                continue
+            raw_line = process.stdout.readline(MAX_BTMON_LINE_BYTES + 1)
+            if not raw_line:
+                if process.poll() is not None:
+                    break
+                continue
+            line = raw_line.decode("utf-8", "replace")
+            mtu_context_lines = _observe_btmon_line(
+                metrics,
+                line,
+                mtu_context_lines,
+            )
+        completed_window = time.monotonic() >= deadline
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+        if not completed_window:
+            return {
+                "state": "unavailable",
+                "reason": "btmon_ended_early",
+                "requested_seconds": seconds,
+                "elapsed_seconds": round(time.monotonic() - started, 3),
+            }
+        metrics["negotiated_att_mtu_values"].sort()
+        metrics.update({
+            "state": "observed",
+            "requested_seconds": seconds,
+            "elapsed_seconds": round(time.monotonic() - started, 3),
+        })
+        return metrics
+    except (OSError, ValueError, select.error):
+        return {
+            "state": "unavailable",
+            "reason": "btmon_start_failed",
+            "requested_seconds": seconds,
+        }
+    finally:
+        if process is not None and process.poll() is None:
+            try:
+                process.kill()
+            except OSError:
+                pass
+
+
+def _active_link_status(metrics):
+    if metrics.get("state") != "observed":
+        return "requires_active_phone_session"
+    if not metrics["le_connection_events"]:
+        return "no_active_connection_observed"
+    if metrics["encryption_enabled_events"]:
+        return "enabled_observed"
+    return "connection_observed_without_enable_event"
+
+
+def _att_mtu_status(metrics):
+    if metrics.get("state") != "observed":
+        return "requires_active_phone_session"
+    if metrics["negotiated_att_mtu_values"]:
+        return "observed"
+    if metrics["le_connection_events"]:
+        return "connection_observed_without_mtu_exchange"
+    return "no_active_connection_observed"
+
+
+def _crypto_probe(iterations):
+    directory = tempfile.mkdtemp(prefix="openaps-authorization-smoke-")
+    try:
+        identity = DeviceIdentity(directory)
+        message = b"openaps-device-authorization-smoke-v1"
+        started = time.monotonic()
+        resources_before = _resource_snapshot()
+        for _index in range(iterations):
+            signature = identity.sign(message)
+            if not identity.verify(
+                message,
+                signature,
+                identity.credential_id,
+                identity.public_key_der,
+            ):
+                raise RuntimeError("P-256 verification failed")
+        elapsed = time.monotonic() - started
+        resources_after = _resource_snapshot()
+        return {
+            "passed": True,
+            "iterations": iterations,
+            "elapsed_seconds": round(elapsed, 4),
+            "operations_per_second": round((iterations * 2) / elapsed, 2),
+            "public_key_der_bytes": len(identity.public_key_der),
+            "resources_before": resources_before,
+            "resources_after": resources_after,
+        }
+    finally:
+        shutil.rmtree(directory)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Read-only pre-install device-authorization rig checks"
+    )
+    parser.add_argument("--iterations", type=int, default=8)
+    parser.add_argument("--require-bluez", action="store_true")
+    parser.add_argument("--require-systemd", action="store_true")
+    parser.add_argument(
+        "--active-link-seconds",
+        type=int,
+        default=0,
+        help="passively observe a live BLE link for this many seconds (max 900)",
+    )
+    args = parser.parse_args()
+    if args.iterations < 1 or args.iterations > 100:
+        parser.error("--iterations must be between 1 and 100")
+    if args.active_link_seconds < 0 or args.active_link_seconds > MAX_ACTIVE_LINK_SECONDS:
+        parser.error("--active-link-seconds must be between 0 and %d" % MAX_ACTIVE_LINK_SECONDS)
+
+    python_supported = sys.version_info >= (3, 5)
+    openssl = _first_executable(["/usr/bin/openssl", "/usr/local/bin/openssl"])
+    bluetoothd = _first_executable([
+        "/usr/lib/bluetooth/bluetoothd",
+        "/usr/libexec/bluetooth/bluetoothd",
+        "bluetoothd",
+    ])
+    bluetoothctl = _first_executable(["bluetoothctl"])
+    btmon = _first_executable(["btmon"])
+    units = {}
+    for unit in (
+        "openaps-locald.service",
+        "openaps-locald-ble.service",
+        "openaps-locald-advertise.service",
+    ):
+        units[unit] = _systemd_unit_state(unit)
+
+    report = {
+        "schema": "openaps.authorization-rig-smoke.v1",
+        "read_only": True,
+        "python": {
+            "version": platform.python_version(),
+            "supported": python_supported,
+        },
+        "openssl": {
+            "path": openssl,
+            "version": _command_output([openssl, "version"]) if openssl else None,
+        },
+        "bluez": {
+            "bluetoothd_version": (
+                _command_output([bluetoothd, "--version"])
+                if bluetoothd else None
+            ),
+            "bluetoothctl_version": (
+                _command_output([bluetoothctl, "--version"])
+                if bluetoothctl else None
+            ),
+            "link_encryption": "requires_active_phone_session",
+            "att_mtu": "requires_active_phone_session",
+        },
+        "systemd_units": units,
+        "authorization_verifier_limits": _verifier_limits(),
+        "crypto": None,
+    }
+    if args.active_link_seconds:
+        observation = _active_link_probe(btmon, args.active_link_seconds)
+        report["bluez"]["active_link_observation"] = observation
+        report["bluez"]["link_encryption"] = _active_link_status(observation)
+        report["bluez"]["att_mtu"] = _att_mtu_status(observation)
+
+    failures = []
+    if not python_supported:
+        failures.append("unsupported_python")
+    if not openssl:
+        failures.append("missing_openssl")
+    else:
+        try:
+            report["crypto"] = _crypto_probe(args.iterations)
+        except Exception as exc:
+            report["crypto"] = {
+                "passed": False,
+                "error": type(exc).__name__,
+            }
+            failures.append("p256_interoperability")
+    if args.require_bluez and (not bluetoothd or not bluetoothctl):
+        failures.append("missing_bluez")
+    if args.require_systemd and not all(
+        state.get("available") and state.get("load_state") == "loaded"
+        for state in units.values()
+    ):
+        failures.append("missing_systemd_units")
+
+    report["passed"] = not failures
+    report["failures"] = failures
+    print(json.dumps(report, sort_keys=True, indent=2))
+    return 0 if report["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

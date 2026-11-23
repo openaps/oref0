@@ -1,0 +1,97 @@
+{
+  "schema": "openaps.device-authorization.test-vectors.v1",
+  "vectors": [
+    {
+      "name": "auth-hello-external-openssl",
+      "message_type": "auth_hello",
+      "public_key_der": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0LmQBHBny/m9BAV6KVEIBhp7tiiKDmfu0JgtS0qGTWgBVjyWwdvlssclhqQ6CsQZH2Xza5EDlCm+gMsHT+i5Hg==",
+      "credential_id": "d8ada1d7d69c47d0cae1b02b6b4b9eb64b77d6938d460fccb51aa8f70bf526a1",
+      "signature_der": "MEUCICcmI/OsETTYF3fkTE4fgV2bZuUthSCN1cgM+GyeSgAlAiEAxvaelB5D/E4VPVh7LL7ZbM5g21kGh+jWX6rRABju5jI=",
+      "transcript_base64": "b3BlbmFwcy5ibGUuYXV0aC1oZWxsby52MQoxCjExMTExMTExLTExMTEtNDExMS04MTExLTExMTExMTExMTExMQpkOGFkYTFkN2Q2OWM0N2QwY2FlMWIwMmI2YjRiOWViNjRiNzdkNjkzOGQ0NjBmY2NiNTFhYThmNzBiZjUyNmExCmViMzNkZDZhYWZmMGUwNzVmMjBhOWMzYjI0NjZlNmYyMzVmMjEyMDczNjY1ODc1ODJiMmI2MmVlMGZmZjcyZTMKY25KeWNuSnljbkp5Y25KeWNuSnljbkp5Y25KeWNuSnljbkp5Y25KeWNuST0KY0hCd2NIQndjSEJ3Y0hCd2NIQndjSEJ3Y0hCd2NIQndjSEJ3Y0hCd2NIQT0=",
+      "message": {
+        "schema": "openaps.ble.auth-hello.v1",
+        "authorization_protocol_version": 1,
+        "message_id": "11111111-1111-4111-8111-111111111111",
+        "phone_credential_id": "d8ada1d7d69c47d0cae1b02b6b4b9eb64b77d6938d460fccb51aa8f70bf526a1",
+        "rig_credential_id": "eb33dd6aaff0e075f20a9c3b2466e6f235f21207366587582b2b62ee0fff72e3",
+        "rig_challenge": "cnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnI=",
+        "phone_challenge": "cHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHA="
+      }
+    },
+    {
+      "name": "enrollment-external-openssl",
+      "message_type": "enrollment",
+      "public_key_der": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0LmQBHBny/m9BAV6KVEIBhp7tiiKDmfu0JgtS0qGTWgBVjyWwdvlssclhqQ6CsQZH2Xza5EDlCm+gMsHT+i5Hg==",
+      "credential_id": "d8ada1d7d69c47d0cae1b02b6b4b9eb64b77d6938d460fccb51aa8f70bf526a1",
+      "signature_der": "MEQCIFFWw4wyJ0IIP3dd40b5Y7sPA23p6UjiqQxzmPS70gUlAiB9Hi8lsm0EIIVC5OHP0a+wVxYqWHxdjPyEC+aLoZuRMw==",
+      "transcript_base64": "b3BlbmFwcy5ucy1kZXZpY2UtYXV0aC52MQpvcGVuYXBzLWF1dGgtdjEtZDhhZGExZDdkNjljNDdkMGNhZTFiMDJiNmI0YjllYjY0Yjc3ZDY5MzhkNDYwZmNjYjUxYWE4ZjcwYmY1MjZhMQpkOGFkYTFkN2Q2OWM0N2QwY2FlMWIwMmI2YjRiOWViNjRiNzdkNjkzOGQ0NjBmY2NiNTFhYThmNzBiZjUyNmExCnBob25lCmVjZHNhLXAyNTYtc2hhMjU2Ck1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRTBMbVFCSEJueS9tOUJBVjZLVkVJQmhwN3RpaUtEbWZ1MEpndFMwcUdUV2dCVmp5V3dkdmxzc2NsaHFRNkNzUVpIMlh6YTVFRGxDbStnTXNIVCtpNUhnPT0KMQpaV1ZsWldWbFpXVmxaV1ZsWldWbFpXVmxaV1ZsWldWbFpXVmxaV1ZsWldVPQ==",
+      "message": {
+        "schema": "openaps.ns-device-auth.v1",
+        "identifier": "openaps-auth-v1-d8ada1d7d69c47d0cae1b02b6b4b9eb64b77d6938d460fccb51aa8f70bf526a1",
+        "credential_id": "d8ada1d7d69c47d0cae1b02b6b4b9eb64b77d6938d460fccb51aa8f70bf526a1",
+        "device_kind": "phone",
+        "signing_algorithm": "ecdsa-p256-sha256",
+        "signing_public_key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0LmQBHBny/m9BAV6KVEIBhp7tiiKDmfu0JgtS0qGTWgBVjyWwdvlssclhqQ6CsQZH2Xza5EDlCm+gMsHT+i5Hg==",
+        "record_sequence": 1,
+        "record_nonce": "ZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWU="
+      }
+    },
+    {
+      "name": "auth-ack-external-openssl",
+      "message_type": "auth_ack",
+      "public_key_der": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzLiw7ExnQAh6VrBr4nLXOnuVLQUeCFjvf+6iMiLBSlx71TTwCORQ0W2oyP9XlcKF75aw+X1053ygOALZnr1gGQ==",
+      "credential_id": "eb33dd6aaff0e075f20a9c3b2466e6f235f21207366587582b2b62ee0fff72e3",
+      "signature_der": "MEQCIGtJ0a+nVjVHhHTccolVzyOEkJq94e/FYOW7ZjqspCQtAiBi+dz/nMNqbkxQd8OiZGukUFOatX4c4WmYqzNdck8TXw==",
+      "transcript_base64": "b3BlbmFwcy5ibGUuYXV0aC1hY2sudjEKMQoxMTExMTExMS0xMTExLTQxMTEtODExMS0xMTExMTExMTExMTEKMjIyMjIyMjItMjIyMi00MjIyLTgyMjItMjIyMjIyMjIyMjIyCmQ4YWRhMWQ3ZDY5YzQ3ZDBjYWUxYjAyYjZiNGI5ZWI2NGI3N2Q2OTM4ZDQ2MGZjY2I1MWFhOGY3MGJmNTI2YTEKZWIzM2RkNmFhZmYwZTA3NWYyMGE5YzNiMjQ2NmU2ZjIzNWYyMTIwNzM2NjU4NzU4MmIyYjYyZWUwZmZmNzJlMwpjbkp5Y25KeWNuSnljbkp5Y25KeWNuSnljbkp5Y25KeWNuSnljbkp5Y25JPQpjSEJ3Y0hCd2NIQndjSEJ3Y0hCd2NIQndjSEJ3Y0hCd2NIQndjSEJ3Y0hBPQ==",
+      "message": {
+        "schema": "openaps.ble.auth-ack.v1",
+        "authorization_protocol_version": 1,
+        "message_id": "11111111-1111-4111-8111-111111111111",
+        "session_id": "22222222-2222-4222-8222-222222222222",
+        "phone_credential_id": "d8ada1d7d69c47d0cae1b02b6b4b9eb64b77d6938d460fccb51aa8f70bf526a1",
+        "rig_credential_id": "eb33dd6aaff0e075f20a9c3b2466e6f235f21207366587582b2b62ee0fff72e3",
+        "rig_challenge": "cnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnI=",
+        "phone_challenge": "cHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHA="
+      }
+    },
+    {
+      "name": "signed-event-external-openssl",
+      "message_type": "signed_event",
+      "public_key_der": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li/hp/m47n60p8D54WK84zV2sxXs7LtkBoN79R9Q==",
+      "credential_id": "ca9a7b2aba1560c5c498808e0024db57b0afe04fed9591aaf913cdeb3683a9c1",
+      "signature_der": "MEUCIH2xMPgJU1aUbH3qyDt7aJWi8YEHzXrRuBMv+3o8naHKAiEAgnaCtGMBCsm8lcNLG9ci77WOxiHW9zOF/v+x1i8b3/c=",
+      "transcript_base64": "b3BlbmFwcy5ibGUuZXZlbnQudjIKMQoyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIKY2E5YTdiMmFiYTE1NjBjNWM0OTg4MDhlMDAyNGRiNTdiMGFmZTA0ZmVkOTU5MWFhZjkxM2NkZWIzNjgzYTljMQplYjMzZGQ2YWFmZjBlMDc1ZjIwYTljM2IyNDY2ZTZmMjM1ZjIxMjA3MzY2NTg3NTgyYjJiNjJlZTBmZmY3MmUzCmV2ZW50LXBsYWNlaG9sZGVyCmJtNXVibTV1Ym01dWJtNXVibTV1Ym01dWJtNXVibTV1Ym01dWJtNXVibTQ9CjM3ZDkxYjQzYzQyOTkzMGQwMzIwMTViYmVjZWJhMTk1NzNiZTgxYTZjNjA2YjhlMzQ0ZDM3NGNlMGM1ZjAzNzgKYWQ5NmFjZmJlZmI0ZWI5MTZiOGUzZjMyNjg4MjVlZmM3NGFhZWYwNmJmZjczMWM3MTM2ZGYxOWM1MDc2ZTUwMA==",
+      "message": {
+        "schema": "openaps.ble.event.v2",
+        "authorization_protocol_version": 1,
+        "session_id": "22222222-2222-4222-8222-222222222222",
+        "sender_credential_id": "ca9a7b2aba1560c5c498808e0024db57b0afe04fed9591aaf913cdeb3683a9c1",
+        "destination_credential_id": "eb33dd6aaff0e075f20a9c3b2466e6f235f21207366587582b2b62ee0fff72e3",
+        "message_id": "event-placeholder",
+        "message_nonce": "bm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm4=",
+        "payload": "eyJldmVudF9pZCI6ImV2ZW50LXBsYWNlaG9sZGVyIiwicGF0aWVudF9pZCI6InBhdGllbnQtcGxhY2Vob2xkZXIiLCJzY2hlbWEiOiJvcGVuYXBzLmxvY2FsLmV2ZW50LnYxIn0=",
+        "payload_sha256": "37d91b43c429930d032015bbeceba19573be81a6c606b8e344d374ce0c5f0378",
+        "legacy_ack_sha256": "ad96acfbefb4eb916b8e3f3268825efc74aaef06bff731c7136df19c5076e500"
+      }
+    },
+    {
+      "name": "signed-ack-external-openssl",
+      "message_type": "signed_ack",
+      "public_key_der": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li/hp/m47n60p8D54WK84zV2sxXs7LtkBoN79R9Q==",
+      "credential_id": "ca9a7b2aba1560c5c498808e0024db57b0afe04fed9591aaf913cdeb3683a9c1",
+      "signature_der": "MEYCIQDrrFGCk4p4Sxvdd90KcvfPLo4rHzQ+wJIFbNkrfVa0IAIhANHuFM5TJiYPsen5HKsrA7DGMwwiJLZ1Hrm61HI4EvQT",
+      "transcript_base64": "b3BlbmFwcy5ibGUuZXZlbnQtYWNrLnYyCjEKMjIyMjIyMjItMjIyMi00MjIyLTgyMjItMjIyMjIyMjIyMjIyCmNhOWE3YjJhYmExNTYwYzVjNDk4ODA4ZTAwMjRkYjU3YjBhZmUwNGZlZDk1OTFhYWY5MTNjZGViMzY4M2E5YzEKZDhhZGExZDdkNjljNDdkMGNhZTFiMDJiNmI0YjllYjY0Yjc3ZDY5MzhkNDYwZmNjYjUxYWE4ZjcwYmY1MjZhMQpldmVudC1wbGFjZWhvbGRlcgpibTV1Ym01dWJtNXVibTV1Ym01dWJtNXVibTV1Ym01dWJtNXVibTV1Ym00PQowODE3MTc5YTMyZmM5NTMyMzkyNTUxYzkwNzEzNDc0MmYwZDA5MmQxYzcyNWJkMjQ4MWRjZDhiMDRlNGU0OWQy",
+      "message": {
+        "schema": "openaps.ble.event-ack.v2",
+        "authorization_protocol_version": 1,
+        "session_id": "22222222-2222-4222-8222-222222222222",
+        "sender_credential_id": "ca9a7b2aba1560c5c498808e0024db57b0afe04fed9591aaf913cdeb3683a9c1",
+        "destination_credential_id": "d8ada1d7d69c47d0cae1b02b6b4b9eb64b77d6938d460fccb51aa8f70bf526a1",
+        "event_id": "event-placeholder",
+        "request_nonce": "bm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm4=",
+        "payload": "eyJldmVudF9pZCI6ImV2ZW50LXBsYWNlaG9sZGVyIiwic2NoZW1hIjoib3BlbmFwcy5hdXRob3JpemF0aW9uLXNoYWRvdy1vYnNlcnZhdGlvbi52MSIsInZlcmlmaWNhdGlvbl9zdGF0dXMiOiJ2ZXJpZmllZCJ9",
+        "payload_sha256": "0817179a32fc9532392551c907134742f0d092d1c725bd2481dcd8b04e4e49d2"
+      }
+    }
+  ]
+}

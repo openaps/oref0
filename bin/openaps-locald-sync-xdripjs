@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+from __future__ import print_function
+
+import argparse
+import json
+import os
+import sys
+try:
+    from urllib.request import Request, urlopen
+except ImportError:
+    from urllib2 import Request, urlopen
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+
+
+def _candidate_package_paths():
+    candidates = []
+    env_root = os.environ.get("OPENAPS_LOCALD_ROOT")
+    if env_root:
+        candidates.append(os.path.join(env_root, "openaps_locald"))
+    candidates.extend([
+        "/usr/local/src/oref0/openaps-locald",
+        "/usr/local/src/oref0/openaps-locald/openaps_locald",
+        "/root/src/oref0/openaps-locald",
+        "/root/src/oref0/openaps-locald/openaps_locald",
+    ])
+    local_root = os.path.dirname(HERE)
+    candidates.extend([
+        os.path.join(local_root, "openaps-locald"),
+        os.path.join(local_root, "openaps-locald", "openaps_locald"),
+    ])
+    return candidates
+
+
+for package_path in _candidate_package_paths():
+    if os.path.isdir(package_path) and package_path not in sys.path:
+        sys.path.insert(0, package_path)
+        break
+
+from openaps_locald.config import load_config
+from openaps_locald.models import validate_event
+from openaps_locald.xdripjs import build_bg_reading_event
+
+
+def _base_url(config):
+    host = config.get("bind_host") or "127.0.0.1"
+    if host in ("0.0.0.0", "::", ""):
+        host = "127.0.0.1"
+    port = int(config.get("port") or 8787)
+    return "http://%s:%s" % (host, port)
+
+
+def _post_event(config, event):
+    url = _base_url(config).rstrip("/") + "/v1/events"
+    body = json.dumps({"events": [event]}, sort_keys=True).encode("utf-8")
+    headers = {"Content-Type": "application/json"}
+    token = config.get("auth_token")
+    if token:
+        headers["Authorization"] = "Bearer %s" % token
+    request = Request(url, data=body, headers=headers)
+    with urlopen(request, timeout=5) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    return payload
+
+
+def build_arg_parser():
+    parser = argparse.ArgumentParser(description="Sync the latest xDripJS BG reading into openaps-locald")
+    parser.add_argument("--config", help="Path to openaps-locald JSON config")
+    parser.add_argument("--myopenaps-dir", default=None, help="OpenAPS loop directory")
+    parser.add_argument("--source-path", default=None, help="Override the xDripJS monitor file path")
+    parser.add_argument("--dry-run", action="store_true", help="Print the event without posting it")
+    return parser
+
+
+def main(argv=None):
+    parser = build_arg_parser()
+    args = parser.parse_args(argv)
+    config = load_config(args.config, args.myopenaps_dir)
+    if args.source_path:
+        config = dict(config)
+        config["xdripjs_source_path"] = args.source_path
+    event = build_bg_reading_event(config, source_path=args.source_path)
+    if event is None:
+        print(json.dumps({"status": "no_xdripjs_source"}, sort_keys=True))
+        return 0
+    validate_event(event)
+    if args.dry_run:
+        print(json.dumps({"status": "dry_run", "event": event}, sort_keys=True))
+        return 0
+    payload = _post_event(config, event)
+    print(json.dumps({
+        "status": "posted",
+        "event_id": event["event_id"],
+        "source_path": event["payload"].get("source_path"),
+        "acks": payload.get("acks", []),
+    }, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
