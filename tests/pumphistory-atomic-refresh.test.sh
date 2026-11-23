@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -u
+umask 022
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TEST_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/pumphistory-atomic-refresh-test.XXXXXX") \
@@ -159,6 +160,25 @@ test_jq_failure_preserves_history() (
 
     assert_old_history "jq failure"
     assert_no_candidate "jq failure"
+)
+
+test_missing_or_non_array_output_preserves_history() (
+    new_case invalid-candidate
+    write_old_history
+
+    pumphistory() { :; }
+    if read_full_pumphistory > refresh.log; then
+        fail_test "Empty output was installed"
+    fi
+    assert_old_history "Empty output"
+    assert_no_candidate "Empty output"
+
+    pumphistory() { printf '%s\n' '{"timestamp":"not an array"}'; }
+    if read_full_pumphistory > refresh.log; then
+        fail_test "Non-array output was installed"
+    fi
+    assert_old_history "Non-array output"
+    assert_no_candidate "Non-array output"
 )
 
 test_rename_failure_preserves_history() (
@@ -321,6 +341,7 @@ test_restrictive_umask_is_preserved || exit 1
 test_read_only_umask_is_applied_after_write || exit 1
 test_upstream_failure_preserves_history || exit 1
 test_jq_failure_preserves_history || exit 1
+test_missing_or_non_array_output_preserves_history || exit 1
 test_rename_failure_preserves_history || exit 1
 test_destination_directory_is_not_reported_as_success || exit 1
 test_failure_without_history_creates_no_live_file || exit 1
