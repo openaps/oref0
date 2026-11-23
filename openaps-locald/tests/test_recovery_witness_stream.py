@@ -52,7 +52,10 @@ class RecoveryWitnessStreamTests(unittest.TestCase):
         runtime._proof_lock = threading.RLock()
         runtime._admission_activation_state = "active"
         runtime._admission_runtime = self.runtime
-        stream = runtime.recovery_stream_factory()(prelude)
+        provider = runtime.recovery_stream_factory()
+        stream = provider(prelude)
+        with self.assertRaises(Exception):
+            provider(prelude)
         phone_hello, client, incoming, outgoing = self.client()
         self.assertEqual(RecoveryHello.decode(stream.drain(65536)).public_key_der, f.rig.public_key_der)
         stream.receive(phone_hello.encode())

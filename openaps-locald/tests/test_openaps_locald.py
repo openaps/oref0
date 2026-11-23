@@ -584,6 +584,8 @@ class LocaldTests(unittest.TestCase):
         constrained = read_device_status_payload(constrained_config)["device_statuses"][0]
         self.assertIn("pump", constrained)
         self.assertLess(len(constrained["openaps"]["suggested"]["predBGs"]["IOB"]), 48)
+        self.assertLessEqual(len(constrained["openaps"]["suggested"]["reason"]), 83)
+        self.assertIn("timestamp", constrained["openaps"]["suggested"])
 
         stale_at = time.time() - 1900
         for name in ("clock-zoned.json", "reservoir.json", "battery.json"):

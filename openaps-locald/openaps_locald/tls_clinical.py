@@ -7,6 +7,7 @@ import json
 import struct
 
 from .authorization_tls import TLSError
+from .clinical_timing import timed_clinical_call
 
 
 MAX_FRAME = 65532
@@ -82,22 +83,31 @@ class TLSClinicalSession(object):
             if not self.tls.ready or request["destination_credential_id"] != self.tls.binding[1]:
                 raise TLSError("clinical destination rejected")
         authorize()
-        if request["method"] == "GET" and request["body"] is None:
+        if (path in ("/v1/wifi", "/v1/wifi/scan", "/v1/wifi/networks") and not query and
+                (request["method"] == "POST" or
+                 (request["method"] == "GET" and request["body"] is None))):
+            status, body = self.reads.wifi_authenticated(request["method"], path, request["body"], authorize)
+        elif request["method"] == "GET" and request["body"] is None:
             status, body = self.reads.read_authenticated(path, query, authorize)
         elif request["method"] == "POST" and path == "/v1/events" and not query:
             body = request["body"]
             if (not isinstance(body, dict) or set(body) != {"events"} or
                     not isinstance(body["events"], list) or len(body["events"]) > 64):
                 raise TLSError("event batch limit")
-            status, body = 200, {"acks": self.events.process_authenticated(body["events"], authorize)}
+            status, body = 200, {"acks": timed_clinical_call(
+                getattr(self.events, "log", None), "tls_event_dispatch",
+                lambda: self.events.process_authenticated(body["events"], authorize))}
         else:
             status, body = 404, {"error": "not_found"}
-        authorize()
+        timing_log = getattr(self.events, "log", None)
+        timed_clinical_call(timing_log, "tls_postdispatch_authorize", authorize)
         if self.authenticated_contact is not None:
-            self.authenticated_contact()
+            timed_clinical_call(timing_log, "tls_authenticated_contact", self.authenticated_contact)
         response = {"schema": "openaps.tls.response.v1", "request_id": request_id,
                     "status": status, "body": body}
-        encoded = json.dumps(response, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+        encoded = timed_clinical_call(timing_log, "tls_response_encode", lambda:
+            json.dumps(response, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8"))
         if len(encoded) > MAX_FRAME:
             raise TLSError("response frame limit")
-        self.tls.write(struct.pack("!I", len(encoded)) + encoded)
+        timed_clinical_call(timing_log, "tls_response_queue",
+                            lambda: self.tls.write(struct.pack("!I", len(encoded)) + encoded))

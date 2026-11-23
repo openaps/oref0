@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Synthetic notifier that never reaches a network or reads credentials.
+sleep 60

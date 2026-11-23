@@ -28,6 +28,11 @@ class PolicyAnchorMissing(ChallengeError):
     pass
 
 
+class PolicyAnchorRejected(ChallengeError):
+    """Readable cached bytes rejected; fresh proof may replace them with CAS."""
+    pass
+
+
 def _json(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
@@ -108,28 +113,38 @@ class PolicyAnchorStore(object):
         self.lock, self.valid = threading.Lock(), True
 
     def load(self, expected):
+        _binding(expected)
         with self.lock:
             if not self.valid:
                 raise ChallengeError("policy anchor unavailable")
             data = self.storage.load()
             if data is None:
                 raise PolicyAnchorMissing("policy anchor missing")
-            return decode(data, expected, self.identity)
+            try:
+                return decode(data, expected, self.identity)
+            except ChallengeError:
+                raise PolicyAnchorRejected("cached policy anchor rejected") from None
 
     def load_or_create(self, expected):
         """Called only after the policy owner consumes fresh opaque evidence."""
+        _binding(expected)
         with self.lock:
             if not self.valid:
                 raise ChallengeError("policy anchor unavailable")
             previous = self.storage.load()
             if previous is not None:
-                return decode(previous, expected, self.identity)
+                try:
+                    return decode(previous, expected, self.identity)
+                except ChallengeError:
+                    # Cached scope never supplies authority. The caller has
+                    # already consumed current evidence for the new binding.
+                    pass
             generation = uuid.uuid4()
             data = encode(expected, generation, self.identity)
             attempted = False
             try:
                 attempted = True
-                self.storage.replace(data, expecting=None)
+                self.storage.replace(data, expecting=previous)
                 if self.storage.load() != data:
                     raise ChallengeError("policy anchor readback")
                 return generation

@@ -253,6 +253,14 @@ class RecoveryTLSServer(object):
         frame = struct.pack("!I", len(encoded)) + encoded
         if self.tls.write(frame) != len(frame):
             raise TLSError("recovery response partial write")
+        # The witness socket closes after this final flight drains. Include
+        # TLS close_notify so the requester can distinguish the complete
+        # authenticated response from transport truncation. MemoryBIO queues
+        # the alert before waiting for the requester's reciprocal shutdown.
+        try:
+            self.tls.unwrap()
+        except ssl.SSLWantReadError:
+            pass
         self.pending.clear()
 
     def _output_bound(self):

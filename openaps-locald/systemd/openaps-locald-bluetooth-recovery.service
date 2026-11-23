@@ -1,0 +1,8 @@
+[Unit]
+Description=Recover Bluetooth after repeated advertiser startup failures
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/openaps-locald-bluetooth-recover
+TimeoutStartSec=90

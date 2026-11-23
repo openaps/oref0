@@ -4,8 +4,10 @@ import socket
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 
 from openaps_locald.http_api import ThreadedHTTPServer, make_handler
+from openaps_locald.recovery_challenge import ChallengeError
 from openaps_locald.config import default_config
 from openaps_locald.install_config import build_install_config
 from openaps_locald.tls_socket import serve_recovery_socket
@@ -103,6 +105,28 @@ class RecoveryHTTPTests(unittest.TestCase):
         self.assertIn(b" 503 ", response)
         self.assertNotIn(b" 101 ", response)
         self.assertEqual(calls, [1])
+
+    def test_recovery_failure_logs_only_fixed_reason_and_stage(self):
+        def provider():
+            def factory(prelude):
+                raise ChallengeError("registry peer not admitted")
+            return factory
+        self.start(provider)
+        with patch("openaps_locald.http_api._api_log") as log:
+            self.assertIn(b" 503 ", self.exchange(self.request()))
+        log.assert_called_once_with(
+            "recovery TLS upgrade failed category=challenge "
+            "stage=before_upgrade reason=registry_peer_not_admitted")
+
+    def test_recovery_failure_never_logs_exception_payload(self):
+        def provider():
+            raise ValueError("synthetic-private-payload")
+        self.start(provider)
+        with patch("openaps_locald.http_api._api_log") as log:
+            self.assertIn(b" 503 ", self.exchange(self.request()))
+        log.assert_called_once_with(
+            "recovery TLS upgrade failed category=other "
+            "stage=before_upgrade reason=unclassified")
 
     def test_route_header_body_and_oversize_ambiguity_fail_before_provider(self):
         self.start(self.available)

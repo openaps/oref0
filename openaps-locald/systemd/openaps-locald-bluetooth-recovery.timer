@@ -1,0 +1,7 @@
+[Unit]
+Description=Retry deferred Bluetooth recovery
+
+[Timer]
+OnActiveSec=120
+AccuracySec=1
+Unit=openaps-locald-bluetooth-recovery.service

@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+import os
+import sys
+
+for directory in ("/usr/local/src/oref0/openaps-locald",
+                  os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "openaps-locald")):
+    if os.path.isdir(directory):
+        sys.path.insert(0, directory)
+        break
+from openaps_locald.bluetooth_recovery import main
+raise SystemExit(main())

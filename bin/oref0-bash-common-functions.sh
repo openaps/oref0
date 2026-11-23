@@ -8,6 +8,21 @@ self=$(basename $0)
 
 PREFERENCES_FILE="preferences.json"
 
+# Notifications are optional network work, not part of pump verification.
+# Bound the entire notification process tree, including its Nightscout snooze
+# query and uploads. A dead network must not stall the completed pump loop or
+# cause its watchdog to misclassify a notification hang as a radio failure.
+function run_optional_pushover () {
+    local notification_status=0
+    timeout --kill-after=5s 20s oref0-pushover "$1" "$2" || notification_status=$?
+    if [[ "$notification_status" -eq 124 || "$notification_status" -eq 137 ]]; then
+        echo "Optional notification timed out; continuing completed pump loop."
+    elif [[ "$notification_status" -ne 0 ]]; then
+        echo "Optional notification failed (exit $notification_status); continuing completed pump loop."
+    fi
+    return 0
+}
+
 function run_remote_command () {
     set -o pipefail
     out_file=$( mktemp /tmp/shared_node.XXXXXXXXXXXX)
@@ -525,12 +540,40 @@ dedupe_path() {
     fi
 }
 
+# Preserve cp -pu freshness semantics without exposing partial loop inputs.
+atomic_copy_if_newer() {
+    local source_file=$1 destination_file=$2 temporary_file
+    [[ -f "$source_file" ]] || return 1
+    if [[ -e "$destination_file" && ! "$source_file" -nt "$destination_file" ]]; then
+        return 0
+    fi
+    temporary_file=$(mktemp "${destination_file}.copy.XXXXXX") || return 1
+    if ! cp -p "$source_file" "$temporary_file"; then
+        rm -f "$temporary_file"
+        return 1
+    fi
+    # Another producer may have supplied fresher data during the copy.
+    if [[ -e "$destination_file" && ! "$temporary_file" -nt "$destination_file" ]]; then
+        rm -f "$temporary_file"
+        return 0
+    fi
+    # Same-directory rename prevents readers from seeing a truncated copy.
+    if ! mv -f "$temporary_file" "$destination_file"; then
+        rm -f "$temporary_file"
+        return 1
+    fi
+}
+
 # Usage: wait_for_silence <seconds of silence>
 # listen for $1 seconds of silence (no other rigs or enlite transmitter talking to pump) before continuing
 # If communication is detected, it'll retry to listen for $1 seconds.
 #
-# returns 0 if radio is free, 1 if radio is jammed for 800 iterations.
+# returns 0 only after a full quiet window, 1 on radio error or a busy deadline.
 function wait_for_silence {
+    local silence_started_at=$SECONDS
+    local silence_budget=90
+    local silence_remaining silence_status silence_timeout silence_log silence_quiet
+    silence_timeout=$(command -v timeout || command -v gtimeout || true)
     if [ -z $1 ]; then
         upto45s=$[ ( $RANDOM / 728 + 1) ]
         waitfor=$upto45s
@@ -539,14 +582,37 @@ function wait_for_silence {
     fi
     echo -n "Listening for ${waitfor}s: "
     for i in $(seq 1 800||gseq 1 800); do
+        silence_remaining=$((silence_budget - (SECONDS - silence_started_at)))
+        if (( silence_remaining < waitfor )); then
+            echo " Radio still busy; returning for a fresh loop retry."
+            return 1
+        fi
         echo -n .
-        # returns true if it hears pump comms, false otherwise
-        if ! listen -t $waitfor's' 2>&4 ; then
+        # The native listener uses exit 1 for both quiet timeout and radio errors.
+        # Require its timeout diagnostic rather than treating every error as clear.
+        silence_log=$(mktemp) || return 1
+        silence_status=0
+        if [ -n "$silence_timeout" ]; then
+            "$silence_timeout" "${silence_remaining}s" listen -t "${waitfor}s" 2>"$silence_log" || silence_status=$?
+        else
+            listen -t "${waitfor}s" 2>"$silence_log" || silence_status=$?
+        fi
+        silence_quiet=no
+        if [ "$silence_status" -eq 1 ] && grep -Eq '^[0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} timeout$' "$silence_log"; then
+            silence_quiet=yes
+        fi
+        cat "$silence_log" >&4
+        rm -f "$silence_log"
+        if [ "$silence_quiet" = yes ]; then
             echo " All clear."
             echo -n "Continuing oref0-pump-loop at "; date
             return 0
-        else
+        elif [ "$silence_status" -eq 0 ]; then
             sleep 1
+        else
+            # A command error or outer deadline is not proof of a quiet radio.
+            echo " Radio listen failed (exit ${silence_status}); returning for a fresh loop retry."
+            return 1
         fi
     done
     return 1

@@ -70,6 +70,7 @@ install -m 0755 "${ROOT_DIR}/bin/openaps-locald" /usr/local/bin/openaps-locald
 install -m 0755 "${ROOT_DIR}/bin/openaps-locald-merge-carbs" /usr/local/bin/openaps-locald-merge-carbs
 install -m 0755 "${ROOT_DIR}/bin/openaps-locald-ble" /usr/local/bin/openaps-locald-ble
 install -m 0755 "${ROOT_DIR}/bin/openaps-locald-advertise" /usr/local/bin/openaps-locald-advertise
+install -m 0755 "${ROOT_DIR}/bin/openaps-locald-bluetooth-recover" /usr/local/bin/openaps-locald-bluetooth-recover
 install -m 0755 "${ROOT_DIR}/bin/openaps-locald-authorization-smoke" /usr/local/bin/openaps-locald-authorization-smoke
 install -m 0755 "${ROOT_DIR}/bin/openaps-locald-sync-xdripjs" /usr/local/bin/openaps-locald-sync-xdripjs
 install -m 0755 "${ROOT_DIR}/bin/openaps-locald-replay-cgm-config" /usr/local/bin/openaps-locald-replay-cgm-config
@@ -86,6 +87,8 @@ mv "${PACKAGE_DIR}.new" "${PACKAGE_DIR}"
 install -m 0644 "${ROOT_DIR}/openaps-locald/systemd/openaps-locald.service" "${UNIT_FILE}"
 install -m 0644 "${ROOT_DIR}/openaps-locald/systemd/openaps-locald-ble.service" /etc/systemd/system/openaps-locald-ble.service
 install -m 0644 "${ROOT_DIR}/openaps-locald/systemd/openaps-locald-advertise.service" /etc/systemd/system/openaps-locald-advertise.service
+install -m 0644 "${ROOT_DIR}/openaps-locald/systemd/openaps-locald-bluetooth-recovery.service" /etc/systemd/system/openaps-locald-bluetooth-recovery.service
+install -m 0644 "${ROOT_DIR}/openaps-locald/systemd/openaps-locald-bluetooth-recovery.timer" /etc/systemd/system/openaps-locald-bluetooth-recovery.timer
 install -m 0644 "${ROOT_DIR}/openaps-locald/systemd/openaps-locald-sync-xdripjs.service" /etc/systemd/system/openaps-locald-sync-xdripjs.service
 install -m 0644 "${ROOT_DIR}/openaps-locald/systemd/openaps-locald-sync-xdripjs.timer" /etc/systemd/system/openaps-locald-sync-xdripjs.timer
 install -m 0644 "${ROOT_DIR}/openaps-locald/dbus/com.openaps.locald.conf" /etc/dbus-1/system.d/com.openaps.locald.conf

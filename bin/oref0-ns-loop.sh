@@ -76,14 +76,14 @@ function get_ns_bg {
     if echo $valid_glucose | grep glucose >/dev/null; then
         echo Found recent valid BG:
         echo $valid_glucose | colorize_json '.[0] | { glucose: .glucose, dateString: .dateString }'
-        cp -pu cgm/ns-glucose.json cgm/glucose.json
+        atomic_copy_if_newer cgm/ns-glucose.json cgm/glucose.json || return 1
     else
         echo No recent valid BG found. Most recent:
         cat cgm/ns-glucose.json | colorize_json '.[0] | { glucose: .glucose, dateString: .dateString }'
     fi
 
     # copy cgm/glucose.json over to monitor/glucose.json if it's newer
-    cp -pu cgm/glucose.json monitor/glucose.json
+    atomic_copy_if_newer cgm/glucose.json monitor/glucose.json || return 1
     cat monitor/glucose.json | colorize_json '.[0] | { sgv: .sgv, dateString: .dateString }'
 }
 

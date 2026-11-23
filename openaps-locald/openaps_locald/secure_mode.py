@@ -8,7 +8,7 @@ from __future__ import print_function
 
 
 HTTP_READS = frozenset((
-    "/v1/status", "/v1/device-status", "/v1/devicestatus",
+    "/v1/status", "/v1/device-status", "/v1/devicestatus", "/v1/maintenance",
     "/v1/materialization", "/v1/events", "/v1/bg-readings",
     "/v1/bg-readings/latest", "/v1/pumphistory", "/v1/pump-history",
 ))

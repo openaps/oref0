@@ -1231,6 +1231,62 @@ class NightscoutDeviceAuthorizationClient(object):
     def _exact_path(self, credential_id):
         return "/api/v3/devicestatus/" + quote(registry_identifier(credential_id), safe="")
 
+    def _recover_migrated_self_enrollment(self):
+        """Prove possession to the server's scoped migration policy, never DELETE."""
+        if self.api_secret or urlparse(self.base_url).scheme != "https":
+            raise NightscoutAuthorizationError("migration_unavailable")
+        path = "/api/v3/openaps/enrollment-recovery/"
+        status, payload = self._authenticated_request("POST", path + "challenge", body={
+            "credential_id": self.identity.credential_id, "device_kind": self.device_kind,
+        })
+        if status == 404:
+            # Older servers retain their existing subject/duplicate checks.
+            return False
+        if status != 200:
+            raise NightscoutAuthorizationError("migration_challenge", status=status)
+        challenge = _result_body(payload)
+        now = self.status()["srvDate"]
+        fields = ("schema", "challenge_id", "nonce", "authority_context_id", "subject", "registry_digest")
+        if not isinstance(challenge, dict) or any(not isinstance(challenge.get(k), str) for k in fields):
+            raise NightscoutAuthorizationError("malformed_migration_challenge")
+        try:
+            uuid.UUID(challenge["challenge_id"])
+            nonce = base64.b64decode(challenge["nonce"].encode("ascii"), validate=True)
+        except (ValueError, TypeError, UnicodeError):
+            raise NightscoutAuthorizationError("malformed_migration_challenge")
+        expires = challenge.get("expires_at")
+        if (
+            challenge["schema"] != "openaps.enrollment-recovery.v1" or
+            challenge["authority_context_id"] != self.authority_context_id or
+            challenge["subject"] != self.jwt.subject or not challenge["subject"] or
+            len(challenge["subject"]) > 256 or
+            any(c in challenge["subject"] for c in ("\n", "\r", "\x00")) or
+            len(nonce) != 32 or base64.b64encode(nonce).decode("ascii") != challenge["nonce"] or
+            not re.fullmatch(r"[0-9a-f]{64}", challenge["registry_digest"]) or
+            isinstance(expires, bool) or not isinstance(expires, int) or
+            not now < expires <= now + 120000
+        ):
+            raise NightscoutAuthorizationError("malformed_migration_challenge")
+        transcript = "\n".join([
+            challenge["schema"], challenge["challenge_id"], self.identity.credential_id,
+            self.device_kind, challenge["authority_context_id"], challenge["subject"],
+            challenge["nonce"], challenge["registry_digest"], str(expires),
+        ]).encode("utf-8")
+        status, payload = self._authenticated_request("POST", path + "complete", body={
+            "challenge_id": challenge["challenge_id"], "credential_id": self.identity.credential_id,
+            "device_kind": self.device_kind,
+            "proof": base64.b64encode(self.identity.sign(transcript)).decode("ascii"),
+        })
+        result = _result_body(payload)
+        if status != 200:
+            raise NightscoutAuthorizationError("migration_complete", status=status)
+        if not isinstance(result, dict) or not (
+            (result.get("status") == "recovered" and result.get("reenroll_required") is True) or
+            (result.get("status") == "already_current" and result.get("reenroll_required") is False)
+        ):
+            raise NightscoutAuthorizationError("malformed_migration_completion")
+        return True
+
     def exact_lookup(self, credential_id):
         if self.api_secret:
             status, payload = self._authenticated_request(
@@ -1462,6 +1518,15 @@ class NightscoutDeviceAuthorizationClient(object):
             self.trust.record_self(state)
             return state
         classification, document = self.exact_lookup(self.identity.credential_id)
+        if classification == "present" and not self.api_secret and urlparse(self.base_url).scheme == "https":
+            # Verify the signed self record before requesting migration repair.
+            candidate = validate_enrollment_document(
+                document, self.identity.credential_id, self.device_kind, self.identity,
+            )
+            if (candidate.get("nightscout_subject") != self.jwt.subject or
+                    self.duplicate_audit(self.identity.credential_id) == "multiple_live"):
+                self._recover_migrated_self_enrollment()
+                classification, document = self.exact_lookup(self.identity.credential_id)
         peer = None
         ambiguous_create_srv_date = None
         if classification == "present":

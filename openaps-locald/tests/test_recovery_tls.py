@@ -129,6 +129,10 @@ class RecoveryTLSTests(unittest.TestCase):
         self.assertEqual(codec.verify_response(request, response, self.rig.public_key_der, self.phone), 2)
         self.assertEqual(self.continuity.recent_contact_age_for_recovery(), 2)
         self.assertTrue(server.close_required)
+        # The socket adapter closes once its final flight is drained. A TLS
+        # client must receive authenticated EOF rather than a truncated stream.
+        incoming.write_eof()
+        self.assertEqual(client.read(), b"")
         server.close()
         self.assertEqual(len(self.pool.entries), 1) # A close request is not terminal confirmation.
         server.reservation.transport_terminated()
