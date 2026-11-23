@@ -525,6 +525,45 @@ dedupe_path() {
     fi
 }
 
+# Preserve cp -pu freshness semantics without exposing partial loop inputs.
+atomic_copy_if_newer() {
+    local source_file=$1 destination_file=$2 temporary_file link_count
+    # Keep the historical behavior for custom links and unusual paths. Renaming
+    # over a link would replace the directory entry instead of the linked file.
+    if [[ ! -f "$source_file" || -L "$destination_file" ||
+          ( -e "$destination_file" && ! -f "$destination_file" ) ||
+          "$source_file" -ef "$destination_file" ]]; then
+        cp -pu "$source_file" "$destination_file"
+        return $?
+    fi
+    if [[ -e "$destination_file" ]]; then
+        if [[ ! "$source_file" -nt "$destination_file" ]]; then
+            return 0
+        fi
+        link_count=$(stat -c %h "$destination_file" 2>/dev/null ||
+            stat -f %l "$destination_file" 2>/dev/null || true)
+        if [[ "$link_count" != "1" ]]; then
+            cp -pu "$source_file" "$destination_file"
+            return $?
+        fi
+    fi
+    temporary_file=$(mktemp "${destination_file}.copy.XXXXXX") || return 1
+    if ! cp -p "$source_file" "$temporary_file"; then
+        rm -f "$temporary_file"
+        return 1
+    fi
+    # Another producer may have supplied fresher data during the copy.
+    if [[ -e "$destination_file" && ! "$temporary_file" -nt "$destination_file" ]]; then
+        rm -f "$temporary_file"
+        return 0
+    fi
+    # Same-directory rename prevents readers from seeing a truncated copy.
+    if [[ -d "$destination_file" ]] || ! mv -f "$temporary_file" "$destination_file"; then
+        rm -f "$temporary_file"
+        return 1
+    fi
+}
+
 # Usage: wait_for_silence <seconds of silence>
 # listen for $1 seconds of silence (no other rigs or enlite transmitter talking to pump) before continuing
 # If communication is detected, it'll retry to listen for $1 seconds.
